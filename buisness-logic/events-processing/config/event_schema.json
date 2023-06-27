@@ -1,0 +1,59 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Game Analytics JSON Event Schema",
+	"description": "Format of events that are ingested to the AWS Game Analytics Pipeline",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"event": { 
+			"$ref": "#/definitions/event"
+		},
+		"application_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "The application identifier (UUID) this event is associated with"
+    }
+	},
+	"required": ["event", "application_id"],
+	"definitions": {
+		"event": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"event_id": {
+					"type": "string",
+					"pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+					"description": "The unique identifier for the event, formatted as UUID v4 string."
+				},
+				"event_type": {
+					"type": "string",
+					"pattern": "^[A-Za-z0-9-_.]+$",
+					"description": "Identifies the type of event"
+				},
+				"event_name": {
+					"type": "string",
+					"pattern": "^[A-Za-z0-9-_.]+$",
+					"description": "Name of the event that occurred"
+				},
+				"event_timestamp": {
+					"type": "number",
+					"description": "The time in seconds since the Unix epoch at which this event occurred (set by producer of event)."
+				},
+				"event_version": {
+					"type": "string",
+					"pattern": "^[A-Za-z0-9-_.]+$",
+					"description": "An API version for this event format."
+				},
+				"app_version": {
+					"type": "string",
+					"pattern": "^[A-Za-z0-9-_.]+$",
+					"description": "Version identifier for the application that generated the event"
+				},
+				"event_data": {
+					"type": "object"
+				}
+			},
+			"required": ["event_id", "event_type", "event_timestamp", "event_name"]
+		}
+	}
+}

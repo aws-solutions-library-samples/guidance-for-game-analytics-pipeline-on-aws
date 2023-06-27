@@ -1,0 +1,50 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+# the Software, and to permit persons to whom the Software is furnished to do so.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+# What your workload will be named
+WORKLOAD_NAME: "CentralizedGameAnalytics"
+# The version of CDK you'll be using, ensure it's the same you have in your package.jsons
+CDK_VERSION: "2.68.0"
+# Change only if you need specific versions of either
+NODE_VERSION: "latest"
+PYTHON_VERSION: "3.8"
+# Will ensure synethetic data and shorter retention times are enabled, warning this will enable versioning and won't detete buckets on teardown
+DEV_MODE: true
+ENABLE_STREAMING_ANALYTICS: true # Kinesis Streaming Analytics Component
+STREAM_SHARD_COUNT: 1 # kinesis stream shards
+CODECOMMIT_REPO: "game-analytics-solution" # repo name for pipeline
+RAW_EVENTS_PREFIX: "raw_events" # prefix for raw s3 files
+PROCESSED_EVENTS_PREFIX: "processed_events" # prefix for processed files in s3
+RAW_EVENTS_TABLE: "raw_events" # name for glue table
+GLUE_TMP_PREFIX: "glueetl-tmp" # tmp for glue
+S3_BACKUP_MODE: false # backups for s3
+CLOUDWATCH_RETENTION_DAYS: 30
+API_STAGE_NAME: live
+EMAIL_ADDRESS: example@email.com # CHANGE THIS
+DEMO: false # Will create an job that automatically generates events for pipeline, in future will deploy a webapp
+# NOTE: The following is for future production testing and/or Github integration, NOT implemented yet
+# GITHUB_CONNECTION_ARN: "<CONNECTION ARN>"
+# GITHUB_OWNER: "<OWNER>"
+# GITHUB_REPO: "<REPO>"
+# GITHUB_TRUNK_BRANCH: "<TRUNK BRANCH>"
+
+# Accounts your pipeline will deploy to. This is key for pipeline. Accepted names are QA and PROD
+accounts:
+    - NAME: "QA"
+      ACCOUNT: <YOUR-ACCOUNT-NUMBER>
+      REGION: <QA-ACCOUNT-REGION>
+    - NAME: "PROD"
+      ACCOUNT: <YOUR-ACCOUNT-NUMBER>
+      REGION: <PROD-ACCOUNT-REGION>

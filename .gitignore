@@ -1,0 +1,30 @@
+# Environment
+*.swp
+# package-lock.json
+__pycache__
+.pytest_cache
+.venv
+*.egg-info
+
+# Infrastructure
+infrastructure/config.yaml
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+# macOS
+.DS_Store
+
+# PyCharm
+.idea/
+
+# pyenv
+.python-version
+
+# VSCode
+.vscode
+.history/
+*.vsix
+
+node_modules/

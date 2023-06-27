@@ -1,0 +1,27 @@
+{
+    "name": "game-analytics-application-admin-service",
+    "description": "The application admin microservice for the game analytics pipeline solution",
+    "main": "index.js",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "aws-sdk": "*",
+        "aws-serverless-express": "^3.4.0",
+        "body-parser": "^1.19.0",
+        "cors": "^2.8.5",
+        "express": "^4.17.1",
+        "moment": "^2.29.1",
+        "underscore": "*",
+        "uuid": "^8.3.2"
+    },
+    "devDependencies": {
+        "aws-sdk": "*",
+        "npm-run-all": "*"
+    },
+    "scripts": {
+        "build:init": "rm -rf package-lock.json && rm -rf dist && rm -rf node_modules",
+        "build:zip": "zip -rq admin.zip .",
+        "build:dist": "mkdir dist && mv admin.zip dist/",
+        "build": "npm run build:init && npm install --production && npm run build:zip && npm run build:dist"
+    }
+}
