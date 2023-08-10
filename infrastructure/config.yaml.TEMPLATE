@@ -21,23 +21,16 @@ PYTHON_VERSION: "3.8"
 DEV_MODE: true
 ENABLE_STREAMING_ANALYTICS: true
 STREAM_SHARD_COUNT: 1
-CODECOMMIT_REPO: "game-analytics-solution" # repo name for pipeline
-RAW_EVENTS_PREFIX: "raw_events" # prefix for raw s3 files
-PROCESSED_EVENTS_PREFIX: "processed_events" # prefix for processed files in s3
-RAW_EVENTS_TABLE: "raw_events" # name for glue table
-GLUE_TMP_PREFIX: "glueetl-tmp" # tmp for glue
-S3_BACKUP_MODE: false # backups for s3
+CODECOMMIT_REPO: ""
+RAW_EVENTS_PREFIX: ""
+PROCESSED_EVENTS_PREFIX: ""
+RAW_EVENTS_TABLE: ""
+GLUE_TMP_PREFIX: ""
+S3_BACKUP_MODE: false
 CLOUDWATCH_RETENTION_DAYS: 30
-API_STAGE_NAME: live
-EMAIL_ADDRESS: example@email.com # CHANGE THIS
-DEMO: false # Will create an job that automatically generates events for pipeline, in future will deploy a webapp
-# NOTE: The following is for future production testing and/or Github integration, NOT implemented yet
-# GITHUB_CONNECTION_ARN: "<CONNECTION ARN>"
-# GITHUB_OWNER: "<OWNER>"
-# GITHUB_REPO: "<REPO>"
-# GITHUB_TRUNK_BRANCH: "<TRUNK BRANCH>"
-
-# Accounts your pipeline will deploy to. This is key for pipeline. Accepted names are QA and PROD
+API_STAGE_NAME: "live"
+EMAIL_ADDRESS: ""
+DEMO: false
 accounts:
     - NAME: "QA"
       ACCOUNT: <YOUR-ACCOUNT-NUMBER>
