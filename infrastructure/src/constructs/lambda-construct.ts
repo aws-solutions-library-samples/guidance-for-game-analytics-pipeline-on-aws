@@ -1,4 +1,3 @@
-import { DataLakeConstruct } from "./data-lake-construct";
 /**
  * Copyright 2023 Amazon.com, Inc. and its affiliates. All Rights Reserved.
  *
@@ -13,7 +12,7 @@ import { DataLakeConstruct } from "./data-lake-construct";
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-
+import { DataLakeConstruct } from "./data-lake-construct";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";

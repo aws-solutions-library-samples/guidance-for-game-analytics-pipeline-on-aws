@@ -1,4 +1,3 @@
-import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 /**
  * Copyright 2023 Amazon.com, Inc. and its affiliates. All Rights Reserved.
  *
@@ -13,7 +12,7 @@ import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-
+import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
