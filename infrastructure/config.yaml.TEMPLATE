@@ -13,17 +13,14 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# What your workload will be named
-WORKLOAD_NAME: "CentralizedGameAnalytics"
-# The version of CDK you'll be using, ensure it's the same you have in your package.jsons
-CDK_VERSION: "2.68.0"
+WORKLOAD_NAME: ""
+CDK_VERSION: ""
 # Change only if you need specific versions of either
 NODE_VERSION: "latest"
 PYTHON_VERSION: "3.8"
-# Will ensure synethetic data and shorter retention times are enabled, warning this will enable versioning and won't detete buckets on teardown
 DEV_MODE: true
-ENABLE_STREAMING_ANALYTICS: true # Kinesis Streaming Analytics Component
-STREAM_SHARD_COUNT: 1 # kinesis stream shards
+ENABLE_STREAMING_ANALYTICS: true
+STREAM_SHARD_COUNT: 1
 CODECOMMIT_REPO: "game-analytics-solution" # repo name for pipeline
 RAW_EVENTS_PREFIX: "raw_events" # prefix for raw s3 files
 PROCESSED_EVENTS_PREFIX: "processed_events" # prefix for processed files in s3
