@@ -15,7 +15,6 @@
 
 WORKLOAD_NAME: ""
 CDK_VERSION: ""
-# Change only if you need specific versions of either
 NODE_VERSION: "latest"
 PYTHON_VERSION: "3.8"
 DEV_MODE: true
@@ -32,9 +31,9 @@ API_STAGE_NAME: "live"
 EMAIL_ADDRESS: ""
 DEMO: false
 accounts:
-    - NAME: "QA"
-      ACCOUNT: <YOUR-ACCOUNT-NUMBER>
-      REGION: <QA-ACCOUNT-REGION>
-    - NAME: "PROD"
-      ACCOUNT: <YOUR-ACCOUNT-NUMBER>
-      REGION: <PROD-ACCOUNT-REGION>
+  - NAME: "QA"
+    ACCOUNT: "<YOUR-ACCOUNT-NUMBER>"
+    REGION: "<QA-ACCOUNT-REGION>"
+  - NAME: "PROD"
+    ACCOUNT: "<YOUR-ACCOUNT-NUMBER>"
+    REGION: "<PROD-ACCOUNT-REGION>"

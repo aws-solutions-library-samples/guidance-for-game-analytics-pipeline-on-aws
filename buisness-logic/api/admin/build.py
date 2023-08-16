@@ -29,5 +29,5 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 npm_cmd = shutil.which("npm")
 cmd = [npm_cmd, "install", "--prefix", dir_path]
-proc = subprocess.run(cmd, stderr=subprocess.STDOUT, shell=True)
+proc = subprocess.run(cmd, stderr=subprocess.STDOUT, shell=False)
 exit_on_failure(proc.returncode, "Web app npm install failed")

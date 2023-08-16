@@ -36,7 +36,7 @@ def build_infrastructure():
     return_dir = change_dir_with_return("./infrastructure")
 
     cmd = [sys.executable, "build.py"]
-    proc = subprocess.run(cmd, stderr=subprocess.STDOUT, shell=True)
+    proc = subprocess.run(cmd, stderr=subprocess.STDOUT, shell=False)
     exit_on_failure(proc.returncode, "Infrastructure build failed")
 
     return_dir()
@@ -46,7 +46,7 @@ def build_web_app():
 
     return_dir = change_dir_with_return("./web-app")
     cmd = [sys.executable, "build.py"]
-    proc = subprocess.run(cmd, stderr=subprocess.STDOUT, shell=True)
+    proc = subprocess.run(cmd, stderr=subprocess.STDOUT, shell=False)
     exit_on_failure(proc.returncode, "Web app build failed")
 
     return_dir()
@@ -57,7 +57,7 @@ def build_logic():
     return_dir = change_dir_with_return("./buisness-logic")
 
     cmd = [sys.executable, "build.py"]
-    proc = subprocess.run(cmd, stderr=subprocess.STDOUT, shell=True)
+    proc = subprocess.run(cmd, stderr=subprocess.STDOUT, shell=False)
     exit_on_failure(proc.returncode, "Buisness Logic build failed")
 
     return_dir()

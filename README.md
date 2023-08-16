@@ -7,11 +7,11 @@ The Game Analytics Pipeline solution helps game developers to apply a flexible, 
 
 Before deploying the solution, ensure that the following required tools have been installed:
 
-- **AWS Cloud Development Kit (CDK) 2.68**
+- **AWS Cloud Development Kit (CDK) 2.92**
 - **Python 3**
 - **NodeJS 16.20.0**
 
->__NOTE:__ It is recommended that that you configure, and deploy the solution using a pre-configured __[AWS Cloud9](https://aws.amazon.com/cloud9/)__ development environment. Refer to the _[Individual user setup for AWS Cloud9](https://docs.aws.amazon.com/cloud9/latest/user-guide/setup-express.html)_ for more information on how to set up Cloud9 as the only user in the AWS account. The Cloud9 IDE may have an updated version of the CDK installed therefore, run the `npm install -g aws-cdk@2.68.0 --force` to ensure that version `2.68.0` of the CDK is installed.
+>__NOTE:__ It is recommended that that you configure, and deploy the solution using a pre-configured __[AWS Cloud9](https://aws.amazon.com/cloud9/)__ development environment. Refer to the _[Individual user setup for AWS Cloud9](https://docs.aws.amazon.com/cloud9/latest/user-guide/setup-express.html)_ for more information on how to set up Cloud9 as the only user in the AWS account. The Cloud9 IDE may have an updated version of the CDK installed therefore, run the `npm install -g aws-cdk@2.92.0 --force` to ensure that version `2.92.0` of the CDK is installed.
 
 ## Solution Configuration and Customization
 
@@ -38,9 +38,9 @@ The following following settings can be adjusted to suite your solution deployme
   - *Type:* String 
   - *Example:* `"GameAnalyticsSo"`
 - `CDK_VERSION`
-  - *Description:* The version of the CDK installed in your environment. To see the current version of the CDK, run the `cdk --version` command. The solution has been tested using CDK version `2.68.0` of the CDK. If you are using a different version of the CDK, ensure that this version is also reflected in the `./infrastructure/package.json` file.
+  - *Description:* The version of the CDK installed in your environment. To see the current version of the CDK, run the `cdk --version` command. The solution has been tested using CDK version `2.92.0` of the CDK. If you are using a different version of the CDK, ensure that this version is also reflected in the `./infrastructure/package.json` file.
   - *Type:* String
-  - *Example:* `"2.68.0"`
+  - *Example:* `"2.92.0"`
 - `NODE_VERSION`
   - *Description:* The version of NodeJS being used. The default value is set to `"latest"`, and should only be changed this if you require a specific version.
   - *Type:* String
@@ -106,12 +106,12 @@ The following following settings can be adjusted to suite your solution deployme
   - *Example:*
     ```yaml
     accounts:
-        - NAME: "QA"
-          ACCOUNT: <YOUR-ACCOUNT-NUMBER>
-          REGION: <QA-ACCOUNT-REGION>
-        - NAME: "PROD"
-          ACCOUNT: <YOUR-ACCOUNT-NUMBER>
-          REGION: <PROD-ACCOUNT-REGION>
+      - NAME: "QA"
+        ACCOUNT: "<YOUR-ACCOUNT-NUMBER>"
+        REGION: "<QA-ACCOUNT-REGION>"
+      - NAME: "PROD"
+        ACCOUNT: "<YOUR-ACCOUNT-NUMBER>"
+        REGION: "<PROD-ACCOUNT-REGION>"
     ```
     >__NOTE:__ It is recommended that you use the same AWS Account, as well as the same AWS Region, for both the `QA`, and `PROD` stages, when first deploying the solution.
 
