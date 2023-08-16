@@ -27,14 +27,11 @@ const region =
 
 const env = { region, account };
 
-const desc = "Guidance for the Game Analytics Pipeline on AWS (SO0096)"
-
 // Core infrastructure
 new InfrastructureStack(app, "CentralizedGameAnalytics", {
     stackName: `${prod?.NAME}-CentralizedGameAnalytics`,
     config,
     env,
-    desc,
 });
 
 // Deployment through pipeline
@@ -42,5 +39,4 @@ new PipelineStack(app, "PipelineStack", {
     stackName: `Toolchain-${prod?.NAME}`,
     config,
     env,
-    desc,
 });
