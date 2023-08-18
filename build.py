@@ -75,14 +75,14 @@ def main():
 
     if len(sys.argv) == 1:
         # build_web_app()
-        build_infrastructure()
         build_logic()
+        build_infrastructure()
         # needs to be last to ensure the dependencies are built before the CDK deployment can build/run
     else:
-        if args.infrastructure:
-            build_infrastructure()
         if args.buisness_logic:
             build_logic()
+        if args.infrastructure:
+            build_infrastructure()
 
 
 if __name__ == "__main__":
