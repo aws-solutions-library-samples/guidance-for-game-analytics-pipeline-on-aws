@@ -36,7 +36,7 @@ new InfrastructureStack(app, "CentralizedGameAnalytics", {
 
 // Deployment through pipeline
 new PipelineStack(app, "PipelineStack", {
-    stackName: `${prod?.NAME}-Toolchain`,
+    stackName: `${config.WORKLOAD_NAME}-Toolchain`,
     config,
     env,
 });
