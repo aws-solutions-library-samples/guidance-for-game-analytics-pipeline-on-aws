@@ -128,18 +128,23 @@ Once you will have to add your own custom configuration settings, and saved the 
     npm run deploy
     ```
 
-### Development Infrastructure
+After the solution has been deployed, two CloudFormation stacks are created within you AWS Account, and AWS Region:
 
+1. `PROD-<WORKLOAD NAME>`: The deployed version of the solution infrastructure.
+2. `<WORKLOAD NAME>-Toolchain`:  The CI/CD Pipeline for the solution.
+
+### Deployed Infrastructure
+
+The stack hosts the deployed production version of the AWS resources for you to validate, and further opotimize the solution for your use case. 
 
 ### CI/CD Toolchain
 
-
-## Continuous Integration and Continuous Deployment of the Solution
-Once the CI/CD pipeline has been deployed, trigger the solution deployment, by committing the source code into the newly create CodeCommit repository, using the following steps:
+Once deployed solution has been validated, or further optimized for your use case, you can trigger  the continuos solution deployment, by committing any updated source code into the newly create CodeCommit repository, using the following steps:
 
 1. Copy the URL for cloning CodeCommit repository that you specified in the `config.yanl` file. See the **View repository details (console)** section of the [AWS CodeCommit User Guid](https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-view-repository-details.html) for more information on how to vie the *Clone URL* for the repository.
 2. Create a news Git repository, by running the following command:
    ```bash
+   rm -rf .git
    git init --initial-branch=main
    ```
 3. Add the CodeCommit repository as the origin, using the following command:
@@ -155,7 +160,7 @@ Once the CI/CD pipeline has been deployed, trigger the solution deployment, by c
 5. Review the [Implementation Guide](https://docs.aws.amazon.com/solutions/latest/game-analytics-pipeline/welcome.html). This guide provides an overview of the solution and how it works. A [PDF version](https://docs.aws.amazon.com/solutions/latest/game-analytics-pipeline/game-analytics-pipeline.pdf) is also available.
 6. Review the [Developer Guide](https://solutions-reference.s3.amazonaws.com/game-analytics-pipeline/latest/game-analytics-pipeline-developer-guide.pdf) which provides information about customizing and extending the Game Analytics Pipeline solution. It includes detailed information about how the solution components work and how they can be customized.
 
-Make any code changes to subsequently optimize the solution for your use case. Committing these changes will trigger a subsequent continuous integration, and deployment.
+Make any code changes to subsequently optimize the solution for your use case. Committing these changes will trigger a subsequent continuous integration, and deployment of the deployed production stack, `PROD-<WORKLOAD NAME>`.
 
 ---
 # Security
