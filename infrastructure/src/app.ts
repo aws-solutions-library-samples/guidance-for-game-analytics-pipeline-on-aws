@@ -29,14 +29,14 @@ const env = { region, account };
 
 // Core infrastructure
 new InfrastructureStack(app, "CentralizedGameAnalytics", {
-    stackName: `${prod?.NAME}-CentralizedGameAnalytics`,
+    stackName: `${prod?.NAME}-${config.WORKLOAD_NAME}`,
     config,
     env,
 });
 
 // Deployment through pipeline
 new PipelineStack(app, "PipelineStack", {
-    stackName: `Toolchain-${prod?.NAME}`,
+    stackName: `${prod?.NAME}-Toolchain`,
     config,
     env,
 });
