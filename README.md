@@ -1,8 +1,28 @@
 # Game Analytics Pipeline on AWS
 
+## Table of Content
+- [Game Analytics Pipeline on AWS](#game-analytics-pipeline-on-aws)
+  - [Table of Content](#table-of-content)
+  - [Overview](#overview)
+  - [Prerequisites](#prerequisites)
+  - [Solution Configuration and Customization](#solution-configuration-and-customization)
+    - [Configuration Setup](#configuration-setup)
+    - [Custom Settings](#custom-settings)
+  - [Solution Deployment](#solution-deployment)
+    - [Deployed Infrastructure](#deployed-infrastructure)
+    - [CI/CD Toolchain](#cicd-toolchain)
+  - [Next Steps](#next-steps)
+  - [Cleanup](#cleanup)
+- [Security](#security)
+- [License](#license)
+
+
+## Overview
+
 The Game Analytics Pipeline solution helps game developers to apply a flexible, and scalable DataOps methodology to their games. Allowing them to continuously integrate, and continuously deploy (CI/CD) a scalable serverless data pipeline for ingesting, storing, and analyzing telemetry data generated from games, and services. The solution supports streaming ingestion of data, allowing users to gain critical insights from their games, and other applications in near real-time, allowing them to focus on expanding, and improving game experience almost immediately, instead of managing the underlying infrastructure operations. Since the solution has been codified as a CDK application, game developers can determine the best solution modules that fit their use case, allowing them to test, and QA the best architecture before deploying into production. This modular system allows for additional AWS capabilities, such as AI/ML models, to be integrated into the architecture in order to further support real-time decision making, and automated LiveOps using AIOps, to further enhance player engagement. Essentially allowing developers to focus on expanding game functionality, rather than managing the underlying infrastructure operations.
 
 ![Architecture](./docs/architecture.png)
+
 ## Prerequisites
 
 Before deploying the solution, ensure that the following required tools have been installed:
@@ -157,10 +177,19 @@ Once deployed solution has been validated, or further optimized for your use cas
    git commit -m "Initial commit"
    git push --set-upstream origin
    ```
-5. Review the [Implementation Guide](https://docs.aws.amazon.com/solutions/latest/game-analytics-pipeline/welcome.html). This guide provides an overview of the solution and how it works. A [PDF version](https://docs.aws.amazon.com/solutions/latest/game-analytics-pipeline/game-analytics-pipeline.pdf) is also available.
-6. Review the [Developer Guide](https://solutions-reference.s3.amazonaws.com/game-analytics-pipeline/latest/game-analytics-pipeline-developer-guide.pdf) which provides information about customizing and extending the Game Analytics Pipeline solution. It includes detailed information about how the solution components work and how they can be customized.
 
 Make any code changes to subsequently optimize the solution for your use case. Committing these changes will trigger a subsequent continuous integration, and deployment of the deployed production stack, `PROD-<WORKLOAD NAME>`.
+
+## Next Steps
+
+Review the [Implementation Guide](https://docs.aws.amazon.com/solutions/latest/game-analytics-pipeline/welcome.html), and the the [Developer Guide](https://solutions-reference.s3.amazonaws.com/game-analytics-pipeline/latest/game-analytics-pipeline-developer-guide.pdf) which provides information about customizing and extending the Game Analytics Pipeline solution. It includes detailed information about how the solution components work and how they can be customized, along with instructions on how to create, and use sample events for testing game data ingest. These guides also provide further information on how to create and visualize data using Amazon QuickSight.
+
+
+## Cleanup
+
+To clean up any of the deployed resources, you can either delete the stack through the AWS CloudFormation console, or run the `cdk destroy` command.
+
+>__NOTE:__ Deleting the deployed resources will not delete the Amazon S3 bucket, in order to protect any game data already ingested, and stored with the data lake. The Amazon S3 Bucket, and data, can be deleted from Amazon S3 using the Amazon S3 console, AWS SDKs, AWS Command Line Interface (AWS CLI), or REST API. See the [Deleting Amazon S3 objects](https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeletingObjects.html) section of the user guide for mor information.
 
 ---
 # Security
