@@ -30,6 +30,7 @@ const env = { region, account };
 // Core infrastructure
 new InfrastructureStack(app, "CentralizedGameAnalytics", {
     stackName: `${prod?.NAME}-${config.WORKLOAD_NAME}`,
+    description : "Guidance for the Game Analytics Pipeline on AWS (SO0096 )",
     config,
     env,
 });
@@ -37,6 +38,7 @@ new InfrastructureStack(app, "CentralizedGameAnalytics", {
 // Deployment through pipeline
 new PipelineStack(app, "PipelineStack", {
     stackName: `${config.WORKLOAD_NAME}-Toolchain`,
+    description : "Guidance for the Game Analytics Pipeline on AWS (SO0096 )",
     config,
     env,
 });
