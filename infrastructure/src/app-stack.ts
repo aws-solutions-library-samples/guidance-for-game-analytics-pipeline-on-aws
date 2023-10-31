@@ -44,7 +44,7 @@ export interface InfrastructureStackProps extends cdk.StackProps {
 export class InfrastructureStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: InfrastructureStackProps) {
     super(scope, id, props);
-    const codePath = "../../buisness-logic";
+    const codePath = "../../business-logic";
 
     // ---- S3 Buckets ---- //
 

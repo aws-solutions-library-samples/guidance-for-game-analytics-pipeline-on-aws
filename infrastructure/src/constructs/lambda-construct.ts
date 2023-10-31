@@ -46,7 +46,7 @@ export class LambdaConstruct extends Construct {
     /* eslint-disable @typescript-eslint/no-unused-vars */
     props = { ...defaultProps, ...props };
 
-    const codePath = "../../../buisness-logic";
+    const codePath = "../../../business-logic";
 
     // ---- Functions ---- //
     /* The following variables define the necessary resources for the `GluePartitionCreator` serverless

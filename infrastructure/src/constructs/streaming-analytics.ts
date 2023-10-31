@@ -100,7 +100,7 @@ const inputSchema: kinesisanalytics.CfnApplication.InputSchemaProperty = {
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface StreamingAnalyticsConstructProps extends cdk.StackProps {
   /**
-   * Base Codepath for buisness logic folder
+   * Base Codepath for business logic folder
    */
   baseCodePath: string;
   gameEventsStream: kinesis.IStream;

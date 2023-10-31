@@ -54,11 +54,11 @@ def build_web_app():
 
 def build_logic():
 
-    return_dir = change_dir_with_return("./buisness-logic")
+    return_dir = change_dir_with_return("./business-logic")
 
     cmd = [sys.executable, "build.py"]
     proc = subprocess.run(cmd, stderr=subprocess.STDOUT, shell=False)
-    exit_on_failure(proc.returncode, "Buisness Logic build failed")
+    exit_on_failure(proc.returncode, "Business Logic build failed")
 
     return_dir()
 
@@ -69,8 +69,8 @@ def main():
     )
     parser.add_argument("--infrastructure",
                         action="store_true", help="builds infrastructure")
-    parser.add_argument("--buisness_logic",
-                        action="store_true", help="builds buisness logic")
+    parser.add_argument("--business_logic",
+                        action="store_true", help="builds business logic")
     args = parser.parse_args()
 
     if len(sys.argv) == 1:
@@ -79,7 +79,7 @@ def main():
         build_infrastructure()
         # needs to be last to ensure the dependencies are built before the CDK deployment can build/run
     else:
-        if args.buisness_logic:
+        if args.business_logic:
             build_logic()
         if args.infrastructure:
             build_infrastructure()
