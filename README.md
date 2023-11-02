@@ -11,6 +11,7 @@
   - [Sample Code Deployment](#sample-code-deployment)
     - [Deployed Infrastructure](#deployed-infrastructure)
     - [CI/CD Toolchain](#cicd-toolchain)
+  - [Next Steps](#next-steps)
   - [Cleanup](#cleanup)
 - [Security](#security)
 - [License](#license)
@@ -178,6 +179,8 @@ Once the deployed infrastructure has been validated, or further optimized for yo
    git commit -m "Initial commit"
    git push --set-upstream origin
    ```
+
+## Next Steps
 
 Make any code changes to subsequently optimize the guidance for your use case. Committing these changes will trigger a subsequent continuous integration, and deployment of the deployed production stack, `PROD-<WORKLOAD NAME>`.
 
