@@ -11,7 +11,6 @@
   - [Sample Code Deployment](#sample-code-deployment)
     - [Deployed Infrastructure](#deployed-infrastructure)
     - [CI/CD Toolchain](#cicd-toolchain)
-  - [Next Steps](#next-steps)
   - [Cleanup](#cleanup)
 - [Security](#security)
 - [License](#license)
@@ -181,11 +180,6 @@ Once the deployed infrastructure has been validated, or further optimized for yo
    ```
 
 Make any code changes to subsequently optimize the guidance for your use case. Committing these changes will trigger a subsequent continuous integration, and deployment of the deployed production stack, `PROD-<WORKLOAD NAME>`.
-
-## Next Steps
-
-Review the [Implementation Guide](https://docs.aws.amazon.com/solutions/latest/game-analytics-pipeline/welcome.html), and the the [Developer Guide](https://solutions-reference.s3.amazonaws.com/game-analytics-pipeline/latest/game-analytics-pipeline-developer-guide.pdf) which provides information about customizing and extending the Game Analytics Pipeline guidance. It includes detailed information about how the various components work, and how they can be customized, along with instructions on how to create, and use sample events for testing game data ingest. These guides also provide further information on how to create and visualize data using Amazon QuickSight.
-
 
 ## Cleanup
 
