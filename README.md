@@ -1,4 +1,4 @@
-****# Game Analytics Pipeline on AWS
+# Game Analytics Pipeline on AWS
 
 ## Table of Content
 - [Game Analytics Pipeline on AWS](#game-analytics-pipeline-on-aws)
