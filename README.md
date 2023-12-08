@@ -33,7 +33,7 @@ Before deploying the sample code, ensure that the following required tools have 
 - **Python 3**
 - **NodeJS 16.20.0**
 
->__NOTE:__ It is recommended that that you configure, and deploy the sample code using a pre-configured __[AWS Cloud9](https://aws.amazon.com/cloud9/)__ development environment. Refer to the _[Individual user setup for AWS Cloud9](https://docs.aws.amazon.com/cloud9/latest/user-guide/setup-express.html)_ for more information on how to set up Cloud9 as the only user in the AWS account. The Cloud9 IDE may have an updated version of the CDK installed therefore, run the `npm install -g aws-cdk@2.92.0 --force` to ensure that version `2.92.0` of the CDK is installed.
+>__NOTE:__ It is recommended that that you configure, and deploy the sample code using a pre-configured __[AWS Cloud9](https://aws.amazon.com/cloud9/)__ development environment. Refer to the _[Individual user setup for AWS Cloud9](https://docs.aws.amazon.com/cloud9/latest/user-guide/setup-express.html)_ for more information on how to set up Cloud9 as the only user in the AWS account. The Cloud9 IDE may have an updated version of the CDK installed therefore, run the `npm install -g aws-cdk@2.92.0 --force` to ensure that version `2.92.0` of the CDK is installed. Additionally, due to the fact that you will be building NodeJS packages, ensure that there is sufficient disk space on the Cloud9 instance. See __[Resize an Amazon EBS volume](https://docs.aws.amazon.com/cloud9/latest/user-guide/move-environment.html#move-environment-resize)__ for more information.
 
 ## Sample Code Configuration and Customization
 
@@ -58,7 +58,7 @@ The following settings can be adjusted to suite your use case:
 - `WORKLOAD_NAME`
   - *Description:* The name of the workload that will deployed. This name will be used as a prefix for for any component deployed into your AWS Account.
   - *Type:* String 
-  - *Example:* `"GameAnalyticsSo"`
+  - *Example:* `"GameAnalyticsPipeline"`
 - `CDK_VERSION`
   - *Description:* The version of the CDK installed in your environment. To see the current version of the CDK, run the `cdk --version` command. The guidance has been tested using CDK version `2.92.0` of the CDK. If you are using a different version of the CDK, ensure that this version is also reflected in the `./infrastructure/package.json` file.
   - *Type:* String

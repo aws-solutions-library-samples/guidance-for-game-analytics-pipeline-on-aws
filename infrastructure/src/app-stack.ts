@@ -79,7 +79,7 @@ export class InfrastructureStack extends cdk.Stack {
       ],
     });
 
-    // Core bucket for the solution, holds all pre and post proccessed analytics data, athena and glue are backed by this bucket as well
+    // Core bucket for the solution, holds all pre and post processed analytics data, athena and glue are backed by this bucket as well
     const analyticsBucket = new s3.Bucket(this, "AnalyticsBucket", {
       objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
       removalPolicy: props.config.DEV_MODE
@@ -228,7 +228,7 @@ export class InfrastructureStack extends cdk.Stack {
         : cdk.RemovalPolicy.RETAIN,
     });
 
-    // Managed authorizations for applicaitons (Api keys, etc.)
+    // Managed authorizations for applications (Api keys, etc.)
     const authorizationsTable = new dynamodb.Table(
       this,
       "AuthorizationsTable",
@@ -250,6 +250,42 @@ export class InfrastructureStack extends cdk.Stack {
       }
     );
 
+    // Add a Global Secondary index 'ApplicationAuthorizations' to the AuthorizationsTable
+    authorizationsTable.addGlobalSecondaryIndex(
+      {
+        indexName: "ApplicationAuthorizations",
+        partitionKey: {
+          name: "application_id",
+          type: dynamodb.AttributeType.STRING,
+        },
+        sortKey: {
+          name: "api_key_id",
+          type: dynamodb.AttributeType.STRING,
+        },
+        projectionType: dynamodb.ProjectionType.ALL,
+      }
+    );
+
+    // Add a Global Secondary index 'ApiKeyValues' to the AuthorizationsTable
+    authorizationsTable.addGlobalSecondaryIndex(
+      {
+        indexName: "ApiKeyValues",
+        partitionKey: {
+          name: "api_key_value",
+          type: dynamodb.AttributeType.STRING,
+        },
+        sortKey: {
+          name: "application_id",
+          type: dynamodb.AttributeType.STRING,
+        },
+        projectionType: dynamodb.ProjectionType.INCLUDE,
+        nonKeyAttributes: [
+          "api_key_id",
+          "enabled",
+        ]
+      }
+    );
+
     // ---- Athena ---- //
     // Define the resources for the `GameAnalyticsWorkgroup` Athena workgroup
     const gameAnalyticsWorkgroup = new athena.CfnWorkGroup(
@@ -257,7 +293,7 @@ export class InfrastructureStack extends cdk.Stack {
       "GameAnalyticsWorkgroup",
       {
         name: `GameAnalyticsWorkgroup-${cdk.Aws.STACK_NAME}`,
-        description: "Default workgroup for the soltion workload",
+        description: "Default workgroup for the solution workload",
         recursiveDeleteOption: true, // delete the associated queries when stack is deleted
         state: "ENABLED",
         workGroupConfiguration: {
@@ -281,7 +317,7 @@ export class InfrastructureStack extends cdk.Stack {
       authorizationsTable,
     });
 
-    // Event rule that creates partitions autoomatically every hour for new data
+    // Event rule that creates partitions automatically every hour for new data
     const createPartition = new events.Rule(this, "CreatePartition", {
       schedule: events.Schedule.cron({
         minute: "0",
