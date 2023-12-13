@@ -566,7 +566,29 @@ export class ApiConstruct extends Construct {
                       "'x-amz-json-1.1'",
                   },
                   requestTemplates: {
-                    "application/json": `{ "StreamName": ${props.gameEventsStream.streamName}, "Records": [\n    #set($i = 0)\n    #foreach($event in $input.path(\'$.events\'))\n    #set($data = $input.json("$.events[$i]"))\n    #set($output = "{\n        ""event"": $data,\n        ""aws_ga_api_validated_flag"": true,\n        ""aws_ga_api_requestId"": ""$context.requestId"",\n        ""aws_ga_api_requestTimeEpoch"": $context.requestTimeEpoch,\n        ""application_id"": ""$util.escapeJavaScript($input.params().path.get(\'applicationId\'))""\n    }" )\n    {\n        "Data": "$util.base64Encode($output)",\n        "PartitionKey": "$event.event_id"\n    }#if($foreach.hasNext),#end\n    #set($i = $i + 1)\n    #end\n] }\n`,
+                    "application/json": `
+                    {
+                      "StreamName": "${props.gameEventsStream.streamName}",
+                      "Records": [
+                        #set($i = 0)
+                        #foreach($event in $input.path('$.events'))
+                          #set($data = $input.json("$.events[$i]"))
+                          #set($output = "{
+                            ""event"": $data,
+                            ""aws_ga_api_validated_flag"": true,
+                            ""aws_ga_api_requestId"": ""$context.requestId"",
+                            ""aws_ga_api_requestTimeEpoch"": $context.requestTimeEpoch,
+                            ""application_id"": ""$util.escapeJavaScript($input.params().path.get('applicationId'))""
+                          }" )
+                          {
+                            "Data": "$util.base64Encode($output)",
+                            "PartitionKey": "$event.event_id"
+                          }#if($foreach.hasNext),#end
+                          #set($i = $i + 1)
+                        #end
+                      ]
+                    }
+                    `,
                   },
                   responses: {
                     default: {
