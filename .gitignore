@@ -6,9 +6,6 @@ __pycache__
 .venv
 *.egg-info
 
-# Infrastructure
-infrastructure/config.yaml
-
 # CDK asset staging directory
 .cdk.staging
 cdk.out
