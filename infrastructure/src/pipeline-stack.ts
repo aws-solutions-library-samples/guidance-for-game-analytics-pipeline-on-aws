@@ -103,6 +103,9 @@ export class PipelineStack extends cdk.Stack {
       config.WORKLOAD_NAME,
       {
         config,
+        tags: {
+          application: "GAP"
+        }
       }
     );
 
