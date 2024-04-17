@@ -42,3 +42,5 @@ new PipelineStack(app, "PipelineStack", {
     config,
     env,
 });
+
+cdk.Tags.of(app).add('Application', 'GAP');
