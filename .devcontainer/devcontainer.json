@@ -21,7 +21,8 @@
 			"extensions": [
 				"ms-python.python",
 				"streetsidesoftware.code-spell-checker",
-                "amazonwebservices.aws-toolkit-vscode"
+                "amazonwebservices.aws-toolkit-vscode",
+				"AmazonWebServices.amazon-q-vscode"
 			]
 		}
 	}
