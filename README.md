@@ -29,13 +29,14 @@ The Game Analytics Pipeline guidance helps game developers to apply a flexible, 
 
 Before deploying the sample code, ensure that the following required tools have been installed:
 
-- **Visual Studio Code**
-- **Docker Desktop**
+- **[GitHub Account](https://docs.github.com/en/get-started/start-your-journey/creating-an-account-on-github)**
+- **[Visual Studio Code](https://code.visualstudio.com/Download)**
+- **[Docker Desktop (local)](https://www.docker.com/products/docker-desktop/)**
 - **AWS Cloud Development Kit (CDK) 2.92**
-- **Python 3**
-- **NodeJS 20.0.0**
+- **Python >=3.8**
+- **NodeJS >= 20.0.0**
 
->__NOTE:__ It is recommended that that you configure, and deploy the sample code using a pre-configured __[AWS Cloud9](https://aws.amazon.com/cloud9/)__ development environment. Refer to the _[Individual user setup for AWS Cloud9](https://docs.aws.amazon.com/cloud9/latest/user-guide/setup-express.html)_ for more information on how to set up Cloud9 as the only user in the AWS account. The Cloud9 IDE may have an updated version of the CDK installed therefore, run the `npm install -g aws-cdk@2.92.0 --force` to ensure that version `2.92.0` of the CDK is installed. Additionally, due to the fact that you will be building NodeJS packages, ensure that there is sufficient disk space on the Cloud9 instance. See __[Resize an Amazon EBS volume](https://docs.aws.amazon.com/cloud9/latest/user-guide/move-environment.html#move-environment-resize)__ for more information.
+>__NOTE:__ A Github [dev container](https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/adding-a-dev-container-configuration/introduction-to-dev-containers) configuration has been configured for you, with the necessary *Python*, *NodeJS*, and the *AWS CDK* versions. It is **recommended**, that you use the pre-configured [Visual Studio Code Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers) as your development environment.  
 
 ## Sample Code Configuration and Customization
 
