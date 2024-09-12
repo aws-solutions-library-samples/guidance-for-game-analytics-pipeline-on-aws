@@ -36,7 +36,7 @@ Before deploying the sample code, ensure that the following required tools have 
 - **Python >=3.8**
 - **NodeJS >= 20.0.0**
 
->__NOTE:__ A Github [dev container](https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/adding-a-dev-container-configuration/introduction-to-dev-containers) configuration has been configured for you, with the necessary *Python*, *NodeJS*, and the *AWS CDK* versions. It is **recommended**, that you use the pre-configured [Visual Studio Code Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers) as your development environment.  
+>__NOTE:__ A Visual Studio Code [dev container](https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/adding-a-dev-container-configuration/introduction-to-dev-containers) configuration has been provided for you. This image container the necessary *Python*, *NodeJS*, and the *AWS CDK* versions needed to implement this guidance. It is **recommended**, that you use the pre-configured [environment](https://code.visualstudio.com/docs/devcontainers/containers) as your development environment.  
 
 ## Sample Code Configuration and Customization
 
@@ -46,7 +46,11 @@ Before deploying the sample code, it needs to be customized to suite your specif
 
 The following steps will walk you through how to customize the sample code configuration to suite your usage requirements:
 
-1. A configuration template file, called `config.yaml.TEMPLATE` has been provided as a reference for use case customizations. Run the following command to create a usable copy of this file:
+1. Log into your GitHub account, and [fork this repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) into your GitHub account.
+
+2. Follow the instructions on how to (Create a connection to GitHub)[https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html#connections-create-github-console], to connect AWS CodePipeline to the forked copy of this repository. Once the connection has been created, make a note of the Amazon Resource Name (ARN) for the connection.
+
+3. A configuration template file, called `config.yaml.TEMPLATE` has been provided as a reference for use case customizations. Run the following command to create a usable copy of this file:
 
     ```bash
     cp ./infrastructure/config.yaml.TEMPLATE ./infrastructure/config.yaml
@@ -122,6 +126,17 @@ The following settings can be adjusted to suite your use case:
   - *Description:* The email address to receive operational notifications, and delivered by CloudWatch.
   - *Type:* String
   - *Example:* `"user@example.com"`
+- `GITHUB_USERNAME`
+  - *Description:* The user name for the Github account, into which the guidance has been forked.
+  - *Type:* String
+- `GITHUB_REPO_NAME`
+  - *Description:* The repository name of the fork in your GitHub account. 
+  - *Type:* String
+  - *Example:* `"guidance-for-game-analytics-pipeline-on-aws"`
+- `CONNECTION_ARN`
+  - *Description:* The ARN for the GitHub connection, created during the [Configuration Setup](#configuration-setup) section.
+  - *Type* String
+  - *Example:* `"arn:aws:codeconnections:us-east-1:123456789123:connection/6506b29d-429e-4bf3-8ab4-78cb2fc011b3"`
 - `accounts`
   - *Description:* Leverages CDK Cross-account, Cross-region capabilities for deploying separate CI/CD pipeline stages to separate AWS Accounts, AWS Regions. For more information on Cross-account CI/CD pipelines, using the CDK, refer to the [Building a Cross-account CI/CD Pipeline](https://catalog.us-east-1.prod.workshops.aws/workshops/00bc829e-fd7c-4204-9da1-faea3cf8bd88/en-US/introduction) workshop. 
   - *Example:*

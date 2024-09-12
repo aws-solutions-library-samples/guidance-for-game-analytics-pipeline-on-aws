@@ -17,7 +17,6 @@ export interface GameAnalyticsPipelineConfig {
     NODE_VERSION: string;
     PYTHON_VERSION: string;
     EMAIL_ADDRESS: string;
-    CODECOMMIT_REPO: string;
     API_STAGE_NAME: string;
     RAW_EVENTS_PREFIX: string;
     PROCESSED_EVENTS_PREFIX: string;
@@ -27,4 +26,7 @@ export interface GameAnalyticsPipelineConfig {
     ENABLE_STREAMING_ANALYTICS: boolean;
     S3_BACKUP_MODE: boolean;
     CLOUDWATCH_RETENTION_DAYS: number;
+    GITHUB_USERNAME: string;
+    GITHUB_REPO_NAME: string;
+    CONNECTION_ARN: string;
 }
