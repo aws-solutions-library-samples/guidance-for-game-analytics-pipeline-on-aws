@@ -50,7 +50,7 @@ The following steps will walk you through how to customize the sample code confi
 
 2. Follow the instructions on how to (Create a connection to GitHub)[https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html#connections-create-github-console], to connect AWS CodePipeline to the forked copy of this repository. Once the connection has been created, make a note of the Amazon Resource Name (ARN) for the connection.
 
-3. A configuration template file, called `config.yaml.TEMPLATE` has been provided as a reference for use case customizations. Run the following command to create a usable copy of this file:
+3. A configuration template file, called `config.yaml.TEMPLATE` has been provided as a reference for use case customizations. Using the provided Visual Studio Code devcontainer environment, run the following command to create a usable copy of this file:
 
     ```bash
     cp ./infrastructure/config.yaml.TEMPLATE ./infrastructure/config.yaml
