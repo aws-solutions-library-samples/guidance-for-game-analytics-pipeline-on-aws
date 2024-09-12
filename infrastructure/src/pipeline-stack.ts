@@ -14,7 +14,6 @@
  */
 
 import * as cdk from "aws-cdk-lib";
-import * as codecommit from "aws-cdk-lib/aws-codecommit";
 import * as codebuild from "aws-cdk-lib/aws-codebuild";
 import * as cdkPipelines from "aws-cdk-lib/pipelines";
 import { Construct } from "constructs";
@@ -38,15 +37,12 @@ export class PipelineStack extends cdk.Stack {
     /* eslint-disable @typescript-eslint/no-unused-vars */
     props = { ...defaultProps, ...props };
 
-    // Create default repo, will start empty and fail, need to commit this repo to kick off a successful pipeline
-    const sourceRepo = new codecommit.Repository(this, "SourceRepository", {
-      repositoryName: props.config.CODECOMMIT_REPO,
-      description: `Source Code Repository for the ${props.config.WORKLOAD_NAME}`,
-    });
-
-    const pipelineSource = cdkPipelines.CodePipelineSource.codeCommit(
-      sourceRepo,
-      "main"
+    const pipelineSource = cdkPipelines.CodePipelineSource.connection(
+      props.config.GITHUB_USERNAME + "/" + props.config.GITHUB_REPO_NAME,
+      "main",
+      {
+        connectionArn: props.config.CONNECTION_ARN
+      }
     );
 
     // Buildpsec used for synth
