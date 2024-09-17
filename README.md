@@ -1,5 +1,9 @@
 # Game Analytics Pipeline on AWS
 
+>[!IMPORTANT] 
+>This Guidance requires the use of AWS [CodeCommit](https://docs.aws.amazon.com/codecommit/latest/userguide/welcome.html), which is no longer available to new customers. Existing customers of AWS CodeCommit can continue using and deploying this Guidance as normal.
+
+
 ## Table of Content
 - [Game Analytics Pipeline on AWS](#game-analytics-pipeline-on-aws)
   - [Table of Content](#table-of-content)
