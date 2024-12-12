@@ -94,6 +94,10 @@ The following settings can be adjusted to suite your use case:
   - *Description:* The number of Kinesis shards, or sequence of data records, to use for the data stream. The default value has been set to `1` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. For information about determining the shards required for your use case, refer to [Amazon Kinesis Data Streams Terminology and Concepts](https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html) in the *Amazon Kinesis Data Streams Developer Guide*.
   - *Type:* Integer
   - *Example:* `1`
+- `STREAM_MODE`
+  - *Description:* The Kinesis stream capacity mode. When set to `PROVISIONED`, the stream will be created with the number of shards specified in `STREAM_SHARD_COUNT`. When set to `ON_DEMAND`, the number of shards will be scaled automatically to handle throughput and the `STREAM_SHARD_COUNT` setting will be ignored. This value can be changed at a later time and re-deployed through CI/CD. For information about determining the capacity mode required for your use case, refer to [Choose the data stream capacity mode](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html) in the *Amazon Kinesis Data Streams Developer Guide*.
+  - *Type:* String
+  - *Example:* `"PROVISIONED"` or `"ON_DEMAND"`
 - `CODECOMMIT_REPO`
   - *Description:* The name of the [AWS CodeCoomit](https://aws.amazon.com/codecommit/), repository used as source control for the codified infrastructure, and CI/CD pipeline.
   - *Type:* String

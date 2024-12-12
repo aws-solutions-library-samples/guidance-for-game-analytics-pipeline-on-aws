@@ -208,9 +208,13 @@ export class InfrastructureStack extends cdk.Stack {
     // ---- Kinesis ---- //
 
     // Input stream for applications
-    const gameEventsStream = new kinesis.Stream(this, "GameEventStream", {
-      shardCount: props.config.STREAM_SHARD_COUNT,
-    });
+    const gameEventsStream = new kinesis.Stream(this, "GameEventStream",
+      (props.config.STREAM_MODE === "PROVISIONED") ? {
+        shardCount: props.config.STREAM_SHARD_COUNT,
+        streamMode: kinesis.StreamMode.PROVISIONED,
+      } : {
+        streamMode: kinesis.StreamMode.ON_DEMAND,
+      });
 
     // ---- DynamoDB Tables ---- //
 
@@ -624,11 +628,11 @@ export class InfrastructureStack extends cdk.Stack {
           Functions: {
             AnalyticsProcessingFunction: streamingAnalyticsConstruct
               ? streamingAnalyticsConstruct.analyticsProcessingFunction
-                  .functionName
+                .functionName
               : cdk.Aws.NO_VALUE,
             AnalyticsProcessingFunctionArn: streamingAnalyticsConstruct
               ? streamingAnalyticsConstruct.analyticsProcessingFunction
-                  .functionName
+                .functionName
               : cdk.Aws.NO_VALUE,
             EventsProcessingFunction:
               lambdaConstruct.eventsProcessingFunction.functionName,
