@@ -34,6 +34,7 @@ import { GameAnalyticsPipelineConfig } from "./helpers/config-types";
 import { StreamingIngestionConstruct } from "./constructs/streaming-ingestion-construct";
 import { ApiConstruct } from "./constructs/api-construct";
 import { StreamingAnalyticsConstruct } from "./constructs/streaming-analytics";
+import { FlinkConstruct } from "./constructs/flink";
 import { MetricsConstruct } from "./constructs/metrics-construct";
 import { LambdaConstruct } from "./constructs/lambda-construct";
 
@@ -570,6 +571,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     // Initialize variable, will be checked to see if set properly
     let streamingAnalyticsConstruct;
+    let flinkConstruct;
 
     // ---- Streaming Analytics ---- //
     // Create the following resources if and is `ENABLE_STREAMING_ANALYTICS` constant is `True`
@@ -578,6 +580,17 @@ export class InfrastructureStack extends cdk.Stack {
       streamingAnalyticsConstruct = new StreamingAnalyticsConstruct(
         this,
         "StreamingAnalyticsConstruct",
+        {
+          solutionHelper: lambdaConstruct.solutionHelper,
+          gameEventsStream: gameEventsStream,
+          solutionHelperProvider: solutionHelperProvider,
+          baseCodePath: codePath,
+        }
+      );
+
+      flinkConstruct = new FlinkConstruct(
+        this,
+        "FlinkConstruct",
         {
           solutionHelper: lambdaConstruct.solutionHelper,
           gameEventsStream: gameEventsStream,
@@ -624,11 +637,11 @@ export class InfrastructureStack extends cdk.Stack {
           Functions: {
             AnalyticsProcessingFunction: streamingAnalyticsConstruct
               ? streamingAnalyticsConstruct.analyticsProcessingFunction
-                  .functionName
+                .functionName
               : cdk.Aws.NO_VALUE,
             AnalyticsProcessingFunctionArn: streamingAnalyticsConstruct
               ? streamingAnalyticsConstruct.analyticsProcessingFunction
-                  .functionName
+                .functionName
               : cdk.Aws.NO_VALUE,
             EventsProcessingFunction:
               lambdaConstruct.eventsProcessingFunction.functionName,
