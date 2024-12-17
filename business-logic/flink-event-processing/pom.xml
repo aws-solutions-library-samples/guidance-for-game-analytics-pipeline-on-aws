@@ -10,7 +10,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <buildDirectory>${project.basedir}/target</buildDirectory>
-        <zip.finalName>${project.name}-${project.version}</zip.finalName>
+        <zip.finalName>deploy</zip.finalName>
         <jar.finalName>pyflink-dependencies</jar.finalName>
         <flink.version>1.20.0</flink.version>
         <aws.connector.version>5.0.0-1.20</aws.connector.version>

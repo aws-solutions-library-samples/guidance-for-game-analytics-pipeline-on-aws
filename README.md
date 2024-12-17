@@ -36,6 +36,7 @@ Before deploying the sample code, ensure that the following required tools have 
 - **[GitHub Account](https://docs.github.com/en/get-started/start-your-journey/creating-an-account-on-github)**
 - **[Visual Studio Code](https://code.visualstudio.com/Download)**
 - **[Docker Desktop (local)](https://www.docker.com/products/docker-desktop/)**
+- **[Apache Maven](https://maven.apache.org/download.cgi)**
 - **AWS Cloud Development Kit (CDK) 2.92**
 - **Python >=3.8**
 - **NodeJS >= 20.0.0**
