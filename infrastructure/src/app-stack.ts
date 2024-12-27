@@ -596,6 +596,7 @@ export class InfrastructureStack extends cdk.Stack {
           gameEventsStream: gameEventsStream,
           solutionHelperProvider: solutionHelperProvider,
           baseCodePath: codePath,
+          config: props.config,
         }
       );
     }

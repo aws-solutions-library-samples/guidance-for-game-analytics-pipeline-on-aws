@@ -14,7 +14,6 @@
  */
 
 import * as cdk from "aws-cdk-lib";
-import { Construct } from "constructs";
 import * as kinesisanalytics from "aws-cdk-lib/aws-kinesisanalytics";
 import * as customresources from "aws-cdk-lib/custom-resources";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
@@ -27,6 +26,8 @@ import * as assets from "aws-cdk-lib/aws-s3-assets";
 
 import * as path from "path";
 import fs from "fs";
+import { Construct } from "constructs";
+import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface FlinkConstructProps extends cdk.StackProps {
@@ -37,6 +38,7 @@ export interface FlinkConstructProps extends cdk.StackProps {
   gameEventsStream: kinesis.IStream;
   solutionHelper: lambda.IFunction;
   solutionHelperProvider: customresources.Provider;
+  config: GameAnalyticsPipelineConfig;
 }
 
 const defaultProps: Partial<FlinkConstructProps> = {};
@@ -44,7 +46,8 @@ const defaultProps: Partial<FlinkConstructProps> = {};
 /**
  * Deploys the StreamingAnalytics construct
  *
- * Creates KDA application as well as Lambda Function for processing KDA output. Logs are stored in correct places
+ * Creates Managed Flink application, the aggregated metric output stream, as well as the Lambda Function for processing Managed Flink output sent to the aggregated metric output stream. 
+ * Logs are stored in correct places
  * and KDA app is started automatically using a custom resource
  */
 export class FlinkConstruct extends Construct {
@@ -61,6 +64,8 @@ export class FlinkConstruct extends Construct {
     /* eslint-disable @typescript-eslint/no-unused-vars */
     props = { ...defaultProps, ...props };
     const codePath = `../${props.baseCodePath}`;
+    const flinkAppName = `${cdk.Aws.STACK_NAME}-AnalyticsApplication`;
+
 
     /* The following variables define the necessary resources for the `AnalyticsProcessingFunction` serverless
             function. This function consumes outputs from Kinesis Data Analytics application for processing. */
@@ -136,13 +141,15 @@ export class FlinkConstruct extends Construct {
 
     // Create flink log groups and streams
     const flinkLogGroup = new logs.LogGroup(this, "flinkLogGroup", {
-      retention: logs.RetentionDays.ONE_MONTH // TODO: Make configurable
+      logGroupName: `/aws/kinesis-analytics/${flinkAppName}`,
+      retention: props.config.CLOUDWATCH_RETENTION_DAYS
     });
 
     const flinkLogStream = new logs.LogStream(
       this,
       "flinkLogStream",
       {
+        logStreamName: "kinesis-analytics-log-stream",
         logGroup: flinkLogGroup,
       }
     );
@@ -232,7 +239,6 @@ export class FlinkConstruct extends Construct {
       },
     });
 
-    const flinkAppName = `${cdk.Aws.STACK_NAME}-AnalyticsApplication`;
 
     /* The following defines the flink application used to process incoming game events and output them to the stream */
     const flinkApp = new kinesisanalytics.CfnApplicationV2(this, "FlinkApp",
@@ -316,7 +322,7 @@ export class FlinkConstruct extends Construct {
       })
     );
 
-    // starts the app
+    // starts the flink app
     const startFlinkAppCustomResource = new cdk.CustomResource(
       this,
       "StartFlinkApp",
@@ -336,6 +342,10 @@ export class FlinkConstruct extends Construct {
     // start flink app after output stream is created
     startFlinkAppCustomResource.node.addDependency(
       metricOutputStream
+    );
+    // start flink app after logging is setup
+    startFlinkAppCustomResource.node.addDependency(
+      flinkAppLogging
     );
     // start flink app after lambda is created
     startFlinkAppCustomResource.node.addDependency(
