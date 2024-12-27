@@ -122,7 +122,8 @@ export class FlinkConstruct extends Construct {
         startingPosition: lambda.StartingPosition.TRIM_HORIZON
       }
     );
-    // link event soruce to lambda
+
+    // link event source to lambda
     analyticsProcessingFunction.addEventSource(metricLambdaOutputSource);
 
     /* Create an s3 asset for the flink code package */
@@ -299,6 +300,48 @@ export class FlinkConstruct extends Construct {
       }
     )
     flinkAppLogging.addDependency(flinkApp)
+
+    // allow helper to see and start application
+    props.solutionHelper.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "FlinkStartPermissions",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "kinesisanalytics:StartApplication",
+          "kinesisanalytics:DescribeApplication",
+        ],
+        resources: [
+          `arn:${cdk.Aws.PARTITION}:kinesisanalytics:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:application/${flinkApp.applicationName}`,
+        ],
+      })
+    );
+
+    // starts the app
+    const startFlinkAppCustomResource = new cdk.CustomResource(
+      this,
+      "StartFlinkApp",
+      {
+        serviceToken: props.solutionHelperProvider.serviceToken,
+        properties: {
+          customAction: "startFlinkApp",
+          Region: cdk.Aws.REGION,
+          kinesisAnalyticsAppName: flinkApp.applicationName,
+        },
+      }
+    );
+    // start flink app after event stream is initialized
+    startFlinkAppCustomResource.node.addDependency(
+      props.gameEventsStream
+    );
+    // start flink app after output stream is created
+    startFlinkAppCustomResource.node.addDependency(
+      metricOutputStream
+    );
+    // start flink app after lambda is created
+    startFlinkAppCustomResource.node.addDependency(
+      analyticsProcessingFunction
+    );
+
 
     new cdk.CfnOutput(this, "FlinkAppOutput", {
       description:

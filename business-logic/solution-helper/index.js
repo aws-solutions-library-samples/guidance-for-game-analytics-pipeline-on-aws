@@ -29,6 +29,7 @@ const S3Helper = require("./lib/s3-helper.js");
 const AthenaHelper = require("./lib/athena-helper.js");
 const GlueHelper = require("./lib/glue-helper.js");
 const KinesisHelper = require("./lib/kinesis-helper.js");
+const FlinkHelper = require("./lib/flink-helper.js");
 const MetricsHelper = require("./lib/metrics-helper.js");
 const CloudWatchHelper = require("./lib/cloudwatch-helper.js");
 const { v4: uuidv4 } = require("uuid");
@@ -572,6 +573,46 @@ exports.handler = async (event, context, callback) => {
                     );
                     responseData = {
                         Error: "Failed to start the Kinesis Analytics app",
+                    };
+                    responseStatus = "FAILED";
+                    await sendResponse(
+                        event,
+                        callback,
+                        context.logStreamName,
+                        responseStatus,
+                        responseData
+                    );
+                }
+            } else if (event.ResourceProperties.customAction === "startFlinkApp") {
+                /**
+                 * Start Kinesis Analytics application
+                 */
+                let _kinesisHelper = new FlinkHelper();
+                console.log(
+                    `Starting Flink application ${event.ResourceProperties.kinesisAnalyticsAppName}`
+                );
+                try {
+                    await _kinesisHelper.startKinesisAnalyticsApp(
+                        event.ResourceProperties.kinesisAnalyticsAppName
+                    );
+                    responseData = {
+                        Message: "Started the Flink application",
+                    };
+                    responseStatus = "SUCCESS";
+                    await sendResponse(
+                        event,
+                        callback,
+                        context.logStreamName,
+                        responseStatus,
+                        responseData
+                    );
+                } catch (error) {
+                    console.log(
+                        `Failed to start the Flink application ${event.ResourceProperties.kinesisAnalyticsAppName}`,
+                        error
+                    );
+                    responseData = {
+                        Error: "Failed to start the Flink app",
                     };
                     responseStatus = "FAILED";
                     await sendResponse(
