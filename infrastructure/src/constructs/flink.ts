@@ -117,7 +117,7 @@ export class FlinkConstruct extends Construct {
 
     /* The following defines the output stream for windowed metrics*/
     const metricOutputStream = new kinesis.Stream(this, "metricOutputStream", {
-      shardCount: 1, // TODO: Make configurable
+      shardCount: props.config.METRIC_STREAM_SHARD_COUNT,
     });
 
     /* Create an output for the metric output stream to the processing lambda */
