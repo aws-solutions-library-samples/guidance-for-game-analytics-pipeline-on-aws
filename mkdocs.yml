@@ -1,6 +1,9 @@
 site_name: Game Analytics Pipeline on AWS
 site_description: Game Analytics Pipeline on AWS
 site_author: Amazon Web Services
+repo_url: https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
+repo_name: aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
+
 theme:
   name: material
   palette:
@@ -37,3 +40,4 @@ nav:
     - Upgrading from Kinesis Data Analytics to Managed Apache Flink: upgrading/flink-migration.md
 plugins:
   - search
+  - offline
