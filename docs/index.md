@@ -4,7 +4,7 @@ hide:
   - toc
 ---
 # Game Analytics Pipeline on AWS
-
+![Architecture](media/architecture.png)
 ## Overview
 
 The games industry is increasing adoption of the Games-as-a-Service operating model, where games have become more like a service than a product, and recurring revenue is frequently generated through in-app purchases, subscriptions, and other techniques. With this change, it is critical to develop a deeper understanding of how players use the features of games and related services. This understanding allows game developers to continually adapt, and make the necessary changes to keep players engaged.
