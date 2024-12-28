@@ -37,82 +37,82 @@ The following steps will walk you through how to customize the sample code confi
 
 The following settings can be adjusted to suite your use case:
 
-- `WORKLOAD_NAME`
+#### `WORKLOAD_NAME`
   - *Description:* The name of the workload that will deployed. This name will be used as a prefix for for any component deployed into your AWS Account.
   - *Type:* String 
   - *Example:* `"GameAnalyticsPipeline"`
-- `CDK_VERSION`
+#### `CDK_VERSION`
   - *Description:* The version of the CDK installed in your environment. To see the current version of the CDK, run the `cdk --version` command. The guidance has been tested using CDK version `2.92.0` of the CDK. If you are using a different version of the CDK, ensure that this version is also reflected in the `./infrastructure/package.json` file.
   - *Type:* String
   - *Example:* `"2.92.0"`
-- `NODE_VERSION`
+#### `NODE_VERSION`
   - *Description:* The version of NodeJS being used. The default value is set to `"latest"`, and should only be changed this if you require a specific version.
   - *Type:* String
   - *Example:* `"latest"`
-- `PYTHON_VESION`
+#### `PYTHON_VESION`
   - *Description:* The version of Python being used. The default value is set to `"3.8"`, and should only be changed if you require a specific version.
   - *Type:* String
   - *Example:* `"3.8"`
-- `DEV_MODE`
+#### `DEV_MODE`
   - *Description:* Wether or not to enable developer mode. This mode will ensure synthetic data, and shorter retention times are enabled. It is recommended that you set the value to `true` when first deploying the sample code for testing, as this setting will enable S3 versioning, and won't delete S3 buckets on teardown. This setting can be changed at a later time, and the infrastructure re-deployed through CI/CD.
   - *Type:* Boolean
   - *Example:* `true`
-- `ENABLE_STREAMING_ANALYTICS`
+#### `ENABLE_STREAMING_ANALYTICS`
   - *Description:* Wether or not to enable the [Kinesis Data Analytics](https://aws.amazon.com/kinesis/data-analytics/) component/module of the guidance. It is recommended to set this value to `true` when first deploying this sample code for testing, as this setting will allow you to verify if streaming analytics is required for your use case. This setting can be changed at a later time, and the guidance re-deployed through CI/CD.
   - *Type:* Boolean
   - *Example:* `true`
-- `STREAM_SHARD_COUNT`
+#### `STREAM_SHARD_COUNT`
   - *Description:* The number of Kinesis shards, or sequence of data records, to use for the data stream. The default value has been set to `1` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. For information about determining the shards required for your use case, refer to [Amazon Kinesis Data Streams Terminology and Concepts](https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html) in the *Amazon Kinesis Data Streams Developer Guide*.
   - *Type:* Integer
   - *Example:* `1`
-- `CODECOMMIT_REPO`
+#### `CODECOMMIT_REPO`
   - *Description:* The name of the [AWS CodeCoomit](https://aws.amazon.com/codecommit/), repository used as source control for the codified infrastructure, and CI/CD pipeline.
   - *Type:* String
   - *Example:* `"game-analytics-pipeline"`
-- `RAW_EVENTS_PREFIX`
+#### `RAW_EVENTS_PREFIX`
   - *Description:* The prefix for new/raw data files stored in S3.
   - *Type:* String
   - *Example:* `"raw_events"`
-- `PROCESSED_EVENTS_PREFIX`
+#### `PROCESSED_EVENTS_PREFIX`
   - *Description:* The prefix processed data files stored in S3.
   - *Type:* String
   - *Example:* `"processed_events"`
-- `RAW_EVENTS_TABLE`
+#### `RAW_EVENTS_TABLE`
   - *Description:* The name of the of the [AWS Glue table](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) within which all new/raw data is cataloged.
   - *Type:* String
   - *Example:* `"raw_events"`
-- `GLUE_TMP_PREFIX`
+#### `GLUE_TMP_PREFIX`
   - *Description:* The name of the temporary data store for AWS Glue.
   - *Type:* String
   - *Example:* `"glueetl-tmp"`
-- `S3_BACKUP_MODE`
+#### `S3_BACKUP_MODE`
   - *Description:* Wether or not to enable [Kinesis Data Firehose](https://aws.amazon.com/kinesis/data-firehose/) to send a backup of new/raw data to S3. The default value has been set to `false` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. 
   - *Type:* Boolean
   - *Example:* `false`
-- `CLOUDWATCH_RETENTION_DAYS`
+#### `CLOUDWATCH_RETENTION_DAYS`
   - *Description:* The default number of days in which [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) stores all the logs. The default value has been set to `30` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. 
   - *Type:* Integer
   - *Example:* `30`
-- `API_STAGE_NAME`
+#### `API_STAGE_NAME`
   - *Description:* The name of the REST API [stage](https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-stages.html) for the [Amazon API Gateway](https://aws.amazon.com/api-gateway/) configuration endpoint for sending telemetry data to the pipeline. This provides an integration option for applications that cannot integrate with Amazon Kinesis directly. The API also provides configuration endpoints for admins to use for registering their game applications with the guidance, and generating API keys for developers to use when sending events to the REST API. The default value is set to `live`.
   - *Type:* String
   - *Example:* `"live"`
-- `EMAIL_ADDRESS`
+#### `EMAIL_ADDRESS`
   - *Description:* The email address to receive operational notifications, and delivered by CloudWatch.
   - *Type:* String
   - *Example:* `"user@example.com"`
-- `GITHUB_USERNAME`
+#### `GITHUB_USERNAME`
   - *Description:* The user name for the Github account, into which the guidance has been forked.
   - *Type:* String
-- `GITHUB_REPO_NAME`
+#### `GITHUB_REPO_NAME`
   - *Description:* The repository name of the fork in your GitHub account. 
   - *Type:* String
   - *Example:* `"guidance-for-game-analytics-pipeline-on-aws"`
-- `CONNECTION_ARN`
+#### `CONNECTION_ARN`
   - *Description:* The ARN for the GitHub connection, created during the [Configuration Setup](#configuration-setup) section.
   - *Type* String
   - *Example:* `"arn:aws:codeconnections:us-east-1:123456789123:connection/6506b29d-429e-4bf3-8ab4-78cb2fc011b3"`
-- `accounts`
+#### `accounts`
   - *Description:* Leverages CDK Cross-account, Cross-region capabilities for deploying separate CI/CD pipeline stages to separate AWS Accounts, AWS Regions. For more information on Cross-account CI/CD pipelines, using the CDK, refer to the [Building a Cross-account CI/CD Pipeline](https://catalog.us-east-1.prod.workshops.aws/workshops/00bc829e-fd7c-4204-9da1-faea3cf8bd88/en-US/introduction) workshop. 
   - *Example:*
     ```yaml
