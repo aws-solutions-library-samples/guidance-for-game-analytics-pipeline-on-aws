@@ -1,0 +1,39 @@
+site_name: Game Analytics Pipeline on AWS
+site_description: Game Analytics Pipeline on AWS
+site_author: Amazon Web Services
+theme:
+  name: material
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/lightbulb-auto
+        name: Switch to light mode
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      #primary: black
+      #accent: teal
+      toggle:
+        icon: material/lightbulb
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      #primary: black
+      #accent: teal
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.expand
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Upgrading:
+    - Upgrading from Game Analytics Pipeline on AWS Version 1: upgrading/v1-migration.md
+    - Upgrading from Kinesis Data Analytics to Managed Apache Flink: upgrading/flink-migration.md
+plugins:
+  - search

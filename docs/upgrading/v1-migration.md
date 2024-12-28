@@ -1,0 +1,1 @@
+# Upgrading from Game Analytics Pipeline on AWS Version 1
