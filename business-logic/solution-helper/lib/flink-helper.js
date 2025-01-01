@@ -21,7 +21,7 @@
 let AWS = require("aws-sdk");
 
 /**
- * Helper function to interact with Kinesis for cfn custom resource.
+ * Helper function to interact with Kinesis Analytics SDK (Managed Flink SDK) for cfn custom resource.
  *
  * @class flinkHelper
  */

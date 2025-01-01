@@ -30,7 +30,7 @@ import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
-export interface FlinkConstructProps extends cdk.StackProps {
+export interface ManagedFlinkConstructProps extends cdk.StackProps {
   /**
    * Base Codepath for business logic folder
    */
@@ -41,23 +41,23 @@ export interface FlinkConstructProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
 }
 
-const defaultProps: Partial<FlinkConstructProps> = {};
+const defaultProps: Partial<ManagedFlinkConstructProps> = {};
 
 /**
- * Deploys the StreamingAnalytics construct
+ * Deploys the Managed Flink construct
  *
  * Creates Managed Flink application, the aggregated metric output stream, as well as the Lambda Function for processing Managed Flink output sent to the aggregated metric output stream. 
- * Logs are stored in correct places
- * and KDA app is started automatically using a custom resource
+ * Enables logging on the Managed Flink application and stores logs in a namespace for the application
+ * starts the Managed Flink app automatically using a custom resource
  */
-export class FlinkConstruct extends Construct {
-  public readonly analyticsProcessingFunction: NodejsFunction;
-  public readonly flinkApp: kinesisanalytics.CfnApplicationV2;
+export class ManagedFlinkConstruct extends Construct {
+  public readonly metricProcessingFunction: NodejsFunction;
+  public readonly managedFlinkApp: kinesisanalytics.CfnApplicationV2;
 
   constructor(
     parent: Construct,
     name: string,
-    props: FlinkConstructProps
+    props: ManagedFlinkConstructProps
   ) {
     super(parent, name);
 
@@ -67,14 +67,15 @@ export class FlinkConstruct extends Construct {
     const flinkAppName = `${cdk.Aws.STACK_NAME}-AnalyticsApplication`;
 
 
-    /* The following variables define the necessary resources for the `AnalyticsProcessingFunction` serverless
-            function. This function consumes outputs from Kinesis Data Analytics application for processing. */
-    const analyticsProcessingFunction = new NodejsFunction(
+    /* The following variables define the necessary resources for the `MetricProcessingFunction` serverless
+    function. This function consumes outputs from the metric output stream and writes them to 
+    CloudWatch custom metrics. */
+    const metricProcessingFunction = new NodejsFunction(
       this,
-      "FlinkMetricProcessingFunction",
+      "MetricProcessingFunction",
       {
         description:
-          "Consumes outputs from Kinesis Data Analytics application for processing",
+          "Consumes outputs from Managed Flink application for processing",
         entry: path.join(
           __dirname,
           `${codePath}/flink-handler/index.js`
@@ -93,7 +94,7 @@ export class FlinkConstruct extends Construct {
         },
       }
     );
-    analyticsProcessingFunction.addToRolePolicy(
+    metricProcessingFunction.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "CloudWatch",
         effect: iam.Effect.ALLOW,
@@ -101,7 +102,7 @@ export class FlinkConstruct extends Construct {
         resources: ["*"],
       })
     );
-    analyticsProcessingFunction.addToRolePolicy(
+    metricProcessingFunction.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "XRay",
         effect: iam.Effect.ALLOW,
@@ -129,7 +130,7 @@ export class FlinkConstruct extends Construct {
     );
 
     // link event source to lambda
-    analyticsProcessingFunction.addEventSource(metricLambdaOutputSource);
+    metricProcessingFunction.addEventSource(metricLambdaOutputSource);
 
     /* Create an s3 asset for the flink code package */
     const flinkCodeAsset = new assets.Asset(this, "flinkCodeAsset", {
@@ -153,13 +154,14 @@ export class FlinkConstruct extends Construct {
         logGroup: flinkLogGroup,
       }
     );
+    /* The ARN of the log stream to write CloudWatch logs to */
     const flinkLogStreamArn = `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:${flinkLogGroup.logGroupName}:log-stream:${flinkLogStream.logStreamName}`;
 
-    /* The following variables define the Kinesis Analytics Application's IAM Role. */
+    /* The following variables define the Managed Flink Application's IAM Role. */
     const flinkAppRole = new iam.Role(this, "flinkAppRole", {
       assumedBy: new iam.ServicePrincipal("kinesisanalytics.amazonaws.com"),
       inlinePolicies: {
-        /* Allow flink to access code and write logs */
+        /* Allow Flink to access the application code and write to CloudWatch logs */
         flinkAppRunPermissions: new iam.PolicyDocument({
           statements: [
             new iam.PolicyStatement({
@@ -204,7 +206,7 @@ export class FlinkConstruct extends Construct {
             })
           ],
         }),
-        /* Allow flink to access streams */
+        /* Allow flink to access source and sink streams */
         kinesisStreamAccess: new iam.PolicyDocument({
           statements: [
             new iam.PolicyStatement({
@@ -241,7 +243,7 @@ export class FlinkConstruct extends Construct {
 
 
     /* The following defines the flink application used to process incoming game events and output them to the stream */
-    const flinkApp = new kinesisanalytics.CfnApplicationV2(this, "FlinkApp",
+    const managedFlinkApp = new kinesisanalytics.CfnApplicationV2(this, "ManagedFlinkApp",
       {
         applicationName: flinkAppName,
         applicationDescription: `Real-time game analytics application, for ${cdk.Aws.STACK_NAME}`,
@@ -297,7 +299,8 @@ export class FlinkConstruct extends Construct {
       }
     )
 
-    const flinkAppLogging = new kinesisanalytics.CfnApplicationCloudWatchLoggingOptionV2(this, "FlinkAppLoggingOption",
+    /* Enable logging for the managed flink application */
+    const flinkLoggingConfiguration = new kinesisanalytics.CfnApplicationCloudWatchLoggingOptionV2(this, "FlinkAppLoggingOption",
       {
         applicationName: flinkAppName,
         cloudWatchLoggingOption: {
@@ -305,9 +308,9 @@ export class FlinkConstruct extends Construct {
         }
       }
     )
-    flinkAppLogging.addDependency(flinkApp)
+    flinkLoggingConfiguration.addDependency(managedFlinkApp)
 
-    // allow helper to see and start application
+    // allow custom resource to see and start application
     props.solutionHelper.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "FlinkStartPermissions",
@@ -317,7 +320,7 @@ export class FlinkConstruct extends Construct {
           "kinesisanalytics:DescribeApplication",
         ],
         resources: [
-          `arn:${cdk.Aws.PARTITION}:kinesisanalytics:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:application/${flinkApp.applicationName}`,
+          `arn:${cdk.Aws.PARTITION}:kinesisanalytics:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:application/${managedFlinkApp.applicationName}`,
         ],
       })
     );
@@ -331,7 +334,7 @@ export class FlinkConstruct extends Construct {
         properties: {
           customAction: "startFlinkApp",
           Region: cdk.Aws.REGION,
-          kinesisAnalyticsAppName: flinkApp.applicationName,
+          kinesisAnalyticsAppName: managedFlinkApp.applicationName,
         },
       }
     );
@@ -345,20 +348,24 @@ export class FlinkConstruct extends Construct {
     );
     // start flink app after logging is setup
     startFlinkAppCustomResource.node.addDependency(
-      flinkAppLogging
+      flinkLoggingConfiguration
     );
     // start flink app after lambda is created
     startFlinkAppCustomResource.node.addDependency(
-      analyticsProcessingFunction
+      metricProcessingFunction
     );
 
 
     new cdk.CfnOutput(this, "FlinkAppOutput", {
       description:
         "Name of the Flink Application for game analytics",
-      value: flinkApp.ref,
+      value: managedFlinkApp.ref,
     });
-
+    new cdk.CfnOutput(this, "MetricOutputStreamARN", {
+      description:
+        "ARN of the Kinesis Stream that recieves aggregated metrics from the Flink application",
+      value: metricOutputStream.streamArn,
+    });
     new cdk.CfnOutput(this, "FlinkAnalyticsCloudWatch", {
       description:
         "Link to the Amazon CloudWatch namespace where custom metrics are published by the solution AnalyticsProcessingFunction.",

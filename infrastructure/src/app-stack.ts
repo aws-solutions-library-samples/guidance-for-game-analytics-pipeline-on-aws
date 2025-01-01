@@ -34,7 +34,7 @@ import { GameAnalyticsPipelineConfig } from "./helpers/config-types";
 import { StreamingIngestionConstruct } from "./constructs/streaming-ingestion-construct";
 import { ApiConstruct } from "./constructs/api-construct";
 import { StreamingAnalyticsConstruct } from "./constructs/streaming-analytics";
-import { FlinkConstruct } from "./constructs/flink";
+import { ManagedFlinkConstruct } from "./constructs/flink-construct";
 import { MetricsConstruct } from "./constructs/metrics-construct";
 import { LambdaConstruct } from "./constructs/lambda-construct";
 
@@ -571,7 +571,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     // Initialize variable, will be checked to see if set properly
     let streamingAnalyticsConstruct;
-    let flinkConstruct;
+    let managedFlinkConstruct;
 
     // ---- Streaming Analytics ---- //
     // Create the following resources if and is `ENABLE_STREAMING_ANALYTICS` constant is `True`
@@ -588,9 +588,9 @@ export class InfrastructureStack extends cdk.Stack {
         }
       );
 
-      flinkConstruct = new FlinkConstruct(
+      managedFlinkConstruct = new ManagedFlinkConstruct(
         this,
-        "FlinkConstruct",
+        "ManagedFlinkConstruct",
         {
           solutionHelper: lambdaConstruct.solutionHelper,
           gameEventsStream: gameEventsStream,
