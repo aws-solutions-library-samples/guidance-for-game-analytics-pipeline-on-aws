@@ -255,7 +255,8 @@ GROUP BY
 HAVING COUNT(*) > 1;
 """.format(OUTPUT_TABLE_NAME, INPUT_TABLE_NAME)
 
-
+# Purchases
+# Get all purchases grouped by country over the period
 PURCHASES_PER_CURRENCY_QUERY = """
 INSERT INTO {0} (
     METRIC_NAME, 
