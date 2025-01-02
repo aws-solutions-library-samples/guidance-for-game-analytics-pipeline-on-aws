@@ -116,7 +116,7 @@ export class ManagedFlinkConstruct extends Construct {
       })
     );
 
-    /* The following defines the output stream for windowed metrics*/
+    /* The following defines the output stream for windowed metrics */
     const metricOutputStream = new kinesis.Stream(this, "metricOutputStream", {
       shardCount: props.config.METRIC_STREAM_SHARD_COUNT,
     });
@@ -354,6 +354,8 @@ export class ManagedFlinkConstruct extends Construct {
     startFlinkAppCustomResource.node.addDependency(
       metricProcessingFunction
     );
+
+    this.metricProcessingFunction = metricProcessingFunction;
 
 
     new cdk.CfnOutput(this, "FlinkAppOutput", {

@@ -21,14 +21,14 @@ import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cloudwatchActions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
-import { StreamingAnalyticsConstruct } from "./streaming-analytics";
+import { ManagedFlinkConstruct } from "./flink-construct";
 import { ApiConstruct } from "./api-construct";
 import { StreamingIngestionConstruct } from "./streaming-ingestion-construct";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface MetricsConstructProps extends cdk.StackProps {
     config: GameAnalyticsPipelineConfig;
-    streamingAnalyticsConstruct: StreamingAnalyticsConstruct | undefined;
+    managedFlinkConstruct: ManagedFlinkConstruct | undefined;
     notificationsTopic: cdk.aws_sns.Topic;
     gamesApiConstruct: ApiConstruct;
     streamingIngestionConstruct: StreamingIngestionConstruct;
@@ -50,10 +50,10 @@ export class MetricsConstruct extends Construct {
         props = { ...defaultProps, ...props };
 
         // Metrics if streaming analytics is enabled
-        if (props.config.ENABLE_STREAMING_ANALYTICS && props.streamingAnalyticsConstruct) {
+        if (props.config.ENABLE_STREAMING_ANALYTICS && props.managedFlinkConstruct) {
             // Create the Kinesis Analytics Log Group
             const analyticsLogGroup = new logs.LogGroup(this, "KinesisAnalyticsLogGroup", {
-                logGroupName: `/aws/lambda/${props.streamingAnalyticsConstruct.analyticsProcessingFunction.functionName}`,
+                logGroupName: `/aws/lambda/${props.managedFlinkConstruct.metricProcessingFunction.functionName}`,
                 retention: props.config.CLOUDWATCH_RETENTION_DAYS,
             });
 
@@ -113,7 +113,7 @@ export class MetricsConstruct extends Construct {
                         expression: "m1",
                         usingMetrics: {
                             m1: this.createLambdaMetric(
-                                props.streamingAnalyticsConstruct?.analyticsProcessingFunction,
+                                props.managedFlinkConstruct?.metricProcessingFunction,
                                 "Errors"
                             ),
                         },
@@ -140,7 +140,7 @@ export class MetricsConstruct extends Construct {
                         expression: "m1",
                         usingMetrics: {
                             m1: this.createLambdaMetric(
-                                props.streamingAnalyticsConstruct?.analyticsProcessingFunction,
+                                props.managedFlinkConstruct?.metricProcessingFunction,
                                 "Throttles"
                             ),
                         },
