@@ -90,7 +90,7 @@ export class ManagedFlinkConstruct extends Construct {
         runtime: lambda.Runtime.NODEJS_18_X,
         environment: {
           stackName: cdk.Aws.STACK_NAME,
-          CW_NAMESPACE: `${cdk.Aws.STACK_NAME}/AWSGameAnalyticsV2`,
+          CW_NAMESPACE: `${cdk.Aws.STACK_NAME}/AWSGameAnalytics`,
         },
       }
     );
