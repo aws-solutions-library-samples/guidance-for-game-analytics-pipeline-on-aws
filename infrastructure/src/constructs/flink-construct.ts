@@ -78,11 +78,11 @@ export class ManagedFlinkConstruct extends Construct {
           "Consumes outputs from Managed Flink application for processing",
         entry: path.join(
           __dirname,
-          `${codePath}/flink-handler/index.js`
+          `${codePath}/metric-handler/index.js`
         ),
         depsLockFilePath: path.join(
           __dirname,
-          `${codePath}/flink-handler/package-lock.json`
+          `${codePath}/metric-handler/package-lock.json`
         ),
 
         memorySize: 128,
