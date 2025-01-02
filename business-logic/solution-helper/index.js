@@ -28,7 +28,6 @@ const LambdaHelper = require("./lib/lambda-helper.js");
 const S3Helper = require("./lib/s3-helper.js");
 const AthenaHelper = require("./lib/athena-helper.js");
 const GlueHelper = require("./lib/glue-helper.js");
-const KinesisHelper = require("./lib/kinesis-helper.js");
 const FlinkHelper = require("./lib/flink-helper.js");
 const MetricsHelper = require("./lib/metrics-helper.js");
 const CloudWatchHelper = require("./lib/cloudwatch-helper.js");
@@ -543,56 +542,16 @@ exports.handler = async (event, context, callback) => {
                         responseData
                     );
                 }
-            } else if (event.ResourceProperties.customAction === "startKinesisAnalyticsApp") {
-                /**
-                 * Start Kinesis Analytics application
-                 */
-                let _kinesisHelper = new KinesisHelper();
-                console.log(
-                    `Starting Kinesis Analytics application ${event.ResourceProperties.kinesisAnalyticsAppName}`
-                );
-                try {
-                    await _kinesisHelper.startKinesisAnalyticsApp(
-                        event.ResourceProperties.kinesisAnalyticsAppName
-                    );
-                    responseData = {
-                        Message: "Started the Kinesis Analytics application",
-                    };
-                    responseStatus = "SUCCESS";
-                    await sendResponse(
-                        event,
-                        callback,
-                        context.logStreamName,
-                        responseStatus,
-                        responseData
-                    );
-                } catch (error) {
-                    console.log(
-                        `Failed to start the Kinesis Analytics application ${event.ResourceProperties.kinesisAnalyticsAppName}`,
-                        error
-                    );
-                    responseData = {
-                        Error: "Failed to start the Kinesis Analytics app",
-                    };
-                    responseStatus = "FAILED";
-                    await sendResponse(
-                        event,
-                        callback,
-                        context.logStreamName,
-                        responseStatus,
-                        responseData
-                    );
-                }
             } else if (event.ResourceProperties.customAction === "startFlinkApp") {
                 /**
-                 * Start Kinesis Analytics application
+                 * Start Managed Flink application
                  */
-                let _kinesisHelper = new FlinkHelper();
+                let _flinkHelper = new FlinkHelper();
                 console.log(
                     `Starting Flink application ${event.ResourceProperties.kinesisAnalyticsAppName}`
                 );
                 try {
-                    await _kinesisHelper.startKinesisAnalyticsApp(
+                    await _flinkHelper.startKinesisAnalyticsApp(
                         event.ResourceProperties.kinesisAnalyticsAppName
                     );
                     responseData = {
