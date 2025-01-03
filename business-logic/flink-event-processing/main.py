@@ -63,6 +63,7 @@ producer_property_group_key = "sinkConfig"
 input_stream_key = "kinesis.stream.arn"
 input_region_key = "aws.region"
 input_starting_position_key = "flink.stream.initpos"
+source_record_count_key = "flink.stream.max_record_count"
 
 output_stream_key = "kinesis.stream.arn"
 output_region_key = "aws.region"
@@ -80,6 +81,7 @@ output_property_map = property_map(props, producer_property_group_key)
 input_stream = input_property_map[input_stream_key]
 input_region = input_property_map[input_region_key]
 stream_initpos = input_property_map[input_starting_position_key]
+source_record_count = input_property_map[source_record_count_key]
 
 output_stream = output_property_map[output_stream_key]
 output_region = output_property_map[output_region_key]
@@ -88,12 +90,12 @@ output_region = output_property_map[output_region_key]
 SOURCE_TABLE_DEF = """
 CREATE TABLE {0} (
     event ROW(
-        `event_version` VARCHAR,
-        `event_id` VARCHAR,
-        `event_type` VARCHAR,
+        `event_version` VARCHAR(8),
+        `event_id` VARCHAR(64),
+        `event_type` VARCHAR(64),
         `event_name` VARCHAR,
         `event_timestamp` BIGINT,
-        `app_version` VARCHAR,
+        `app_version` VARCHAR(8),
         `event_data` STRING
     ),
     application_id STRING,
@@ -105,8 +107,9 @@ CREATE TABLE {0} (
     'aws.region' = '{2}',
     'source.init.position' = '{3}',
     'format' = 'json',
-    'json.timestamp-format.standard' = 'ISO-8601'
-);""".format(INPUT_TABLE_NAME, input_stream, input_region, stream_initpos)
+    'json.timestamp-format.standard' = 'ISO-8601',
+    'source.shard.get-records.max-record-count' = '{4}'
+);""".format(INPUT_TABLE_NAME, input_stream, input_region, stream_initpos, source_record_count)
 
 
 SINK_TABLE_DEF = """
