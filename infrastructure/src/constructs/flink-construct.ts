@@ -220,6 +220,9 @@ export class ManagedFlinkConstruct extends Construct {
                 "kinesis:RegisterStreamConsumer",
                 "kinesis:GetRecords",
                 "kinesis:ListShards",
+                "kinesis:DescribeLimits",
+                "kinesis:ListStreamConsumers",
+                "kinesis:SubscribeToShard"
               ],
               resources: [props.gameEventsStream.streamArn],
             }),
@@ -286,7 +289,7 @@ export class ManagedFlinkConstruct extends Construct {
                 "kinesis.stream.arn": props.gameEventsStream.streamArn,
                 "aws.region": cdk.Aws.REGION,
                 "flink.stream.initpos": "LATEST",
-                "flink.stream.max_record_count": `${1000}`
+                "flink.stream.max_record_count": `${10000}`
               }
             }, {
               propertyGroupId: "sinkConfig",
