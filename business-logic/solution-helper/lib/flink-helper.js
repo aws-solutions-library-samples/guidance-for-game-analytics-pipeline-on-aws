@@ -21,13 +21,13 @@
 let AWS = require("aws-sdk");
 
 /**
- * Helper function to interact with Kinesis for cfn custom resource.
+ * Helper function to interact with Kinesis Analytics SDK (Managed Flink SDK) for cfn custom resource.
  *
- * @class kinesisHelper
+ * @class flinkHelper
  */
-class kinesisHelper {
+class flinkHelper {
     /**
-     * @class kinesisHelper
+     * @class flinkHelper
      * @constructor
      */
     constructor() {
@@ -44,7 +44,7 @@ class kinesisHelper {
                 ApplicationName: applicationName,
             };
 
-            console.log(`Attempting to start Kinesis Analytics App: ${JSON.stringify(params)}`);
+            console.log(`Attempting to start Managed Flink App: ${JSON.stringify(params)}`);
             let kda = new AWS.KinesisAnalyticsV2(this.config);
 
             kda.describeApplication(params, function (err, response) {
@@ -53,23 +53,19 @@ class kinesisHelper {
                     reject(err);
                 } else {
                     if (response == null) {
-                        console.log("The Kinesis Analytics application could not be found");
+                        console.log("The Managed Flink application could not be found");
                         reject(err);
                     }
                     if (response.ApplicationDetail.ApplicationStatus === "READY") {
-                        console.log("Starting Kinesis Analytics Application");
+                        console.log("Starting Managed Flink Application");
                         kda.startApplication(
                             {
                                 ApplicationName: applicationName,
                                 RunConfiguration: {
-                                    SqlRunConfigurations: [
-                                        {
-                                            InputId: "1.1",
-                                            InputStartingPositionConfiguration: {
-                                                InputStartingPosition: "NOW",
-                                            },
-                                        },
-                                    ],
+                                    FlinkRunConfiguration: {
+                                        // https://nightlies.apache.org/flink/flink-docs-release-1.19/docs/ops/state/savepoints/#allowing-non-restored-state
+                                        AllowNonRestoredState: true,
+                                    },
                                 },
                             },
                             function (err, response) {
@@ -77,7 +73,7 @@ class kinesisHelper {
                                     console.log(JSON.stringify(err));
                                     reject(err);
                                 } else {
-                                    console.log("Started Kinesis Analytics Application");
+                                    console.log("Started Managed Flink Application");
                                     resolve(response);
                                 }
                             }
@@ -89,4 +85,4 @@ class kinesisHelper {
     }
 }
 
-module.exports = kinesisHelper;
+module.exports = flinkHelper;

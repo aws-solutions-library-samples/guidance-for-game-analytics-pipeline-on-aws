@@ -27,7 +27,7 @@ const cloudwatchConfig = {
 };
 
 /**
- * Process Kinesis Analytics output and publish to CloudWatch
+ * Process Kinesis metric stream output and publish to CloudWatch
  * @class CloudWatchMetrics
  */
 class CloudWatchMetrics {

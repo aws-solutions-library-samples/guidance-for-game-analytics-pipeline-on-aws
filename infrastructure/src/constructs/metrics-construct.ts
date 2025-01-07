@@ -21,14 +21,14 @@ import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cloudwatchActions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
-import { StreamingAnalyticsConstruct } from "./streaming-analytics";
+import { ManagedFlinkConstruct } from "./flink-construct";
 import { ApiConstruct } from "./api-construct";
 import { StreamingIngestionConstruct } from "./streaming-ingestion-construct";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface MetricsConstructProps extends cdk.StackProps {
     config: GameAnalyticsPipelineConfig;
-    streamingAnalyticsConstruct: StreamingAnalyticsConstruct | undefined;
+    managedFlinkConstruct: ManagedFlinkConstruct | undefined;
     notificationsTopic: cdk.aws_sns.Topic;
     gamesApiConstruct: ApiConstruct;
     streamingIngestionConstruct: StreamingIngestionConstruct;
@@ -50,10 +50,10 @@ export class MetricsConstruct extends Construct {
         props = { ...defaultProps, ...props };
 
         // Metrics if streaming analytics is enabled
-        if (props.config.ENABLE_STREAMING_ANALYTICS && props.streamingAnalyticsConstruct) {
+        if (props.config.ENABLE_STREAMING_ANALYTICS && props.managedFlinkConstruct) {
             // Create the Kinesis Analytics Log Group
             const analyticsLogGroup = new logs.LogGroup(this, "KinesisAnalyticsLogGroup", {
-                logGroupName: `/aws/lambda/${props.streamingAnalyticsConstruct.analyticsProcessingFunction.functionName}`,
+                logGroupName: `/aws/lambda/${props.managedFlinkConstruct.metricProcessingFunction.functionName}`,
                 retention: props.config.CLOUDWATCH_RETENTION_DAYS,
             });
 
@@ -113,7 +113,7 @@ export class MetricsConstruct extends Construct {
                         expression: "m1",
                         usingMetrics: {
                             m1: this.createLambdaMetric(
-                                props.streamingAnalyticsConstruct?.analyticsProcessingFunction,
+                                props.managedFlinkConstruct?.metricProcessingFunction,
                                 "Errors"
                             ),
                         },
@@ -140,7 +140,7 @@ export class MetricsConstruct extends Construct {
                         expression: "m1",
                         usingMetrics: {
                             m1: this.createLambdaMetric(
-                                props.streamingAnalyticsConstruct?.analyticsProcessingFunction,
+                                props.managedFlinkConstruct?.metricProcessingFunction,
                                 "Throttles"
                             ),
                         },
@@ -151,6 +151,59 @@ export class MetricsConstruct extends Construct {
             streamingAnalyticsLambdaThrottlesAlarm.addAlarmAction(
                 new cloudwatchActions.SnsAction(props.notificationsTopic)
             );
+
+
+            // Kinesis game stream throughput metrics
+            const kinesisMetricStreamReadProvisionedThroughputExceeded = new cloudwatch.Alarm(
+                this,
+                "KinesisMetricStreamReadProvisionedThroughputExceeded",
+                {
+                    alarmDescription: `Kinesis stream for aggregate metrics is being throttled on reads and may need to be be scaled to support more read throughput, for stack ${cdk.Aws.STACK_NAME}`,
+                    metric: new cloudwatch.Metric({
+                        metricName: "ReadProvisionedThroughputExceeded",
+                        dimensionsMap: {
+                            StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
+                        },
+                        namespace: "AWS/Kinesis",
+                        statistic: cloudwatch.Stats.MAXIMUM,
+                        period: cdk.Duration.minutes(1),
+                    }),
+                    evaluationPeriods: 1,
+                    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                    threshold: 0,
+                    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+                    actionsEnabled: true,
+                }
+            );
+            kinesisMetricStreamReadProvisionedThroughputExceeded.addAlarmAction(
+                new cloudwatchActions.SnsAction(props.notificationsTopic)
+            );
+
+            const kinesisMetricStreamWriteProvisionedThroughputExceeded = new cloudwatch.Alarm(
+                this,
+                "KinesisMetricStreamWriteProvisionedThroughputExceeded",
+                {
+                    alarmDescription: `Kinesis stream for aggregate metrics is being throttled on writes and may need to be be scaled to support more write throughput, for stack ${cdk.Aws.STACK_NAME}`,
+                    metric: new cloudwatch.Metric({
+                        namespace: "AWS/Kinesis",
+                        metricName: "WriteProvisionedThroughputExceeded",
+                        dimensionsMap: {
+                            StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
+                        },
+                        statistic: "Maximum",
+                        period: cdk.Duration.seconds(60),
+                    }),
+                    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+                    evaluationPeriods: 1,
+                    threshold: 0,
+                    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                    actionsEnabled: true,
+                }
+            );
+            kinesisMetricStreamWriteProvisionedThroughputExceeded.addAlarmAction(
+                new cloudwatchActions.SnsAction(props.notificationsTopic)
+            );
+
         }
 
         // Table metrics

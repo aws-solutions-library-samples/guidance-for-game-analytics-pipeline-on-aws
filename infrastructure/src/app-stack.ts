@@ -33,7 +33,7 @@ import { v4 as uuid4 } from "uuid";
 import { GameAnalyticsPipelineConfig } from "./helpers/config-types";
 import { StreamingIngestionConstruct } from "./constructs/streaming-ingestion-construct";
 import { ApiConstruct } from "./constructs/api-construct";
-import { StreamingAnalyticsConstruct } from "./constructs/streaming-analytics";
+import { ManagedFlinkConstruct } from "./constructs/flink-construct";
 import { MetricsConstruct } from "./constructs/metrics-construct";
 import { LambdaConstruct } from "./constructs/lambda-construct";
 
@@ -569,20 +569,22 @@ export class InfrastructureStack extends cdk.Stack {
     });
 
     // Initialize variable, will be checked to see if set properly
-    let streamingAnalyticsConstruct;
+    let managedFlinkConstruct;
 
     // ---- Streaming Analytics ---- //
     // Create the following resources if and is `ENABLE_STREAMING_ANALYTICS` constant is `True`
     if (props.config.ENABLE_STREAMING_ANALYTICS) {
-      // Enables KDA and all metrics surrounding it
-      streamingAnalyticsConstruct = new StreamingAnalyticsConstruct(
+      // Enables Managed Flink and all metrics surrounding it
+
+      managedFlinkConstruct = new ManagedFlinkConstruct(
         this,
-        "StreamingAnalyticsConstruct",
+        "ManagedFlinkConstruct",
         {
           solutionHelper: lambdaConstruct.solutionHelper,
           gameEventsStream: gameEventsStream,
           solutionHelperProvider: solutionHelperProvider,
           baseCodePath: codePath,
+          config: props.config,
         }
       );
     }
@@ -622,13 +624,13 @@ export class InfrastructureStack extends cdk.Stack {
           DashboardName: `PipelineOpsDashboard_${cdk.Aws.STACK_NAME}`,
           StreamingAnalyticsEnabled: props.config.ENABLE_STREAMING_ANALYTICS,
           Functions: {
-            AnalyticsProcessingFunction: streamingAnalyticsConstruct
-              ? streamingAnalyticsConstruct.analyticsProcessingFunction
-                  .functionName
+            AnalyticsProcessingFunction: managedFlinkConstruct
+              ? managedFlinkConstruct.metricProcessingFunction
+                .functionName
               : cdk.Aws.NO_VALUE,
-            AnalyticsProcessingFunctionArn: streamingAnalyticsConstruct
-              ? streamingAnalyticsConstruct.analyticsProcessingFunction
-                  .functionName
+            AnalyticsProcessingFunctionArn: managedFlinkConstruct
+              ? managedFlinkConstruct.metricProcessingFunction
+                .functionName
               : cdk.Aws.NO_VALUE,
             EventsProcessingFunction:
               lambdaConstruct.eventsProcessingFunction.functionName,
@@ -639,8 +641,8 @@ export class InfrastructureStack extends cdk.Stack {
             GameEventsFirehose:
               streamingIngestionConstruct.gameEventsFirehose.ref,
             GameEventsStream: gameEventsStream.streamName,
-            KinesisAnalyticsApp: streamingAnalyticsConstruct
-              ? `AnalyticsApplication-${cdk.Aws.STACK_NAME}`
+            KinesisAnalyticsApp: managedFlinkConstruct
+              ? `${cdk.Aws.STACK_NAME}-AnalyticsApplication`
               : cdk.Aws.NO_VALUE,
           },
           GameAnalyticsApi: {
@@ -683,7 +685,7 @@ export class InfrastructureStack extends cdk.Stack {
     // Create metrics for solution
     new MetricsConstruct(this, "Metrics Construct", {
       config: props.config,
-      streamingAnalyticsConstruct,
+      managedFlinkConstruct,
       notificationsTopic,
       gamesApiConstruct,
       streamingIngestionConstruct,
