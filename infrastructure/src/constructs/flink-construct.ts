@@ -287,6 +287,7 @@ export class ManagedFlinkConstruct extends Construct {
               propertyGroupId: "sourceConfig",
               propertyMap: {
                 "kinesis.stream.arn": props.gameEventsStream.streamArn,
+                "kinesis.stream.name": props.gameEventsStream.streamName,
                 "aws.region": cdk.Aws.REGION,
                 "flink.stream.initpos": "LATEST",
                 "flink.stream.max_record_count": `${10000}`

@@ -65,6 +65,10 @@ input_region_key = "aws.region"
 input_starting_position_key = "flink.stream.initpos"
 source_record_count_key = "flink.stream.max_record_count"
 
+# legacy options
+input_stream_name_key = "kinesis.stream.name"
+
+
 output_stream_key = "kinesis.stream.arn"
 output_region_key = "aws.region"
 
@@ -83,11 +87,17 @@ input_region = input_property_map[input_region_key]
 stream_initpos = input_property_map[input_starting_position_key]
 source_record_count = input_property_map[source_record_count_key]
 
+# legacy options
+input_stream_name = input_property_map[input_stream_name_key]
+
+
 output_stream = output_property_map[output_stream_key]
 output_region = output_property_map[output_region_key]
 
 # DDL
-SOURCE_TABLE_DEF = """
+
+# Flink Kinesis adapter 5.0.0-1.20 settings
+_SOURCE_TABLE_DEF = """
 CREATE TABLE {0} (
     event ROW(
         `event_version` VARCHAR(8),
@@ -110,6 +120,32 @@ CREATE TABLE {0} (
     'json.timestamp-format.standard' = 'ISO-8601',
     'source.shard.get-records.max-record-count' = '{4}'
 );""".format(INPUT_TABLE_NAME, input_stream, input_region, stream_initpos, source_record_count)
+
+# Flink Kinesis legacy adapter settings (currently used for read throttling controls)
+SOURCE_TABLE_DEF = """
+CREATE TABLE {0} (
+    event ROW(
+        `event_version` VARCHAR(8),
+        `event_id` VARCHAR(64),
+        `event_type` VARCHAR(64),
+        `event_name` VARCHAR,
+        `event_timestamp` BIGINT,
+        `app_version` VARCHAR(8),
+        `event_data` STRING
+    ),
+    application_id STRING,
+    rowtime AS TO_TIMESTAMP_LTZ(event.event_timestamp, 0),
+    WATERMARK FOR rowtime AS rowtime - INTERVAL '5' SECOND
+) WITH (
+    'connector' = 'kinesis-legacy',
+    'stream' = '{1}',
+    'aws.region' = '{2}',
+    'scan.stream.initpos' = '{3}',
+    'format' = 'json',
+    'json.timestamp-format.standard' = 'ISO-8601',
+    'scan.shard.adaptivereads' = 'true',
+    'scan.shard.getrecords.intervalmillis' = '500'
+);""".format(INPUT_TABLE_NAME, input_stream_name, input_region, stream_initpos)
 
 
 SINK_TABLE_DEF = """
