@@ -53,6 +53,7 @@ const defaultProps: Partial<ManagedFlinkConstructProps> = {};
 export class ManagedFlinkConstruct extends Construct {
   public readonly metricProcessingFunction: NodejsFunction;
   public readonly managedFlinkApp: kinesisanalytics.CfnApplicationV2;
+  public readonly metricOutputStream: kinesis.Stream;
 
   constructor(
     parent: Construct,
@@ -290,7 +291,8 @@ export class ManagedFlinkConstruct extends Construct {
                 "kinesis.stream.name": props.gameEventsStream.streamName,
                 "aws.region": cdk.Aws.REGION,
                 "flink.stream.initpos": "LATEST",
-                "flink.stream.max_record_count": `${10000}`
+                "flink.stream.max_record_count": "10000",
+                "kinesis.stream.interval": "500"
               }
             }, {
               propertyGroupId: "sinkConfig",
@@ -361,7 +363,8 @@ export class ManagedFlinkConstruct extends Construct {
     );
 
     this.metricProcessingFunction = metricProcessingFunction;
-
+    this.managedFlinkApp = managedFlinkApp;
+    this.metricOutputStream = metricOutputStream;
 
     new cdk.CfnOutput(this, "FlinkAppOutput", {
       description:

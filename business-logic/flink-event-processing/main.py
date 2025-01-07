@@ -67,6 +67,7 @@ source_record_count_key = "flink.stream.max_record_count"
 
 # legacy options
 input_stream_name_key = "kinesis.stream.name"
+input_stream_interval_key = "kinesis.stream.interval"
 
 
 output_stream_key = "kinesis.stream.arn"
@@ -89,6 +90,7 @@ source_record_count = input_property_map[source_record_count_key]
 
 # legacy options
 input_stream_name = input_property_map[input_stream_name_key]
+input_stream_interval = input_property_map[input_stream_interval_key]
 
 
 output_stream = output_property_map[output_stream_key]
@@ -144,8 +146,8 @@ CREATE TABLE {0} (
     'format' = 'json',
     'json.timestamp-format.standard' = 'ISO-8601',
     'scan.shard.adaptivereads' = 'true',
-    'scan.shard.getrecords.intervalmillis' = '500'
-);""".format(INPUT_TABLE_NAME, input_stream_name, input_region, stream_initpos)
+    'scan.shard.getrecords.intervalmillis' = '{4}'
+);""".format(INPUT_TABLE_NAME, input_stream_name, input_region, stream_initpos, input_stream_interval)
 
 
 SINK_TABLE_DEF = """
