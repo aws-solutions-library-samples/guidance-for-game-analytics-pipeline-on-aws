@@ -272,7 +272,22 @@ GROUP BY
 ```
 
 ##### Modifications
-
+- Operation Definition
+    - With Flink, the query is no longer defined as a pump. Instead it is defined as an insert into. To run the query continuously, the statement is executed in a Flink statement set within the application (see [Application Deployment](#application-deployment)). 
+    - Flink uses a standard `SELECT` instead of a `SELECT STREAM`
+    - Table names for source and sink are different. Flink terminology for the source and sink is a [table instead of a stream](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/dev/table/sql/create/). 
+- Windowing function
+    - With Kinesis Data Analytics, the windowing is defined by using the `STEP` function to round the rowtime to the nearest minute and grouping based on the rounded attribute value.
+    - Flink uses a [Windowing Table-Valued Function(TVF)](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/sql/queries/window-agg/) to indicate that a query is a tumbling windowed query. The function is defined on the table within the `FROM` section and adds `window_start` and `window_end` attributes to group on.
+- Deduplication
+    - With Kinesis Data Analytics, deduplication is performed by specifying `DISTINCT` on the inner select statement.
+    - Within Flink, [`DISTINCT` can be used](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/sql/queries/select-distinct/), but it requires the storage of rows with a time to live (TTL) which is expensive.
+    - An optimization done within Flink is to deduplicate based on a unique attribute instead of the entire row. `event.event_id` is defined as a random UUID that uniquely identifies the event. 
+        - Deduplication is done using the [`ROW_NUMBER()` function](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/sql/queries/deduplication/) which assigns sequential numbers to rows with the same attribute value. 
+        - The choice of `ASC` or `DESC` in the function determines whether to keep the first or last occurrence of the row. In this query, `ASC` is used to keep the first query.
+        - The statement `WHERE rownum = 1` indicates to the Flink query planner that the query is performing deduplication.
+    - A further optimization in Flink is to perform a windowing deduplication since the query is bounded within a time window. This allows Flink to only to save unique rows within each time window instead of global uniqueness. 
+        - To [indicate to Flink that windowed deduplication is used](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/sql/queries/window-deduplication/), `window_start` and `window_end` are explicitly included at the beginning of the `ROW_NUMBER()` function.
 
 ### Total Logins
 Count of logins within period
@@ -338,7 +353,6 @@ GROUP BY
 ```
 
 ##### Modifications
-
 
 ### Knockouts By Spells
 Get the number of knockouts by each spell used in a knockout in the period
@@ -410,6 +424,8 @@ HAVING COUNT(*) > 1;
 ```
 
 ##### Modifications
+- Attribute Access
+    - The `JSON_VALUE` function is used to access the values within the `event.event_data` attribute.
 
 
 ### Purchases
@@ -508,5 +524,6 @@ Alternatively, the Kinesis stream can be consumed directly by a tool such as [Op
 
 ## Development using Studio Notebooks
 
+Studio notebooks are an interactive interface that allows you to query and visualize 
 
 ## Application Deployment
