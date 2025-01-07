@@ -151,6 +151,59 @@ export class MetricsConstruct extends Construct {
             streamingAnalyticsLambdaThrottlesAlarm.addAlarmAction(
                 new cloudwatchActions.SnsAction(props.notificationsTopic)
             );
+
+
+            // Kinesis game stream throughput metrics
+            const kinesisMetricStreamReadProvisionedThroughputExceeded = new cloudwatch.Alarm(
+                this,
+                "KinesisMetricStreamReadProvisionedThroughputExceeded",
+                {
+                    alarmDescription: `Kinesis stream for aggregate metrics is being throttled on reads and may need to be be scaled to support more read throughput, for stack ${cdk.Aws.STACK_NAME}`,
+                    metric: new cloudwatch.Metric({
+                        metricName: "ReadProvisionedThroughputExceeded",
+                        dimensionsMap: {
+                            StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
+                        },
+                        namespace: "AWS/Kinesis",
+                        statistic: cloudwatch.Stats.MAXIMUM,
+                        period: cdk.Duration.minutes(1),
+                    }),
+                    evaluationPeriods: 1,
+                    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                    threshold: 0,
+                    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+                    actionsEnabled: true,
+                }
+            );
+            kinesisMetricStreamReadProvisionedThroughputExceeded.addAlarmAction(
+                new cloudwatchActions.SnsAction(props.notificationsTopic)
+            );
+
+            const kinesisMetricStreamWriteProvisionedThroughputExceeded = new cloudwatch.Alarm(
+                this,
+                "KinesisMetricStreamWriteProvisionedThroughputExceeded",
+                {
+                    alarmDescription: `Kinesis stream for aggregate metrics is being throttled on writes and may need to be be scaled to support more write throughput, for stack ${cdk.Aws.STACK_NAME}`,
+                    metric: new cloudwatch.Metric({
+                        namespace: "AWS/Kinesis",
+                        metricName: "WriteProvisionedThroughputExceeded",
+                        dimensionsMap: {
+                            StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
+                        },
+                        statistic: "Maximum",
+                        period: cdk.Duration.seconds(60),
+                    }),
+                    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+                    evaluationPeriods: 1,
+                    threshold: 0,
+                    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                    actionsEnabled: true,
+                }
+            );
+            kinesisMetricStreamWriteProvisionedThroughputExceeded.addAlarmAction(
+                new cloudwatchActions.SnsAction(props.notificationsTopic)
+            );
+
         }
 
         // Table metrics
