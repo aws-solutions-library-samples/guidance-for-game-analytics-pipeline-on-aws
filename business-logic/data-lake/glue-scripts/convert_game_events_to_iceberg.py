@@ -14,6 +14,8 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ######################################################################################################################
 
+#Edit JobParameters with Amazon S3 location and Amazon Glue Data Catalog Tables
+
 import sys
 from awsglue.transforms import *
 from awsglue.utils import getResolvedOptions
@@ -62,7 +64,17 @@ base_df = glueContext.create_dynamic_frame.from_options(format_options={}, conne
 
 new_sc_df = ApplyMapping.apply(frame=base_df, mappings=[("event_id", "string", "event_id", "string"), ("event_type", "string", "event_type", "string"), ("event_name", "string", "event_name", "string"), ("event_version", "string", "event_version", "string"), ("event_timestamp", "bigint", "event_timestamp", "long"), ("app_version", "string", "app_version", "string"), ("application_id", "string", "application_id", "string"), ("application_name", "string", "application_name", "string"), ("event_data", "string", "event_data", "string"), ("metadata", "string", "metadata", "string")], transformation_ctx="changeschema")
 
-# Script generated for node Amazon S3
+# Validate if db and table exists
+database_location = f"{args['iceberg_bucket']}/{database_name}/"
+
+databases = spark.sql("SHOW DATABASES").select("namespace").collect()
+database_exists = any(row.namespace == database_name for row in databases)
+if not database_exists:
+    print(f"Database {database_name} does not exist. Creating it now.")
+    spark.sql(f"CREATE DATABASE IF NOT EXISTS {database_name} LOCATION '{database_location}'")
+else:
+    print(f"Database {database_name} already exists.")
+
 additional_options = {}
 tables_collection = spark.catalog.listTables(database_name)
 table_names_in_db = [table.name for table in tables_collection]

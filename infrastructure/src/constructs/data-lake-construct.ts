@@ -297,6 +297,45 @@ export class DataLakeConstruct extends Construct {
       },
     });
 
+    // Glue ETL Job to convert existing events to iceberg
+    const gameEventsIcebergJob = new glueCfn.CfnJob(
+      this,
+      "ConvertGameEventsToIceberg",
+      {
+        description: `Etl job for processing existing raw game event data, for stack ${cdk.Aws.STACK_NAME} to Apache Iceberg table.`,
+        glueVersion: "4.0",
+        maxRetries: 0,
+        maxCapacity: 10,
+        timeout: 30,
+        executionProperty: {
+          maxConcurrentRuns: 1,
+        },
+        command: {
+          name: "glueetl",
+          pythonVersion: "3",
+          scriptLocation: `s3://${props.analyticsBucket.bucketName}/glue-scripts/convert_game_events_to_iceberg.py`,
+        },
+        role: gameEventsEtlRole.roleArn,
+        defaultArguments: {
+          "--enable-metrics": "true",
+          "--enable-continuous-cloudwatch-log": "true",
+          "--enable-glue-datacatalog": "true",
+          "--datalake-formats": "iceberg",
+          "--database_name": "iceberg_db",
+          "--raw_events_table_name": props.config.RAW_EVENTS_TABLE,
+          "--iceberg_events_table_name": `${props.config.RAW_EVENTS_TABLE}_iceberg`,
+          "--analytics_bucket": `s3://${props.analyticsBucket.bucketName}/`,
+          "--iceberg_bucket": "s3://your_bucket_here/",
+          "--processed_data_prefix": props.config.PROCESSED_EVENTS_PREFIX,
+          "--glue_tmp_prefix": props.config.GLUE_TMP_PREFIX,
+          "--job-bookmark-option": "job-bookmark-enable",
+          "--TempDir": `s3://${props.analyticsBucket.bucketName}/${props.config.GLUE_TMP_PREFIX}`,
+          "--conf":
+            "spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions --conf spark.sql.catalog.glue_catalog=org.apache.iceberg.spark.SparkCatalog --conf spark.sql.catalog.glue_catalog.catalog-impl=org.apache.iceberg.aws.glue.GlueCatalog --conf spark.sql.catalog.glue_catalog.io-impl=org.apache.iceberg.aws.s3.S3FileIO --conf spark.sql.catalog.glue_catalog.warehouse=file:///tmp/spark-warehouse",
+        },
+      }
+    );
+
     // Crawler crawls s3 partitioned data
     const eventsCrawler = new glueCfn.CfnCrawler(this, "EventsCrawler", {
       role: glueCrawlerRole.roleArn,
@@ -336,7 +375,7 @@ export class DataLakeConstruct extends Construct {
           "--enable-metrics": "true",
           "--enable-continuous-cloudwatch-log": "true",
           "--enable-glue-datacatalog": "true",
-          "--database_name": gameEventsDatabase.ref,
+          "--database_name": "gameEventsDatabase.ref",
           "--raw_events_table_name": rawEventsTable.ref,
           "--analytics_bucket": `s3://${props.analyticsBucket.bucketName}/`,
           "--processed_data_prefix": props.config.PROCESSED_EVENTS_PREFIX,
@@ -436,6 +475,12 @@ export class DataLakeConstruct extends Construct {
       description:
         "ETL Job for processing game events into optimized format for analytics",
       value: gameEventsEtlJob.ref,
+    });
+
+    new cdk.CfnOutput(this, "GameEventsIcebergJobOutput", {
+      description:
+        "ETL Job for transform existing game events into Apache Iceberg table format using Amazon Glue",
+      value: gameEventsIcebergJob.ref,
     });
 
     new cdk.CfnOutput(this, "GameEventsDatabaseOutput", {
