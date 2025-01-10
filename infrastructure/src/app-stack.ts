@@ -405,14 +405,6 @@ export class InfrastructureStack extends cdk.Stack {
     );
     lambdaConstruct.solutionHelper.addToRolePolicy(
       new iam.PolicyStatement({
-        sid: "GluePermissions",
-        effect: iam.Effect.ALLOW,
-        actions: ["glue:PutDataCatalogEncryptionSettings"],
-        resources: ["*"],
-      })
-    );
-    lambdaConstruct.solutionHelper.addToRolePolicy(
-      new iam.PolicyStatement({
         sid: "cloudwatchLogs",
         effect: iam.Effect.ALLOW,
         actions: [
@@ -557,16 +549,6 @@ export class InfrastructureStack extends cdk.Stack {
     createGluePartitionCustomResource.node.addDependency(
       lambdaConstruct.gluePartitionCreator
     );
-
-    // Enable Server-Side Encryption settings for Glue Data Catalog
-    // Use custom resource to avoid CloudFormation Errors if data catalog is already encrypted.
-    new cdk.CustomResource(this, "GluePutDataCatalogEncryption", {
-      serviceToken: solutionHelperProvider.serviceToken,
-      properties: {
-        customAction: "putDataCatalogEncryptionSettings",
-        catalogId: cdk.Aws.ACCOUNT_ID,
-      },
-    });
 
     // Initialize variable, will be checked to see if set properly
     let streamingAnalyticsConstruct;

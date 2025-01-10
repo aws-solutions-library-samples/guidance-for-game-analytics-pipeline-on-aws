@@ -1,11 +1,4 @@
-interface AccountConfiguration {
-    NAME: string;
-    ACCOUNT: string;
-    REGION: string;
-}
-
 export interface GameAnalyticsPipelineConfig {
-    accounts: AccountConfiguration[];
     KinesisStreamShards: number;
     DEV_MODE: boolean;
     EnableStreamingAnalytics: boolean;
@@ -26,7 +19,5 @@ export interface GameAnalyticsPipelineConfig {
     ENABLE_STREAMING_ANALYTICS: boolean;
     S3_BACKUP_MODE: boolean;
     CLOUDWATCH_RETENTION_DAYS: number;
-    GITHUB_USERNAME: string;
-    GITHUB_REPO_NAME: string;
-    CONNECTION_ARN: string;
+    REGION: string;
 }
