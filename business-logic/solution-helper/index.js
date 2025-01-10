@@ -143,46 +143,6 @@ exports.handler = async (event, context, callback) => {
           );
         }
       } else if (
-        event.ResourceProperties.customAction ===
-        "putDataCatalogEncryptionSettings"
-      ) {
-        /**
-         * Enable data catalog encryption
-         */
-        let _glueHelper = new GlueHelper();
-        try {
-          let catalogId = event.ResourceProperties.catalogId;
-          await _glueHelper.putDataCatalogEncryptionSettings(
-            catalogId,
-            "SSE-KMS"
-          );
-          responseData = {};
-          responseStatus = "SUCCESS";
-          await sendResponse(
-            event,
-            callback,
-            context.logStreamName,
-            responseStatus,
-            responseData
-          );
-        } catch (err) {
-          console.log(
-            `Error setting glue data catalog encryption settings`,
-            JSON.stringify(err)
-          );
-          responseData = {
-            Error: "Error setting glue data catalog encryption settings",
-          };
-          responseStatus = "FAILED";
-          await sendResponse(
-            event,
-            callback,
-            context.logStreamName,
-            responseStatus,
-            responseData
-          );
-        }
-      } else if (
         event.ResourceProperties.customAction === "CreateApiAuthorization"
       ) {
         /**
@@ -678,8 +638,6 @@ exports.handler = async (event, context, callback) => {
         event.ResourceProperties.customAction === "createDefaultApplication" ||
         event.ResourceProperties.customAction === "CreateApiAuthorization" ||
         event.ResourceProperties.customAction === "InvokeFunctionSync" ||
-        event.ResourceProperties.customAction ===
-          "putDataCatalogEncryptionSettings" ||
         event.ResourceProperties.customAction === "createAthenaNamedQueries" ||
         event.ResourceProperties.customAction === "uploadS3Object"
       ) {
@@ -787,8 +745,6 @@ exports.handler = async (event, context, callback) => {
         event.ResourceProperties.customAction === "createDefaultApplication" ||
         event.ResourceProperties.customAction === "CreateApiAuthorization" ||
         event.ResourceProperties.customAction === "InvokeFunctionSync" ||
-        event.ResourceProperties.customAction ===
-          "putDataCatalogEncryptionSettings" ||
         event.ResourceProperties.customAction === "createAthenaNamedQueries" ||
         event.ResourceProperties.customAction === "uploadS3Object"
       ) {

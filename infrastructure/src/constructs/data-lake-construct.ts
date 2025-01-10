@@ -16,6 +16,7 @@ import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import { aws_glue as glue } from 'aws-cdk-lib';
 
 import * as glueCfn from "aws-cdk-lib/aws-glue";
 import * as sns from "aws-cdk-lib/aws-sns";
@@ -40,6 +41,7 @@ const defaultProps: Partial<DataLakeConstructProps> = {};
 export class DataLakeConstruct extends Construct {
   public readonly gameEventsDatabase: glueCfn.CfnDatabase;
   public readonly rawEventsTable: glueCfn.CfnTable;
+  public readonly cfnDataCatalogEncryptionSettings: glue.CfnDataCatalogEncryptionSettings;
 
   constructor(parent: Construct, name: string, props: DataLakeConstructProps) {
     super(parent, name);
@@ -59,6 +61,18 @@ export class DataLakeConstruct extends Construct {
         },
       }
     );
+
+    const cfnDataCatalogEncryptionSettings = new glue.CfnDataCatalogEncryptionSettings(this, 'DataCatalogEncryptionSettings', {
+      catalogId: cdk.Aws.ACCOUNT_ID,
+      dataCatalogEncryptionSettings: {
+        connectionPasswordEncryption: {
+          returnConnectionPasswordEncrypted: true,
+        },
+        encryptionAtRest: {
+          catalogEncryptionMode: "SSE-KMS",
+        },
+      },
+    });
 
     // Glue table for raw events that come in from stream
     const rawEventsTable = new glueCfn.CfnTable(this, "GameRawEventsTable", {
@@ -431,6 +445,7 @@ export class DataLakeConstruct extends Construct {
 
     this.gameEventsDatabase = gameEventsDatabase;
     this.rawEventsTable = rawEventsTable;
+    this.cfnDataCatalogEncryptionSettings = cfnDataCatalogEncryptionSettings;
 
     new cdk.CfnOutput(this, "GameEventsEtlJobOutput", {
       description:
