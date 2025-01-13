@@ -1,11 +1,13 @@
 site_name: Game Analytics Pipeline on AWS
-site_description: Game Analytics Pipeline on AWS
+site_description: This Guidance helps game developers deploy a modular, serverless analytics pipeline for ingesting, storing, processing, and visualizing telemetry data from game clients and backend services. It supports real-time and batch analytics use cases. Using AWS Cloud Development Kit, developers can continuously integrate and deploy the pipeline across multiple AWS accounts and Regions. The serverless services offer cost-efficiency and ease of setup. After deployment, teams can ingest data and make informed decisions to enhance their games faster.
 site_author: Amazon Web Services
 repo_url: https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
 repo_name: aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
 
 theme:
   name: material
+  favicon: assets/aws.png
+  font: false
   palette:
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
@@ -32,12 +34,17 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.expand
+
+extra:
+  homepage: https://aws-solutions-library-samples.github.io/
+
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Upgrading:
-    - Upgrading from Game Analytics Pipeline on AWS Version 1: upgrading/v1-migration.md
-    - Upgrading from Kinesis Data Analytics to Managed Apache Flink: upgrading/flink-migration.md
+      - Upgrading from Game Analytics Pipeline on AWS Version 1: upgrading/v1-migration.md
+      - Upgrading from Kinesis Data Analytics to Managed Apache Flink: upgrading/flink-migration.md
+  - See this use case in AWS Solutions Library: https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/
 plugins:
   - search
   - offline
