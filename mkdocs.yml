@@ -6,7 +6,7 @@ repo_name: aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on
 
 theme:
   name: material
-  favicon: assets/aws.png
+  favicon: media/aws.png
   font: false
   palette:
     # Palette toggle for automatic mode
