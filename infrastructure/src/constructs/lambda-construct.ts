@@ -34,7 +34,6 @@ const defaultProps: Partial<LambdaConstructProps> = {};
  * Deploys the Lambda construct
  */
 export class LambdaConstruct extends Construct {
-  public readonly gluePartitionCreator: lambda.Function;
   public readonly eventsProcessingFunction: lambda.Function;
   public readonly solutionHelper: lambda.Function;
   public readonly lambdaAuthorizer: lambda.Function;
@@ -47,45 +46,6 @@ export class LambdaConstruct extends Construct {
     props = { ...defaultProps, ...props };
 
     const codePath = "../../../business-logic";
-
-    // ---- Functions ---- //
-    /* The following variables define the necessary resources for the `GluePartitionCreator` serverless
-function. This function creates a new date-based partition in Glue Database based on UTC Year/Month/Day. */
-    this.gluePartitionCreator = new NodejsFunction(
-      this,
-      "GluePartitionCreator",
-      {
-        description:
-          "Function creates a new date-based partition in Glue Database based on UTC Year/Month/Day",
-        entry: path.join(
-          __dirname,
-          `${codePath}/data-lake/glue-partition-creator/index.js`
-        ),
-        depsLockFilePath: path.join(
-          __dirname,
-          `${codePath}/data-lake/glue-partition-creator/package-lock.json`
-        ),
-        runtime: lambda.Runtime.NODEJS_18_X,
-        memorySize: 128,
-        timeout: cdk.Duration.minutes(5),
-        environment: {
-          TABLE_NAME: props.dataLakeConstruct.rawEventsTable.ref,
-          DATABASE_NAME: props.dataLakeConstruct.gameEventsDatabase.ref,
-        },
-      }
-    );
-    const createPartition = new events.Rule(this, "CreatePartition", {
-      schedule: events.Schedule.cron({
-        minute: "0",
-        hour: "*/1",
-        day: "*",
-        month: "*",
-        year: "*",
-      }),
-    });
-    createPartition.addTarget(
-      new eventstargets.LambdaFunction(this.gluePartitionCreator)
-    );
 
     /* The following variables define the necessary resources for the `EventsProcessingFunction` serverless
 function. This function to process and transform raw events before they get written to S3. */
