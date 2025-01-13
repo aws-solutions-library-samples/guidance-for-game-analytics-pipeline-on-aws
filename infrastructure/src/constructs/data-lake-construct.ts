@@ -41,7 +41,6 @@ const defaultProps: Partial<DataLakeConstructProps> = {};
 export class DataLakeConstruct extends Construct {
   public readonly gameEventsDatabase: glueCfn.CfnDatabase;
   public readonly rawEventsTable: glueCfn.CfnTable;
-  public readonly cfnDataCatalogEncryptionSettings: glue.CfnDataCatalogEncryptionSettings;
 
   constructor(parent: Construct, name: string, props: DataLakeConstructProps) {
     super(parent, name);
@@ -398,19 +397,20 @@ export class DataLakeConstruct extends Construct {
       "GameEventsTriggerETLJob",
       {
         workflowName: gameEventsWorkflow.ref,
-        type: "ON_DEMAND",
+        type: "SCHEDULED",
         description: `Triggers the start of ETL job to process raw_events, for stack ${cdk.Aws.STACK_NAME}.`,
         actions: [
           {
             jobName: gameEventsEtlJob.ref,
           },
         ],
+        schedule: 'cron(0 * * * ? *)',
       }
     );
     gameEventsETLJobTrigger.addDependency(gameEventsEtlJob);
     gameEventsETLJobTrigger.addDependency(gameEventsWorkflow);
 
-    // Even that starts ETL job
+    // Event that starts ETL job
     const etlJobStatusEventsRule = new events.Rule(this, "EtlJobStatusEvents", {
       description: `CloudWatch Events Rule for generating status events for the Glue ETL Job for ${cdk.Aws.STACK_NAME}.`,
       eventPattern: {
@@ -445,7 +445,6 @@ export class DataLakeConstruct extends Construct {
 
     this.gameEventsDatabase = gameEventsDatabase;
     this.rawEventsTable = rawEventsTable;
-    this.cfnDataCatalogEncryptionSettings = cfnDataCatalogEncryptionSettings;
 
     new cdk.CfnOutput(this, "GameEventsEtlJobOutput", {
       description:

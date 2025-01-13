@@ -295,25 +295,6 @@ export class StreamingAnalyticsConstruct extends Construct {
       })
     );
 
-    const startKinesisAnalyticsAppCustomResource = new cdk.CustomResource(
-      this,
-      "StartKinesisAnalyticsApp",
-      {
-        serviceToken: props.solutionHelperProvider.serviceToken,
-        properties: {
-          customAction: "startKinesisAnalyticsApp",
-          Region: cdk.Aws.REGION,
-          kinesisAnalyticsAppName: kinesisAnalyticsApp.applicationName,
-        },
-      }
-    );
-    startKinesisAnalyticsAppCustomResource.node.addDependency(
-      props.gameEventsStream
-    );
-    startKinesisAnalyticsAppCustomResource.node.addDependency(
-      kinesisAnalyticsLambdaOutput
-    );
-
     this.analyticsProcessingFunction = analyticsProcessingFunction;
 
     new cdk.CfnOutput(this, "KinesisAnalyticsAppOutput", {

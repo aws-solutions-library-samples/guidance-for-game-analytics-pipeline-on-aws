@@ -146,8 +146,7 @@ export class InfrastructureStack extends cdk.Stack {
       ],
     });
 
-    /* The following resources copies the Glue ETL script to S3. This replaces the need
-        to create a Custom Resource using the `uploadS3Object` routine from the Solution Helper */
+    /* The following resources copies the Glue ETL script to S3. */
     new s3deployment.BucketDeployment(this, "CopyGlueEtlScriptToS3", {
       sources: [
         s3deployment.Source.asset(
@@ -321,46 +320,6 @@ export class InfrastructureStack extends cdk.Stack {
       authorizationsTable,
     });
 
-    // Event rule that creates partitions automatically every hour for new data
-    const createPartition = new events.Rule(this, "CreatePartition", {
-      schedule: events.Schedule.cron({
-        minute: "0",
-        hour: "*/1",
-        day: "*",
-        month: "*",
-        year: "*",
-      }),
-    });
-    createPartition.addTarget(
-      new eventstargets.LambdaFunction(lambdaConstruct.gluePartitionCreator)
-    );
-
-    // Add necessary policies to all lambdas
-    lambdaConstruct.gluePartitionCreator.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "GlueAccess",
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "glue:GetTable",
-          "glue:GetTables",
-          "glue:UpdateTable",
-          "glue:GetTableVersion",
-          "glue:GetTableVersions",
-          "glue:CreatePartition",
-          "glue:BatchCreatePartition",
-          "glue:GetPartition",
-          "glue:GetPartitions",
-          "glue:BatchGetPartition",
-          "glue:UpdatePartition",
-        ],
-        resources: [
-          `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/${dataLakeConstruct.gameEventsDatabase.ref}/*`,
-          `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:database/${dataLakeConstruct.gameEventsDatabase.ref}`,
-          `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
-        ],
-      })
-    );
-
     lambdaConstruct.eventsProcessingFunction.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "DynamoDBAccess",
@@ -385,26 +344,10 @@ export class InfrastructureStack extends cdk.Stack {
     );
     lambdaConstruct.solutionHelper.addToRolePolicy(
       new iam.PolicyStatement({
-        sid: "UploadS3Objects",
-        effect: iam.Effect.ALLOW,
-        actions: ["s3:PutObject"],
-        resources: [`${analyticsBucket.bucketArn}/*`],
-      })
-    );
-    lambdaConstruct.solutionHelper.addToRolePolicy(
-      new iam.PolicyStatement({
         sid: "DynamoDB",
         effect: iam.Effect.ALLOW,
         actions: ["dynamodb:PutItem"],
         resources: [applicationsTable.tableArn, authorizationsTable.tableArn],
-      })
-    );
-    lambdaConstruct.solutionHelper.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "InvokeGluePartitionCreator",
-        effect: iam.Effect.ALLOW,
-        actions: ["lambda:InvokeFunction"],
-        resources: [lambdaConstruct.gluePartitionCreator.functionArn],
       })
     );
     lambdaConstruct.solutionHelper.addToRolePolicy(
@@ -487,42 +430,6 @@ export class InfrastructureStack extends cdk.Stack {
     const applicationId = uuid4();
     const applicationName = "default_app";
 
-    // Creates a default application
-    const createDefaultApplicationCustomResource = new cdk.CustomResource(
-      this,
-      "CreateDefaultApplication",
-      {
-        serviceToken: solutionHelperProvider.serviceToken,
-        properties: {
-          customAction: "createDefaultApplication",
-          applicationsTable: applicationsTable.tableName,
-          application_id: applicationId,
-          description: "Default application created by the solution",
-          application_name: applicationName,
-        },
-      }
-    );
-
-    // Create API Authorization for default application
-    const createApiAuthorizationCustomResource = new cdk.CustomResource(
-      this,
-      "CreateApiAuthorization",
-      {
-        serviceToken: solutionHelperProvider.serviceToken,
-        properties: {
-          customAction: "CreateApiAuthorization",
-          authorizationsTable: authorizationsTable.tableName,
-          application_id: applicationId,
-          application_name: applicationName,
-          key_name: `default-key-${cdk.Aws.STACK_NAME}`,
-          key_description: "Auto-generated api key",
-        },
-      }
-    );
-    createApiAuthorizationCustomResource.node.addDependency(
-      createDefaultApplicationCustomResource
-    );
-
     // Create the Athena Named Queries in the Workgroup
     const createAthenaNamedQueriesCustomResource = new cdk.CustomResource(
       this,
@@ -536,22 +443,6 @@ export class InfrastructureStack extends cdk.Stack {
           table: dataLakeConstruct.rawEventsTable.ref,
         },
       }
-    );
-
-    // Invoke the GluePartitionCreator function to create date-based Glue Partition for current date (UTC)
-    const createGluePartitionCustomResource = new cdk.CustomResource(
-      this,
-      "CreateGluePartition",
-      {
-        serviceToken: solutionHelperProvider.serviceToken,
-        properties: {
-          customAction: "InvokeFunctionSync",
-          functionArn: lambdaConstruct.gluePartitionCreator.functionArn,
-        },
-      }
-    );
-    createGluePartitionCustomResource.node.addDependency(
-      lambdaConstruct.gluePartitionCreator
     );
 
     // Initialize variable, will be checked to see if set properly
@@ -679,7 +570,6 @@ export class InfrastructureStack extends cdk.Stack {
         lambdaConstruct.eventsProcessingFunction,
         lambdaConstruct.lambdaAuthorizer,
         lambdaConstruct.applicationAdminServiceFunction,
-        lambdaConstruct.gluePartitionCreator,
       ],
     });
 
