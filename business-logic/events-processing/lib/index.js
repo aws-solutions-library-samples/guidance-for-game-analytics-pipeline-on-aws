@@ -15,14 +15,14 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
- 
-'use strict';
 
+'use strict';;
 /**
  * Lib
  */
 
-const AWS = require('aws-sdk');
+
+
 const NodeCache = require( 'node-cache');
 const Event = require('./event.js');
 
