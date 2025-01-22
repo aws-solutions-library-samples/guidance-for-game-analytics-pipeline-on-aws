@@ -16,12 +16,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-'use strict';
-const AWS = require('aws-sdk');
+'use strict';;
+const { fromEnv } = require('@aws-sdk/credential-providers');
+const { DynamoDBDocument } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDB } = require('@aws-sdk/client-dynamodb');
+
 const _ = require('underscore');
 const moment = require('moment');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require("crypto");
+
+const config = {
+  credentials: // JS SDK v3 switched credential providers from classes to functions.
+  // This is the closest approximation from codemod of what your application needs.
+  // Reference: https://www.npmjs.com/package/@aws-sdk/credential-providers
+  fromEnv('AWS'), // Lambda provided credentials
+  region: process.env.AWS_REGION,
+};
+
+const docClient = DynamoDBDocument.from(new DynamoDB(this.config));
 
 /**
  * Performs admin actions including creating, retrieving and deleting
@@ -35,7 +48,10 @@ class Application {
    * @constructor
    */
   constructor() {
-    this.creds = new AWS.EnvironmentCredentials('AWS'); // Lambda provided credentials
+    this.creds = // JS SDK v3 switched credential providers from classes to functions.
+    // This is the closest approximation from codemod of what your application needs.
+    // Reference: https://www.npmjs.com/package/@aws-sdk/credential-providers
+    fromEnv('AWS'); // Lambda provided credentials
     this.config = {
       credentials: this.creds,
       region: process.env.AWS_REGION,
@@ -61,8 +77,8 @@ class Application {
           'application_id': applicationId
         }
       };
-      const docClient = new AWS.DynamoDB.DocumentClient(this.config);
-      await docClient.put(params).promise();
+      
+      await docClient.put(params);
       return Promise.resolve({
         'ApplicationId': applicationId,
         'ApplicationName': application.Name,
@@ -89,9 +105,8 @@ class Application {
       TableName: process.env.APPLICATIONS_TABLE
     };
     let length = 0;
-    let docClient = new AWS.DynamoDB.DocumentClient(this.config);
     try {
-      let result = await docClient.scan(params).promise();
+      let result = await docClient.scan(params);
       length += result.Items.length;
       if (length < 1){
         return Promise.reject({
@@ -137,10 +152,10 @@ class Application {
       }
     };
 
-    const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+    
     try {
-      let data = await docClient.get(params).promise();
-      if (!_.isEqual(data, {})) {
+      let data = await docClient.get(params);
+      if (data?.Item != undefined) {
         let response = {
           'ApplicationId': data.Item.application_id,
           'ApplicationName': data.Item.application_name,
@@ -205,9 +220,8 @@ class Application {
     if (lastevalkey) {
       params.ExclusiveStartKey = lastevalkey;
     }
-    let docClient = new AWS.DynamoDB.DocumentClient(this.config);
     try {
-      let result = await docClient.query(params).promise();
+      let result = await docClient.query(params);
       result.Items.forEach(function(item) {
         applicationAuthorizations.push({
           'ApiKeyId': item.api_key_id,
@@ -275,9 +289,9 @@ class Application {
       }
     };
 
-    const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+    
     try {
-      let data = await docClient.delete(params).promise();
+      let data = await docClient.delete(params);
       return Promise.resolve(data);
     } catch (err) {
       console.log(JSON.stringify(err));
@@ -293,7 +307,7 @@ class Application {
    * Queries ApplicationAuthorizations DynamoDB GSI index and deletes all the api key authorizations for an application
    */
   async _deleteApplicationAuthorizations(applicationId) {
-    const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+    
     try {
       // Lookup authorizations associated with application
       let authorizationResults = await docClient.query({
@@ -304,7 +318,7 @@ class Application {
           ':appId': applicationId
         },
         ProjectionExpression: 'api_key_id'
-      }).promise();
+      });
       
       if (authorizationResults.Items.length === 0) {
         console.log(`No authorizations for this application`);
@@ -334,7 +348,7 @@ class Application {
    */
   async createAuthorization(apiKeyValue, applicationId, apiKeyName, apiKeyDescription, apiKeyId) {
     try {
-      const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+      
       const updated_at = moment().utc().format();
       const created_at = moment().utc().format();
       const params = {
@@ -350,7 +364,7 @@ class Application {
           enabled: true
         }
       };
-      await docClient.put(params).promise();
+      await docClient.put(params);
       const response = {
         ApiKeyId: params.Item.api_key_id,
         ApiKeyValue: params.Item.api_key_value,
@@ -386,10 +400,10 @@ class Application {
       }
     };
 
-    const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+    
     try {
-      let data = await docClient.get(params).promise();
-      if (!_.isEqual(data, {})) {
+      let data = await docClient.get(params);
+      if (data?.Item != undefined) {
         let result = {
           ApiKeyId: data.Item.api_key_id,
           ApiKeyName: data.Item.api_key_name,
@@ -428,7 +442,7 @@ class Application {
    */
   async modifyAuthorization(apiKeyId, applicationId, enabled) {
     try {
-      const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+      
       const updated_at = moment().utc().format();
       const params = {
         TableName: process.env.AUTHORIZATIONS_TABLE,
@@ -443,7 +457,7 @@ class Application {
         },
         ReturnValues: 'ALL_NEW',
       };
-      const response = await docClient.update(params).promise();
+      const response = await docClient.update(params);
       return Promise.resolve({
         ApiKeyId: response.Attributes.api_key_id,
         ApiKeyName: response.Attributes.api_key_name,
@@ -494,9 +508,9 @@ class Application {
       ReturnValues: 'ALL_OLD'
     };
 
-    const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+    
     try {
-      let data = await docClient.delete(params).promise();
+      let data = await docClient.delete(params);
       return Promise.resolve(data);
     } catch (err) {
       console.log(JSON.stringify(err));
