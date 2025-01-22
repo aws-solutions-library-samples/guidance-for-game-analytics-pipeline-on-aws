@@ -15,22 +15,29 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
- 
-'use strict';
 
+'use strict';;
 /**
  * Lib
  */
-const AWS = require('aws-sdk');
+
+
+const { fromEnv } = require('@aws-sdk/credential-providers');
+const { DynamoDBDocument } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDB } = require('@aws-sdk/client-dynamodb');
+
 console.log('Loading function');
 
 
 const config = {
-  credentials: new AWS.EnvironmentCredentials('AWS'), // Lambda provided credentials
+  credentials: // JS SDK v3 switched credential providers from classes to functions.
+  // This is the closest approximation from codemod of what your application needs.
+  // Reference: https://www.npmjs.com/package/@aws-sdk/credential-providers
+  fromEnv('AWS'), // Lambda provided credentials
   region: process.env.AWS_REGION
 };
 
-const docClient = new AWS.DynamoDB.DocumentClient(config);
+const docClient = DynamoDBDocument.from(new DynamoDB(config));
 
 /**
  * AuthPolicy receives a set of allowed and denied methods and generates a valid
@@ -431,7 +438,8 @@ const _queryDDBAuthorizations = async (apiKeyValue, lastevalkey) => {
     }
     
     try {
-        let result = await docClient.query(params).promise();
+        let result = await docClient.query(params);
+        console.log(result);
         if (result.Items.length < 1){
             console.log(`No authorizations found for api key`);
             return Promise.reject({
