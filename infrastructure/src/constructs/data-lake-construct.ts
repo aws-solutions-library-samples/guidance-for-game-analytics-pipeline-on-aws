@@ -16,12 +16,14 @@ import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import { aws_glue as glue } from 'aws-cdk-lib';
 
 import * as glueCfn from "aws-cdk-lib/aws-glue";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as events from "aws-cdk-lib/aws-events";
 import * as eventstargets from "aws-cdk-lib/aws-events-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as athena from 'aws-cdk-lib/aws-athena';
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface DataLakeConstructProps extends cdk.StackProps {
@@ -41,6 +43,164 @@ export class DataLakeConstruct extends Construct {
   public readonly gameEventsDatabase: glueCfn.CfnDatabase;
   public readonly rawEventsTable: glueCfn.CfnTable;
 
+  private createDefaultAthenaQueries(
+    databaseName: string,
+    tableName: string,
+    workgroupName: string
+  ) {
+    const queries = [
+      {
+        database: databaseName,
+        name: 'LatestEventsQuery',
+        description: 'Get latest events by event_timestamp',
+        workgroup: workgroupName,
+        query: `SELECT *, from_unixtime(event_timestamp, 'America/New_York') as event_timestamp_america_new_york
+                FROM "${databaseName}"."${tableName}"
+                ORDER BY event_timestamp_america_new_york DESC
+                LIMIT 10;`,
+      },
+      {
+        database: databaseName,
+        name: "TotalEventsQuery",
+        description: "Total events",
+        workgroup: workgroupName,
+        query: `SELECT application_id, count(DISTINCT event_id) as event_count 
+                FROM "${databaseName}"."${tableName}"
+                GROUP BY application_id`,
+    },
+    {
+        database: databaseName,
+        name: "TotalEventsMonthQuery",
+        description: "Total events over last month",
+        workgroup: workgroupName,
+        query: `WITH detail AS
+                (SELECT date_trunc('month', date(date_parse(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'))) as event_month, * 
+                FROM "${databaseName}"."${tableName}") 
+                SELECT date_trunc('month', event_month) as month, application_id, count(DISTINCT event_id) as event_count 
+                FROM detail 
+                GROUP BY date_trunc('month', event_month), application_id`,
+    },
+    {
+        database: databaseName,
+        name: "TotalIapTransactionsLastMonth",
+        description: "Total IAP Transactions over the last month",
+        workgroup: workgroupName,
+        query: `WITH detail AS 
+                (SELECT date_trunc('month', date(date_parse(CONCAT(year, '-', month, '-', day),'%Y-%m-%d'))) as event_month,* 
+                FROM "${databaseName}"."${tableName}") 
+                SELECT date_trunc('month', event_month) as month, application_id, count(DISTINCT json_extract_scalar(event_data, '$.transaction_id')) as transaction_count 
+                FROM detail WHERE json_extract_scalar(event_data, '$.transaction_id') is NOT null 
+                AND event_type = 'iap_transaction'
+                GROUP BY date_trunc('month', event_month), application_id`,
+    },
+    {
+        database: databaseName,
+        name: "NewUsersLastMonth",
+        description: "New Users over the last month",
+        workgroup: workgroupName,
+        query: `WITH detail AS (
+                SELECT date_trunc('month', date(date_parse(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'))) as event_month, *
+                FROM "${databaseName}"."${tableName}")
+                SELECT
+                date_trunc('month', event_month) as month,
+                count(*) as new_accounts
+                FROM detail
+                WHERE event_type = 'user_registration'
+                GROUP BY date_trunc('month', event_month);`,
+    },
+    {
+        database: databaseName,
+        name: "TotalPlaysByLevel",
+        description: "Total number of times each level has been played",
+        workgroup: workgroupName,
+        query: `SELECT
+                json_extract_scalar(event_data, '$.level_id') as level,
+                count(json_extract_scalar(event_data, '$.level_id')) as number_of_plays
+                FROM "${databaseName}"."${tableName}"
+                WHERE event_type = 'level_started'
+                GROUP BY json_extract_scalar(event_data, '$.level_id')
+                ORDER by json_extract_scalar(event_data, '$.level_id');`,
+    },
+    {
+        database: databaseName,
+        name: "TotalFailuresByLevel",
+        description: "Total number of failures on each level",
+        workgroup: workgroupName,
+        query: `SELECT
+                json_extract_scalar(event_data, '$.level_id') as level,
+                count(json_extract_scalar(event_data, '$.level_id')) as number_of_failures
+                FROM "${databaseName}"."${tableName}"
+                WHERE event_type='level_failed'
+                GROUP BY json_extract_scalar(event_data, '$.level_id')
+                ORDER by json_extract_scalar(event_data, '$.level_id');`,
+    },
+    {
+        database: databaseName,
+        name: "TotalCompletionsByLevel",
+        description: "Total number of completions on each level",
+        workgroup: workgroupName,
+        query: `SELECT
+                json_extract_scalar(event_data, '$.level_id') as level,
+                count(json_extract_scalar(event_data, '$.level_id')) as number_of_completions
+                FROM "${databaseName}"."${tableName}"
+                WHERE event_type='level_completed'
+                GROUP BY json_extract_scalar(event_data, '$.level_id')
+                ORDER by json_extract_scalar(event_data, '$.level_id');`,
+    },
+    {
+        database: databaseName,
+        name: "LevelCompletionRate",
+        description: "Rate of completion for each level",
+        workgroup: workgroupName,
+        query: `with t1 as
+                (SELECT json_extract_scalar(event_data, '$.level_id') as level, count(json_extract_scalar(event_data, '$.level_id')) as level_count 
+                FROM "${databaseName}"."${tableName}"
+                WHERE event_type='level_started' GROUP BY json_extract_scalar(event_data, '$.level_id') 
+                ),
+                t2 as
+                (SELECT json_extract_scalar(event_data, '$.level_id') as level, count(json_extract_scalar(event_data, '$.level_id')) as level_count 
+                FROM "${databaseName}"."${tableName}"
+                WHERE event_type='level_completed'GROUP BY json_extract_scalar(event_data, '$.level_id') 
+                )
+                select t2.level, (cast(t2.level_count AS DOUBLE) / (cast(t2.level_count AS DOUBLE) + cast(t1.level_count AS DOUBLE))) * 100 as level_completion_rate from 
+                t1 JOIN t2 ON t1.level = t2.level
+                ORDER by level;`,
+    },
+    {
+        database: databaseName,
+        name: "AverageUserSentimentPerDay",
+        description: "User sentiment score by day",
+        workgroup: workgroupName,
+        query: `SELECT
+                avg(CAST(json_extract_scalar(event_data, '$.user_rating') AS real)) AS average_user_rating, 
+                date(date_parse(CONCAT(year, '-', month, '-', day), '%Y-%m-%d')) as event_date
+                FROM "${databaseName}"."${tableName}"
+                WHERE json_extract_scalar(event_data, '$.user_rating') is not null
+                GROUP BY date(date_parse(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'));`,
+    },
+    {
+        database: databaseName,
+        name: "UserReportedReasonsCount",
+        description: "Reasons users are being reported, grouped by reason code",
+        workgroup: workgroupName,
+        query: `SELECT count(json_extract_scalar(event_data, '$.report_reason')) as count_of_reports, json_extract_scalar(event_data, '$.report_reason') as report_reason
+                FROM "${databaseName}"."${tableName}"
+                GROUP BY json_extract_scalar(event_data, '$.report_reason')
+                ORDER BY json_extract_scalar(event_data, '$.report_reason') DESC;`,
+    },
+    ];
+  
+    for (const query of queries) {
+      new athena.CfnNamedQuery(this, `NamedQuery-${query.name}`, {
+        database: query.database,
+        name: query.name,
+        workGroup: query.workgroup,
+        description: query.description,
+        queryString: query.query,
+      });
+    }
+  }
+
   constructor(parent: Construct, name: string, props: DataLakeConstructProps) {
     super(parent, name);
 
@@ -59,6 +219,24 @@ export class DataLakeConstruct extends Construct {
         },
       }
     );
+
+    this.createDefaultAthenaQueries(
+      gameEventsDatabase.ref,
+      props.config.RAW_EVENTS_TABLE,
+      `GameAnalyticsWorkgroup-${cdk.Aws.STACK_NAME}`
+    );
+
+    const cfnDataCatalogEncryptionSettings = new glue.CfnDataCatalogEncryptionSettings(this, 'DataCatalogEncryptionSettings', {
+      catalogId: cdk.Aws.ACCOUNT_ID,
+      dataCatalogEncryptionSettings: {
+        connectionPasswordEncryption: {
+          returnConnectionPasswordEncrypted: true,
+        },
+        encryptionAtRest: {
+          catalogEncryptionMode: "SSE-KMS",
+        },
+      },
+    });
 
     // Glue table for raw events that come in from stream
     const rawEventsTable = new glueCfn.CfnTable(this, "GameRawEventsTable", {
@@ -419,19 +597,20 @@ export class DataLakeConstruct extends Construct {
       "GameEventsTriggerETLJob",
       {
         workflowName: gameEventsWorkflow.ref,
-        type: "ON_DEMAND",
+        type: "SCHEDULED",
         description: `Triggers the start of ETL job to process raw_events, for stack ${cdk.Aws.STACK_NAME}.`,
         actions: [
           {
             jobName: gameEventsEtlJob.ref,
           },
         ],
+        schedule: 'cron(0 * * * ? *)',
       }
     );
     gameEventsETLJobTrigger.addDependency(gameEventsEtlJob);
     gameEventsETLJobTrigger.addDependency(gameEventsWorkflow);
 
-    // Even that starts ETL job
+    // Event that starts ETL job
     const etlJobStatusEventsRule = new events.Rule(this, "EtlJobStatusEvents", {
       description: `CloudWatch Events Rule for generating status events for the Glue ETL Job for ${cdk.Aws.STACK_NAME}.`,
       eventPattern: {

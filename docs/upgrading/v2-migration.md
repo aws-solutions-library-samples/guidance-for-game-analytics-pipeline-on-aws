@@ -1,0 +1,1 @@
+# Upgrading Guidance for Game Analytics Pipeline to Version 3
