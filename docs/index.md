@@ -1,11 +1,34 @@
 ---
-hide:
-  - navigation
-  - toc
+template: index.html
+title: Game Analytics Pipeline
+hide: [navigation]
+hero:
+  title: Guidance for Deploying a Serverless, Scalable Game Analytics Pipeline on AWS
+  subtitle: A sample infrastructure for getting started quickly with Game Analytics, built by AWS for the game development community.
+  getting_started_button: Getting Started
+  source_button: Source Code
+features:
+  - title: Upgrading
+    link: upgrading/v2-to-v3-changes.html
+    description: List of changes from V2 to v3 and step-by-step guide to upgrading your deployment to v3
+  - title: Component Deep Dive
+    link: component-deep-dive.html
+    description: Step-by-step breakdown of the guidance components and end-to-end analytics process through the pipeline
+  - title: Further Tuning
+    link: further-tuning.html
+    description: Extending your Game Analytics Pipeline with Dashboards, custom queries, and additional functionality
+  - title: References
+    link: references/api-reference.html
+    description: Reference guide for the guidance's API, event schema, and operational dashboard components
+  - title: Design Considerations
+    link: design-considerations.html
+    description: Explanations for choosing the services, architecture design, and processes for this guidance
+companies:
+  title:
+  list:
 ---
-# Game Analytics Pipeline on AWS
-![Architecture](media/architecture.png)
-## Overview
+
+# Overview
 
 The games industry is increasing adoption of the Games-as-a-Service operating model, where games have become more like a service than a product, and recurring revenue is frequently generated through in-app purchases, subscriptions, and other techniques. With this change, it is critical to develop a deeper understanding of how players use the features of games and related services. This understanding allows game developers to continually adapt, and make the necessary changes to keep players engaged.
 

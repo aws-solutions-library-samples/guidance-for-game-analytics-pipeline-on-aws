@@ -19,16 +19,12 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as snsSubscriptions from "aws-cdk-lib/aws-sns-subscriptions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as athena from "aws-cdk-lib/aws-athena";
-import * as customresources from "aws-cdk-lib/custom-resources";
 import * as kms from "aws-cdk-lib/aws-kms";
 import * as sns from "aws-cdk-lib/aws-sns";
-import * as events from "aws-cdk-lib/aws-events";
-import * as eventstargets from "aws-cdk-lib/aws-events-targets";
 import * as kinesis from "aws-cdk-lib/aws-kinesis";
 import * as s3deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as path from "path";
-import { v4 as uuid4 } from "uuid";
 
 import { GameAnalyticsPipelineConfig } from "./helpers/config-types";
 import { StreamingIngestionConstruct } from "./constructs/streaming-ingestion-construct";
@@ -37,11 +33,14 @@ import { StreamingAnalyticsConstruct } from "./constructs/streaming-analytics";
 import { MetricsConstruct } from "./constructs/metrics-construct";
 import { LambdaConstruct } from "./constructs/lambda-construct";
 
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
 }
 
 export class InfrastructureStack extends cdk.Stack {
+
   constructor(scope: Construct, id: string, props: InfrastructureStackProps) {
     super(scope, id, props);
     const codePath = "../../business-logic";
@@ -334,65 +333,6 @@ export class InfrastructureStack extends cdk.Stack {
         resources: [applicationsTable.tableArn],
       })
     );
-    lambdaConstruct.solutionHelper.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "GetSolutionS3Objects",
-        effect: iam.Effect.ALLOW,
-        actions: ["s3:GetObject"],
-        resources: ["*"], // Setting this to all S3 buckets as there is no source code bucket in this solution.
-      })
-    );
-    lambdaConstruct.solutionHelper.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "DynamoDB",
-        effect: iam.Effect.ALLOW,
-        actions: ["dynamodb:PutItem"],
-        resources: [applicationsTable.tableArn, authorizationsTable.tableArn],
-      })
-    );
-    lambdaConstruct.solutionHelper.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "cloudwatchLogs",
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutDestination",
-          "logs:PutLogEvents",
-        ],
-        resources: [
-          `arn:${cdk.Aws.PARTITION}:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:/aws/lambda/*`,
-        ],
-      })
-    );
-    lambdaConstruct.solutionHelper.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "AthenaQueries",
-        effect: iam.Effect.ALLOW,
-        actions: ["athena:CreateNamedQuery"],
-        resources: [
-          `arn:${cdk.Aws.PARTITION}:athena:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:workgroup/${gameAnalyticsWorkgroup.ref}`,
-        ],
-      })
-    );
-    lambdaConstruct.solutionHelper.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "CloudWatchDashboard",
-        effect: iam.Effect.ALLOW,
-        actions: ["cloudwatch:PutDashboard"],
-        resources: ["*"],
-      })
-    );
-    lambdaConstruct.solutionHelper.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "CloudWatchDashboardDelete",
-        effect: iam.Effect.ALLOW,
-        actions: ["cloudwatch:DeleteDashboards"],
-        resources: [
-          `arn:${cdk.Aws.PARTITION}:cloudwatch::${cdk.Aws.ACCOUNT_ID}:dashboard/PipelineOpsDashboard_${cdk.Aws.STACK_NAME}`,
-        ],
-      })
-    );
     lambdaConstruct.lambdaAuthorizer.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "DynamoDBAccess",
@@ -417,34 +357,6 @@ export class InfrastructureStack extends cdk.Stack {
       lambdaConstruct.applicationAdminServiceFunction
     );
 
-    // ---- Custom Resources ---- //
-    const solutionHelperProvider = new customresources.Provider(
-      this,
-      "SolutionHelperProvider",
-      {
-        onEventHandler: lambdaConstruct.solutionHelper,
-      }
-    );
-
-    // Moved UUID generation to here due to custom resource gettAtt issues
-    const applicationId = uuid4();
-    const applicationName = "default_app";
-
-    // Create the Athena Named Queries in the Workgroup
-    const createAthenaNamedQueriesCustomResource = new cdk.CustomResource(
-      this,
-      "CreateAthenaNamedQueries",
-      {
-        serviceToken: solutionHelperProvider.serviceToken,
-        properties: {
-          customAction: "createAthenaNamedQueries",
-          database: dataLakeConstruct.gameEventsDatabase.ref,
-          workgroupName: gameAnalyticsWorkgroup.name,
-          table: dataLakeConstruct.rawEventsTable.ref,
-        },
-      }
-    );
-
     // Initialize variable, will be checked to see if set properly
     let streamingAnalyticsConstruct;
 
@@ -456,9 +368,7 @@ export class InfrastructureStack extends cdk.Stack {
         this,
         "StreamingAnalyticsConstruct",
         {
-          solutionHelper: lambdaConstruct.solutionHelper,
           gameEventsStream: gameEventsStream,
-          solutionHelperProvider: solutionHelperProvider,
           baseCodePath: codePath,
         }
       );
@@ -501,11 +411,11 @@ export class InfrastructureStack extends cdk.Stack {
           Functions: {
             AnalyticsProcessingFunction: streamingAnalyticsConstruct
               ? streamingAnalyticsConstruct.analyticsProcessingFunction
-                .functionName
+                  .functionName
               : cdk.Aws.NO_VALUE,
             AnalyticsProcessingFunctionArn: streamingAnalyticsConstruct
               ? streamingAnalyticsConstruct.analyticsProcessingFunction
-                .functionName
+                  .functionName
               : cdk.Aws.NO_VALUE,
             EventsProcessingFunction:
               lambdaConstruct.eventsProcessingFunction.functionName,
@@ -600,13 +510,5 @@ export class InfrastructureStack extends cdk.Stack {
       description: "CloudWatch Dashboard for viewing pipeline metrics",
       value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#dashboards:name=PipelineOpsDashboard_${cdk.Aws.STACK_NAME};start=PT1H`,
     });
-
-    if (props.config.DEV_MODE) {
-      new cdk.CfnOutput(this, "TestApplicationIdOutput", {
-        description:
-          "The identifier of the test application that was created with the solution",
-        value: applicationId,
-      });
-    }
   }
 }
