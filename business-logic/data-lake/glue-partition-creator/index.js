@@ -18,9 +18,13 @@
 
 'use strict';
 
-const AWS = require('aws-sdk')
+const { Glue } = require('@aws-sdk/client-glue');
 const moment = require('moment');
-const glue = new AWS.Glue({ apiVersion: '2017-03-31' });
+const glue = new Glue({
+    // The key apiVersion is no longer supported in v3, and can be removed.
+    // @deprecated The client uses the "latest" apiVersion.
+    apiVersion: '2017-03-31',
+});
 global.StorageDescriptor = {};
 
 exports.handler = async (event) => {
@@ -38,7 +42,7 @@ exports.handler = async (event) => {
             DatabaseName: process.env.DATABASE_NAME,
             TableName: process.env.TABLE_NAME,
             PartitionValues: [String(year), String(month), String(day)]
-        }).promise();
+        });
         console.log(`Partition already exists for year=${year}/month=${month}/day=${day}`);
         return result;
     } catch (err) {
@@ -47,10 +51,10 @@ exports.handler = async (event) => {
         let Table = await glue.getTable({
             DatabaseName: process.env.DATABASE_NAME,
             Name: process.env.TABLE_NAME,
-        }).promise();
+        });
         console.log(`Table setting: ${JSON.stringify(Table)}`);
         storageDescriptor = Table.Table.StorageDescriptor;
-        if(err.code === 'EntityNotFoundException'){
+        if(err.name === 'EntityNotFoundException'){
             let params = {
                 DatabaseName: process.env.DATABASE_NAME,
                 TableName: process.env.TABLE_NAME,
@@ -62,7 +66,7 @@ exports.handler = async (event) => {
                     Values: [String(year), String(month), String(day)],
                 }
             };
-            await glue.createPartition(params).promise();
+            await glue.createPartition(params);
             console.log(`Created new table partition: ${storageDescriptor.Location}/year=${year}/month=${month}/day=${day}`);
         } else {
             console.log(`There was an error: ${JSON.stringify(err)}`);

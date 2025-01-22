@@ -5,11 +5,11 @@
     "version": "0.0.1",
     "private": true,
     "dependencies": {
-        "aws-sdk": "*",
+        "@aws-sdk/client-glue": "^3.731.1",
         "moment": "*"
     },
     "devDependencies": {
-        "aws-sdk": "*"
+        "@aws-sdk/client-glue": "^3.731.1"
     },
     "scripts": {
         "build:init": "rm -rf package-lock.json && rm -rf dist && rm -rf node_modules",
