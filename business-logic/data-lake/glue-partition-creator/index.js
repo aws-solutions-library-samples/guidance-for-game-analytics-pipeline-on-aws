@@ -20,11 +20,7 @@
 
 const { Glue } = require('@aws-sdk/client-glue');
 const moment = require('moment');
-const glue = new Glue({
-    // The key apiVersion is no longer supported in v3, and can be removed.
-    // @deprecated The client uses the "latest" apiVersion.
-    apiVersion: '2017-03-31',
-});
+const glue = new Glue({});
 global.StorageDescriptor = {};
 
 exports.handler = async (event) => {
