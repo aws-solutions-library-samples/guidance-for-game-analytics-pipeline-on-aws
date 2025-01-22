@@ -5,7 +5,9 @@
     "private": true,
     "main": "index.js",
     "dependencies": {
-        "aws-sdk": "*"
+        "@aws-sdk/client-dynamodb": "^3.731.0",
+        "@aws-sdk/credential-providers": "^3.731.0",
+        "@aws-sdk/lib-dynamodb": "^3.731.0"
     },
     "scripts": {
         "build:init": "rm -rf package-lock.json && rm -rf dist && rm -rf node_modules",
