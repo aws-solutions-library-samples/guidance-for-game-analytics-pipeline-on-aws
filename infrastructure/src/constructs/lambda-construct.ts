@@ -35,7 +35,6 @@ const defaultProps: Partial<LambdaConstructProps> = {};
  */
 export class LambdaConstruct extends Construct {
   public readonly eventsProcessingFunction: lambda.Function;
-  public readonly solutionHelper: lambda.Function;
   public readonly lambdaAuthorizer: lambda.Function;
   public readonly applicationAdminServiceFunction: lambda.Function;
 
@@ -69,24 +68,6 @@ function. This function to process and transform raw events before they get writ
         },
       }
     );
-
-    /* The following variables define the `SolutionHelper` function. This function provides the various utilities
-required to initialize solution defaults. */
-    this.solutionHelper = new NodejsFunction(this, "SolutionHelper", {
-      description: "Solution Helper utility function",
-      entry: path.join(__dirname, `${codePath}/solution-helper/index.js`),
-      depsLockFilePath: path.join(
-        __dirname,
-        `${codePath}/solution-helper/package-lock.json`
-      ),
-
-      memorySize: 128,
-      timeout: cdk.Duration.minutes(5),
-      runtime: lambda.Runtime.NODEJS_18_X,
-      environment: {
-        VERSION: "2",
-      },
-    });
 
     this.lambdaAuthorizer = new NodejsFunction(this, "LambdaAuthorizer", {
       description:
