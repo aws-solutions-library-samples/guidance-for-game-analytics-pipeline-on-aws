@@ -25,6 +25,13 @@ const AWS = require('aws-sdk');
 console.log('Loading function');
 
 
+const config = {
+  credentials: new AWS.EnvironmentCredentials('AWS'), // Lambda provided credentials
+  region: process.env.AWS_REGION
+};
+
+const docClient = new AWS.DynamoDB.DocumentClient(config);
+
 /**
  * AuthPolicy receives a set of allowed and denied methods and generates a valid
  * AWS policy for the API Gateway authorizer. The constructor receives the calling
@@ -418,16 +425,11 @@ const _queryDDBAuthorizations = async (apiKeyValue, lastevalkey) => {
         FilterExpression : 'enabled = :enabled',
         Limit: 500
     };
-    this.creds = new AWS.EnvironmentCredentials('AWS'); // Lambda provided credentials
-    this.config = {
-      credentials: this.creds,
-      region: process.env.AWS_REGION,
-    };
     
     if (lastevalkey) {
         params.ExclusiveStartKey = lastevalkey;
     }
-    let docClient = new AWS.DynamoDB.DocumentClient(this.config);
+    
     try {
         let result = await docClient.query(params).promise();
         if (result.Items.length < 1){
