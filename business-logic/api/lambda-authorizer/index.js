@@ -30,10 +30,7 @@ console.log('Loading function');
 
 
 const config = {
-  credentials: // JS SDK v3 switched credential providers from classes to functions.
-  // This is the closest approximation from codemod of what your application needs.
-  // Reference: https://www.npmjs.com/package/@aws-sdk/credential-providers
-  fromEnv('AWS'), // Lambda provided credentials
+  credentials: fromEnv('AWS'), // Lambda provided credentials
   region: process.env.AWS_REGION
 };
 
@@ -439,7 +436,6 @@ const _queryDDBAuthorizations = async (apiKeyValue, lastevalkey) => {
     
     try {
         let result = await docClient.query(params);
-        console.log(result);
         if (result.Items.length < 1){
             console.log(`No authorizations found for api key`);
             return Promise.reject({
