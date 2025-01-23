@@ -61,7 +61,7 @@ function. This function to process and transform raw events before they get writ
         ),
         memorySize: 256,
         timeout: cdk.Duration.minutes(5),
-        runtime: lambda.Runtime.NODEJS_18_X,
+        runtime: lambda.Runtime.NODEJS_22_X,
         environment: {
           APPLICATIONS_TABLE: props.applicationsTable.tableName,
           CACHE_TIMEOUT_SECONDS: "60",
