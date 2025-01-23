@@ -27,7 +27,7 @@ The games industry is increasing adoption of the Games-as-a-Service operating mo
 
 The Game Analytics Pipeline guidance helps game developers to apply a flexible, and scalable DataOps methodology to their games. Allowing them to continuously integrate, and continuously deploy (CI/CD) a scalable serverless data pipeline for ingesting, storing, and analyzing telemetry data generated from games, and services. The guidance supports streaming ingestion of data, allowing users to gain critical insights from their games, and other applications in near real-time, allowing them to focus on expanding, and improving game experience almost immediately, instead of managing the underlying infrastructure operations. Since the guidance has been codified as a CDK application, game developers can determine the best modules, or components that fit their use case, allowing them to test, and QA the best architecture before deploying into production. This modular system allows for additional AWS capabilities, such as AI/ML models, to be integrated into the architecture in order to further support real-time decision making, and automated LiveOps using AIOps, to further enhance player engagement. Essentially allowing developers to focus on expanding game functionality, rather than managing the underlying infrastructure operations.
 
-![Architecture](./docs/architecture.png)
+![Architecture](./docs/media/architecture.png)
 
 ## Prerequisites
 
@@ -95,6 +95,10 @@ The following settings can be adjusted to suite your use case:
   - *Description:* The number of Kinesis shards, or sequence of data records, to use for the data stream. The default value has been set to `1` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. For information about determining the shards required for your use case, refer to [Amazon Kinesis Data Streams Terminology and Concepts](https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html) in the *Amazon Kinesis Data Streams Developer Guide*.
   - *Type:* Integer
   - *Example:* `1`
+- `STREAM_MODE`
+  - *Description:* The Kinesis stream capacity mode. When set to `PROVISIONED`, the stream will be created with the number of shards specified in `STREAM_SHARD_COUNT`. When set to `ON_DEMAND`, the number of shards will be scaled automatically to handle throughput and the `STREAM_SHARD_COUNT` setting will be ignored. This value can be changed at a later time and re-deployed through CI/CD. For information about determining the capacity mode required for your use case, refer to [Choose the data stream capacity mode](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html) in the *Amazon Kinesis Data Streams Developer Guide*.
+  - *Type:* String
+  - *Example:* `"PROVISIONED"` or `"ON_DEMAND"`
 - `METRIC_STREAM_SHARD_COUNT`
   - *Description:* The number of Kinesis shards, or sequence of data records, to use for the metric output stream. The metric output stream is emitted by the Managed Flink app and converted into CloudWatch metrics. For information about determining the number of shards required to handle , refer to the *Provisioned mode features and use cases* subsection of [Choose the data stream capacity mode](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html#provisionedmode) in the *Amazon Kinesis Data Streams Developer Guide*.
   - Throughput considerations are determined by the characteristics of metrics emitted by Flink. The records per second is determined by the number of defined metrics, the number of distinct dimension combinations for each metric emitted for every windowing group, and the duration of the metric window. The average data size is determined by the number and size of the dimensions defined for each metric record. The number of consumers is dependent on the number of metric monitoring services, such as Cloudwatch metrics, consuming the stream.

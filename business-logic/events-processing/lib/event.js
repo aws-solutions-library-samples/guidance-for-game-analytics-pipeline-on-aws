@@ -15,11 +15,12 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
- 
-'use strict';
 
-const AWS = require('aws-sdk');
-const _ = require('underscore');
+'use strict';
+const { fromEnv } = require('@aws-sdk/credential-providers');
+const { DynamoDBDocument } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDB } = require('@aws-sdk/client-dynamodb');
+
 const moment = require('moment');
 const event_schema = require('../config/event_schema.json');
 const Ajv2020 = require('ajv/dist/2020');
@@ -27,11 +28,15 @@ const Ajv2020 = require('ajv/dist/2020');
 const ajv = new Ajv2020();
 var validate = ajv.compile(event_schema);
 
-const creds = new AWS.EnvironmentCredentials('AWS'); // Lambda provided credentials
+const creds = fromEnv('AWS'); // Lambda provided credentials
+
 const dynamoConfig = {
   credentials: creds,
   region: process.env.AWS_REGION
 };
+
+const dynamoClient = new DynamoDB(dynamoConfig);
+const docClient = DynamoDBDocument.from(dynamoClient);
 
 console.log(`Loaded event JSON Schema: ${JSON.stringify(event_schema)}`);
 
@@ -183,7 +188,7 @@ class Event {
         });
       } 
     } catch (err) {
-      console.log(`Error processing record: ${JSON.stringify(err)}`);
+      console.error(`Error processing record: ${JSON.stringify(err)}`);
       return Promise.reject({
         recordId: recordId,
         result: 'ProcessingFailed',
@@ -211,10 +216,10 @@ class Event {
       return Promise.resolve(null);
     } else if (applicationsCacheResult == undefined) {
       // get from DynamoDB and set in Applications cache
-      const docClient = new AWS.DynamoDB.DocumentClient(this.dynamoConfig);
+      
       try {
-        let data = await docClient.get(params).promise();
-        if (!_.isEmpty(data)) {
+        let data = await docClient.get(params);
+        if (data?.Item != undefined) {
           // if found in ddb, set in cache and return it
           global.applicationsCache.set(applicationId, data.Item);
           return Promise.resolve(data.Item);
@@ -225,7 +230,8 @@ class Event {
           return Promise.resolve(null);
         }
       } catch (err) {
-        console.log(JSON.stringify(err));
+        console.error("Error encountered in getApplication");
+        console.error(JSON.stringify(err));
         return Promise.reject(err);
       }
     } else {
@@ -252,7 +258,7 @@ class Event {
         });
       }
     } catch (err) {
-      console.log(`There was an error validating the schema ${JSON.stringify(err)}`);
+      console.error(`There was an error validating the schema ${JSON.stringify(err)}`);
       return Promise.reject(err);
     }
   }
