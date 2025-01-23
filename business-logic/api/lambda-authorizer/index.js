@@ -15,15 +15,26 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
- 
-'use strict';
 
+'use strict';
 /**
  * Lib
  */
-const AWS = require('aws-sdk');
+
+
+const { fromEnv } = require('@aws-sdk/credential-providers');
+const { DynamoDBDocument } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDB } = require('@aws-sdk/client-dynamodb');
+
 console.log('Loading function');
 
+
+const config = {
+  credentials: fromEnv('AWS'), // Lambda provided credentials
+  region: process.env.AWS_REGION
+};
+
+const docClient = DynamoDBDocument.from(new DynamoDB(config));
 
 /**
  * AuthPolicy receives a set of allowed and denied methods and generates a valid
@@ -418,18 +429,13 @@ const _queryDDBAuthorizations = async (apiKeyValue, lastevalkey) => {
         FilterExpression : 'enabled = :enabled',
         Limit: 500
     };
-    this.creds = new AWS.EnvironmentCredentials('AWS'); // Lambda provided credentials
-    this.config = {
-      credentials: this.creds,
-      region: process.env.AWS_REGION,
-    };
     
     if (lastevalkey) {
         params.ExclusiveStartKey = lastevalkey;
     }
-    let docClient = new AWS.DynamoDB.DocumentClient(this.config);
+    
     try {
-        let result = await docClient.query(params).promise();
+        let result = await docClient.query(params);
         if (result.Items.length < 1){
             console.log(`No authorizations found for api key`);
             return Promise.reject({

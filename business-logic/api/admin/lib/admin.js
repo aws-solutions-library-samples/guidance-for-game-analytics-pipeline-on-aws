@@ -17,11 +17,21 @@
  */
 
 'use strict';
-const AWS = require('aws-sdk');
+const { fromEnv } = require('@aws-sdk/credential-providers');
+const { DynamoDBDocument } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDB } = require('@aws-sdk/client-dynamodb');
+
 const _ = require('underscore');
 const moment = require('moment');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require("crypto");
+
+const config = {
+  credentials: fromEnv('AWS'), // Lambda provided credentials
+  region: process.env.AWS_REGION,
+};
+
+const docClient = DynamoDBDocument.from(new DynamoDB(config));
 
 /**
  * Performs admin actions including creating, retrieving and deleting
@@ -35,13 +45,8 @@ class Application {
    * @constructor
    */
   constructor() {
-    this.creds = new AWS.EnvironmentCredentials('AWS'); // Lambda provided credentials
-    this.config = {
-      credentials: this.creds,
-      region: process.env.AWS_REGION,
-    };
   }
-  
+
   /**
    * Creates a new application
    * @param {JSON} application - Object representing the application configuration
@@ -61,8 +66,8 @@ class Application {
           'application_id': applicationId
         }
       };
-      const docClient = new AWS.DynamoDB.DocumentClient(this.config);
-      await docClient.put(params).promise();
+
+      await docClient.put(params);
       return Promise.resolve({
         'ApplicationId': applicationId,
         'ApplicationName': application.Name,
@@ -79,7 +84,7 @@ class Application {
       });
     }
   }
-  
+
   /**
    * List all applications
    * Scans DynamoDB to retrieve all applications
@@ -89,11 +94,10 @@ class Application {
       TableName: process.env.APPLICATIONS_TABLE
     };
     let length = 0;
-    let docClient = new AWS.DynamoDB.DocumentClient(this.config);
     try {
-      let result = await docClient.scan(params).promise();
+      let result = await docClient.scan(params);
       length += result.Items.length;
-      if (length < 1){
+      if (length < 1) {
         return Promise.reject({
           code: 404,
           error: 'NotFoundException',
@@ -101,14 +105,14 @@ class Application {
         });
       } else {
         let results = [];
-        result.Items.forEach(function(item) {
+        result.Items.forEach(function (item) {
           results.push({
             'ApplicationId': item.application_id,
             'ApplicationName': item.application_name,
             'Description': item.description,
             'UpdatedAt': item.updated_at,
             'CreatedAt': item.created_at
-          });  
+          });
         });
         return Promise.resolve({
           "Applications": results,
@@ -137,10 +141,10 @@ class Application {
       }
     };
 
-    const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+
     try {
-      let data = await docClient.get(params).promise();
-      if (!_.isEqual(data, {})) {
+      let data = await docClient.get(params);
+      if (data?.Item != undefined) {
         let response = {
           'ApplicationId': data.Item.application_id,
           'ApplicationName': data.Item.application_name,
@@ -157,7 +161,7 @@ class Application {
           message: `The application does not exist.`
         });
       }
-      
+
     } catch (err) {
       console.log(JSON.stringify(err));
       return Promise.reject({
@@ -168,7 +172,7 @@ class Application {
     }
   }
 
-  
+
   /**
    * List application event endpoint authorizations
    */
@@ -185,7 +189,7 @@ class Application {
       });
     }
   }
-  
+
   /**
    * List application authorizations
    * Query authorizations index to get authorizations for application
@@ -201,14 +205,13 @@ class Application {
       },
       Limit: 500
     };
-    
+
     if (lastevalkey) {
       params.ExclusiveStartKey = lastevalkey;
     }
-    let docClient = new AWS.DynamoDB.DocumentClient(this.config);
     try {
-      let result = await docClient.query(params).promise();
-      result.Items.forEach(function(item) {
+      let result = await docClient.query(params);
+      result.Items.forEach(function (item) {
         applicationAuthorizations.push({
           'ApiKeyId': item.api_key_id,
           'ApiKeyDescription': item.api_key_description,
@@ -218,14 +221,14 @@ class Application {
           'UpdatedAt': item.updated_at,
           'CreatedAt': item.created_at,
           'Enabled': item.enabled
-        });  
-        
+        });
+
       });
-      
+
       // If there is more data, load more data and append them to authorizations
       if (result.LastEvaluatedKey) {
         let moreResult = await this._listApplicationAuthorizations(applicationId, lastevalkey);
-        moreResult.Items.forEach(function(item) {
+        moreResult.Items.forEach(function (item) {
           applicationAuthorizations.push({
             'ApiKeyId': item.api_key_id,
             'ApiKeyDescription': item.api_key_description,
@@ -238,7 +241,7 @@ class Application {
           });
         });
       }
-      
+
       return Promise.resolve({
         'Authorizations': applicationAuthorizations,
         'Count': applicationAuthorizations.length
@@ -247,7 +250,7 @@ class Application {
       return Promise.reject(err);
     }
   }
-  
+
   /**
    * Deletes an application from the solution
    * @param {string} applicationId - The unique identifier for the application
@@ -256,13 +259,13 @@ class Application {
     try {
       await this._deleteApplicationAuthorizations(applicationId);
       await this._deleteApplication(applicationId);
-      
+
       return Promise.resolve('Delete successful');
     } catch (err) {
       return Promise.reject(err);
-    } 
+    }
   }
-  
+
   /**
    * Passes through idempotency behavior of DynamoDB DeleteItem API.
    * Items that don't exist will still return 200 as deleted
@@ -275,9 +278,9 @@ class Application {
       }
     };
 
-    const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+
     try {
-      let data = await docClient.delete(params).promise();
+      let data = await docClient.delete(params);
       return Promise.resolve(data);
     } catch (err) {
       console.log(JSON.stringify(err));
@@ -288,12 +291,12 @@ class Application {
       });
     }
   }
-  
+
   /**
    * Queries ApplicationAuthorizations DynamoDB GSI index and deletes all the api key authorizations for an application
    */
   async _deleteApplicationAuthorizations(applicationId) {
-    const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+
     try {
       // Lookup authorizations associated with application
       let authorizationResults = await docClient.query({
@@ -304,14 +307,14 @@ class Application {
           ':appId': applicationId
         },
         ProjectionExpression: 'api_key_id'
-      }).promise();
-      
+      });
+
       if (authorizationResults.Items.length === 0) {
         console.log(`No authorizations for this application`);
         return Promise.resolve(true);
       }
       for (const item of authorizationResults.Items) {
-        await this.deleteAuthorization(item.api_key_id, applicationId); 
+        await this.deleteAuthorization(item.api_key_id, applicationId);
       }
       return Promise.resolve(true);
     } catch (err) {
@@ -323,7 +326,7 @@ class Application {
       });
     }
   }
-  
+
   /**
    * Register API Key authorization with Authorizations DynamoDB Table
    * @param {string} apiKey - Authorization value to allow access to the registered application
@@ -334,7 +337,7 @@ class Application {
    */
   async createAuthorization(apiKeyValue, applicationId, apiKeyName, apiKeyDescription, apiKeyId) {
     try {
-      const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+
       const updated_at = moment().utc().format();
       const created_at = moment().utc().format();
       const params = {
@@ -350,7 +353,7 @@ class Application {
           enabled: true
         }
       };
-      await docClient.put(params).promise();
+      await docClient.put(params);
       const response = {
         ApiKeyId: params.Item.api_key_id,
         ApiKeyValue: params.Item.api_key_value,
@@ -371,7 +374,7 @@ class Application {
       });
     }
   }
-  
+
   /**
    * Get authorization details
    * @param {string} apiKeyId - The api key id
@@ -386,10 +389,10 @@ class Application {
       }
     };
 
-    const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+
     try {
-      let data = await docClient.get(params).promise();
-      if (!_.isEqual(data, {})) {
+      let data = await docClient.get(params);
+      if (data?.Item != undefined) {
         let result = {
           ApiKeyId: data.Item.api_key_id,
           ApiKeyName: data.Item.api_key_name,
@@ -418,7 +421,7 @@ class Application {
       });
     }
   }
-  
+
   /**
    * Modify an API Key authorization in DynamoDB. 
    * Currently only supports updating enabled status. 
@@ -428,7 +431,7 @@ class Application {
    */
   async modifyAuthorization(apiKeyId, applicationId, enabled) {
     try {
-      const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+
       const updated_at = moment().utc().format();
       const params = {
         TableName: process.env.AUTHORIZATIONS_TABLE,
@@ -438,12 +441,12 @@ class Application {
         },
         UpdateExpression: "set enabled = :enabled, updated_at = :updated_at",
         ExpressionAttributeValues: {
-            ":enabled": enabled,
-            ":updated_at": updated_at
+          ":enabled": enabled,
+          ":updated_at": updated_at
         },
         ReturnValues: 'ALL_NEW',
       };
-      const response = await docClient.update(params).promise();
+      const response = await docClient.update(params);
       return Promise.resolve({
         ApiKeyId: response.Attributes.api_key_id,
         ApiKeyName: response.Attributes.api_key_name,
@@ -463,7 +466,7 @@ class Application {
       });
     }
   }
-  
+
   /**
    * Deletes authorization from the solution authorizations table
    * @param {string} apiKeyId - The api key Id
@@ -472,14 +475,14 @@ class Application {
   async deleteAuthorization(apiKeyId, applicationId) {
     try {
       await this._deleteAuthorization(apiKeyId, applicationId);
-      return Promise.resolve({Result: 'Deleted'});
+      return Promise.resolve({ Result: 'Deleted' });
     } catch (err) {
       console.log(JSON.stringify(err));
       return Promise.reject(err);
-    } 
+    }
   }
-  
-  
+
+
   /**
    * Passes through idempotency behavior of DynamoDB DeleteItem API.
    * Items that don't exist will still return 200 as deleted
@@ -494,9 +497,9 @@ class Application {
       ReturnValues: 'ALL_OLD'
     };
 
-    const docClient = new AWS.DynamoDB.DocumentClient(this.config);
+
     try {
-      let data = await docClient.delete(params).promise();
+      let data = await docClient.delete(params);
       return Promise.resolve(data);
     } catch (err) {
       console.log(JSON.stringify(err));
@@ -507,8 +510,8 @@ class Application {
       });
     }
   }
-  
-  
+
+
   /**
    * Create a new api key
    * @param {string} apiKeyName - Name to associate with the newly created key
@@ -518,19 +521,19 @@ class Application {
     console.log(`Creating ApiKey`);
     const params = {};
     params.enabled = true;
-    
+
     if (apiKeyDescription) {
       params.description = apiKeyDescription;
     } else {
       params.description = `Auto-generated api key`;
     }
-    
+
     if (apiKeyName) {
       params.name = apiKeyName;
     } else {
       params.name = 'default';
     }
-    
+
     try {
       let response = {
         id: uuidv4(),
