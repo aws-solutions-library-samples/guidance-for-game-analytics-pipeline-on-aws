@@ -104,8 +104,6 @@ export interface StreamingAnalyticsConstructProps extends cdk.StackProps {
    */
   baseCodePath: string;
   gameEventsStream: kinesis.IStream;
-  solutionHelper: lambda.IFunction;
-  solutionHelperProvider: customresources.Provider;
 }
 
 const defaultProps: Partial<StreamingAnalyticsConstructProps> = {};
@@ -276,44 +274,9 @@ export class StreamingAnalyticsConstruct extends Construct {
         }
       );
 
-    // * Needs a depnedency because output may be created before application (issue using CFN Constructs)
+    // * Needs a dependency because output may be created before application (issue using CFN Constructs)
     kinesisAnalyticsLambdaOutput.addDependency(kinesisAnalyticsApp);
     kinesisAnalyticsErrorOutput.addDependency(kinesisAnalyticsApp);
-
-    // Update `solution_helper` permissions to access Kinesis Analytics, if `ENABLE_STREAMING_ANALYTICS` is enabled
-    props.solutionHelper.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "KinesisAnalytics",
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "kinesisanalytics:StartApplication",
-          "kinesisanalytics:DescribeApplication",
-        ],
-        resources: [
-          `arn:${cdk.Aws.PARTITION}:kinesisanalytics:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:application/${kinesisAnalyticsApp.applicationName}`,
-        ],
-      })
-    );
-
-    const startKinesisAnalyticsAppCustomResource = new cdk.CustomResource(
-      this,
-      "StartKinesisAnalyticsApp",
-      {
-        serviceToken: props.solutionHelperProvider.serviceToken,
-        properties: {
-          customAction: "startKinesisAnalyticsApp",
-          Region: cdk.Aws.REGION,
-          kinesisAnalyticsAppName: kinesisAnalyticsApp.applicationName,
-        },
-      }
-    );
-    startKinesisAnalyticsAppCustomResource.node.addDependency(
-      props.gameEventsStream
-    );
-    startKinesisAnalyticsAppCustomResource.node.addDependency(
-      kinesisAnalyticsLambdaOutput
-    );
-
     this.analyticsProcessingFunction = analyticsProcessingFunction;
 
     new cdk.CfnOutput(this, "KinesisAnalyticsAppOutput", {
