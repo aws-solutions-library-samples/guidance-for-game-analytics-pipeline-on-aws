@@ -17,7 +17,7 @@ export interface GameAnalyticsPipelineConfig {
     GLUE_TMP_PREFIX: string;
     STREAM_SHARD_COUNT: number;
     METRIC_STREAM_SHARD_COUNT: number;
-    STREAM_MODE: "PROVISIONED" | "ON_DEMAND";
+    STREAM_PROVISIONED: boolean;
     ENABLE_STREAMING_ANALYTICS: boolean;
     S3_BACKUP_MODE: boolean;
     CLOUDWATCH_RETENTION_DAYS: number;
