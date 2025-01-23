@@ -207,7 +207,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     // Input stream for applications
     const gameEventsStream = new kinesis.Stream(this, "GameEventStream",
-      (props.config.STREAM_MODE === "PROVISIONED") ? {
+      (props.config.STREAM_PROVISIONED === true) ? {
         shardCount: props.config.STREAM_SHARD_COUNT,
         streamMode: kinesis.StreamMode.PROVISIONED,
       } : {
