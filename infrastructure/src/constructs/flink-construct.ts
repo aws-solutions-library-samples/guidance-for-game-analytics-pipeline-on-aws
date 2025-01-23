@@ -15,7 +15,6 @@
 
 import * as cdk from "aws-cdk-lib";
 import * as kinesisanalytics from "aws-cdk-lib/aws-kinesisanalytics";
-import * as customresources from "aws-cdk-lib/custom-resources";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
@@ -36,8 +35,6 @@ export interface ManagedFlinkConstructProps extends cdk.StackProps {
    */
   baseCodePath: string;
   gameEventsStream: kinesis.IStream;
-  solutionHelper: lambda.IFunction;
-  solutionHelperProvider: customresources.Provider;
   config: GameAnalyticsPipelineConfig;
 }
 
@@ -317,50 +314,6 @@ export class ManagedFlinkConstruct extends Construct {
     )
     flinkLoggingConfiguration.addDependency(managedFlinkApp)
 
-    // allow custom resource to see and start application
-    props.solutionHelper.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "FlinkStartPermissions",
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "kinesisanalytics:StartApplication",
-          "kinesisanalytics:DescribeApplication",
-        ],
-        resources: [
-          `arn:${cdk.Aws.PARTITION}:kinesisanalytics:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:application/${managedFlinkApp.applicationName}`,
-        ],
-      })
-    );
-
-    // starts the flink app
-    const startFlinkAppCustomResource = new cdk.CustomResource(
-      this,
-      "StartFlinkApp",
-      {
-        serviceToken: props.solutionHelperProvider.serviceToken,
-        properties: {
-          customAction: "startFlinkApp",
-          Region: cdk.Aws.REGION,
-          kinesisAnalyticsAppName: managedFlinkApp.applicationName,
-        },
-      }
-    );
-    // start flink app after event stream is initialized
-    startFlinkAppCustomResource.node.addDependency(
-      props.gameEventsStream
-    );
-    // start flink app after output stream is created
-    startFlinkAppCustomResource.node.addDependency(
-      metricOutputStream
-    );
-    // start flink app after logging is setup
-    startFlinkAppCustomResource.node.addDependency(
-      flinkLoggingConfiguration
-    );
-    // start flink app after lambda is created
-    startFlinkAppCustomResource.node.addDependency(
-      metricProcessingFunction
-    );
 
     this.metricProcessingFunction = metricProcessingFunction;
     this.managedFlinkApp = managedFlinkApp;
