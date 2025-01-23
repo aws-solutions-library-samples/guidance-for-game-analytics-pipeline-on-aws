@@ -440,6 +440,7 @@ class Application {
           application_id: applicationId
         },
         UpdateExpression: "set enabled = :enabled, updated_at = :updated_at",
+        ConditionExpression: "attribute_exists(api_key_id) AND attribute_exists(application_id)",
         ExpressionAttributeValues: {
           ":enabled": enabled,
           ":updated_at": updated_at
