@@ -79,7 +79,7 @@ function. This function to process and transform raw events before they get writ
       ),
       memorySize: 128,
       timeout: cdk.Duration.seconds(60),
-      runtime: lambda.Runtime.NODEJS_18_X,
+      runtime: lambda.Runtime.NODEJS_22_X,
       environment: {
         AUTHORIZATIONS_TABLE: props.authorizationsTable.tableName,
         APPLICATION_AUTHORIZATIONS_INDEX: "ApplicationAuthorizations",
