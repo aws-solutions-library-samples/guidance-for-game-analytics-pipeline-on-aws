@@ -24,8 +24,8 @@ const { CloudWatchClient, PutMetricDataCommand } = require('@aws-sdk/client-clou
 
 const creds = fromEnv('AWS'); // Lambda provided credentials
 const cloudwatchConfig = {
-	credentials: creds,
-	region: process.env.AWS_REGION
+    credentials: creds,
+    region: process.env.AWS_REGION
 };
 const cloudwatch = new CloudWatchClient(cloudwatchConfig);
 
@@ -37,7 +37,7 @@ class CloudWatchMetrics {
     constructor() {
         this.cloudwatchConfig = cloudwatchConfig;
     }
-    
+
     /**
      * Publish metric to CloudWatch Metrics
      * @param {JSON} metric - the payload to send to Cloudwatch
@@ -54,12 +54,12 @@ class CloudWatchMetrics {
             let data = await cloudwatch.send(command);
             console.log(`cw response: ${JSON.stringify(data)}`);
         } catch (err) {
-            console.error(`${JSON.stringify(err)}`);
+            console.error(JSON.stringify(err, Object.getOwnPropertyNames(err)));
             return Promise.reject(err);
         }
         return Promise.resolve(data);
     }
-    
+
     /**
      * Convert a Kinesis Data Analytics output metric record into CloudWatch Metric format
      * @param {JSON} payload - input metric data record to be transformed
@@ -71,17 +71,17 @@ class CloudWatchMetrics {
             Value: payload.METRIC_UNIT_VALUE_INT,
             Unit: payload.METRIC_UNIT || 'None'
         };
-        
+
         // Extract dimensions from input, populate dimensions array in format required by CloudWatch
         // Strip DIMENSION_ prefix from metric before publishing
         let dimensions = [];
         for (var key in payload) {
-        	if (key.includes('DIMENSION_') && (payload[key] !== null && payload[key] != "" && payload[key] != "null")) {
+            if (key.includes('DIMENSION_') && (payload[key] !== null && payload[key] != "" && payload[key] != "null")) {
                 dimensions.push({
                     'Name': key.split("DIMENSION_").pop(),
                     'Value': payload[key]
                 });
-        	}
+            }
         }
         if (dimensions.length > 0) {
             metric.Dimensions = dimensions;
