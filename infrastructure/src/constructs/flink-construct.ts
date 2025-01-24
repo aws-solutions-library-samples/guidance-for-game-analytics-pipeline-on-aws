@@ -85,7 +85,7 @@ export class ManagedFlinkConstruct extends Construct {
 
         memorySize: 128,
         timeout: cdk.Duration.seconds(60),
-        runtime: lambda.Runtime.NODEJS_18_X,
+        runtime: lambda.Runtime.NODEJS_22_X,
         environment: {
           stackName: cdk.Aws.STACK_NAME,
           CW_NAMESPACE: `${cdk.Aws.STACK_NAME}/AWSGameAnalytics`,
