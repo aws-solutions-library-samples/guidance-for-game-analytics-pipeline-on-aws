@@ -5,7 +5,8 @@
     "private": true,
     "main": "index.js",
     "dependencies": {
-        "aws-sdk": "*",
+        "@aws-sdk/client-cloudwatch": "^3.734.0",
+        "@aws-sdk/credential-providers": "^3.734.0",
         "moment": "*"
     },
     "devDependencies": {

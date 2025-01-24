@@ -18,13 +18,16 @@
 
 'use strict';
 const moment = require('moment');
-const AWS = require('aws-sdk');
-const cloudwatch = new AWS.CloudWatch();
-const creds = new AWS.EnvironmentCredentials('AWS'); // Lambda provided credentials
+
+const { fromEnv } = require('@aws-sdk/credential-providers');
+const { CloudWatchClient, PutMetricDataCommand } = require('@aws-sdk/client-cloudwatch');
+
+const creds = fromEnv('AWS'); // Lambda provided credentials
 const cloudwatchConfig = {
 	credentials: creds,
 	region: process.env.AWS_REGION
 };
+const cloudwatch = new CloudWatchClient(cloudwatchConfig);
 
 /**
  * Process Kinesis metric stream output and publish to CloudWatch
@@ -42,16 +45,16 @@ class CloudWatchMetrics {
     async publishMetric(metric) {
         let namespace = `${process.env.CW_NAMESPACE}`;
         console.log(`Publishing metric: ${JSON.stringify(metric)}`);
-        const params = {
+        const command = new PutMetricDataCommand({
             'MetricData': [metric],
             'Namespace': namespace
-        };
+        });
         let data;
         try {
-            data = await cloudwatch.putMetricData(params).promise();
+            let data = await cloudwatch.send(command);
             console.log(`cw response: ${JSON.stringify(data)}`);
         } catch (err) {
-            console.log(`${JSON.stringify(err)}`);
+            console.error(`${JSON.stringify(err)}`);
             return Promise.reject(err);
         }
         return Promise.resolve(data);
@@ -64,7 +67,7 @@ class CloudWatchMetrics {
     async buildMetric(payload) {
         let metric = {
             MetricName: payload.METRIC_NAME,
-            Timestamp: moment(payload.METRIC_TIMESTAMP).unix(),
+            Timestamp: moment(payload.METRIC_TIMESTAMP).toDate(),
             Value: payload.METRIC_UNIT_VALUE_INT,
             Unit: payload.METRIC_UNIT || 'None'
         };

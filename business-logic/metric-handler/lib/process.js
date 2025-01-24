@@ -17,11 +17,11 @@
  */
 
 'use strict';
-
 /**
  * This function processes outputs from the Kinesis metric stream. 
  */
-const AWS = require('aws-sdk');
+
+
 const CloudwatchMetrics = require('./cloudwatch.js');
 
 const respond = async event => {
