@@ -57,7 +57,6 @@ export class CloudWatchDashboardConstruct extends Construct {
                     namespace: 'AWS/Lambda',
                     dimensionsMap: {
                         FunctionName: props.eventsProcessingFunction.functionName,
-                        Resource: props.eventsProcessingFunction.functionArn,
                     },
                 }).with({
                     label: 'Lambda Duration',
@@ -142,7 +141,6 @@ export class CloudWatchDashboardConstruct extends Construct {
                     namespace: 'AWS/Lambda',
                     dimensionsMap: {
                         FunctionName: props.eventsProcessingFunction.functionName,
-                        Resource: props.eventsProcessingFunction.functionArn,
                     },
                 }).with({
                     label: 'Errors',
@@ -153,7 +151,6 @@ export class CloudWatchDashboardConstruct extends Construct {
                     namespace: 'AWS/Lambda',
                     dimensionsMap: {
                         FunctionName: props.eventsProcessingFunction.functionName,
-                        Resource: props.eventsProcessingFunction.functionArn,
                     },
                 }).with({
                     label: 'Invocations',
@@ -178,7 +175,6 @@ export class CloudWatchDashboardConstruct extends Construct {
                             namespace: 'AWS/Lambda',
                             dimensionsMap: {
                                 FunctionName: props.eventsProcessingFunction.functionName,
-                                Resource: props.eventsProcessingFunction.functionArn,
                             },
                             statistic: 'Sum',
                         }),
@@ -304,7 +300,6 @@ export class CloudWatchDashboardConstruct extends Construct {
                         namespace: 'AWS/Lambda',
                         dimensionsMap: {
                             FunctionName: props.analyticsProcessingFunction.functionName,
-                            Resource: props.analyticsProcessingFunction.functionArn,
                         },
                     }).with({
                         label: 'Errors',
@@ -315,7 +310,6 @@ export class CloudWatchDashboardConstruct extends Construct {
                         namespace: 'AWS/Lambda',
                         dimensionsMap: {
                             FunctionName: props.analyticsProcessingFunction.functionName,
-                            Resource: props.analyticsProcessingFunction.functionArn,
                         },
                     }).with({
                         label: 'Invocations',
@@ -331,7 +325,6 @@ export class CloudWatchDashboardConstruct extends Construct {
                                 namespace: 'AWS/Lambda',
                                 dimensionsMap: {
                                     FunctionName: props.analyticsProcessingFunction.functionName,
-                                    Resource: props.analyticsProcessingFunction.functionArn,
                                 },
                                 statistic: 'Sum',
                             }),
@@ -340,7 +333,6 @@ export class CloudWatchDashboardConstruct extends Construct {
                                 namespace: 'AWS/Lambda',
                                 dimensionsMap: {
                                     FunctionName: props.analyticsProcessingFunction.functionName,
-                                    Resource: props.analyticsProcessingFunction.functionArn,
                                 },
                                 statistic: 'Sum',
                             }),
