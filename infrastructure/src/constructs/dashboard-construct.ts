@@ -35,8 +35,8 @@ export class CloudWatchDashboardConstruct extends Construct {
         // Stream Ingestion Widgets
         const streamIngestionTitleWidget = new cloudwatch.TextWidget({
             markdown: '\n## Stream Ingestion & Processing\nThis section covers metrics related to ingestion of data into the solution\'s Events Stream and processing by Kinesis Data Firehose and AWS Lambda Events Processing Function. Use the metrics here to track data freshness/latency and any issues with processor throttling/errors.\n',
-            width: 12,
-            height: 3,
+            width: 24,
+            height: 2,
         });
         const eventProcessingHealthWidget = new cloudwatch.SingleValueWidget({
             title: 'Events Processing Health',
@@ -128,7 +128,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                     color: '#1f77b4',
                 }),
             ],
-            width: 6,
+            width: 8,
             height: 6,
             region: cdk.Stack.of(this).region,
             period: cdk.Duration.seconds(60),
@@ -185,7 +185,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                     },
                 }),
             ],
-            width: 6,
+            width: 8,
             height: 6,
             region: cdk.Stack.of(this).region,
             period: cdk.Duration.seconds(60),
@@ -201,11 +201,36 @@ export class CloudWatchDashboardConstruct extends Construct {
             },
         })
 
+        const streamLatencyWidget = new cloudwatch.GraphWidget({
+            title: 'Events Stream Latency',
+            left: [
+                new cloudwatch.Metric({
+                    metricName: 'PutRecords.Latency',
+                    namespace: 'AWS/Kinesis',
+                    dimensionsMap: {
+                        StreamName: props.gameEventsStream.streamName,
+                    },
+                }),
+                new cloudwatch.Metric({
+                    metricName: 'GetRecords.Latency',
+                    namespace: 'AWS/Kinesis',
+                    dimensionsMap: {
+                        StreamName: props.gameEventsStream.streamName,
+                    },
+                })
+            ],
+            width: 8,
+            height: 6,
+            region: cdk.Stack.of(this).region,
+            period: cdk.Duration.seconds(60),
+            statistic: 'Average',
+        });
+
         // Real-time widgets
         const realTimeTitleWidget = new cloudwatch.TextWidget({
             markdown: '\n## Real-time Streaming Analytics\nThe below metrics can be used to monitor the real-time streaming SQL analytics of events. Use the Kinesis Data Analytics MillisBehindLatest metric to help you track the lag on the Kinesis SQL Application from the latest events. The Analytics Processing function that processes KDA application outputs can be tracked to measure function concurrency, success percentage, processing duration and throttles.\n',
-            width: 12,
-            height: 3,
+            width: 24,
+            height: 2,
         });
 
         // used to hold widget structure for dashboard
@@ -267,7 +292,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         statistic: 'Average',
                     }),
                 ],
-                width: 6,
+                width: 8,
                 height: 6,
                 period: cdk.Duration.seconds(60),
             })
@@ -322,7 +347,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         },
                     }),
                 ],
-                width: 6,
+                width: 8,
                 height: 6,
                 region: cdk.Stack.of(this).region,
                 period: cdk.Duration.seconds(60),
@@ -340,17 +365,19 @@ export class CloudWatchDashboardConstruct extends Construct {
             // create dashboard with analytics widgets
             widgets = [
                 [titleWidget],
-                [streamIngestionTitleWidget, realTimeTitleWidget],
                 [eventProcessingHealthWidget, realTimeHealthWidget],
-                [eventIngestionWidget, ingestionLambdaWidget, realTimeLatencyWidget, realTimeLambdaWidget]
+                [streamIngestionTitleWidget],
+                [eventIngestionWidget, ingestionLambdaWidget, streamLatencyWidget],
+                [realTimeTitleWidget],
+                [realTimeLatencyWidget, realTimeLambdaWidget]
             ];
 
         } else {
             widgets = [
                 [titleWidget],
-                [streamIngestionTitleWidget],
                 [eventProcessingHealthWidget],
-                [eventIngestionWidget, ingestionLambdaWidget]
+                [streamIngestionTitleWidget],
+                [eventIngestionWidget, ingestionLambdaWidget, streamLatencyWidget]
             ]
         }
 
