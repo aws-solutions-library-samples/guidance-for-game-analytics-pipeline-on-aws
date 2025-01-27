@@ -244,7 +244,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                             FunctionName: props.analyticsProcessingFunction.functionName,
                         },
                     }).with({
-                        label: 'Analytics Processing Concurrent Executions',
+                        label: 'Metrics Processing Lambda Concurrent Executions',
                         statistic: 'Maximum',
                     }),
                     new cloudwatch.Metric({
@@ -266,6 +266,18 @@ export class CloudWatchDashboardConstruct extends Construct {
                     }).with({
                         label: 'Lambda Throttles',
                     }),
+                    // This metric receives one sample per billing period (one hour). To visualize the number of KPUs over time, use MAX or AVG over a period of at least one (1) hour.
+                    new cloudwatch.Metric({
+                        metricName: 'KPUs',
+                        namespace: 'AWS/KinesisAnalytics',
+                        period: cdk.Duration.hours(2),
+                        dimensionsMap: {
+                            Application: props.kinesisAnalyticsApp.ref,
+                        },
+                    }).with({
+                        label: "Managed Flink KPUs",
+                        statistic: 'Maximum',
+                    }),
                 ],
                 width: 12,
                 height: 3,
@@ -273,25 +285,82 @@ export class CloudWatchDashboardConstruct extends Construct {
             });
             // REPLACE THIS WITH FLINK
             const realTimeLatencyWidget = new cloudwatch.GraphWidget({
-                title: 'Kinesis Analytics Latency',
+                title: 'Managed Flink Number of Records In Per Minute',
                 left: [
-                    new cloudwatch.Metric({
-                        metricName: 'MillisBehindLatest',
-                        namespace: 'AWS/KinesisAnalytics',
-                        dimensionsMap: {
-                            Id: '1.1',
-                            Application: props.kinesisAnalyticsApp.ref,
-                            Flow: 'Input',
+                    new cloudwatch.MathExpression({
+                        expression: 'recInPerSec * 60 / 4',
+                        label: 'numRecordsInPerMinute',
+                        usingMetrics: {
+                            "recInPerSec":
+                                new cloudwatch.Metric({
+                                    metricName: 'numRecordsInPerSecond',
+                                    namespace: 'AWS/KinesisAnalytics',
+                                    dimensionsMap: {
+                                        Application: props.kinesisAnalyticsApp.ref,
+                                    },
+                                }).with({
+                                    region: cdk.Stack.of(this).region,
+                                    statistic: 'Sum',
+                                }),
                         },
-                    }).with({
-                        region: cdk.Stack.of(this).region,
-                        statistic: 'Average',
+                    }),
+                    new cloudwatch.MathExpression({
+                        expression: 'recDroppedPerSec * 60 / 4',
+                        label: 'numLateRecordsDroppedPerMinute',
+                        usingMetrics: {
+                            "recDroppedPerSec":
+                                new cloudwatch.Metric({
+                                    metricName: 'numLateRecordsDropped',
+                                    namespace: 'AWS/KinesisAnalytics',
+                                    dimensionsMap: {
+                                        Application: props.kinesisAnalyticsApp.ref,
+                                    },
+                                }).with({
+                                    region: cdk.Stack.of(this).region,
+                                    statistic: 'Sum',
+                                }),
+                        },
                     }),
                 ],
                 width: 8,
                 height: 6,
                 period: cdk.Duration.seconds(60),
-            })
+            });
+            // REPLACE THIS WITH FLINK
+            const flinkCPUUtilizationWidget = new cloudwatch.GraphWidget({
+                title: 'Managed Flink Container CPU Utilization',
+                left: [
+                    new cloudwatch.Metric({
+                        metricName: 'containerCPUUtilization',
+                        namespace: 'AWS/KinesisAnalytics',
+                        dimensionsMap: {
+                            Application: props.kinesisAnalyticsApp.ref,
+                        },
+                    })
+
+                ],
+                leftAnnotations: [
+                    {
+                        value: 75,
+                        label: "Scale Up Threshold",
+                        color: "#FF0000"
+                    },
+                    {
+                        value: 10,
+                        label: "Scale Down Threshold",
+                        color: "#00FF00"
+                    }
+                ],
+                leftYAxis: {
+                    min: 1,
+                    max: 100,
+                    label: 'Percent',
+                    showUnits: false,
+                },
+                width: 8,
+                height: 6,
+                period: cdk.Duration.seconds(60),
+            });
             const realTimeLambdaWidget = new cloudwatch.GraphWidget({
                 title: 'Lambda Error count and success rate (%)',
                 left: [
@@ -361,7 +430,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                 [streamIngestionTitleWidget],
                 [eventIngestionWidget, ingestionLambdaWidget, streamLatencyWidget],
                 [realTimeTitleWidget],
-                [realTimeLatencyWidget, realTimeLambdaWidget]
+                [realTimeLatencyWidget, flinkCPUUtilizationWidget, realTimeLambdaWidget]
             ];
 
         } else {
