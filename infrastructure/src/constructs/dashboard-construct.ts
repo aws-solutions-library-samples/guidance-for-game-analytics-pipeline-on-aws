@@ -9,6 +9,7 @@ import * as apigateway from "aws-cdk-lib/aws-apigateway";
 
 export interface CloudWatchDashboardConstructProps extends cdk.StackProps {
     gameEventsStream: kinesis.Stream;
+    metricOutputStream: kinesis.Stream | undefined;
     gameEventsFirehose: kinesisFirehose.CfnDeliveryStream;
     gameAnalyticsApi: apigateway.IRestApi;
     eventsProcessingFunction: lambda.Function;
@@ -254,7 +255,7 @@ export class CloudWatchDashboardConstruct extends Construct {
         // used to hold widget structure for dashboard
         let widgets;
 
-        if (props.streamingAnalyticsEnabled && props.analyticsProcessingFunction != undefined && props.kinesisAnalyticsApp != undefined) {
+        if (props.streamingAnalyticsEnabled && props.analyticsProcessingFunction != undefined && props.kinesisAnalyticsApp != undefined && props.metricOutputStream != undefined) {
 
             const realTimeHealthWidget = new cloudwatch.SingleValueWidget({
                 title: 'Real-time Analytics Health',
@@ -323,6 +324,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                                 }).with({
                                     region: cdk.Stack.of(this).region,
                                     statistic: 'Sum',
+                                    period: cdk.Duration.minutes(1)
                                 }),
                         },
                     }),
@@ -349,7 +351,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                 height: 6,
                 period: cdk.Duration.seconds(60),
             });
-            // REPLACE THIS WITH FLINK
+
             const flinkCPUUtilizationWidget = new cloudwatch.GraphWidget({
                 title: 'Managed Flink Container CPU Utilization',
                 left: [
@@ -384,6 +386,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                 height: 6,
                 period: cdk.Duration.seconds(60),
             });
+
             const realTimeLambdaWidget = new cloudwatch.GraphWidget({
                 title: 'Metrics Processing Lambda Error count and success rate (%)',
                 left: [
@@ -446,6 +449,87 @@ export class CloudWatchDashboardConstruct extends Construct {
                     label: '',
                 },
             })
+
+            const metricStreamLatencyWidget = new cloudwatch.GraphWidget({
+                title: 'Metrics Stream Latency',
+                left: [
+                    new cloudwatch.Metric({
+                        metricName: 'PutRecord.Latency',
+                        namespace: 'AWS/Kinesis',
+                        dimensionsMap: {
+                            StreamName: props.metricOutputStream.streamName,
+                        },
+                    }).with({
+                        label: 'PutRecord Write Latency',
+                    }),
+                    new cloudwatch.Metric({
+                        metricName: 'PutRecords.Latency',
+                        namespace: 'AWS/Kinesis',
+                        dimensionsMap: {
+                            StreamName: props.metricOutputStream.streamName,
+                        },
+                    }).with({
+                        label: 'PutRecords Write Latency',
+                    }),
+                    new cloudwatch.Metric({
+                        metricName: 'GetRecords.Latency',
+                        namespace: 'AWS/Kinesis',
+                        dimensionsMap: {
+                            StreamName: props.metricOutputStream.streamName,
+                        },
+                    }).with({
+                        label: 'Read Latency',
+                    }),
+                    new cloudwatch.Metric({
+                        metricName: 'GetRecords.IteratorAgeMilliseconds',
+                        namespace: 'AWS/Kinesis',
+                        dimensionsMap: {
+                            StreamName: props.metricOutputStream.streamName,
+                        },
+                    }).with({
+                        label: 'Consumer Iterator Age',
+                    })
+                ],
+                width: 8,
+                height: 6,
+                region: cdk.Stack.of(this).region,
+                period: cdk.Duration.seconds(60),
+                statistic: 'Average',
+            });
+
+
+            const metricEventProcessingWidget = new cloudwatch.GraphWidget({
+                title: 'Metrics Stream Processing',
+                left: [
+                    new cloudwatch.Metric({
+                        metricName: 'IncomingRecords',
+                        namespace: 'AWS/Kinesis',
+                        dimensionsMap: {
+                            StreamName: props.metricOutputStream.streamName,
+                        },
+                    }).with({
+                        label: 'Incoming Metric Records',
+                    }),
+                ],
+                right: [
+
+                    new cloudwatch.Metric({
+                        metricName: 'ConcurrentExecutions',
+                        namespace: 'AWS/Lambda',
+                        dimensionsMap: {
+                            FunctionName: props.analyticsProcessingFunction.functionName,
+                        },
+                    }).with({
+                        label: 'Lambda Concurrent Executions',
+                    }),
+                ],
+                width: 8,
+                height: 6,
+                region: cdk.Stack.of(this).region,
+                period: cdk.Duration.seconds(60),
+                statistic: 'Maximum',
+            });
+
             // create dashboard with analytics widgets
             widgets = [
                 [titleWidget],
@@ -453,7 +537,8 @@ export class CloudWatchDashboardConstruct extends Construct {
                 [streamIngestionTitleWidget],
                 [eventIngestionWidget, ingestionLambdaWidget, streamLatencyWidget],
                 [realTimeTitleWidget],
-                [realTimeLatencyWidget, flinkCPUUtilizationWidget, realTimeLambdaWidget]
+                [realTimeLatencyWidget, flinkCPUUtilizationWidget, realTimeLambdaWidget],
+                [metricStreamLatencyWidget, metricEventProcessingWidget]
             ];
 
         } else {
