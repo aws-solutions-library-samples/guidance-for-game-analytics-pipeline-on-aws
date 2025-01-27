@@ -134,7 +134,7 @@ export class CloudWatchDashboardConstruct extends Construct {
             statistic: 'Sum',
         });
         const ingestionLambdaWidget = new cloudwatch.GraphWidget({
-            title: 'Lambda Error count and success rate (%)',
+            title: 'Event Transformation Lambda Error count and success rate (%)',
             left: [
                 new cloudwatch.Metric({
                     metricName: 'Errors',
@@ -201,11 +201,22 @@ export class CloudWatchDashboardConstruct extends Construct {
             title: 'Events Stream Latency',
             left: [
                 new cloudwatch.Metric({
+                    metricName: 'PutRecord.Latency',
+                    namespace: 'AWS/Kinesis',
+                    dimensionsMap: {
+                        StreamName: props.gameEventsStream.streamName,
+                    },
+                }).with({
+                    label: 'PutRecord Write Latency',
+                }),
+                new cloudwatch.Metric({
                     metricName: 'PutRecords.Latency',
                     namespace: 'AWS/Kinesis',
                     dimensionsMap: {
                         StreamName: props.gameEventsStream.streamName,
                     },
+                }).with({
+                    label: 'PutRecords Write Latency',
                 }),
                 new cloudwatch.Metric({
                     metricName: 'GetRecords.Latency',
@@ -213,6 +224,17 @@ export class CloudWatchDashboardConstruct extends Construct {
                     dimensionsMap: {
                         StreamName: props.gameEventsStream.streamName,
                     },
+                }).with({
+                    label: 'Read Latency',
+                }),
+                new cloudwatch.Metric({
+                    metricName: 'GetRecords.IteratorAgeMilliseconds',
+                    namespace: 'AWS/Kinesis',
+                    dimensionsMap: {
+                        StreamName: props.gameEventsStream.streamName,
+                    },
+                }).with({
+                    label: 'Consumer Iterator Age',
                 })
             ],
             width: 8,
@@ -305,10 +327,10 @@ export class CloudWatchDashboardConstruct extends Construct {
                         },
                     }),
                     new cloudwatch.MathExpression({
-                        expression: 'recDroppedPerSec * 60 / 4',
+                        expression: 'recDroppedPerMin / 4',
                         label: 'numLateRecordsDroppedPerMinute',
                         usingMetrics: {
-                            "recDroppedPerSec":
+                            "recDroppedPerMin":
                                 new cloudwatch.Metric({
                                     metricName: 'numLateRecordsDropped',
                                     namespace: 'AWS/KinesisAnalytics',
@@ -318,6 +340,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                                 }).with({
                                     region: cdk.Stack.of(this).region,
                                     statistic: 'Sum',
+                                    period: cdk.Duration.minutes(1),
                                 }),
                         },
                     }),
@@ -343,12 +366,12 @@ export class CloudWatchDashboardConstruct extends Construct {
                     {
                         value: 75,
                         label: "Scale Up Threshold",
-                        color: "#FF0000"
+                        color: cloudwatch.Color.RED
                     },
                     {
                         value: 10,
                         label: "Scale Down Threshold",
-                        color: "#00FF00"
+                        color: cloudwatch.Color.GREEN
                     }
                 ],
                 leftYAxis: {
@@ -362,7 +385,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                 period: cdk.Duration.seconds(60),
             });
             const realTimeLambdaWidget = new cloudwatch.GraphWidget({
-                title: 'Lambda Error count and success rate (%)',
+                title: 'Metrics Processing Lambda Error count and success rate (%)',
                 left: [
                     new cloudwatch.Metric({
                         metricName: 'Errors',
