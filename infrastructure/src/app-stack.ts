@@ -361,6 +361,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     // Initialize variable, will be checked to see if set properly
     let managedFlinkConstruct;
+    let metricOutputStream;
 
     // ---- Streaming Analytics ---- //
     // Create the following resources if and is `ENABLE_STREAMING_ANALYTICS` constant is `True`
@@ -376,6 +377,7 @@ export class InfrastructureStack extends cdk.Stack {
           config: props.config,
         }
       );
+      metricOutputStream = managedFlinkConstruct.metricOutputStream;
     }
 
     // Creates firehose and logs related to ingestion
@@ -447,6 +449,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     const dashboardConstruct = new CloudWatchDashboardConstruct(this, "DashboardConstruct", {
       gameEventsStream: gameEventsStream,
+      metricOutputStream: metricOutputStream,
       gameEventsFirehose: streamingIngestionConstruct.gameEventsFirehose,
       gameAnalyticsApi: gamesApiConstruct.gameAnalyticsApi,
       eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,

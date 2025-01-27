@@ -227,7 +227,10 @@ export class CloudWatchDashboardConstruct extends Construct {
                     },
                 }).with({
                     label: 'Read Latency',
-                }),
+                })
+            ],
+
+            right: [
                 new cloudwatch.Metric({
                     metricName: 'GetRecords.IteratorAgeMilliseconds',
                     namespace: 'AWS/Kinesis',
@@ -236,6 +239,8 @@ export class CloudWatchDashboardConstruct extends Construct {
                     },
                 }).with({
                     label: 'Consumer Iterator Age',
+                    statistic: 'Maximum',
+                    period: cdk.Duration.seconds(60)
                 })
             ],
             width: 8,
@@ -387,6 +392,45 @@ export class CloudWatchDashboardConstruct extends Construct {
                 period: cdk.Duration.seconds(60),
             });
 
+
+            const FlinkResourceUtilizationWidget = new cloudwatch.GraphWidget({
+                title: 'Managed Flink Container Resource Utilization',
+                left: [
+                    new cloudwatch.Metric({
+                        metricName: 'containerMemoryUtilization',
+                        namespace: 'AWS/KinesisAnalytics',
+                        dimensionsMap: {
+                            Application: props.kinesisAnalyticsApp.ref,
+                        },
+                    }),
+                    new cloudwatch.Metric({
+                        metricName: 'containerDiskUtilization',
+                        namespace: 'AWS/KinesisAnalytics',
+                        dimensionsMap: {
+                            Application: props.kinesisAnalyticsApp.ref,
+                        },
+                    })
+                ],
+                right: [
+                    new cloudwatch.Metric({
+                        metricName: 'threadsCount',
+                        namespace: 'AWS/KinesisAnalytics',
+                        dimensionsMap: {
+                            Application: props.kinesisAnalyticsApp.ref,
+                        },
+                    })
+                ],
+                leftYAxis: {
+                    min: 1,
+                    max: 100,
+                    label: 'Percent',
+                    showUnits: false,
+                },
+
+                width: 8,
+                height: 6,
+            });
+
             const realTimeLambdaWidget = new cloudwatch.GraphWidget({
                 title: 'Metrics Processing Lambda Error count and success rate (%)',
                 left: [
@@ -480,6 +524,9 @@ export class CloudWatchDashboardConstruct extends Construct {
                     }).with({
                         label: 'Read Latency',
                     }),
+
+                ],
+                right: [
                     new cloudwatch.Metric({
                         metricName: 'GetRecords.IteratorAgeMilliseconds',
                         namespace: 'AWS/Kinesis',
@@ -488,6 +535,8 @@ export class CloudWatchDashboardConstruct extends Construct {
                         },
                     }).with({
                         label: 'Consumer Iterator Age',
+                        statistic: 'Maximum',
+                        period: cdk.Duration.seconds(60)
                     })
                 ],
                 width: 8,
@@ -537,8 +586,8 @@ export class CloudWatchDashboardConstruct extends Construct {
                 [streamIngestionTitleWidget],
                 [eventIngestionWidget, ingestionLambdaWidget, streamLatencyWidget],
                 [realTimeTitleWidget],
-                [realTimeLatencyWidget, flinkCPUUtilizationWidget, realTimeLambdaWidget],
-                [metricStreamLatencyWidget, metricEventProcessingWidget]
+                [realTimeLatencyWidget, flinkCPUUtilizationWidget, FlinkResourceUtilizationWidget],
+                [metricStreamLatencyWidget, metricEventProcessingWidget, realTimeLambdaWidget]
             ];
 
         } else {
