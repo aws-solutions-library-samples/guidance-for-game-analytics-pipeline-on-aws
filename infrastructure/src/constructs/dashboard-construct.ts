@@ -243,6 +243,11 @@ export class CloudWatchDashboardConstruct extends Construct {
                     period: cdk.Duration.seconds(60)
                 })
             ],
+
+            leftYAxis: {
+                showUnits: false,
+                label: 'Milliseconds',
+            },
             width: 8,
             height: 6,
             region: cdk.Stack.of(this).region,
@@ -313,7 +318,7 @@ export class CloudWatchDashboardConstruct extends Construct {
             });
             // REPLACE THIS WITH FLINK
             const realTimeLatencyWidget = new cloudwatch.GraphWidget({
-                title: 'Managed Flink Number of Records In Per Minute',
+                title: 'Managed Flink Records Intake',
                 left: [
                     new cloudwatch.MathExpression({
                         expression: 'recInPerSec * 60 / 4',
@@ -352,6 +357,10 @@ export class CloudWatchDashboardConstruct extends Construct {
                         },
                     }),
                 ],
+                leftYAxis: {
+                    showUnits: false,
+                    label: 'Count',
+                },
                 width: 8,
                 height: 6,
                 period: cdk.Duration.seconds(60),
@@ -539,6 +548,10 @@ export class CloudWatchDashboardConstruct extends Construct {
                         period: cdk.Duration.seconds(60)
                     })
                 ],
+                leftYAxis: {
+                    showUnits: false,
+                    label: 'Milliseconds',
+                },
                 width: 8,
                 height: 6,
                 region: cdk.Stack.of(this).region,
