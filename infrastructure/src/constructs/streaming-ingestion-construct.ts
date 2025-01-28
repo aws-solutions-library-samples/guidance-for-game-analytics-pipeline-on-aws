@@ -161,7 +161,7 @@ export class StreamingIngestionConstruct extends Construct {
                 },
                 prefix: `${props.config.RAW_EVENTS_PREFIX}=!{partitionKeyFromQuery:${props.config.RAW_EVENTS_PREFIX}}/!{timestamp:yyyy/MM/dd}/`,
                 errorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
-                compressionFormat: "SNAPPY",
+                compressionFormat: "UNCOMPRESSED",
                 roleArn: gamesEventsFirehoseRole.roleArn,
                 dynamicPartitioningConfiguration: {
                   enabled: true,
