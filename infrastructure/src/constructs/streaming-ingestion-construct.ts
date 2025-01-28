@@ -196,7 +196,18 @@ export class StreamingIngestionConstruct extends Construct {
                       parameters: [
                         {
                           parameterName: "MetadataExtractionQuery",
-                          parameterValue: `{${props.config.RAW_EVENTS_PREFIX}: .data.${props.config.RAW_EVENTS_PREFIX}}`,
+                          parameterValue:
+                            'year: .event_timestamp| strftime("%Y")',
+                        },
+                        {
+                          parameterName: "MetadataExtractionQuery",
+                          parameterValue:
+                            'month: .event_timestamp| strftime("%m")',
+                        },
+                        {
+                          parameterName: "MetadataExtractionQuery",
+                          parameterValue:
+                            'day: .event_timestamp| strftime("%d")',
                         },
                         {
                           parameterName: "JsonParsingEngine",
