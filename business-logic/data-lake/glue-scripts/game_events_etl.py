@@ -16,7 +16,6 @@
 
 import sys
 import json
-from datetime import datetime, timezone
 from awsglue.transforms import *
 from pyspark.sql.functions import *
 from awsglue.utils import getResolvedOptions
