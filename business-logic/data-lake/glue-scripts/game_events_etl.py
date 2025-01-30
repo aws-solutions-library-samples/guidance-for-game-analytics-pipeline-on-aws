@@ -69,24 +69,10 @@ analytics_bucket_output = args["analytics_bucket"] + args["processed_data_prefix
 analytics_bucket_temp_storage = args["analytics_bucket"] + args["glue_tmp_prefix"]
 
 
-# Helper Function replaces the year month day and hour with the one from the timestamp
-def applyTransform(rec):
-    event_time = datetime.fromtimestamp(rec["event"]["event_timestamp"], timezone.utc)
-    rec["year"] = event_time.year
-    rec["month"] = event_time.month
-    rec["day"] = event_time.day
-    # rec["hour"] = event_time.hour
-    return rec
-
-
 # Create dynamic frame from the source tables
 events = glueContext.create_dynamic_frame.from_catalog(
     database=db_name, table_name=raw_events_table, transformation_ctx="events"
 )
-
-# Maps a transformation function over each record to re-build date partitions using the event_timestamp
-# rather than the Firehose ingestion timestamp
-# filtered_events_dyf_transformed = Map.apply(frame = filtered_events_dyf, f = applyTransform)
 
 events.printSchema()
 record_count = events.count()
