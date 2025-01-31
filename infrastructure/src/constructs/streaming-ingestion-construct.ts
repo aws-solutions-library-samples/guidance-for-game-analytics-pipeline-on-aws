@@ -197,7 +197,7 @@ export class StreamingIngestionConstruct extends Construct {
                         {
                           parameterName: "MetadataExtractionQuery",
                           parameterValue:
-                            '{year: $.event_timestamp| strftime("%Y"), month: $.event_timestamp| strftime("%m"), day: $.event_timestamp| strftime("%d")}',
+                            '{year: .event_timestamp| strftime("%Y"), month: .event_timestamp| strftime("%m"), day: .event_timestamp| strftime("%d")}',
                         },
                         {
                           parameterName: "JsonParsingEngine",
