@@ -322,7 +322,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                 left: [
                     new cloudwatch.MathExpression({
                         expression: 'recInPerSec * 60 / 4',
-                        label: 'numRecordsInPerMinute',
+                        label: 'Number of Records Recieved',
                         usingMetrics: {
                             "recInPerSec":
                                 new cloudwatch.Metric({
@@ -340,7 +340,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                     }),
                     new cloudwatch.MathExpression({
                         expression: 'recDroppedPerMin / 4',
-                        label: 'numLateRecordsDroppedPerMinute',
+                        label: 'Number of Late Records Dropped',
                         usingMetrics: {
                             "recDroppedPerMin":
                                 new cloudwatch.Metric({
@@ -559,39 +559,6 @@ export class CloudWatchDashboardConstruct extends Construct {
                 statistic: 'Average',
             });
 
-
-            const metricEventProcessingWidget = new cloudwatch.GraphWidget({
-                title: 'Metrics Stream Processing',
-                left: [
-                    new cloudwatch.Metric({
-                        metricName: 'IncomingRecords',
-                        namespace: 'AWS/Kinesis',
-                        dimensionsMap: {
-                            StreamName: props.metricOutputStream.streamName,
-                        },
-                    }).with({
-                        label: 'Incoming Metric Records',
-                    }),
-                ],
-                right: [
-
-                    new cloudwatch.Metric({
-                        metricName: 'ConcurrentExecutions',
-                        namespace: 'AWS/Lambda',
-                        dimensionsMap: {
-                            FunctionName: props.analyticsProcessingFunction.functionName,
-                        },
-                    }).with({
-                        label: 'Lambda Concurrent Executions',
-                    }),
-                ],
-                width: 8,
-                height: 6,
-                region: cdk.Stack.of(this).region,
-                period: cdk.Duration.seconds(60),
-                statistic: 'Maximum',
-            });
-
             // create dashboard with analytics widgets
             widgets = [
                 [titleWidget],
@@ -600,7 +567,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                 [eventIngestionWidget, ingestionLambdaWidget, streamLatencyWidget],
                 [realTimeTitleWidget],
                 [realTimeLatencyWidget, flinkCPUUtilizationWidget, FlinkResourceUtilizationWidget],
-                [metricStreamLatencyWidget, metricEventProcessingWidget, realTimeLambdaWidget]
+                [metricStreamLatencyWidget, realTimeLambdaWidget]
             ];
 
         } else {
