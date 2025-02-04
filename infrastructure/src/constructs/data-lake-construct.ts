@@ -263,47 +263,76 @@ export class DataLakeConstruct extends Construct {
     const rawEventsTable = new glueCfn.CfnTable(this, "GameRawEventsTable", {
       catalogId: cdk.Aws.ACCOUNT_ID,
       databaseName: gameEventsDatabase.ref,
-      tableInput: {
-        description: `Stores raw event data from the game analytics pipeline for stack ${cdk.Aws.STACK_NAME}`,
-        name: props.config.RAW_EVENTS_TABLE,
-        tableType: "EXTERNAL_TABLE",
-        parameters: {
-          classification: "parquet",
-          compressionType: "none",
-          typeOfData: "file",
-        },
-        storageDescriptor: {
-          outputFormat:
-            "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
-          inputFormat:
-            "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
-          compressed: false,
-          numberOfBuckets: -1,
-          serdeInfo: {
-            serializationLibrary:
-              "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
-            parameters: {
-              "serialization.format": "1",
+      ...(props.config.ENABLE_APACHE_ICEBERG_SUPPORT
+        ? {
+            tableInput: {
+              name: props.config.RAW_EVENTS_TABLE.toLowerCase(),
+              description: "description",
+              storageDescriptor: {
+                columns: [
+                  { name: "event_id", type: "string" },
+                  { name: "event_type", type: "string" },
+                  { name: "event_name", type: "string" },
+                  { name: "event_version", type: "string" },
+                  { name: "event_timestamp", type: "bigint" },
+                  { name: "app_version", type: "string" },
+                  { name: "application_id", type: "string" },
+                  { name: "application_name", type: "string" },
+                  { name: "event_data", type: "string" },
+                  { name: "metadata", type: "string" },
+                ],
+                location: `s3://${
+                  props.analyticsBucket.bucketName
+                }/${props.config.RAW_EVENTS_TABLE.toLowerCase()}`,
+                storedAsSubDirectories: false,
+              },
+              tableType: "EXTERNAL_TABLE",
             },
-          },
-          bucketColumns: [],
-          sortColumns: [],
-          storedAsSubDirectories: false,
-          location: `s3://${props.analyticsBucket.bucketName}/${props.config.RAW_EVENTS_PREFIX}`,
-          columns: [
-            { name: "event_id", type: "string" },
-            { name: "event_type", type: "string" },
-            { name: "event_name", type: "string" },
-            { name: "event_version", type: "string" },
-            { name: "event_timestamp", type: "bigint" },
-            { name: "app_version", type: "string" },
-            { name: "application_id", type: "string" },
-            { name: "application_name", type: "string" },
-            { name: "event_data", type: "string" },
-            { name: "metadata", type: "string" },
-          ],
-        },
-      },
+            openTableFormatInput: {
+              icebergInput: {
+                metadataOperation: "CREATE",
+                version: "2",
+              },
+            },
+          }
+        : {
+            tableInput: {
+              name: props.config.RAW_EVENTS_TABLE,
+              description: `Stores raw event data from the game analytics pipeline for stack ${cdk.Aws.STACK_NAME}`,
+              tableType: "EXTERNAL_TABLE",
+              storageDescriptor: {
+                outputFormat:
+                  "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+                inputFormat:
+                  "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+                compressed: false,
+                numberOfBuckets: -1,
+                serdeInfo: {
+                  serializationLibrary:
+                    "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+                  parameters: {
+                    "serialization.format": "1",
+                  },
+                },
+                bucketColumns: [],
+                sortColumns: [],
+                storedAsSubDirectories: false,
+                location: `s3://${props.analyticsBucket.bucketName}/${props.config.RAW_EVENTS_PREFIX}`,
+                columns: [
+                  { name: "event_id", type: "string" },
+                  { name: "event_type", type: "string" },
+                  { name: "event_name", type: "string" },
+                  { name: "event_version", type: "string" },
+                  { name: "event_timestamp", type: "bigint" },
+                  { name: "app_version", type: "string" },
+                  { name: "application_id", type: "string" },
+                  { name: "application_name", type: "string" },
+                  { name: "event_data", type: "string" },
+                  { name: "metadata", type: "string" },
+                ],
+              },
+            },
+          }),
     });
     rawEventsTable.addDependency(gameEventsDatabase);
 
