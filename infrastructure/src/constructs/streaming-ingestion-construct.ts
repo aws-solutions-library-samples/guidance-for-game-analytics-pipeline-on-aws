@@ -151,7 +151,99 @@ export class StreamingIngestionConstruct extends Construct {
           roleArn: gamesEventsFirehoseRole.roleArn,
         },
         ...(props.config.ENABLE_APACHE_ICEBERG_SUPPORT
-          ? {}
+          ? {
+              icebergDestinationConfiguration: {
+                bucketArn: props.analyticsBucket.bucketArn,
+                bufferingHints: {
+                  intervalInSeconds: 300,
+                  sizeInMBs: 128,
+                },
+                cloudWatchLoggingOptions: {
+                  enabled: true,
+                  logGroupName: firehoseLogGroup.logGroupName,
+                  logStreamName: firehouseS3DeliveryLogStream.logStreamName,
+                },
+                compressionFormat: "UNCOMPRESSED",
+                errorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
+                prefix: "iceberg-data/",
+                roleArn: gamesEventsFirehoseRole.roleArn,
+                catalogId: cdk.Aws.ACCOUNT_ID,
+                databaseName: props.gameEventsDatabase.ref,
+                tableName: props.rawEventsTable.ref,
+                retryOptions: {
+                  durationInSeconds: 300,
+                },
+                s3BackupMode: props.config.S3_BACKUP_MODE
+                  ? "Enabled"
+                  : "Disabled",
+                s3BackupConfiguration: {
+                  bucketArn: props.analyticsBucket.bucketArn,
+                  cloudWatchLoggingOptions: {
+                    enabled: true,
+                    logGroupName: firehoseLogGroup.logGroupName,
+                    logStreamName:
+                      firehouseBackupDeliveryLogStream.logStreamName,
+                  },
+                  compressionFormat: "GZIP",
+                  bufferingHints: {
+                    intervalInSeconds: 900,
+                    sizeInMBs: 128,
+                  },
+                  prefix: `FirehoseS3SourceRecordBackup/${s3TimestampPrefix}/`,
+                  errorOutputPrefix: `FirehoseS3SourceRecordBackup/firehose-errors/${s3TimestampPrefix}/!{firehose:error-output-type}/`,
+                  roleArn: gamesEventsFirehoseRole.roleArn,
+                },
+                dataFormatConversionConfiguration: {
+                  enabled: true,
+                  inputFormatConfiguration: {
+                    deserializer: {
+                      openXJsonSerDe: {
+                        caseInsensitive: true,
+                        convertDotsInJsonKeysToUnderscores: false,
+                      },
+                    },
+                  },
+                  outputFormatConfiguration: {
+                    serializer: {
+                      parquetSerDe: {
+                        compression: "SNAPPY",
+                      },
+                    },
+                  },
+                  schemaConfiguration: {
+                    catalogId: cdk.Aws.ACCOUNT_ID,
+                    roleArn: gamesEventsFirehoseRole.roleArn,
+                    databaseName: props.gameEventsDatabase.ref,
+                    tableName: props.rawEventsTable.ref,
+                    region: cdk.Aws.REGION,
+                    versionId: "LATEST",
+                  },
+                },
+                processingConfiguration: {
+                  enabled: true,
+                  processors: [
+                    {
+                      type: "Lambda",
+                      parameters: [
+                        {
+                          parameterName: "LambdaArn",
+                          parameterValue:
+                            props.eventsProcessingFunction.functionArn,
+                        },
+                        {
+                          parameterName: "BufferSizeInMBs",
+                          parameterValue: "3",
+                        },
+                        {
+                          parameterName: "BufferIntervalInSeconds",
+                          parameterValue: "60",
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            }
           : {
               extendedS3DestinationConfiguration: {
                 bucketArn: props.analyticsBucket.bucketArn,
