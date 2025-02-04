@@ -152,71 +152,31 @@ export class StreamingIngestionConstruct extends Construct {
         },
         ...(props.config.ENABLE_APACHE_ICEBERG_SUPPORT
           ? {
-              icebergDestinationConfiguration: {
-                bucketArn: props.analyticsBucket.bucketArn,
-                bufferingHints: {
-                  intervalInSeconds: 300,
-                  sizeInMBs: 128,
+              IcebergDestinationConfiguration: {
+                RoleARN: "${ROLE_ARN}",
+                CatalogConfiguration: {
+                  CatalogARN: cdk.Aws.ACCOUNT_ID,
+                  WarehouseLocation: props.analyticsBucket.bucketName,
                 },
-                cloudWatchLoggingOptions: {
-                  enabled: true,
-                  logGroupName: firehoseLogGroup.logGroupName,
-                  logStreamName: firehouseS3DeliveryLogStream.logStreamName,
+                SchemaEvolutionConfiguration: {
+                  Enabled: true,
                 },
-                compressionFormat: "UNCOMPRESSED",
-                errorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
-                prefix: "iceberg-data/",
-                roleArn: gamesEventsFirehoseRole.roleArn,
-                catalogId: cdk.Aws.ACCOUNT_ID,
-                databaseName: props.gameEventsDatabase.ref,
-                tableName: props.rawEventsTable.ref,
-                retryOptions: {
-                  durationInSeconds: 300,
+                TableCreationConfiguration: {
+                  Enabled: true,
                 },
-                s3BackupMode: props.config.S3_BACKUP_MODE
-                  ? "Enabled"
-                  : "Disabled",
-                s3BackupConfiguration: {
-                  bucketArn: props.analyticsBucket.bucketArn,
-                  cloudWatchLoggingOptions: {
-                    enabled: true,
-                    logGroupName: firehoseLogGroup.logGroupName,
-                    logStreamName:
-                      firehouseBackupDeliveryLogStream.logStreamName,
-                  },
-                  compressionFormat: "GZIP",
+                S3Configuration: {
+                  RoleARN: gamesEventsFirehoseRole.roleArn,
+                  BucketARN: props.analyticsBucket.arn,
+                  ErrorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
                   bufferingHints: {
-                    intervalInSeconds: 900,
+                    intervalInSeconds: props.config.DEV_MODE ? 60 : 900,
                     sizeInMBs: 128,
                   },
-                  prefix: `FirehoseS3SourceRecordBackup/${s3TimestampPrefix}/`,
-                  errorOutputPrefix: `FirehoseS3SourceRecordBackup/firehose-errors/${s3TimestampPrefix}/!{firehose:error-output-type}/`,
-                  roleArn: gamesEventsFirehoseRole.roleArn,
-                },
-                dataFormatConversionConfiguration: {
-                  enabled: true,
-                  inputFormatConfiguration: {
-                    deserializer: {
-                      openXJsonSerDe: {
-                        caseInsensitive: true,
-                        convertDotsInJsonKeysToUnderscores: false,
-                      },
-                    },
-                  },
-                  outputFormatConfiguration: {
-                    serializer: {
-                      parquetSerDe: {
-                        compression: "SNAPPY",
-                      },
-                    },
-                  },
-                  schemaConfiguration: {
-                    catalogId: cdk.Aws.ACCOUNT_ID,
-                    roleArn: gamesEventsFirehoseRole.roleArn,
-                    databaseName: props.gameEventsDatabase.ref,
-                    tableName: props.rawEventsTable.ref,
-                    region: cdk.Aws.REGION,
-                    versionId: "LATEST",
+                  CompressionFormat: "UNCOMPRESSED",
+                  CloudWatchLoggingOptions: {
+                    Enabled: true,
+                    LogGroupName: firehoseLogGroup.logGroupName,
+                    LogStreamName: firehouseS3DeliveryLogStream.logStreamName,
                   },
                 },
                 processingConfiguration: {
@@ -231,16 +191,25 @@ export class StreamingIngestionConstruct extends Construct {
                             props.eventsProcessingFunction.functionArn,
                         },
                         {
+                          parameterName: "BufferIntervalInSeconds",
+                          parameterValue: "60",
+                        },
+                        {
                           parameterName: "BufferSizeInMBs",
                           parameterValue: "3",
                         },
                         {
-                          parameterName: "BufferIntervalInSeconds",
-                          parameterValue: "60",
+                          parameterName: "NumberOfRetries",
+                          parameterValue: "3",
                         },
                       ],
                     },
                   ],
+                },
+                CloudWatchLoggingOptions: {
+                  Enabled: true,
+                  LogGroupName: firehoseLogGroup.logGroupName,
+                  LogStreamName: firehouseS3DeliveryLogStream.logStreamName,
                 },
               },
             }
