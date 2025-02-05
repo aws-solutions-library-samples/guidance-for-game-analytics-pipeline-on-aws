@@ -267,11 +267,6 @@ export class DataLakeConstruct extends Construct {
         description: `Stores raw event data from the game analytics pipeline for stack ${cdk.Aws.STACK_NAME}`,
         name: props.config.RAW_EVENTS_TABLE,
         tableType: "EXTERNAL_TABLE",
-        partitionKeys: [
-          { name: "year", type: "string" },
-          { name: "month", type: "string" },
-          { name: "day", type: "string" },
-        ],
         parameters: {
           classification: "parquet",
           compressionType: "none",
@@ -469,7 +464,7 @@ export class DataLakeConstruct extends Construct {
     // Glue ETL Job to process events from staging and repartition by event_type and date
     const gameEventsEtlJob = new glueCfn.CfnJob(this, "GameEventsEtlJob", {
       description: `Etl job for processing raw game event data, for stack ${cdk.Aws.STACK_NAME}.`,
-      glueVersion: "4.0",
+      glueVersion: "5.0",
       maxRetries: 0,
       maxCapacity: 10,
       timeout: 30,
