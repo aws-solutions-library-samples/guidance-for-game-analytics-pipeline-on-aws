@@ -36,6 +36,7 @@ Before deploying the sample code, ensure that the following required tools have 
 - **[GitHub Account](https://docs.github.com/en/get-started/start-your-journey/creating-an-account-on-github)**
 - **[Visual Studio Code](https://code.visualstudio.com/Download)**
 - **[Docker Desktop (local)](https://www.docker.com/products/docker-desktop/)**
+- **[Apache Maven](https://maven.apache.org/download.cgi)**
 - **AWS Cloud Development Kit (CDK) 2.92**
 - **Python >=3.8**
 - **NodeJS >= 20.0.0**
@@ -98,6 +99,11 @@ The following settings can be adjusted to suite your use case:
   - *Description:* The Kinesis stream capacity mode. When set to `PROVISIONED`, the stream will be created with the number of shards specified in `STREAM_SHARD_COUNT`. When set to `ON_DEMAND`, the number of shards will be scaled automatically to handle throughput and the `STREAM_SHARD_COUNT` setting will be ignored. This value can be changed at a later time and re-deployed through CI/CD. For information about determining the capacity mode required for your use case, refer to [Choose the data stream capacity mode](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html) in the *Amazon Kinesis Data Streams Developer Guide*.
   - *Type:* String
   - *Example:* `"PROVISIONED"` or `"ON_DEMAND"`
+- `METRIC_STREAM_SHARD_COUNT`
+  - *Description:* The number of Kinesis shards, or sequence of data records, to use for the metric output stream. The metric output stream is emitted by the Managed Flink app and converted into CloudWatch metrics. For information about determining the number of shards required to handle , refer to the *Provisioned mode features and use cases* subsection of [Choose the data stream capacity mode](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html#provisionedmode) in the *Amazon Kinesis Data Streams Developer Guide*.
+  - Throughput considerations are determined by the characteristics of metrics emitted by Flink. The records per second is determined by the number of defined metrics, the number of distinct dimension combinations for each metric emitted for every windowing group, and the duration of the metric window. The average data size is determined by the number and size of the dimensions defined for each metric record. The number of consumers is dependent on the number of metric monitoring services, such as Cloudwatch metrics, consuming the stream.
+  - *Type:* Integer
+  - *Example:* `1`
 - `CODECOMMIT_REPO`
   - *Description:* The name of the [AWS CodeCoomit](https://aws.amazon.com/codecommit/), repository used as source control for the codified infrastructure, and CI/CD pipeline.
   - *Type:* String
@@ -189,7 +195,7 @@ The stack hosts the deployed production version of the AWS resources for you to 
 
 Once the deployed infrastructure has been validated, or further optimized for your use case, you can trigger the continuos deployment, by committing any updated source code into the newly create CodeCommit repository, using the following steps:
 
-1. Copy the URL for cloning CodeCommit repository that you specified in the `config.yanl` file. See the **View repository details (console)** section of the [AWS CodeCommit User Guid](https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-view-repository-details.html) for more information on how to vie the *Clone URL* for the repository.
+1. Copy the URL for cloning CodeCommit repository that you specified in the `config.yaml` file. See the **View repository details (console)** section of the [AWS CodeCommit User Guid](https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-view-repository-details.html) for more information on how to vie the *Clone URL* for the repository.
 2. Create a news Git repository, by running the following command:
    ```bash
    rm -rf .git
