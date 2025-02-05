@@ -16,7 +16,7 @@ export interface GameAnalyticsPipelineConfig {
   RAW_EVENTS_TABLE: string;
   GLUE_TMP_PREFIX: string;
   STREAM_SHARD_COUNT: number;
-    METRIC_STREAM_SHARD_COUNT: number;
+  METRIC_STREAM_SHARD_COUNT: number;
   STREAM_PROVISIONED: boolean;
   ENABLE_STREAMING_ANALYTICS: boolean;
   ENABLE_APACHE_ICEBERG_SUPPORT: boolean;
