@@ -2,7 +2,6 @@
   "name": "project-root",
   "version": "0.0.1",
   "scripts": {
-    "start": "cd web-app && npm run start",
     "build": "python3 build.py",
     "build.logic": "python3 build.py --business_logic",
     "build.infrastructure": "python3 build.py --infrastructure",
