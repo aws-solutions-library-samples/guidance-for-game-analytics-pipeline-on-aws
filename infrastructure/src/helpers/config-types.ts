@@ -13,6 +13,7 @@ export interface GameAnalyticsPipelineConfig {
   API_STAGE_NAME: string;
   RAW_EVENTS_PREFIX: string;
   PROCESSED_EVENTS_PREFIX: string;
+  EVENTS_DATABASE: string;
   RAW_EVENTS_TABLE: string;
   GLUE_TMP_PREFIX: string;
   STREAM_SHARD_COUNT: number;
