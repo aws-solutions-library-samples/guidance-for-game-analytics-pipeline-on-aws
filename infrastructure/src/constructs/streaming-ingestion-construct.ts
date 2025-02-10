@@ -75,7 +75,10 @@ export class StreamingIngestionConstruct extends Construct {
       this,
       "games-events-firehose-role",
       {
-        assumedBy: new iam.ServicePrincipal("firehose.amazonaws.com"),
+        assumedBy: new iam.CompositePrincipal(
+          new iam.ServicePrincipal("firehose.amazonaws.com"),
+          new iam.ServicePrincipal("glue.amazonaws.com")
+        ),
         inlinePolicies: {
           firehose_delivery_policy: new iam.PolicyDocument({
             statements: [
@@ -117,12 +120,21 @@ export class StreamingIngestionConstruct extends Construct {
                   "glue:GetTable",
                   "glue:GetTableVersion",
                   "glue:GetTableVersions",
+                  "glue:GetSchema",
+                  "glue:GetSchemaVersion",
+                  "glue:CreateTable",
+                  "glue:UpdateTable",
+                  "glue:StartTransaction",
+                  "glue:CommitTransaction",
+                  "glue:GetDatabase",
                 ],
                 effect: iam.Effect.ALLOW,
                 resources: [
                   `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/${props.gameEventsDatabase.ref}/*`,
                   `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:database/${props.gameEventsDatabase.ref}`,
                   `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
+                  `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:registry/*`,
+                  `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:schema/*`,
                 ],
               }),
               new iam.PolicyStatement({
@@ -152,32 +164,31 @@ export class StreamingIngestionConstruct extends Construct {
         },
         ...(props.config.ENABLE_APACHE_ICEBERG_SUPPORT
           ? {
-              IcebergDestinationConfiguration: {
-                RoleARN: "${ROLE_ARN}",
-                CatalogConfiguration: {
-                  CatalogARN: cdk.Aws.ACCOUNT_ID,
-                  WarehouseLocation: props.analyticsBucket.bucketName,
+              icebergDestinationConfiguration: {
+                catalogConfiguration: {
+                  catalogArn: `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
                 },
-                SchemaEvolutionConfiguration: {
-                  Enabled: true,
-                },
-                TableCreationConfiguration: {
-                  Enabled: true,
-                },
-                S3Configuration: {
-                  RoleARN: gamesEventsFirehoseRole.roleArn,
-                  BucketARN: props.analyticsBucket.arn,
-                  ErrorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
+                roleArn: gamesEventsFirehoseRole.roleArn,
+                s3Configuration: {
+                  bucketArn: props.analyticsBucket.bucketArn,
+                  roleArn: gamesEventsFirehoseRole.roleArn,
                   bufferingHints: {
                     intervalInSeconds: props.config.DEV_MODE ? 60 : 900,
                     sizeInMBs: 128,
                   },
-                  CompressionFormat: "UNCOMPRESSED",
-                  CloudWatchLoggingOptions: {
-                    Enabled: true,
-                    LogGroupName: firehoseLogGroup.logGroupName,
-                    LogStreamName: firehouseS3DeliveryLogStream.logStreamName,
+                },
+                destinationTableConfigurationList: [
+                  {
+                    destinationDatabaseName: props.config.EVENTS_DATABASE,
+                    destinationTableName: props.config.RAW_EVENTS_TABLE,
+                    s3ErrorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
+                    uniqueKeys: ["event_timestamp"],
                   },
+                ],
+                cloudWatchLoggingOptions: {
+                  enabled: true,
+                  logGroupName: firehouseS3DeliveryLogStream.logStreamName,
+                  logStreamName: firehouseS3DeliveryLogStream.logStreamName,
                 },
                 processingConfiguration: {
                   enabled: true,
@@ -206,11 +217,7 @@ export class StreamingIngestionConstruct extends Construct {
                     },
                   ],
                 },
-                CloudWatchLoggingOptions: {
-                  Enabled: true,
-                  LogGroupName: firehoseLogGroup.logGroupName,
-                  LogStreamName: firehouseS3DeliveryLogStream.logStreamName,
-                },
+                s3BackupMode: "FailedDataOnly",
               },
             }
           : {
