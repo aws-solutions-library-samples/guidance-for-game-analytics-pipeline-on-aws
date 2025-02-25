@@ -215,7 +215,6 @@ export class InfrastructureStack extends cdk.Stack {
         streamMode: kinesis.StreamMode.ON_DEMAND,
       });
 
-
     // ---- DynamoDB Tables ---- //
 
     // Table organizes and manages different applications
@@ -321,6 +320,7 @@ export class InfrastructureStack extends cdk.Stack {
       authorizationsTable,
     });
 
+    // Events Processing Function Policy
     lambdaConstruct.eventsProcessingFunction.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "DynamoDBAccess",
@@ -335,6 +335,7 @@ export class InfrastructureStack extends cdk.Stack {
         resources: [applicationsTable.tableArn],
       })
     );
+    // Lambda Authorizer Policy
     lambdaConstruct.lambdaAuthorizer.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "DynamoDBAccess",
@@ -352,9 +353,12 @@ export class InfrastructureStack extends cdk.Stack {
         ],
       })
     );
+  
+    // Grant DynamoDB permissions to Lambda functions
     authorizationsTable.grantReadWriteData(
       lambdaConstruct.applicationAdminServiceFunction
     );
+  
     applicationsTable.grantReadWriteData(
       lambdaConstruct.applicationAdminServiceFunction
     );
@@ -446,19 +450,7 @@ export class InfrastructureStack extends cdk.Stack {
       ],
     });
 
-
-    const dashboardConstruct = new CloudWatchDashboardConstruct(this, "DashboardConstruct", {
-      gameEventsStream: gameEventsStream,
-      metricOutputStream: metricOutputStream,
-      gameEventsFirehose: streamingIngestionConstruct.gameEventsFirehose,
-      gameAnalyticsApi: gamesApiConstruct.gameAnalyticsApi,
-      eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
-      analyticsProcessingFunction: managedFlinkConstruct?.metricProcessingFunction,
-      kinesisAnalyticsApp: managedFlinkConstruct?.managedFlinkApp,
-      streamingAnalyticsEnabled: props.config.ENABLE_STREAMING_ANALYTICS
-    });
-
-    // Output important resource information to AWS Consol
+    // Output important resource information to AWS Console
     new cdk.CfnOutput(this, "AnalyticsBucketOutput", {
       description: "S3 Bucket for game analytics storage",
       value: analyticsBucket.bucketName,

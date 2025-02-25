@@ -145,13 +145,81 @@ export class StreamingIngestionConstruct extends Construct {
       this,
       "game-events-firehose",
       {
-        deliveryStreamType: "KinesisStreamAsSource",
-        kinesisStreamSourceConfiguration: {
-          kinesisStreamArn: props.gamesEventsStream.streamArn,
-          roleArn: gamesEventsFirehoseRole.roleArn,
+        ...(props.config.ENABLE_STREAMING_ANALYTICS) ? {
+          deliveryStreamType: "KinesisStreamAsSource",
+          kinesisStreamSourceConfiguration: {
+            kinesisStreamArn: props.gamesEventsStream.streamArn,
+            roleArn: gamesEventsFirehoseRole.roleArn,
+          }
+        } : {
+          deliveryStreamType: "DirectPut",
+          directPutSourceConfiguration: {
+            ThroughputHintInMBs: 1
+          }
         },
         ...(props.config.ENABLE_APACHE_ICEBERG_SUPPORT
-          ? {}
+          ? {
+              IcebergDestinationConfiguration: {
+                RoleARN: "${ROLE_ARN}",
+                CatalogConfiguration: {
+                  CatalogARN: cdk.Aws.ACCOUNT_ID,
+                  WarehouseLocation: props.analyticsBucket.bucketName,
+                },
+                SchemaEvolutionConfiguration: {
+                  Enabled: true,
+                },
+                TableCreationConfiguration: {
+                  Enabled: true,
+                },
+                S3Configuration: {
+                  RoleARN: gamesEventsFirehoseRole.roleArn,
+                  BucketARN: props.analyticsBucket.bucketArn,
+                  ErrorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
+                  bufferingHints: {
+                    intervalInSeconds: props.config.DEV_MODE ? 60 : 900,
+                    sizeInMBs: 128,
+                  },
+                  CompressionFormat: "UNCOMPRESSED",
+                  CloudWatchLoggingOptions: {
+                    Enabled: true,
+                    LogGroupName: firehoseLogGroup.logGroupName,
+                    LogStreamName: firehouseS3DeliveryLogStream.logStreamName,
+                  },
+                },
+                processingConfiguration: {
+                  enabled: true,
+                  processors: [
+                    {
+                      type: "Lambda",
+                      parameters: [
+                        {
+                          parameterName: "LambdaArn",
+                          parameterValue:
+                            props.eventsProcessingFunction.functionArn,
+                        },
+                        {
+                          parameterName: "BufferIntervalInSeconds",
+                          parameterValue: "60",
+                        },
+                        {
+                          parameterName: "BufferSizeInMBs",
+                          parameterValue: "3",
+                        },
+                        {
+                          parameterName: "NumberOfRetries",
+                          parameterValue: "3",
+                        },
+                      ],
+                    },
+                  ],
+                },
+                CloudWatchLoggingOptions: {
+                  Enabled: true,
+                  LogGroupName: firehoseLogGroup.logGroupName,
+                  LogStreamName: firehouseS3DeliveryLogStream.logStreamName,
+                },
+              },
+            }
           : {
               extendedS3DestinationConfiguration: {
                 bucketArn: props.analyticsBucket.bucketArn,
