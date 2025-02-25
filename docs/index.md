@@ -20,15 +20,12 @@ features: # NOTE: Update this for the new page format/order
   - title: Component Deep Dive
     link: component-deep-dive.html
     description: Step-by-step breakdown of the guidance components and end-to-end analytics process through the pipeline
-  - title: Further Tuning
-    link: further-tuning.html
+  - title: Customizations
+    link: customizations.html
     description: Extending your Game Analytics Pipeline with Dashboards, custom queries, and additional functionality
   - title: Design Considerations
     link: design-considerations.html
     description: Explanations for choosing the services, architecture design, and processes for this guidance
-  - title: Roadmap
-    link: roadmap.html
-    description: The Game Analytics Pipeline Roadmap for the near/long term. Always subject to change with customer feedback. Please send your feedback with a Github repository issue.
 companies:
   title:
   list:
