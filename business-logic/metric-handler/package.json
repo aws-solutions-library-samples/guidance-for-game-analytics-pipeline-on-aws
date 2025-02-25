@@ -1,11 +1,12 @@
 {
-    "name": "game-analytics-pipeline-analytics-processing",
+    "name": "game-analytics-pipeline-flink-handler",
     "version": "0.0.1",
     "description": "Lambda Function for processing output from Kinesis Data Analytics SQL Application",
     "private": true,
     "main": "index.js",
     "dependencies": {
-        "aws-sdk": "*",
+        "@aws-sdk/client-cloudwatch": "^3.734.0",
+        "@aws-sdk/credential-providers": "^3.734.0",
         "moment": "*"
     },
     "devDependencies": {
