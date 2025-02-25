@@ -145,10 +145,17 @@ export class StreamingIngestionConstruct extends Construct {
       this,
       "game-events-firehose",
       {
-        deliveryStreamType: "KinesisStreamAsSource",
-        kinesisStreamSourceConfiguration: {
-          kinesisStreamArn: props.gamesEventsStream.streamArn,
-          roleArn: gamesEventsFirehoseRole.roleArn,
+        ...(props.config.ENABLE_STREAMING_ANALYTICS) ? {
+          deliveryStreamType: "KinesisStreamAsSource",
+          kinesisStreamSourceConfiguration: {
+            kinesisStreamArn: props.gamesEventsStream.streamArn,
+            roleArn: gamesEventsFirehoseRole.roleArn,
+          }
+        } : {
+          deliveryStreamType: "DirectPut",
+          directPutSourceConfiguration: {
+            ThroughputHintInMBs: 1
+          }
         },
         ...(props.config.ENABLE_APACHE_ICEBERG_SUPPORT
           ? {
@@ -166,7 +173,7 @@ export class StreamingIngestionConstruct extends Construct {
                 },
                 S3Configuration: {
                   RoleARN: gamesEventsFirehoseRole.roleArn,
-                  BucketARN: props.analyticsBucket.arn,
+                  BucketARN: props.analyticsBucket.bucketArn,
                   ErrorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
                   bufferingHints: {
                     intervalInSeconds: props.config.DEV_MODE ? 60 : 900,

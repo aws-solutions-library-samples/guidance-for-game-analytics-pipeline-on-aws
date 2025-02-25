@@ -1,4 +1,4 @@
-# Further Tuning
+# Customizations
 
 ## Custom events + queries (sample walkthroughs)
     - non-real-time

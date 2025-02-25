@@ -226,7 +226,6 @@ export class InfrastructureStack extends cdk.Stack {
       analyticsProcessingFunction: 'analytics-processing-function',
       analyticsProcessingFunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:analytics-processing-function',
       kinesisAnalyticsApp: 'game-analytics-application',
-      streamingAnalyticsEnabled: true,
     };    
 
     // Title widget
@@ -255,40 +254,6 @@ export class InfrastructureStack extends cdk.Stack {
           label: 'Data Freshness',
           period: cdk.Duration.seconds(300),
           statistic: 'Maximum',
-        }),
-        new cloudwatch.Metric({
-          metricName: 'Duration',
-          namespace: 'AWS/Lambda',
-          dimensionsMap: {
-            FunctionName: functionsInfo.eventsProcessingFunction,
-            Resource: functionsInfo.eventsProcessingFunctionArn,
-          },
-        }).with({
-          label: 'Lambda Duration',
-          period: cdk.Duration.seconds(300),
-          statistic: 'Average',
-        }),
-        new cloudwatch.Metric({
-          metricName: 'ConcurrentExecutions',
-          namespace: 'AWS/Lambda',
-          dimensionsMap: {
-            FunctionName: functionsInfo.eventsProcessingFunction,
-          },
-        }).with({
-          label: 'Lambda Concurrency',
-          period: cdk.Duration.seconds(300),
-          statistic: 'Maximum',
-        }),
-        new cloudwatch.Metric({
-          metricName: 'Throttles',
-          namespace: 'AWS/Lambda',
-          dimensionsMap: {
-            FunctionName: functionsInfo.eventsProcessingFunction,
-          },
-        }).with({
-          label: 'Lambda Throttles',
-          period: cdk.Duration.seconds(300),
-          statistic: 'Sum',
         }),
       ],
       width: 12,
@@ -552,7 +517,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     const dashboard = new cloudwatch.Dashboard(this, 'PipelineOpsDashboard', {
       dashboardName: `PipelineOpsDashboard_${cdk.Aws.STACK_NAME}`,
-      widgets: functionsInfo.streamingAnalyticsEnabled ? widgetsWithAnalytics : widgetsWithoutAnalytics
+      widgets: props.config.ENABLE_STREAMING_ANALYTICS ? widgetsWithAnalytics : widgetsWithoutAnalytics
     });
 
     // ---- DynamoDB Tables ---- //
@@ -660,6 +625,7 @@ export class InfrastructureStack extends cdk.Stack {
       authorizationsTable,
     });
 
+    // Events Processing Function Policy
     lambdaConstruct.eventsProcessingFunction.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "DynamoDBAccess",
@@ -674,6 +640,7 @@ export class InfrastructureStack extends cdk.Stack {
         resources: [applicationsTable.tableArn],
       })
     );
+    // Lambda Authorizer Policy
     lambdaConstruct.lambdaAuthorizer.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "DynamoDBAccess",
@@ -691,9 +658,12 @@ export class InfrastructureStack extends cdk.Stack {
         ],
       })
     );
+  
+    // Grant DynamoDB permissions to Lambda functions
     authorizationsTable.grantReadWriteData(
       lambdaConstruct.applicationAdminServiceFunction
     );
+  
     applicationsTable.grantReadWriteData(
       lambdaConstruct.applicationAdminServiceFunction
     );
@@ -781,7 +751,7 @@ export class InfrastructureStack extends cdk.Stack {
       ],
     });
 
-    // Output important resource information to AWS Consol
+    // Output important resource information to AWS Console
     new cdk.CfnOutput(this, "AnalyticsBucketOutput", {
       description: "S3 Bucket for game analytics storage",
       value: analyticsBucket.bucketName,
