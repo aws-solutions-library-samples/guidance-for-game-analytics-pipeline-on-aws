@@ -13,7 +13,7 @@
 			"dockerDashComposeVersion": "v1"
 		},
 		"ghcr.io/devcontainers-contrib/features/aws-cdk:2": {
-			"version": "2.92"
+			"version": "2.169.0"
 		},
 		"ghcr.io/devcontainers/features/java:1": {
 			"installMaven":true
@@ -26,7 +26,10 @@
 				"ms-python.python",
 				"streetsidesoftware.code-spell-checker",
                 "amazonwebservices.aws-toolkit-vscode",
-				"AmazonWebServices.amazon-q-vscode"
+				"AmazonWebServices.amazon-q-vscode",
+				"-ms-vscode.azure-account",
+				"-ms-azuretools.vscode-azureresourcegroups",
+				"-ms-azuretools.vscode-azureterraform"
 			]
 		}
 	}
