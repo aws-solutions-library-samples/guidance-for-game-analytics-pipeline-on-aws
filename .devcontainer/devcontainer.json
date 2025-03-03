@@ -14,6 +14,9 @@
 		},
 		"ghcr.io/devcontainers-contrib/features/aws-cdk:2": {
 			"version": "2.92"
+		},
+		"ghcr.io/devcontainers/features/java:1": {
+			"installMaven":true
 		}
 	},
 	"customizations": {
