@@ -50,7 +50,7 @@ export class MetricsConstruct extends Construct {
         props = { ...defaultProps, ...props };
 
         // Metrics if streaming analytics is enabled
-        if (props.config.ENABLE_STREAMING_ANALYTICS && props.managedFlinkConstruct) {
+        if (props.config.STREAMING_MODE === "REAL_TIME_KDS" && props.managedFlinkConstruct) {
             // Create the Kinesis Analytics Log Group
             const analyticsLogGroup = new logs.LogGroup(this, "KinesisAnalyticsLogGroup", {
                 logGroupName: `/aws/lambda/${props.managedFlinkConstruct.metricProcessingFunction.functionName}`,

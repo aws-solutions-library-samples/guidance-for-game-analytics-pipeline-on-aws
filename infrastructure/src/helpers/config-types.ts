@@ -19,7 +19,7 @@ export interface GameAnalyticsPipelineConfig {
   STREAM_SHARD_COUNT: number;
   METRIC_STREAM_SHARD_COUNT: number;
   STREAM_PROVISIONED: boolean;
-  ENABLE_STREAMING_ANALYTICS: boolean;
+  STREAMING_MODE: "BATCH_FIREHOSE" | "REAL_TIME_KDS" | "REAL_TIME_MSK"; // batch_firehose = direct put, else choose one or the other
   ENABLE_APACHE_ICEBERG_SUPPORT: boolean;
   S3_BACKUP_MODE: boolean;
   CLOUDWATCH_RETENTION_DAYS: number;

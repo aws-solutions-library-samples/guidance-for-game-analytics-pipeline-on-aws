@@ -368,8 +368,8 @@ export class InfrastructureStack extends cdk.Stack {
     let metricOutputStream;
 
     // ---- Streaming Analytics ---- //
-    // Create the following resources if and is `ENABLE_STREAMING_ANALYTICS` constant is `True`
-    if (props.config.ENABLE_STREAMING_ANALYTICS) {
+    // Create the following resources if and is `STREAMING_MODE` constant is set to REAL_TIME_KDS
+    if (props.config.STREAMING_MODE === "REAL_TIME_KDS") {
       // Enables Managed Flink and all metrics surrounding it
 
       managedFlinkConstruct = new ManagedFlinkConstruct(
