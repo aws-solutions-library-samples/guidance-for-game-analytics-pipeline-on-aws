@@ -12,11 +12,13 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+import * as path from "path";
 import * as cdk from "aws-cdk-lib";
-import * as s3 from "aws-cdk-lib/aws-s3";
 import * as kms from "aws-cdk-lib/aws-kms";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as triggers from "aws-cdk-lib/triggers";
 import * as redshiftserverless from "aws-cdk-lib/aws-redshiftserverless";
 import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
@@ -37,9 +39,6 @@ export class RedshiftConstruct extends Construct {
   constructor(parent: Construct, name: string, props: RedshiftConstructProps) {
     super(parent, name);
 
-    /* eslint-disable @typescript-eslint/no-unused-vars */
-    // const merged = { ...defaultProps, ...props };
-    // const mergedProps: Required<RedshiftConstructProps> = {}
     const key = new kms.Key(this, "RedshiftKMSKey");
 
     const vpc = new ec2.Vpc(this, "RedshiftVPC", {});
@@ -84,11 +83,12 @@ export class RedshiftConstruct extends Construct {
       })
     );
 
+    const workloadNameLower = props.config.WORKLOAD_NAME.toLowerCase()
     const cfnNamespace = new redshiftserverless.CfnNamespace(
       this,
       "RedshiftNamespace",
       {
-        namespaceName: `${props.config.WORKLOAD_NAME.toLowerCase()}workspace`,
+        namespaceName: `${workloadNameLower}workspace`,
         adminPasswordSecretKmsKeyId: key.keyId,
         dbName: props.config.REDSHIFT_DB_NAME,
         defaultIamRoleArn: redshiftRole.roleArn,
@@ -102,29 +102,42 @@ export class RedshiftConstruct extends Construct {
       this,
       "RedshiftWorkgroup",
       {
-        workgroupName: `${props.config.WORKLOAD_NAME.toLowerCase()}-wg`,
-
-        // the properties below are optional
+        workgroupName: `${workloadNameLower}-wg`,
         baseCapacity: props.baseRPU ?? defaultProps.baseRPU,
-
-        // enhancedVpcRouting: false,
-        // maxCapacity: 123,
         namespaceName: cfnNamespace.ref,
         port: props.port ?? defaultProps.port,
-        // pricePerformanceTarget: {
-        //   level: 123,
-        //   status: "status",
-        // },
         publiclyAccessible: false,
         securityGroupIds: [sg.securityGroupId],
         subnetIds: vpc.privateSubnets.map((s) => s.subnetId),
-        // tags: [
-        //   {
-        //     key: "key",
-        //     value: "value",
-        //   },
-        // ],
       }
     );
+
+    const codePath = "../../../business-logic";
+    const trigger = new triggers.TriggerFunction(
+      this,
+      "RedshiftPostDeployTrigger",
+      {
+        runtime: lambda.Runtime.NODEJS_18_X,
+        handler: "index.handler",
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, `${codePath}/redshift/cfn-trigger/`)
+        ),
+        timeout: cdk.Duration.minutes(1),
+        environment: {
+          SECRET_ARN: `redshift!${workloadNameLower}workspace-admin`,
+          WORKGROUP_NAME: cfnWorkgroup.workgroupName,
+          DATABASE_NAME: props.config.REDSHIFT_DB_NAME,
+          REDSHIFT_ROLE_ARN: redshiftRole.roleArn,
+          STREAM_NAME: props.gameEventsStream.streamName,
+        },
+      }
+    );
+    trigger.executeAfter(cfnNamespace, cfnWorkgroup);
+    // trigger.addToRolePolicy
+
+    new cdk.CfnOutput(this, "RedshiftRoleArn", {
+      description: "ARN of the Redshift Serverless Role",
+      value: redshiftRole.roleArn,
+    });
   }
 }
