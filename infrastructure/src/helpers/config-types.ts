@@ -19,7 +19,7 @@ export interface GameAnalyticsPipelineConfig {
   STREAM_SHARD_COUNT: number;
   METRIC_STREAM_SHARD_COUNT: number;
   STREAM_PROVISIONED: boolean;
-  STREAMING_MODE: "BATCH_FIREHOSE" | "REAL_TIME_KDS" | "REAL_TIME_MSK"; // batch_firehose = direct put, else choose one or the other
+  STREAMING_MODE: "BATCH_FIREHOSE" | "REAL_TIME_KDS" | "REAL_TIME_MSK"; // BATCH_FIREHOSE = direct PUT on the Firehose, REAL_TIME_KDS and REAL_TIME_MSK disable direct PUT in firehose
   ENABLE_APACHE_ICEBERG_SUPPORT: boolean;
   S3_BACKUP_MODE: boolean;
   CLOUDWATCH_RETENTION_DAYS: number;
