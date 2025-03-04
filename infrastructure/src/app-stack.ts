@@ -353,12 +353,12 @@ export class InfrastructureStack extends cdk.Stack {
         ],
       })
     );
-  
+
     // Grant DynamoDB permissions to Lambda functions
     authorizationsTable.grantReadWriteData(
       lambdaConstruct.applicationAdminServiceFunction
     );
-  
+
     applicationsTable.grantReadWriteData(
       lambdaConstruct.applicationAdminServiceFunction
     );
@@ -403,6 +403,7 @@ export class InfrastructureStack extends cdk.Stack {
     const gamesApiConstruct = new ApiConstruct(this, "GamesApiConstruct", {
       lambdaAuthorizer: lambdaConstruct.lambdaAuthorizer,
       gameEventsStream: gameEventsStream,
+      gameEventsFirehose: streamingIngestionConstruct.gameEventsFirehose,
       applicationAdminServiceFunction:
         lambdaConstruct.applicationAdminServiceFunction,
       config: props.config,
