@@ -353,12 +353,12 @@ export class InfrastructureStack extends cdk.Stack {
         ],
       })
     );
-  
+
     // Grant DynamoDB permissions to Lambda functions
     authorizationsTable.grantReadWriteData(
       lambdaConstruct.applicationAdminServiceFunction
     );
-  
+
     applicationsTable.grantReadWriteData(
       lambdaConstruct.applicationAdminServiceFunction
     );
@@ -368,8 +368,8 @@ export class InfrastructureStack extends cdk.Stack {
     let metricOutputStream;
 
     // ---- Streaming Analytics ---- //
-    // Create the following resources if and is `ENABLE_STREAMING_ANALYTICS` constant is `True`
-    if (props.config.ENABLE_STREAMING_ANALYTICS) {
+    // Create the following resources if and is `STREAMING_MODE` constant is set to REAL_TIME_KDS
+    if (props.config.STREAMING_MODE === "REAL_TIME_KDS") {
       // Enables Managed Flink and all metrics surrounding it
 
       managedFlinkConstruct = new ManagedFlinkConstruct(
@@ -403,6 +403,7 @@ export class InfrastructureStack extends cdk.Stack {
     const gamesApiConstruct = new ApiConstruct(this, "GamesApiConstruct", {
       lambdaAuthorizer: lambdaConstruct.lambdaAuthorizer,
       gameEventsStream: gameEventsStream,
+      gameEventsFirehose: streamingIngestionConstruct.gameEventsFirehose,
       applicationAdminServiceFunction:
         lambdaConstruct.applicationAdminServiceFunction,
       config: props.config,
