@@ -1,6 +1,8 @@
 export interface GameAnalyticsPipelineConfig {
   KinesisStreamShards: number;
   DEV_MODE: boolean;
+  ENABLE_REDSHIFT: boolean;
+  REDSHIFT_DB_NAME: string;
   EnableStreamingAnalytics: boolean;
   SolutionAdminEmailAddress: string;
   // Default Configuration Settings

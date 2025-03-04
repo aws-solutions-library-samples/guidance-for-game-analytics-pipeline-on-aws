@@ -34,14 +34,14 @@ import { MetricsConstruct } from "./constructs/metrics-construct";
 import { LambdaConstruct } from "./constructs/lambda-construct";
 import { CloudWatchDashboardConstruct } from "./constructs/dashboard-construct";
 
-import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import { RedshiftConstruct } from "./constructs/redshift-construct";
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
 }
 
 export class InfrastructureStack extends cdk.Stack {
-
   constructor(scope: Construct, id: string, props: InfrastructureStackProps) {
     super(scope, id, props);
     const codePath = "../../business-logic";
@@ -207,13 +207,18 @@ export class InfrastructureStack extends cdk.Stack {
     // ---- Kinesis ---- //
 
     // Input stream for applications
-    const gameEventsStream = new kinesis.Stream(this, "GameEventStream",
-      (props.config.STREAM_PROVISIONED === true) ? {
-        shardCount: props.config.STREAM_SHARD_COUNT,
-        streamMode: kinesis.StreamMode.PROVISIONED,
-      } : {
-        streamMode: kinesis.StreamMode.ON_DEMAND,
-      });
+    const gameEventsStream = new kinesis.Stream(
+      this,
+      "GameEventStream",
+      props.config.STREAM_PROVISIONED === true
+        ? {
+            shardCount: props.config.STREAM_SHARD_COUNT,
+            streamMode: kinesis.StreamMode.PROVISIONED,
+          }
+        : {
+            streamMode: kinesis.StreamMode.ON_DEMAND,
+          }
+    );
 
     // ---- DynamoDB Tables ---- //
 
@@ -254,40 +259,33 @@ export class InfrastructureStack extends cdk.Stack {
     );
 
     // Add a Global Secondary index 'ApplicationAuthorizations' to the AuthorizationsTable
-    authorizationsTable.addGlobalSecondaryIndex(
-      {
-        indexName: "ApplicationAuthorizations",
-        partitionKey: {
-          name: "application_id",
-          type: dynamodb.AttributeType.STRING,
-        },
-        sortKey: {
-          name: "api_key_id",
-          type: dynamodb.AttributeType.STRING,
-        },
-        projectionType: dynamodb.ProjectionType.ALL,
-      }
-    );
+    authorizationsTable.addGlobalSecondaryIndex({
+      indexName: "ApplicationAuthorizations",
+      partitionKey: {
+        name: "application_id",
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: "api_key_id",
+        type: dynamodb.AttributeType.STRING,
+      },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
 
     // Add a Global Secondary index 'ApiKeyValues' to the AuthorizationsTable
-    authorizationsTable.addGlobalSecondaryIndex(
-      {
-        indexName: "ApiKeyValues",
-        partitionKey: {
-          name: "api_key_value",
-          type: dynamodb.AttributeType.STRING,
-        },
-        sortKey: {
-          name: "application_id",
-          type: dynamodb.AttributeType.STRING,
-        },
-        projectionType: dynamodb.ProjectionType.INCLUDE,
-        nonKeyAttributes: [
-          "api_key_id",
-          "enabled",
-        ]
-      }
-    );
+    authorizationsTable.addGlobalSecondaryIndex({
+      indexName: "ApiKeyValues",
+      partitionKey: {
+        name: "api_key_value",
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: "application_id",
+        type: dynamodb.AttributeType.STRING,
+      },
+      projectionType: dynamodb.ProjectionType.INCLUDE,
+      nonKeyAttributes: ["api_key_id", "enabled"],
+    });
 
     // ---- Athena ---- //
     // Define the resources for the `GameAnalyticsWorkgroup` Athena workgroup
@@ -353,12 +351,12 @@ export class InfrastructureStack extends cdk.Stack {
         ],
       })
     );
-  
+
     // Grant DynamoDB permissions to Lambda functions
     authorizationsTable.grantReadWriteData(
       lambdaConstruct.applicationAdminServiceFunction
     );
-  
+
     applicationsTable.grantReadWriteData(
       lambdaConstruct.applicationAdminServiceFunction
     );
@@ -449,6 +447,12 @@ export class InfrastructureStack extends cdk.Stack {
         lambdaConstruct.applicationAdminServiceFunction,
       ],
     });
+
+    if (props.config.ENABLE_REDSHIFT) {
+      const redshift = new RedshiftConstruct(this, "Redshift", {
+        config: props.config,
+      });
+    }
 
     // Output important resource information to AWS Console
     new cdk.CfnOutput(this, "AnalyticsBucketOutput", {
