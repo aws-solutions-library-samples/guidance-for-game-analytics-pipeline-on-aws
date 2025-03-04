@@ -1,0 +1,547 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  DatabaseName:
+    Description: The name of the first database to be created when the cluster is created
+    Type: String
+    Default: dev
+    AllowedPattern: ([a-z]|[0-9])+
+  AdminUsername:
+    Description: The user name that is associated with the admin user account for the cluster that is being created
+    Type: String
+    Default: awsuser
+    AllowedPattern: ([a-z])([a-z]|[0-9])*
+  AdminPassword:
+    Description: The password that is associated with the admin user account for the cluster that is being created. Default is Awsuser123
+    Type: String
+    Default: Awsuser123
+    NoEcho: 'true'
+    MinLength: 8
+    MaxLength: 64
+    AllowedPattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[^\x00-\x20\x22\x27\x2f\x40\x5c\x7f-\uffff]+'
+  BaseRPU:
+    Description: Base RPU for Redshift Serverless Workgroup.
+    Type: Number
+    MinValue: 8
+    MaxValue: 512
+    Default: 32
+    AllowedValues: [8,16,24,32,40,48,56,64,72,80,88,96,104,112,120,128,136,144,152,160,168,176,184,192,200,208,216,224,232,240,248,256,264,272,280,288,296,304,312,320,328,336,344,352,360,368,376,384,392,400,408,416,424,432,440,448,456,464,472,480,488,496,504,512]    
+  PortNumber:
+    Description: The port number on which the destination datawarehouse for zero-etl integration accepts incoming connections.
+    Type: Number
+    Default: '5439'
+  MaintenanceTrackName:
+    Description: The cluster track to be provisioned (preview track not supported by cfn as of this template creation)
+    Type: String
+    Default: current
+    AllowedValues:
+      - current
+      - trailing
+      - preview
+  RDSDBPort:
+    Description: Database port
+    Type: Number
+    Default: 3306
+    MinValue: 1025
+    MaxValue: 65535
+    ConstraintDescription: must be a valid number between 1025-65535
+  RDSDBEngineVersion:
+    Description: The database engine Version
+    Type: String
+    Default: 8.0.mysql_aurora.3.05.0
+  RDSMinCapacity:
+    Description: The min capacity for serverless ACU, starts at 1
+    Type: String
+    Default: 2
+  RDSMaxCapacity:
+    Description: The max capacity for serverless ACU, up to 128
+    Type: String
+    Default: 16
+  UserProfileName:
+    Type: String
+    Description: SageMaker Domain User profile name
+    Default: "default"
+  DomainName:
+    Type: String
+    Description: The domain name of the Admin Sagemaker Studio instance
+    Default: "default-domain"
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Redshift Connection Details
+        Parameters:
+          - DatabaseName
+          - AdminUsername
+          - AdminPassword
+          - PortNumber
+          - BaseRPU
+          - MaintenanceTrackName
+          - UserProfileName
+          - DomainName
+      - Label:
+          default: RDS MySQL configuration details
+        Parameters:
+          - RDSDBPort
+          - RDSDBEngineVersion
+          - RDSMinCapacity
+          - RDSMaxCapacity
+Conditions:
+  isiad: !Equals 
+    - !Ref "AWS::Region"
+    - us-east-1
+  ispdx: !Equals 
+    - !Ref "AWS::Region"
+    - us-west-2    
+Mappings:
+  RegionMap:
+    us-east-1:
+      EC2AMI : "ami-08a52ddb321b32a8c"    
+    us-west-2:
+      EC2AMI : "ami-04e35eeae7a7c5883"    
+
+Resources:
+  RedshiftRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: RedshiftIAMRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - redshift.amazonaws.com
+            Action:
+              - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - redshift-serverless.amazonaws.com
+            Action:
+              - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - rds.amazonaws.com
+            Action:
+              - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - glue.amazonaws.com
+            Action:
+              - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - sts:AssumeRole
+          -
+            Effect : Allow
+            Principal :
+              Service :
+                - sagemaker.amazonaws.com
+            Action :
+              - sts:AssumeRole             
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+          -
+            Effect : Allow
+            Principal :
+              Service :
+                - ec2.amazonaws.com
+            Action :
+              - sts:AssumeRole              
+          - Effect: Allow
+            Principal:
+              Service:
+                - scheduler.redshift.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonRedshiftFullAccess
+        - arn:aws:iam::aws:policy/AmazonRDSFullAccess
+        - arn:aws:iam::aws:policy/AmazonEC2FullAccess   
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess           
+  SSMSessionManagerPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: RSDD-SessionManagerPermissions-CF
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "ssm:UpdateInstanceInformation"
+              - "ssmmessages:CreateControlChannel"
+              - "ssmmessages:CreateDataChannel"
+              - "ssmmessages:OpenControlChannel"
+              - "ssmmessages:OpenDataChannel"
+              - "s3:GetEncryptionConfiguration"
+            Resource: '*'
+      Roles:
+        - !Ref RedshiftRole
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - !Ref RedshiftRole
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      IamInstanceProfile:
+        !Ref EC2InstanceProfile
+      SubnetId: !Ref Subnet1
+      SecurityGroupIds:
+        - Ref: SecurityGroup
+      ImageId:
+        Fn::FindInMap:
+        - RegionMap
+        - !Ref AWS::Region
+        - EC2AMI
+      UserData:
+          Fn::Base64:
+            !Sub |
+              #!/bin/bash -xe
+              sudo yum update -y aws-cfn-bootstrap
+              sudo dnf update -y
+              sudo dnf install -y mariadb105
+              sudo dnf install -y postgresql15
+      Tags:
+        -
+          Key: Name
+          Value: ec2-rds-client          
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      MapPublicIpOnLaunch: true    
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      VpcId: !Ref VPC
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      MapPublicIpOnLaunch: true    
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      VpcId: !Ref VPC
+  Subnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      MapPublicIpOnLaunch: true    
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select
+        - 2
+        - !GetAZs ''
+      VpcId: !Ref VPC
+  Subnet4:
+    Type: AWS::EC2::Subnet
+    Properties:
+      MapPublicIpOnLaunch: true    
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: !Select
+        - 3
+        - !GetAZs ''
+      VpcId: !Ref VPC  
+  Subnet5:
+    Type: AWS::EC2::Subnet
+    Condition: isiad        
+    Properties:
+      MapPublicIpOnLaunch: true    
+      CidrBlock: 10.0.4.0/24
+      AvailabilityZone: !Select
+        - 4
+        - !GetAZs ''
+      VpcId: !Ref VPC  
+  Subnet6:
+    Type: AWS::EC2::Subnet
+    Condition: isiad        
+    Properties:
+      MapPublicIpOnLaunch: true    
+      CidrBlock: 10.0.5.0/24
+      AvailabilityZone: !Select
+        - 5
+        - !GetAZs ''
+      VpcId: !Ref VPC                  
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+      - CidrIp: 54.70.204.128/27
+        FromPort: !Ref PortNumber
+        ToPort: !Ref PortNumber
+        IpProtocol: tcp
+      - CidrIp: 52.23.63.224/27
+        FromPort: !Ref PortNumber
+        ToPort: !Ref PortNumber
+        IpProtocol: tcp 
+      SecurityGroupEgress:
+        - Description: Allow all outbound traffic
+          IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+  SecurityGroupSelfReference:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Self Referencing Rule
+      FromPort: -1
+      IpProtocol: -1
+      GroupId: !GetAtt SecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt SecurityGroup.GroupId
+      ToPort: -1
+ 
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+  Route:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  SubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet1
+      RouteTableId: !Ref RouteTable
+  SubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet2
+      RouteTableId: !Ref RouteTable
+  SubnetRouteTableAssociation3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet3
+      RouteTableId: !Ref RouteTable
+  SubnetRouteTableAssociation4:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet4
+      RouteTableId: !Ref RouteTable      
+  SubnetRouteTableAssociation5:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: isiad        
+    Properties:
+      SubnetId: !Ref Subnet5
+      RouteTableId: !Ref RouteTable  
+  SubnetRouteTableAssociation6:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: isiad        
+    Properties:
+      SubnetId: !Ref Subnet6
+      RouteTableId: !Ref RouteTable              
+  RedshiftNS:
+    Type: AWS::RedshiftServerless::Namespace
+    Properties:
+      AdminUsername: !Ref AdminUsername
+      AdminUserPassword: !Ref AdminPassword
+      DbName: !Ref DatabaseName
+      NamespaceName: !Sub redshift-dw-ns
+      IamRoles:
+        - !GetAtt RedshiftRole.Arn
+      DefaultIamRoleArn: !GetAtt RedshiftRole.Arn
+  RedshiftWG:
+    Type: AWS::RedshiftServerless::Workgroup
+    Condition: isiad        
+    Properties:
+      WorkgroupName: !Sub redshift-dw-wg
+      NamespaceName: !Sub redshift-dw-ns
+      ConfigParameters:
+        - ParameterKey: enable_case_sensitive_identifier
+          ParameterValue: 'true'
+      BaseCapacity: !Ref BaseRPU
+      PubliclyAccessible: 'true'
+      SubnetIds:
+        - !Ref Subnet1
+        - !Ref Subnet2
+        - !Ref Subnet3
+        - !Ref Subnet4
+        - !Ref Subnet5
+        - !Ref Subnet6                
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+    DependsOn:
+      - RedshiftNS
+
+  RedshiftWG1:
+    Type: AWS::RedshiftServerless::Workgroup
+    Condition: ispdx        
+    Properties:
+      WorkgroupName: !Sub redshift-dw-wg
+      NamespaceName: !Sub redshift-dw-ns
+      ConfigParameters:
+        - ParameterKey: enable_case_sensitive_identifier
+          ParameterValue: 'true'
+      BaseCapacity: !Ref BaseRPU
+      PubliclyAccessible: 'true'
+      SubnetIds:
+        - !Ref Subnet1
+        - !Ref Subnet2
+        - !Ref Subnet3
+        - !Ref Subnet4
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+    DependsOn:
+      - RedshiftNS
+
+  CustomizedParameterGroup:
+    Type: AWS::Redshift::ClusterParameterGroup
+    Properties:
+      Description: Customizations to parameter group for case sensitive id
+      ParameterGroupFamily: redshift-1.0
+      ParameterGroupName: ZeroETLrspg
+      Parameters:
+        - ParameterName: enable_case_sensitive_identifier
+          ParameterValue: 'true'
+  RedshiftClusterSubnetGroup:
+    Type: AWS::Redshift::ClusterSubnetGroup
+    Properties:
+      Description: Cluster subnet group
+      SubnetIds:
+        - !Ref Subnet1
+        - !Ref Subnet2
+        - !Ref Subnet3
+        - !Ref Subnet4       
+
+  S3GatewayEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcEndpointType: 'Gateway'
+      VpcId: !Ref VPC
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
+      RouteTableIds:
+        - !Ref RouteTable
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub
+          - 'ri24-csreviews-${RandomGUID}'
+          - { RandomGUID: !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId ]]]] }   
+
+  RDSDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnets the database belongs to
+      SubnetIds:
+        - !Ref Subnet1
+        - !Ref Subnet2
+        - !Ref Subnet3
+        - !Ref Subnet4                
+      Tags:
+        - Key: Application
+          Value: !Ref AWS::StackId
+  RDSDBClusterParameterGroup:
+    Type: AWS::RDS::DBClusterParameterGroup
+    Properties:
+      Description: CloudFormation Sample Aurora Cluster Parameter Group
+      Family: aurora-mysql8.0
+      Parameters:
+        time_zone: UTC
+        aws_default_s3_role: !GetAtt RedshiftRole.Arn
+        aurora_enhanced_binlog: 1
+        binlog_backup: 0
+        binlog_format: ROW
+        binlog_replication_globaldb: 0
+        binlog_row_image: full
+        binlog_row_metadata: full
+  RDSCluster:
+    Type: AWS::RDS::DBCluster
+    DependsOn: RDSDBClusterParameterGroup
+    Properties:
+      DBClusterIdentifier: 'auroramysqldb'
+      CopyTagsToSnapshot: true
+      DBSubnetGroupName: !Ref RDSDBSubnetGroup
+      DBClusterParameterGroupName: !Ref RDSDBClusterParameterGroup
+      AssociatedRoles:
+        - RoleArn: !GetAtt RedshiftRole.Arn
+      Engine: aurora-mysql
+      MasterUsername: !Ref AdminUsername
+      MasterUserPassword: !Ref AdminPassword
+      StorageEncrypted: 'true'
+      Port: !Ref RDSDBPort
+      ServerlessV2ScalingConfiguration:
+        MinCapacity: !Ref RDSMinCapacity
+        MaxCapacity: !Ref RDSMaxCapacity
+      Tags:
+        - Key: Application
+          Value: !Ref AWS::StackId
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-cluster
+      VpcSecurityGroupIds:
+        - !Ref SecurityGroup
+  RDSDBInstance1:
+    Type: AWS::RDS::DBInstance
+    DependsOn: RDSDBClusterParameterGroup
+    Properties:
+      DBClusterIdentifier: !Ref RDSCluster
+      DBInstanceIdentifier: 'auroramysqldb-instance-1'
+      DBInstanceClass: db.serverless
+      DBSubnetGroupName: !Ref RDSDBSubnetGroup
+      Engine: aurora-mysql
+      PubliclyAccessible: 'false'
+      Tags:
+        - Key: Application
+          Value: !Ref AWS::StackId
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-instance-1
+
+
+
+Outputs:
+  AdminUsername:
+    Description: Username to login to your Redshift Serverless DW
+    Value: !Ref AdminUsername
+  AdminPassword:
+    Description: Password to login to your Redshift Serverless DW
+    Value: AdminPassword
+  VPC:
+    Description: VPC ID for this configuration
+    Value: !Ref VPC
+  RedshiftRoleNameArn:
+    Description: Name of Redshift Role with ARN FN tag
+    Value: !GetAtt RedshiftRole.Arn
+  RedshiftClusterSecurityGroupName:
+    Description: Name of security group
+    Value: !Ref SecurityGroup
+  RDSDBHostname:
+    Description: Hostname or IP address of RDS MySQL master database
+    Value: !GetAtt RDSCluster.Endpoint.Address
+  RDSDBClusterParameterGroup:
+    Description: RDS MySQL DB Cluster parameter group for enhanced binlog set up
+    Value: !Ref RDSDBClusterParameterGroup
+  EC2Instance:
+    Description: EC2 Instance to be used as MySQL client
+    Value:
+      Ref: EC2Instance    
