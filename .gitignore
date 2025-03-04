@@ -26,3 +26,5 @@ cdk.out
 
 node_modules/
 cdk.context.json
+*.zip
+*.jar

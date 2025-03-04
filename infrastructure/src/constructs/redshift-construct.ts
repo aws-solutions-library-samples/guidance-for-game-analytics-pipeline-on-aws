@@ -24,7 +24,7 @@ import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 export interface RedshiftConstructProps extends cdk.StackProps {
   baseRPU?: number;
   port?: number;
-  // analyticsBucket: s3.Bucket;
+  gameEventsStream: cdk.aws_kinesis.Stream;
   config: GameAnalyticsPipelineConfig;
 }
 
@@ -61,22 +61,28 @@ export class RedshiftConstruct extends Construct {
         iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonRedshiftFullAccess"),
       ],
     });
-    // redshiftRole.addToPolicy(
-    //   new iam.PolicyStatement({
-    //     sid: "S3Access",
-    //     effect: iam.Effect.ALLOW,
-    //     actions: [
-    //       "s3:ListBucket",
-    //       "s3:GetObject",
-    //       "s3:PutObject",
-    //       "s3:DeleteObject",
-    //     ],
-    //     resources: [
-    //       props.analyticsBucket.bucketArn,
-    //       `${props.analyticsBucket.bucketArn}/*`,
-    //     ],
-    //   })
-    // );
+    redshiftRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "ReadStream",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "kinesis:DescribeStreamSummary",
+          "kinesis:GetShardIterator",
+          "kinesis:GetRecords",
+          "kinesis:ListShards",
+          "kinesis:DescribeStream",
+        ],
+        resources: [props.gameEventsStream.streamArn],
+      })
+    );
+    redshiftRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "ListStream",
+        effect: iam.Effect.ALLOW,
+        actions: ["kinesis:ListStreams"],
+        resources: ["*"],
+      })
+    );
 
     const cfnNamespace = new redshiftserverless.CfnNamespace(
       this,

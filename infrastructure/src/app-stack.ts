@@ -450,6 +450,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     if (props.config.ENABLE_REDSHIFT) {
       const redshift = new RedshiftConstruct(this, "Redshift", {
+        gameEventsStream: gameEventsStream,
         config: props.config,
       });
     }
