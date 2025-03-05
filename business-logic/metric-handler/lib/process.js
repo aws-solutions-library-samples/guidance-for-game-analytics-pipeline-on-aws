@@ -17,11 +17,11 @@
  */
 
 'use strict';
-
 /**
- * This function processes outputs from Kinesis Data Analytics. 
+ * This function processes outputs from the Kinesis metric stream. 
  */
-const AWS = require('aws-sdk');
+
+
 const CloudwatchMetrics = require('./cloudwatch.js');
 
 const respond = async event => {
@@ -30,20 +30,20 @@ const respond = async event => {
 	let kinesisAnalyticsErrors = 0;
 	let cloudwatch = new CloudwatchMetrics();
 	let results = [];
-	for (const record of event.records) {
+	for (const record of event['Records']) {
 		try {
-			const payload = JSON.parse(Buffer.from(record.data, 'base64'));
+			const payload = JSON.parse(Buffer.from(record['kinesis']['data'], 'base64'));
 			if (payload.OUTPUT_TYPE === 'metrics') {
 				let metric = await cloudwatch.buildMetric(payload);
 				await cloudwatch.publishMetric(metric)
-				.then(data => {
-					success++;
-					results.push({
-						recordId: record.recordId,
-						result: 'Ok'
+					.then(data => {
+						success++;
+						results.push({
+							recordId: record.recordId,
+							result: 'Ok'
+						});
 					});
-				});
-				
+
 			} else if (payload.ERROR_NAME) {
 				// Log errors from Kinesis Analytics error_stream - https://docs.aws.amazon.com/kinesisanalytics/latest/dev/error-handling.html
 				// Treat as successfully handled record. Alarming on KDA errors can be handled in Cloudwatch with metric filter on kinesisAnalyticsErrors
@@ -71,9 +71,9 @@ const respond = async event => {
 				result: 'DeliveryFailed'
 			});
 		}
-		
+
 	}
-	
+
 	console.log(JSON.stringify({
 		'SuccessfulRecords': success,
 		'FailedRecords': failure,

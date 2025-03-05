@@ -101,7 +101,7 @@ nav:
       - (old-flink-remove): upgrading/flink-migration.md
   - Troubleshooting: troubleshooting.md
   - Component Deep Dive: component-deep-dive.md
-  - Further Tuning: further-tuning.md
+  - Customizations: customizations.md
   - Design Considerations: design-considerations.md
   - Roadmap: roadmap.md
   - Security: security.md
