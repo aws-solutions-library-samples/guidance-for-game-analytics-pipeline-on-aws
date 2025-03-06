@@ -22,6 +22,7 @@ import * as triggers from "aws-cdk-lib/triggers";
 import * as redshiftserverless from "aws-cdk-lib/aws-redshiftserverless";
 import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
+import { Stack } from "aws-cdk-lib";
 
 export interface RedshiftConstructProps extends cdk.StackProps {
   baseRPU?: number;
@@ -40,7 +41,6 @@ export class RedshiftConstruct extends Construct {
     super(parent, name);
 
     const key = new kms.Key(this, "RedshiftKMSKey");
-
     const vpc = new ec2.Vpc(this, "RedshiftVPC", {});
     const sg = new ec2.SecurityGroup(this, "RedshiftSecurityGroup", { vpc });
     sg.addIngressRule(
@@ -83,8 +83,8 @@ export class RedshiftConstruct extends Construct {
       })
     );
 
-    const workloadNameLower = props.config.WORKLOAD_NAME.toLowerCase()
-    const cfnNamespace = new redshiftserverless.CfnNamespace(
+    const workloadNameLower = props.config.WORKLOAD_NAME.toLowerCase();
+    const namespace = new redshiftserverless.CfnNamespace(
       this,
       "RedshiftNamespace",
       {
@@ -96,19 +96,25 @@ export class RedshiftConstruct extends Construct {
         // kmsKeyId: key.keyId,
         manageAdminPassword: true,
       }
-    );
+    );    
 
-    const cfnWorkgroup = new redshiftserverless.CfnWorkgroup(
+    const workgroup = new redshiftserverless.CfnWorkgroup(
       this,
       "RedshiftWorkgroup",
       {
         workgroupName: `${workloadNameLower}-wg`,
         baseCapacity: props.baseRPU ?? defaultProps.baseRPU,
-        namespaceName: cfnNamespace.ref,
+        namespaceName: namespace.ref,
         port: props.port ?? defaultProps.port,
         publiclyAccessible: false,
         securityGroupIds: [sg.securityGroupId],
         subnetIds: vpc.privateSubnets.map((s) => s.subnetId),
+        configParameters: [
+          {
+            parameterKey: 'enable_case_sensitive_identifier',
+            parameterValue: 'true'
+          }
+        ]
       }
     );
 
@@ -120,20 +126,55 @@ export class RedshiftConstruct extends Construct {
         runtime: lambda.Runtime.NODEJS_18_X,
         handler: "index.handler",
         code: lambda.Code.fromAsset(
-          path.join(__dirname, `${codePath}/redshift/cfn-trigger/`)
+          path.join(__dirname, `${codePath}/redshift-trigger/`)
         ),
         timeout: cdk.Duration.minutes(1),
         environment: {
-          SECRET_ARN: `redshift!${workloadNameLower}workspace-admin`,
-          WORKGROUP_NAME: cfnWorkgroup.workgroupName,
+          SECRET_ARN: `redshift!${namespace.namespaceName}-admin`,
+          WORKGROUP_NAME: workgroup.workgroupName,
           DATABASE_NAME: props.config.REDSHIFT_DB_NAME,
           REDSHIFT_ROLE_ARN: redshiftRole.roleArn,
           STREAM_NAME: props.gameEventsStream.streamName,
         },
       }
     );
-    trigger.executeAfter(cfnNamespace, cfnWorkgroup);
-    // trigger.addToRolePolicy
+    trigger.executeAfter(namespace, workgroup);
+    trigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "DataAPI",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "redshift-data:CancelStatement",
+          "redshift-data:DescribeStatement",
+          "redshift-data:GetStatementResult",
+          "redshift-data:ListStatements",
+          "redshift-data:ExecuteStatement",
+          "redshift-data:BatchExecuteStatement",
+        ],
+        resources: ["*"],
+      })
+    );
+    trigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "SecretsManager",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "secretsmanager:GetSecretValue"
+        ],
+        resources: [`arn:aws:secretsmanager:${Stack.of(this).region}:${Stack.of(this).account}:secret:redshift!${namespace.namespaceName}-admin*`],
+      })
+    );
+    trigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "KMS",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "kms:Decrypt*"          
+        ],
+        resources: [key.keyArn],
+      })
+    );    
+    
 
     new cdk.CfnOutput(this, "RedshiftRoleArn", {
       description: "ARN of the Redshift Serverless Role",

@@ -28,3 +28,4 @@ node_modules/
 cdk.context.json
 *.zip
 *.jar
+infrastructure/config.yaml
