@@ -157,184 +157,186 @@ export class StreamingIngestionConstruct extends Construct {
       this,
       "game-events-firehose",
       {
-        ...(props.config.STREAMING_MODE === "REAL_TIME_KDS") ? {
-          deliveryStreamType: "KinesisStreamAsSource",
-          kinesisStreamSourceConfiguration: {
-            kinesisStreamArn: props.gamesEventsStream.streamArn,
-            roleArn: gamesEventsFirehoseRole.roleArn,
-          }
-        } : {
-          deliveryStreamType: "DirectPut",
-          directPutSourceConfiguration: {
-            ThroughputHintInMBs: 1
-          }
-        },
+        ...(props.config.STREAMING_MODE === "REAL_TIME_KDS"
+          ? {
+              deliveryStreamType: "KinesisStreamAsSource",
+              kinesisStreamSourceConfiguration: {
+                kinesisStreamArn: props.gamesEventsStream.streamArn,
+                roleArn: gamesEventsFirehoseRole.roleArn,
+              },
+            }
+          : {
+              deliveryStreamType: "DirectPut",
+              directPutSourceConfiguration: {
+                ThroughputHintInMBs: 1,
+              },
+            }),
         ...(props.config.ENABLE_APACHE_ICEBERG_SUPPORT
           ? {
-            icebergDestinationConfiguration: {
-              catalogConfiguration: {
-                catalogArn: `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
-              },
-              roleArn: gamesEventsFirehoseRole.roleArn,
-              s3Configuration: {
-                bucketArn: props.analyticsBucket.bucketArn,
+              icebergDestinationConfiguration: {
+                catalogConfiguration: {
+                  catalogArn: `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
+                },
                 roleArn: gamesEventsFirehoseRole.roleArn,
+                s3Configuration: {
+                  bucketArn: props.analyticsBucket.bucketArn,
+                  roleArn: gamesEventsFirehoseRole.roleArn,
+                  bufferingHints: {
+                    intervalInSeconds: props.config.DEV_MODE ? 60 : 900,
+                    sizeInMBs: 128,
+                  },
+                },
+                destinationTableConfigurationList: [
+                  {
+                    destinationDatabaseName: props.config.EVENTS_DATABASE,
+                    destinationTableName: props.config.RAW_EVENTS_TABLE,
+                    s3ErrorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
+                    uniqueKeys: ["event_timestamp"],
+                  },
+                ],
+                cloudWatchLoggingOptions: {
+                  enabled: true,
+                  logGroupName: firehouseS3DeliveryLogStream.logStreamName,
+                  logStreamName: firehouseS3DeliveryLogStream.logStreamName,
+                },
+                processingConfiguration: {
+                  enabled: true,
+                  processors: [
+                    {
+                      type: "Lambda",
+                      parameters: [
+                        {
+                          parameterName: "LambdaArn",
+                          parameterValue:
+                            props.eventsProcessingFunction.functionArn,
+                        },
+                        {
+                          parameterName: "BufferIntervalInSeconds",
+                          parameterValue: "60",
+                        },
+                        {
+                          parameterName: "BufferSizeInMBs",
+                          parameterValue: "3",
+                        },
+                        {
+                          parameterName: "NumberOfRetries",
+                          parameterValue: "3",
+                        },
+                      ],
+                    },
+                  ],
+                },
+                s3BackupMode: "FailedDataOnly",
+              },
+            }
+          : {
+              extendedS3DestinationConfiguration: {
+                bucketArn: props.analyticsBucket.bucketArn,
                 bufferingHints: {
                   intervalInSeconds: props.config.DEV_MODE ? 60 : 900,
                   sizeInMBs: 128,
                 },
-              },
-              destinationTableConfigurationList: [
-                {
-                  destinationDatabaseName: props.config.EVENTS_DATABASE,
-                  destinationTableName: props.config.RAW_EVENTS_TABLE,
-                  s3ErrorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
-                  uniqueKeys: ["event_timestamp"],
+                prefix: `${props.config.RAW_EVENTS_PREFIX}/year=!{partitionKeyFromQuery:year}/month=!{partitionKeyFromQuery:month}/day=!{partitionKeyFromQuery:day}/`,
+                errorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
+                compressionFormat: "UNCOMPRESSED",
+                roleArn: gamesEventsFirehoseRole.roleArn,
+                dynamicPartitioningConfiguration: {
+                  enabled: true,
                 },
-              ],
-              cloudWatchLoggingOptions: {
-                enabled: true,
-                logGroupName: firehouseS3DeliveryLogStream.logStreamName,
-                logStreamName: firehouseS3DeliveryLogStream.logStreamName,
-              },
-              processingConfiguration: {
-                enabled: true,
-                processors: [
-                  {
-                    type: "Lambda",
-                    parameters: [
-                      {
-                        parameterName: "LambdaArn",
-                        parameterValue:
-                          props.eventsProcessingFunction.functionArn,
-                      },
-                      {
-                        parameterName: "BufferIntervalInSeconds",
-                        parameterValue: "60",
-                      },
-                      {
-                        parameterName: "BufferSizeInMBs",
-                        parameterValue: "3",
-                      },
-                      {
-                        parameterName: "NumberOfRetries",
-                        parameterValue: "3",
-                      },
-                    ],
-                  },
-                ],
-              },
-              s3BackupMode: "FailedDataOnly",
-            },
-          }
-          : {
-            extendedS3DestinationConfiguration: {
-              bucketArn: props.analyticsBucket.bucketArn,
-              bufferingHints: {
-                intervalInSeconds: props.config.DEV_MODE ? 60 : 900,
-                sizeInMBs: 128,
-              },
-              prefix: `${props.config.RAW_EVENTS_PREFIX}/!{partitionKeyFromQuery:year}/!{partitionKeyFromQuery:month}/!{partitionKeyFromQuery:day}/`,
-              errorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
-              compressionFormat: "UNCOMPRESSED",
-              roleArn: gamesEventsFirehoseRole.roleArn,
-              dynamicPartitioningConfiguration: {
-                enabled: true,
-              },
-              processingConfiguration: {
-                enabled: true,
-                processors: [
-                  {
-                    type: "Lambda",
-                    parameters: [
-                      {
-                        parameterName: "LambdaArn",
-                        parameterValue:
-                          props.eventsProcessingFunction.functionArn,
-                      },
-                      {
-                        parameterName: "BufferIntervalInSeconds",
-                        parameterValue: "60",
-                      },
-                      {
-                        parameterName: "BufferSizeInMBs",
-                        parameterValue: "3",
-                      },
-                      {
-                        parameterName: "NumberOfRetries",
-                        parameterValue: "3",
-                      },
-                    ],
-                  },
-                  {
-                    type: "MetadataExtraction",
-                    parameters: [
-                      {
-                        parameterName: "MetadataExtractionQuery",
-                        parameterValue:
-                          '{year: .event_timestamp| strftime("%Y"), month: .event_timestamp| strftime("%m"), day: .event_timestamp| strftime("%d")}',
-                      },
-                      {
-                        parameterName: "JsonParsingEngine",
-                        parameterValue: "JQ-1.6",
-                      },
-                    ],
-                  },
-                ],
-              },
-              cloudWatchLoggingOptions: {
-                enabled: true,
-                logGroupName: firehoseLogGroup.logGroupName,
-                logStreamName: firehouseS3DeliveryLogStream.logStreamName,
-              },
-              s3BackupMode: props.config.S3_BACKUP_MODE
-                ? "Enabled"
-                : "Disabled",
-              s3BackupConfiguration: {
-                bucketArn: props.analyticsBucket.bucketArn,
+                processingConfiguration: {
+                  enabled: true,
+                  processors: [
+                    {
+                      type: "Lambda",
+                      parameters: [
+                        {
+                          parameterName: "LambdaArn",
+                          parameterValue:
+                            props.eventsProcessingFunction.functionArn,
+                        },
+                        {
+                          parameterName: "BufferIntervalInSeconds",
+                          parameterValue: "60",
+                        },
+                        {
+                          parameterName: "BufferSizeInMBs",
+                          parameterValue: "3",
+                        },
+                        {
+                          parameterName: "NumberOfRetries",
+                          parameterValue: "3",
+                        },
+                      ],
+                    },
+                    {
+                      type: "MetadataExtraction",
+                      parameters: [
+                        {
+                          parameterName: "MetadataExtractionQuery",
+                          parameterValue:
+                            '{year: .event_timestamp| strftime("%Y"), month: .event_timestamp| strftime("%m"), day: .event_timestamp| strftime("%d")}',
+                        },
+                        {
+                          parameterName: "JsonParsingEngine",
+                          parameterValue: "JQ-1.6",
+                        },
+                      ],
+                    },
+                  ],
+                },
                 cloudWatchLoggingOptions: {
                   enabled: true,
                   logGroupName: firehoseLogGroup.logGroupName,
-                  logStreamName:
-                    firehouseBackupDeliveryLogStream.logStreamName,
+                  logStreamName: firehouseS3DeliveryLogStream.logStreamName,
                 },
-                compressionFormat: "GZIP",
-                bufferingHints: {
-                  intervalInSeconds: 900,
-                  sizeInMBs: 128,
-                },
-                prefix: `FirehoseS3SourceRecordBackup/${s3TimestampPrefix}/`,
-                errorOutputPrefix: `FirehoseS3SourceRecordBackup/firehose-errors/${s3TimestampPrefix}/!{firehose:error-output-type}/`,
-                roleArn: gamesEventsFirehoseRole.roleArn,
-              },
-              dataFormatConversionConfiguration: {
-                enabled: true,
-                inputFormatConfiguration: {
-                  deserializer: {
-                    openXJsonSerDe: {
-                      caseInsensitive: true,
-                      convertDotsInJsonKeysToUnderscores: false,
-                    },
+                s3BackupMode: props.config.S3_BACKUP_MODE
+                  ? "Enabled"
+                  : "Disabled",
+                s3BackupConfiguration: {
+                  bucketArn: props.analyticsBucket.bucketArn,
+                  cloudWatchLoggingOptions: {
+                    enabled: true,
+                    logGroupName: firehoseLogGroup.logGroupName,
+                    logStreamName:
+                      firehouseBackupDeliveryLogStream.logStreamName,
                   },
-                },
-                outputFormatConfiguration: {
-                  serializer: {
-                    parquetSerDe: {
-                      compression: "SNAPPY",
-                    },
+                  compressionFormat: "GZIP",
+                  bufferingHints: {
+                    intervalInSeconds: 900,
+                    sizeInMBs: 128,
                   },
-                },
-                schemaConfiguration: {
-                  catalogId: cdk.Aws.ACCOUNT_ID,
+                  prefix: `FirehoseS3SourceRecordBackup/${s3TimestampPrefix}/`,
+                  errorOutputPrefix: `FirehoseS3SourceRecordBackup/firehose-errors/${s3TimestampPrefix}/!{firehose:error-output-type}/`,
                   roleArn: gamesEventsFirehoseRole.roleArn,
-                  databaseName: props.gameEventsDatabase.ref,
-                  tableName: props.rawEventsTable.ref,
-                  region: cdk.Aws.REGION,
-                  versionId: "LATEST",
+                },
+                dataFormatConversionConfiguration: {
+                  enabled: true,
+                  inputFormatConfiguration: {
+                    deserializer: {
+                      openXJsonSerDe: {
+                        caseInsensitive: true,
+                        convertDotsInJsonKeysToUnderscores: false,
+                      },
+                    },
+                  },
+                  outputFormatConfiguration: {
+                    serializer: {
+                      parquetSerDe: {
+                        compression: "SNAPPY",
+                      },
+                    },
+                  },
+                  schemaConfiguration: {
+                    catalogId: cdk.Aws.ACCOUNT_ID,
+                    roleArn: gamesEventsFirehoseRole.roleArn,
+                    databaseName: props.gameEventsDatabase.ref,
+                    tableName: props.rawEventsTable.ref,
+                    region: cdk.Aws.REGION,
+                    versionId: "LATEST",
+                  },
                 },
               },
-            },
-          }),
+            }),
       }
     );
 
