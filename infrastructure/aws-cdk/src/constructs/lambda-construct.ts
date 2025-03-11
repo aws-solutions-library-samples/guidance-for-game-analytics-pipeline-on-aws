@@ -42,7 +42,7 @@ export class LambdaConstruct extends Construct {
     /* eslint-disable @typescript-eslint/no-unused-vars */
     props = { ...defaultProps, ...props };
 
-    const codePath = "../../../business-logic";
+    const codePath = "../../../../business-logic";
 
     /* The following variables define the necessary resources for the `EventsProcessingFunction` serverless
 function. This function to process and transform raw events before they get written to S3. */

@@ -33,7 +33,7 @@ def change_dir_with_return(dir):
 
 def build_infrastructure():
 
-    return_dir = change_dir_with_return("./infrastructure")
+    return_dir = change_dir_with_return("./infrastructure/aws-cdk")
 
     cmd = [sys.executable, "build.py"]
     proc = subprocess.run(cmd, stderr=subprocess.STDOUT, shell=False)
