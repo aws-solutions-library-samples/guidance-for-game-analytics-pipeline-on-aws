@@ -44,7 +44,7 @@ export class InfrastructureStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props: InfrastructureStackProps) {
     super(scope, id, props);
-    const codePath = "../../business-logic";
+    const codePath = "../../../business-logic";
 
     // ---- S3 Buckets ---- //
 
@@ -449,6 +449,17 @@ export class InfrastructureStack extends cdk.Stack {
         lambdaConstruct.lambdaAuthorizer,
         lambdaConstruct.applicationAdminServiceFunction,
       ],
+    });
+
+    const dashboardConstruct = new CloudWatchDashboardConstruct(this, "DashboardConstruct", {
+      gameEventsStream: gameEventsStream,
+      metricOutputStream: metricOutputStream,
+      gameEventsFirehose: streamingIngestionConstruct.gameEventsFirehose,
+      gameAnalyticsApi: gamesApiConstruct.gameAnalyticsApi,
+      eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
+      analyticsProcessingFunction: managedFlinkConstruct?.metricProcessingFunction,
+      kinesisAnalyticsApp: managedFlinkConstruct?.managedFlinkApp,
+      streamingAnalyticsEnabled: props.config.STREAMING_MODE === "REAL_TIME_KDS"
     });
 
     // Output important resource information to AWS Console
