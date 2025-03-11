@@ -68,7 +68,6 @@ export class ManagedFlinkConstruct extends Construct {
       0,
       Fn.split("-", Fn.select(2, Fn.split("/", `${Aws.STACK_ID}`)))
     );
-    const flinkAppName = `${cdk.Names.uniqueId(this)}-AnalyticsApplication-${stackUniqueIdentifier}`;
 
 
     /* The following variables define the necessary resources for the `MetricProcessingFunction` serverless
@@ -150,23 +149,6 @@ export class ManagedFlinkConstruct extends Construct {
       )
     })
 
-    // Create flink log groups and streams
-    const flinkLogGroup = new logs.LogGroup(this, "flinkLogGroup", {
-      logGroupName: `/aws/kinesis-analytics/${flinkAppName}`,
-      retention: props.config.CLOUDWATCH_RETENTION_DAYS
-    });
-
-    const flinkLogStream = new logs.LogStream(
-      this,
-      "flinkLogStream",
-      {
-        logStreamName: "kinesis-analytics-log-stream",
-        logGroup: flinkLogGroup,
-      }
-    );
-    /* The ARN of the log stream to write CloudWatch logs to */
-    const flinkLogStreamArn = `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:${flinkLogGroup.logGroupName}:log-stream:${flinkLogStream.logStreamName}`;
-
     /* The following variables define the Managed Flink Application's IAM Role. */
     const flinkAppRole = new iam.Role(this, "flinkAppRole", {
       assumedBy: new iam.ServicePrincipal("kinesisanalytics.amazonaws.com"),
@@ -182,36 +164,6 @@ export class ManagedFlinkConstruct extends Construct {
               ],
               resources: [
                 `${flinkCodeAsset.bucket.bucketArn}/${flinkCodeAsset.s3ObjectKey}`
-              ]
-            }),
-            new iam.PolicyStatement({
-              sid: "ListCloudwatchLogGroups",
-              effect: iam.Effect.ALLOW,
-              actions: [
-                "logs:DescribeLogGroups",
-              ],
-              resources: [
-                `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:*`
-              ]
-            }),
-            new iam.PolicyStatement({
-              sid: "ListCloudwatchLogStreams",
-              effect: iam.Effect.ALLOW,
-              actions: [
-                "logs:DescribeLogStreams",
-              ],
-              resources: [
-                `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:${flinkLogGroup.logGroupName}:log-stream:*`
-              ]
-            }),
-            new iam.PolicyStatement({
-              sid: "PutCloudwatchLogs",
-              effect: iam.Effect.ALLOW,
-              actions: [
-                "logs:PutLogEvents"
-              ],
-              resources: [
-                flinkLogStreamArn
               ]
             })
           ],
@@ -258,7 +210,6 @@ export class ManagedFlinkConstruct extends Construct {
     /* The following defines the flink application used to process incoming game events and output them to the stream */
     const managedFlinkApp = new kinesisanalytics.CfnApplicationV2(this, "ManagedFlinkApp",
       {
-        applicationName: flinkAppName,
         applicationDescription: `Real-time game analytics application, for ${cdk.Aws.STACK_NAME}`,
         runtimeEnvironment: "FLINK-1_20",
         serviceExecutionRole: flinkAppRole.roleArn,
@@ -316,14 +267,67 @@ export class ManagedFlinkConstruct extends Construct {
     )
 
     /* Enable logging for the managed flink application */
+    // Create flink log groups and streams
+    const flinkLogGroup = new logs.LogGroup(this, "flinkLogGroup", {
+      logGroupName: `/aws/kinesis-analytics/${managedFlinkApp.ref}`,
+      retention: props.config.CLOUDWATCH_RETENTION_DAYS
+    });
+
+    const flinkLogStream = new logs.LogStream(
+      this,
+      "flinkLogStream",
+      {
+        logStreamName: "kinesis-analytics-log-stream",
+        logGroup: flinkLogGroup,
+      }
+    );
+    
+
+    /* The ARN of the log stream to write CloudWatch logs to */
+    const flinkLogStreamArn = `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:${flinkLogGroup.logGroupName}:log-stream:${flinkLogStream.logStreamName}`;
+
+    // update IAM role to allow placing logs into log stream
+    flinkAppRole.addToPolicy(new iam.PolicyStatement({
+      sid: "ListCloudwatchLogGroups",
+      effect: iam.Effect.ALLOW,
+      actions: [
+        "logs:DescribeLogGroups",
+      ],
+      resources: [
+        `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:*`
+      ]
+    }),)
+    flinkAppRole.addToPolicy(new iam.PolicyStatement({
+      sid: "ListCloudwatchLogStreams",
+      effect: iam.Effect.ALLOW,
+      actions: [
+        "logs:DescribeLogStreams",
+      ],
+      resources: [
+        `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:${flinkLogGroup.logGroupName}:log-stream:*`
+      ]
+    }))
+    flinkAppRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "PutCloudwatchLogs",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "logs:PutLogEvents"
+        ],
+        resources: [
+          flinkLogStreamArn
+        ]
+      }))
+
     const flinkLoggingConfiguration = new kinesisanalytics.CfnApplicationCloudWatchLoggingOptionV2(this, "FlinkAppLoggingOption",
       {
-        applicationName: flinkAppName,
+        applicationName: managedFlinkApp.ref,
         cloudWatchLoggingOption: {
           logStreamArn: flinkLogStreamArn
         }
       }
     )
+
     flinkLoggingConfiguration.addDependency(managedFlinkApp)
 
 
