@@ -2,6 +2,9 @@ const {
   RedshiftDataClient,
   ExecuteStatementCommand,
 } = require("@aws-sdk/client-redshift-data");
+const { v4: uuidv4 } = require("uuid");
+const path = require("path");
+const fs = require("fs");
 
 const config = {};
 const client = new RedshiftDataClient(config);
@@ -13,55 +16,35 @@ const REDSHIFT_ROLE_ARN = process.env.REDSHIFT_ROLE_ARN;
 const STREAM_NAME = process.env.STREAM_NAME;
 
 const statements = [
-  `CREATE EXTERNAL SCHEMA kds FROM KINESIS IAM_ROLE '${REDSHIFT_ROLE_ARN}';`,  
-  ```
-  CREATE MATERIALIZED VIEW event_data DISTKEY(6) sortkey(1) AUTO REFRESH YES AS
-  SELECT refresh_time,
-      approximate_arrival_timestamp,
-      partition_key,
-      shard_id,
-      sequence_number,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_id',true)::TEXT as event_id,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_type',true)::TEXT as event_type,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_name',true)::TEXT as event_name,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_version',true)::TEXT as event_version,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_timestamp',true)::BIGINT as event_timestamp,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','app_version',true)::TEXT as app_version,
-      json_extract_path_text(from_varbyte(kinesis_data, 'utf-8'),'application_id',true)::TEXT as application_id,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','application_name',true)::TEXT as application_name,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_data',true)::TEXT as event_data,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','metadata',true)::TEXT as metadata
-  FROM "kds"."${STREAM_NAME}"
-  WHERE LENGTH(kinesis_data) < 65355;
-  ```
+  `CREATE EXTERNAL SCHEMA kds FROM KINESIS IAM_ROLE '${REDSHIFT_ROLE_ARN}';`,
+  `CREATE MATERIALIZED VIEW kds_view AUTO REFRESH YES AS SELECT * FROM 'kds.${STREAM_NAME}';`,
 ];
 
 exports.handler = async (event, context, callback) => {
   for (const statement of statements) {
-    const input = {
-      // ExecuteStatementInput
-      Sql: statement, // required
-      SecretArn: SECRET_ARN,
-      Database: DATABASE_NAME,
-      WithEvent: true,
-      // StatementName: "STRING_VALUE",
-      // Parameters: [
-      //   // SqlParametersList
-      //   {
-      //     // SqlParameter
-      //     name: "STRING_VALUE", // required
-      //     value: "STRING_VALUE", // required
-      //   },
-      // ],
-      WorkgroupName: WORKGROUP_NAME,
-      ClientToken: context.awsRequestId,
-      // SessionKeepAliveSeconds: Number("int"),
-      // SessionId: "STRING_VALUE",
-      // ResultFormat: "STRING_VALUE",
-    };
-    const command = new ExecuteStatementCommand(input);
-    const response = await client.send(command);
-    console.log(statement);
-    console.log(JSON.stringify(response));
+    await executeStatement(statement);
   }
+
+  const directoryPath = path.join(__dirname, "views");
+  filenames = fs.readdirSync(directoryPath);
+
+  for (const filename of filenames) {
+    const statement = fs.readFileSync(`${directoryPath}/${filename}`, "utf8");
+    await executeStatement(statement);
+  }
+};
+
+const executeStatement = async (statement) => {
+  const input = {
+    Sql: statement,
+    SecretArn: SECRET_ARN,
+    Database: DATABASE_NAME,
+    WithEvent: true,
+    WorkgroupName: WORKGROUP_NAME,
+    ClientToken: uuidv4(),
+  };
+  const command = new ExecuteStatementCommand(input);
+  const response = await client.send(command);
+  console.log(statement);
+  console.log(JSON.stringify(response));
 };
