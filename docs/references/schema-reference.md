@@ -36,3 +36,44 @@ There are sample queries built into the solution that you can refer to in [Custo
     - A random UUID that unique identifies this event. Your event sources should handle logic that creates the UUID for each event. This is a best practice to allow tracking down of individual events for further analysis or diagnosis.
 
 ---
+
+### `event_name`
+- Type: `string`
+- Description:
+    - An identifier for the event that identifies what kind of event is being passed in.
+
+---
+### `event_type`
+- Type: `string`
+- Description:
+    - A grouping for event names that allows categorization of common events within a type.
+
+---
+
+### `event_version`
+- Type: `string`
+- Description:
+    - The version of the event's schema, allows organizing events by their version as the schema evolves over time.
+
+---
+
+### `event_timestamp`
+- Type: `number`
+- Description:
+    - The time in seconds since the Unix epoch at which this event occurred, set by the producer of event.
+
+---
+
+### `app_version`
+- Type: `number`
+- Description:
+    - The version of the application/game, allows organizing events by the application/game's version as it updates over time.
+
+---
+
+### `event_data`
+- Type: `json`
+- Description:
+    - Nested json blob that contains the event's specific schema values. The above top level schema reflects values that all events should have, while the values in `event_data` are specific to the event.
+
+---
