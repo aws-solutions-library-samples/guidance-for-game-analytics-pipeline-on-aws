@@ -27,6 +27,7 @@ import * as path from "path";
 import fs from "fs";
 import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
+import { Aws, Fn } from "aws-cdk-lib";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface ManagedFlinkConstructProps extends cdk.StackProps {
@@ -51,6 +52,7 @@ export class ManagedFlinkConstruct extends Construct {
   public readonly metricProcessingFunction: NodejsFunction;
   public readonly managedFlinkApp: kinesisanalytics.CfnApplicationV2;
   public readonly metricOutputStream: kinesis.Stream;
+  public readonly analyticsLogGroup: logs.LogGroup;
 
   constructor(
     parent: Construct,
@@ -62,7 +64,11 @@ export class ManagedFlinkConstruct extends Construct {
     /* eslint-disable @typescript-eslint/no-unused-vars */
     props = { ...defaultProps, ...props };
     const codePath = `../${props.baseCodePath}`;
-    const flinkAppName = `${cdk.Aws.STACK_NAME}-AnalyticsApplication`;
+    const stackUniqueIdentifier = Fn.select(
+      0,
+      Fn.split("-", Fn.select(2, Fn.split("/", `${Aws.STACK_ID}`)))
+    );
+    const flinkAppName = `${cdk.Names.uniqueId(this)}-AnalyticsApplication-${stackUniqueIdentifier}`;
 
 
     /* The following variables define the necessary resources for the `MetricProcessingFunction` serverless
@@ -113,6 +119,12 @@ export class ManagedFlinkConstruct extends Construct {
         resources: ["*"],
       })
     );
+
+    // Create the Kinesis Analytics Log Group
+    const analyticsLogGroup = new logs.LogGroup(this, "KinesisAnalyticsLogGroup", {
+      logGroupName: `/aws/lambda/${metricProcessingFunction.functionName}`,
+      retention: props.config.CLOUDWATCH_RETENTION_DAYS,
+    });
 
     /* The following defines the output stream for windowed metrics */
     const metricOutputStream = new kinesis.Stream(this, "metricOutputStream", {
@@ -318,6 +330,7 @@ export class ManagedFlinkConstruct extends Construct {
     this.metricProcessingFunction = metricProcessingFunction;
     this.managedFlinkApp = managedFlinkApp;
     this.metricOutputStream = metricOutputStream;
+    this.analyticsLogGroup = analyticsLogGroup;
 
     new cdk.CfnOutput(this, "FlinkAppOutput", {
       description:

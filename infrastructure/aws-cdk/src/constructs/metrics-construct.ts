@@ -51,16 +51,11 @@ export class MetricsConstruct extends Construct {
 
         // Metrics if streaming analytics is enabled
         if (props.config.STREAMING_MODE === "REAL_TIME_KDS" && props.managedFlinkConstruct) {
-            // Create the Kinesis Analytics Log Group
-            const analyticsLogGroup = new logs.LogGroup(this, "KinesisAnalyticsLogGroup", {
-                logGroupName: `/aws/lambda/${props.managedFlinkConstruct.metricProcessingFunction.functionName}`,
-                retention: props.config.CLOUDWATCH_RETENTION_DAYS,
-            });
 
             // Create the Kinesis Analytics Errors Metric Filter
             new logs.MetricFilter(this, "KinesisAnalyticsErrorsFilter", {
                 filterPattern: logs.FilterPattern.numberValue("$.KinesisAnalyticsErrors", ">", 0),
-                logGroup: analyticsLogGroup,
+                logGroup: props.managedFlinkConstruct.analyticsLogGroup,
                 metricName: "KinesisAnalyticsErrors",
                 metricValue: "$.KinesisAnalyticsErrors",
                 metricNamespace: `${cdk.Aws.STACK_NAME}/AWSGameAnalytics`,
