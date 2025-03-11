@@ -177,7 +177,7 @@ export class StreamingIngestionConstruct extends Construct {
               },
               roleArn: gamesEventsFirehoseRole.roleArn,
               s3Configuration: {
-                bucketArn: props.analyticsBucket.bucketArn,
+                bucketArn: props.analyticsBucket.bucketArn, // Replace with S3 table bucket later
                 roleArn: gamesEventsFirehoseRole.roleArn,
                 bufferingHints: {
                   intervalInSeconds: props.config.DEV_MODE ? 60 : 900,

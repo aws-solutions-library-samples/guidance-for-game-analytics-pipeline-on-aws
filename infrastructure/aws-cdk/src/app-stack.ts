@@ -32,9 +32,6 @@ import { ApiConstruct } from "./constructs/api-construct";
 import { ManagedFlinkConstruct } from "./constructs/flink-construct";
 import { MetricsConstruct } from "./constructs/metrics-construct";
 import { LambdaConstruct } from "./constructs/lambda-construct";
-import { CloudWatchDashboardConstruct } from "./constructs/dashboard-construct";
-
-import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
@@ -291,6 +288,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     // ---- Athena ---- //
     // Define the resources for the `GameAnalyticsWorkgroup` Athena workgroup
+    // Note: Shouldn't this go to Data Lake Construct?
     const gameAnalyticsWorkgroup = new athena.CfnWorkGroup(
       this,
       "GameAnalyticsWorkgroup",
@@ -315,11 +313,11 @@ export class InfrastructureStack extends cdk.Stack {
 
     // Create lambda functions
     const lambdaConstruct = new LambdaConstruct(this, "LambdaConstruct", {
-      dataLakeConstruct,
       applicationsTable,
       authorizationsTable,
     });
 
+    // Shouldn't the below policies just go to Lambda Construct..?
     // Events Processing Function Policy
     lambdaConstruct.eventsProcessingFunction.addToRolePolicy(
       new iam.PolicyStatement({
@@ -369,14 +367,14 @@ export class InfrastructureStack extends cdk.Stack {
 
     // ---- Streaming Analytics ---- //
     // Create the following resources if and is `STREAMING_MODE` constant is set to REAL_TIME_KDS
-    if (props.config.STREAMING_MODE === "REAL_TIME_KDS") {
+    if (props.config.STREAMING_MODE === "REAL_TIME_KDS" || props.config.STREAMING_MODE === "REAL_TIME_MSK") {
       // Enables Managed Flink and all metrics surrounding it
 
       managedFlinkConstruct = new ManagedFlinkConstruct(
         this,
         "ManagedFlinkConstruct",
         {
-          gameEventsStream: gameEventsStream,
+          gameEventsStream: gameEventsStream, // Add option for MSK later
           baseCodePath: codePath,
           config: props.config,
         }

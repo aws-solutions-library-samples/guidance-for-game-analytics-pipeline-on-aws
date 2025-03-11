@@ -268,7 +268,7 @@ export class DataLakeConstruct extends Construct {
         ? {
             tableInput: {
               name: props.config.RAW_EVENTS_TABLE.toLowerCase(),
-              description: "description",
+              description: 'Stores raw event data from the game analytics pipeline for stack ${cdk.Aws.STACK_NAME}',
               storageDescriptor: {
                 columns: [
                   { name: "event_id", type: "string" },
