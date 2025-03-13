@@ -17,7 +17,7 @@ const STREAM_NAME = process.env.STREAM_NAME;
 
 const statements = [
   `CREATE EXTERNAL SCHEMA kds FROM KINESIS IAM_ROLE '${REDSHIFT_ROLE_ARN}';`,
-  `CREATE MATERIALIZED VIEW kds_view AUTO REFRESH YES AS SELECT * FROM 'kds.${STREAM_NAME}';`,
+  `CREATE MATERIALIZED VIEW event_data AUTO REFRESH YES AS SELECT * FROM kds."${STREAM_NAME}";`,
 ];
 
 exports.handler = async (event, context, callback) => {

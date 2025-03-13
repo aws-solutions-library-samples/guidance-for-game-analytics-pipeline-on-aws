@@ -14,4 +14,6 @@ FROM
 WHERE
   JSON_EXTRACT_PATH_TEXT (event_data, 'user_rating') is not null
 GROUP BY
-  event_date;
+  event_date
+WITH
+  NO SCHEMA BINDING;

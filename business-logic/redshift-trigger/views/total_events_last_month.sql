@@ -22,3 +22,5 @@ FROM
 GROUP BY
   date_trunc ('month', event_month),
   application_id
+WITH
+  NO SCHEMA BINDING;

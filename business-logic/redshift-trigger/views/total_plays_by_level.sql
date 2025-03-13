@@ -10,4 +10,6 @@ WHERE
 GROUP BY
   JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')
 ORDER by
-  JSON_EXTRACT_PATH_TEXT (event_data, 'level_id');
+  JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')
+WITH
+  NO SCHEMA BINDING;

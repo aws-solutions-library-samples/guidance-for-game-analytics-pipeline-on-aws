@@ -6,4 +6,6 @@ SELECT
 FROM
   "events"."public"."event_data"
 GROUP BY
-  application_id;
+  application_id
+WITH
+  NO SCHEMA BINDING;

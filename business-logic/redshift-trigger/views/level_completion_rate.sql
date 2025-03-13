@@ -34,4 +34,6 @@ from
   t1
   JOIN t2 ON t1.level = t2.level
 ORDER by
-  level;
+  level
+WITH
+  NO SCHEMA BINDING;

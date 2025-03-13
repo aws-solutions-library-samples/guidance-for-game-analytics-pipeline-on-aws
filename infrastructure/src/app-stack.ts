@@ -197,13 +197,6 @@ export class InfrastructureStack extends cdk.Stack {
       masterKey: snsEncryptionKeyAlias,
     });
 
-    // Glue datalake and processing jobs
-    const dataLakeConstruct = new DataLakeConstruct(this, "DataLakeConstruct", {
-      notificationsTopic: notificationsTopic,
-      config: props.config,
-      analyticsBucket: analyticsBucket,
-    });
-
     // ---- Kinesis ---- //
 
     // Input stream for applications
@@ -313,7 +306,6 @@ export class InfrastructureStack extends cdk.Stack {
 
     // Create lambda functions
     const lambdaConstruct = new LambdaConstruct(this, "LambdaConstruct", {
-      dataLakeConstruct,
       applicationsTable,
       authorizationsTable,
     });
@@ -365,6 +357,35 @@ export class InfrastructureStack extends cdk.Stack {
     let managedFlinkConstruct;
     let metricOutputStream;
 
+    // Creates firehose and logs related to ingestion
+    // and Glue datalake and processing jobs
+    let streamingIngestionConstruct;
+    if (props.config.ENABLE_REDSHIFT === false) {
+      const dataLakeConstruct = new DataLakeConstruct(
+        this,
+        "DataLakeConstruct",
+        {
+          notificationsTopic: notificationsTopic,
+          config: props.config,
+          analyticsBucket: analyticsBucket,
+        }
+      );
+
+      streamingIngestionConstruct = new StreamingIngestionConstruct(
+        this,
+        "StreamingIngestionConstruct",
+        {
+          applicationsTable: applicationsTable,
+          gamesEventsStream: gameEventsStream,
+          analyticsBucket: analyticsBucket,
+          rawEventsTable: dataLakeConstruct.rawEventsTable,
+          gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
+          eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
+          config: props.config,
+        }
+      );
+    }
+
     // ---- Streaming Analytics ---- //
     // Create the following resources if and is `ENABLE_STREAMING_ANALYTICS` constant is `True`
     if (props.config.ENABLE_STREAMING_ANALYTICS) {
@@ -381,21 +402,6 @@ export class InfrastructureStack extends cdk.Stack {
       );
       metricOutputStream = managedFlinkConstruct.metricOutputStream;
     }
-
-    // Creates firehose and logs related to ingestion
-    const streamingIngestionConstruct = new StreamingIngestionConstruct(
-      this,
-      "StreamingIngestionConstruct",
-      {
-        applicationsTable: applicationsTable,
-        gamesEventsStream: gameEventsStream,
-        analyticsBucket: analyticsBucket,
-        rawEventsTable: dataLakeConstruct.rawEventsTable,
-        gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
-        eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
-        config: props.config,
-      }
-    );
 
     // Create API for admin to manage applications
     const gamesApiConstruct = new ApiConstruct(this, "GamesApiConstruct", {
@@ -448,7 +454,7 @@ export class InfrastructureStack extends cdk.Stack {
       ],
     });
 
-    if (props.config.ENABLE_REDSHIFT) {
+    if (props.config.ENABLE_REDSHIFT === true) {
       const redshift = new RedshiftConstruct(this, "Redshift", {
         gameEventsStream: gameEventsStream,
         config: props.config,
@@ -482,6 +488,5 @@ export class InfrastructureStack extends cdk.Stack {
       description: "CloudWatch Dashboard for viewing pipeline metrics",
       value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#dashboards:name=PipelineOpsDashboard_${cdk.Aws.STACK_NAME};start=PT1H`,
     });
-    
   }
 }

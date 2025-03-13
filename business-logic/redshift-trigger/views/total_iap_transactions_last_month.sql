@@ -26,4 +26,6 @@ WHERE
   AND event_type = 'iap_transaction'
 GROUP BY
   date_trunc ('month', event_month),
-  application_id;
+  application_id
+WITH
+  NO SCHEMA BINDING;

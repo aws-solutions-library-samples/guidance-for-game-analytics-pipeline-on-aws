@@ -96,13 +96,13 @@ export class RedshiftConstruct extends Construct {
         // kmsKeyId: key.keyId,
         manageAdminPassword: true,
       }
-    );    
+    );
 
     const workgroup = new redshiftserverless.CfnWorkgroup(
       this,
       "RedshiftWorkgroup",
       {
-        workgroupName: `${workloadNameLower}-wg`,
+        workgroupName: `${workloadNameLower}-workgroup`,
         baseCapacity: props.baseRPU ?? defaultProps.baseRPU,
         namespaceName: namespace.ref,
         port: props.port ?? defaultProps.port,
@@ -111,10 +111,10 @@ export class RedshiftConstruct extends Construct {
         subnetIds: vpc.privateSubnets.map((s) => s.subnetId),
         configParameters: [
           {
-            parameterKey: 'enable_case_sensitive_identifier',
-            parameterValue: 'true'
-          }
-        ]
+            parameterKey: "enable_case_sensitive_identifier",
+            parameterValue: "true",
+          },
+        ],
       }
     );
 
@@ -158,23 +158,22 @@ export class RedshiftConstruct extends Construct {
       new iam.PolicyStatement({
         sid: "SecretsManager",
         effect: iam.Effect.ALLOW,
-        actions: [
-          "secretsmanager:GetSecretValue"
+        actions: ["secretsmanager:GetSecretValue"],
+        resources: [
+          `arn:aws:secretsmanager:${Stack.of(this).region}:${
+            Stack.of(this).account
+          }:secret:redshift!${namespace.namespaceName}-admin*`,
         ],
-        resources: [`arn:aws:secretsmanager:${Stack.of(this).region}:${Stack.of(this).account}:secret:redshift!${namespace.namespaceName}-admin*`],
       })
     );
     trigger.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "KMS",
         effect: iam.Effect.ALLOW,
-        actions: [
-          "kms:Decrypt*"          
-        ],
+        actions: ["kms:Decrypt*"],
         resources: [key.keyArn],
       })
-    );    
-    
+    );
 
     new cdk.CfnOutput(this, "RedshiftRoleArn", {
       description: "ARN of the Redshift Serverless Role",

@@ -12,7 +12,6 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-import { DataLakeConstruct } from "./data-lake-construct";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
@@ -22,8 +21,7 @@ import * as events from "aws-cdk-lib/aws-events";
 import * as eventstargets from "aws-cdk-lib/aws-events-targets";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
-export interface LambdaConstructProps extends cdk.StackProps {
-  dataLakeConstruct: DataLakeConstruct;
+export interface LambdaConstructProps extends cdk.StackProps {  
   applicationsTable: cdk.aws_dynamodb.Table;
   authorizationsTable: cdk.aws_dynamodb.Table;
 }

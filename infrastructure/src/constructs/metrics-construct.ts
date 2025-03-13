@@ -31,7 +31,7 @@ export interface MetricsConstructProps extends cdk.StackProps {
     managedFlinkConstruct: ManagedFlinkConstruct | undefined;
     notificationsTopic: cdk.aws_sns.Topic;
     gamesApiConstruct: ApiConstruct;
-    streamingIngestionConstruct: StreamingIngestionConstruct;
+    streamingIngestionConstruct?: StreamingIngestionConstruct;
     gameEventsStream: cdk.aws_kinesis.Stream;
     tables: cdk.aws_dynamodb.Table[];
     functions: lambda.Function[];
@@ -301,57 +301,59 @@ export class MetricsConstruct extends Construct {
         );
 
         // Firehose data metrics
-        const kinesisFirehoseFailedConversions = new cloudwatch.Alarm(
-            this,
-            "KinesisFirehoseFailedConversions",
-            {
-                alarmDescription: `Alarm to track when Firehose Format Conversion fails, for stack ${cdk.Aws.STACK_NAME}`,
-                metric: new cloudwatch.Metric({
-                    metricName: "FailedConversion.Records",
-                    namespace: "AWS/Firehose",
-                    dimensionsMap: {
-                        DeliveryStreamName:
-                            props.streamingIngestionConstruct.gameEventsFirehose.ref,
-                    },
-                    statistic: cloudwatch.Stats.SUM,
-                    period: cdk.Duration.minutes(1),
-                }),
-                evaluationPeriods: 1,
-                comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-                threshold: 0,
-                treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-                actionsEnabled: true,
-            }
-        );
-        kinesisFirehoseFailedConversions.addAlarmAction(
-            new cloudwatchActions.SnsAction(props.notificationsTopic)
-        );
-
-        const kinesisFirehoseS3DataFreshness = new cloudwatch.Alarm(
-            this,
-            "KinesisFirehoseS3DataFreshness",
-            {
-                alarmDescription: `Alarm to track when age of oldest record delivered to S3 exceeds 15 minutes for two consecutive periods, for stack ${cdk.Aws.STACK_NAME}`,
-                metric: new cloudwatch.Metric({
-                    metricName: "DeliveryToS3.DataFreshness",
-                    namespace: "AWS/Firehose",
-                    dimensionsMap: {
-                        DeliveryStreamName:
-                            props.streamingIngestionConstruct.gameEventsFirehose.ref,
-                    },
-                    statistic: "Average",
-                    period: cdk.Duration.minutes(5),
-                }),
-                evaluationPeriods: 2,
-                comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-                threshold: 900,
-                treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-                actionsEnabled: true,
-            }
-        );
-        kinesisFirehoseS3DataFreshness.addAlarmAction(
-            new cloudwatchActions.SnsAction(props.notificationsTopic)
-        );
+        if (props.streamingIngestionConstruct) {
+            const kinesisFirehoseFailedConversions = new cloudwatch.Alarm(
+                this,
+                "KinesisFirehoseFailedConversions",
+                {
+                    alarmDescription: `Alarm to track when Firehose Format Conversion fails, for stack ${cdk.Aws.STACK_NAME}`,
+                    metric: new cloudwatch.Metric({
+                        metricName: "FailedConversion.Records",
+                        namespace: "AWS/Firehose",
+                        dimensionsMap: {
+                            DeliveryStreamName:
+                                props.streamingIngestionConstruct.gameEventsFirehose.ref,
+                        },
+                        statistic: cloudwatch.Stats.SUM,
+                        period: cdk.Duration.minutes(1),
+                    }),
+                    evaluationPeriods: 1,
+                    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                    threshold: 0,
+                    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+                    actionsEnabled: true,
+                }
+            );
+            kinesisFirehoseFailedConversions.addAlarmAction(
+                new cloudwatchActions.SnsAction(props.notificationsTopic)
+            );
+            
+            const kinesisFirehoseS3DataFreshness = new cloudwatch.Alarm(
+                this,
+                "KinesisFirehoseS3DataFreshness",
+                {
+                    alarmDescription: `Alarm to track when age of oldest record delivered to S3 exceeds 15 minutes for two consecutive periods, for stack ${cdk.Aws.STACK_NAME}`,
+                    metric: new cloudwatch.Metric({
+                        metricName: "DeliveryToS3.DataFreshness",
+                        namespace: "AWS/Firehose",
+                        dimensionsMap: {
+                            DeliveryStreamName:
+                                props.streamingIngestionConstruct.gameEventsFirehose.ref,
+                        },
+                        statistic: "Average",
+                        period: cdk.Duration.minutes(5),
+                    }),
+                    evaluationPeriods: 2,
+                    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                    threshold: 900,
+                    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+                    actionsEnabled: true,
+                }
+            );
+            kinesisFirehoseS3DataFreshness.addAlarmAction(
+                new cloudwatchActions.SnsAction(props.notificationsTopic)
+            );
+        }
 
         // Kinesis game stream throughput metrics
         const kinesisReadProvisionedThroughputExceeded = new cloudwatch.Alarm(

@@ -10,4 +10,6 @@ FROM
 GROUP BY
   JSON_EXTRACT_PATH_TEXT (event_data, 'report_reason')
 ORDER BY
-  JSON_EXTRACT_PATH_TEXT (event_data, 'report_reason') DESC;
+  JSON_EXTRACT_PATH_TEXT (event_data, 'report_reason') DESC
+WITH
+  NO SCHEMA BINDING;

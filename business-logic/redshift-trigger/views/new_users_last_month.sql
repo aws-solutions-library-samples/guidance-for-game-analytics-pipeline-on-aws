@@ -21,4 +21,6 @@ FROM
 WHERE
   event_type = 'user_registration'
 GROUP BY
-  date_trunc ('month', event_month);
+  date_trunc ('month', event_month)
+WITH
+  NO SCHEMA BINDING;
