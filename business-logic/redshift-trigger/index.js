@@ -1,6 +1,7 @@
 const {
   RedshiftDataClient,
   ExecuteStatementCommand,
+  DescribeStatementCommand,
 } = require("@aws-sdk/client-redshift-data");
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
@@ -19,10 +20,12 @@ const statements = [
   `CREATE EXTERNAL SCHEMA kds FROM KINESIS IAM_ROLE '${REDSHIFT_ROLE_ARN}';`,
   `CREATE MATERIALIZED VIEW event_data AUTO REFRESH YES AS SELECT * FROM kds."${STREAM_NAME}";`,
 ];
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 exports.handler = async (event, context, callback) => {
   for (const statement of statements) {
-    await executeStatement(statement);
+    const id = await executeStatement(statement);
+    await waitForStatement(id);
   }
 
   const directoryPath = path.join(__dirname, "views");
@@ -30,8 +33,27 @@ exports.handler = async (event, context, callback) => {
 
   for (const filename of filenames) {
     const statement = fs.readFileSync(`${directoryPath}/${filename}`, "utf8");
-    await executeStatement(statement);
+    const id = await executeStatement(statement);
+    await waitForStatement(id);
   }
+};
+
+const waitForStatement = async (id, retries = 0) => {
+  if (retries > 20) {
+    throw new Error("Failed to get statement status, took too long.");
+  }
+
+  const describeStatement = { Id: id };
+  const result = await client.send(
+    new DescribeStatementCommand(describeStatement)
+  );
+  if (result.Status == "FAILED") {
+    throw new Error(result.Error);
+  } else if (result.Status == "FINISHED") {
+    return;
+  }
+  await sleep(200);
+  await waitForStatement(id, retries + 1);
 };
 
 const executeStatement = async (statement) => {
@@ -45,6 +67,16 @@ const executeStatement = async (statement) => {
   };
   const command = new ExecuteStatementCommand(input);
   const response = await client.send(command);
-  console.log(statement);
-  console.log(JSON.stringify(response));
+  const describeStatement = { Id: response.Id };
+  const result = await client.send(
+    new DescribeStatementCommand(describeStatement)
+  );
+  console.log(
+    JSON.stringify({
+      statement: statement,
+      statementResponse: response,
+      resultResponse: result,
+    })
+  );
+  return response.Id;
 };

@@ -93,7 +93,7 @@ export class RedshiftConstruct extends Construct {
         dbName: props.config.REDSHIFT_DB_NAME,
         defaultIamRoleArn: redshiftRole.roleArn,
         iamRoles: [redshiftRole.roleArn],
-        // kmsKeyId: key.keyId,
+        kmsKeyId: key.keyId,
         manageAdminPassword: true,
       }
     );
