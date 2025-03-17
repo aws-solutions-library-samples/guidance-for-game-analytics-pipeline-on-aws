@@ -10,7 +10,7 @@ import * as apigateway from "aws-cdk-lib/aws-apigateway";
 export interface CloudWatchDashboardConstructProps extends cdk.StackProps {
     gameEventsStream: kinesis.Stream;
     metricOutputStream: kinesis.Stream | undefined;
-    gameEventsFirehose: kinesisFirehose.CfnDeliveryStream;
+    gameEventsFirehose: kinesisFirehose.CfnDeliveryStream | undefined;
     gameAnalyticsApi: apigateway.IRestApi;
     eventsProcessingFunction: lambda.Function;
     analyticsProcessingFunction: lambda.Function | undefined;
@@ -39,102 +39,105 @@ export class CloudWatchDashboardConstruct extends Construct {
             width: 24,
             height: 2,
         });
-        const eventProcessingHealthWidget = new cloudwatch.SingleValueWidget({
-            title: 'Events Processing Health',
-            metrics: [
-                new cloudwatch.Metric({
-                    metricName: 'DeliveryToS3.DataFreshness',
-                    namespace: 'AWS/Firehose',
-                    dimensionsMap: {
-                        DeliveryStreamName: props.gameEventsFirehose.ref,
-                    },
-                }).with({
-                    label: 'Data Freshness',
-                    period: cdk.Duration.seconds(300),
-                    statistic: 'Maximum',
-                }),
-                new cloudwatch.Metric({
-                    metricName: 'Duration',
-                    namespace: 'AWS/Lambda',
-                    dimensionsMap: {
-                        FunctionName: props.eventsProcessingFunction.functionName,
-                    },
-                }).with({
-                    label: 'Lambda Duration',
-                    period: cdk.Duration.seconds(300),
-                    statistic: 'Average',
-                }),
-                new cloudwatch.Metric({
-                    metricName: 'ConcurrentExecutions',
-                    namespace: 'AWS/Lambda',
-                    dimensionsMap: {
-                        FunctionName: props.eventsProcessingFunction.functionName,
-                    },
-                }).with({
-                    label: 'Lambda Concurrency',
-                    period: cdk.Duration.seconds(300),
-                    statistic: 'Maximum',
-                }),
-                new cloudwatch.Metric({
-                    metricName: 'Throttles',
-                    namespace: 'AWS/Lambda',
-                    dimensionsMap: {
-                        FunctionName: props.eventsProcessingFunction.functionName,
-                    },
-                }).with({
-                    label: 'Lambda Throttles',
-                    period: cdk.Duration.seconds(300),
-                    statistic: 'Sum',
-                }),
-            ],
-            width: 12,
-            height: 3,
-            region: cdk.Stack.of(this).region,
-        });
         // TODO: Add MSK widgets later
-        const eventIngestionWidget = new cloudwatch.GraphWidget({
-            title: 'Events Ingestion and Delivery',
-            left: [
-                new cloudwatch.Metric({
-                    metricName: 'IncomingRecords',
-                    namespace: 'AWS/Kinesis',
-                    dimensionsMap: {
-                        StreamName: props.gameEventsStream.streamName,
-                    },
-                }).with({
-                    label: 'Events Stream Incoming Records (Kinesis)',
-                    color: '#2ca02c',
-                }),
-                new cloudwatch.Metric({
-                    metricName: 'DeliveryToS3.Records',
-                    namespace: 'AWS/Firehose',
-                    dimensionsMap: {
-                        DeliveryStreamName: props.gameEventsFirehose.ref,
-                    },
-                }).with({
-                    label: 'Firehose Records Delivered to S3',
-                    color: '#17becf',
-                }),
-                new cloudwatch.Metric({
-                    metricName: 'Count',
-                    namespace: 'AWS/ApiGateway',
-                    dimensionsMap: {
-                        ApiName: props.gameAnalyticsApi.restApiName,
-                        Resource: '/applications/{applicationId}/events',
-                        Stage: props.gameAnalyticsApi.deploymentStage.stageName,
-                        Method: 'POST',
-                    },
-                }).with({
-                    label: 'Events REST API Request Count',
-                    color: '#1f77b4',
-                }),
-            ],
-            width: 8,
-            height: 6,
-            region: cdk.Stack.of(this).region,
-            period: cdk.Duration.seconds(60),
-            statistic: 'Sum',
-        });
+        if (props.gameEventsFirehose)
+            {
+                const eventProcessingHealthWidget = new cloudwatch.SingleValueWidget({
+                    title: 'Events Processing Health',
+                    metrics: [
+                        new cloudwatch.Metric({
+                            metricName: 'DeliveryToS3.DataFreshness',
+                            namespace: 'AWS/Firehose',
+                            dimensionsMap: {
+                                DeliveryStreamName: props.gameEventsFirehose.ref,
+                            },
+                        }).with({
+                            label: 'Data Freshness',
+                            period: cdk.Duration.seconds(300),
+                            statistic: 'Maximum',
+                        }),
+                        new cloudwatch.Metric({
+                            metricName: 'Duration',
+                            namespace: 'AWS/Lambda',
+                            dimensionsMap: {
+                                FunctionName: props.eventsProcessingFunction.functionName,
+                            },
+                        }).with({
+                            label: 'Lambda Duration',
+                            period: cdk.Duration.seconds(300),
+                            statistic: 'Average',
+                        }),
+                        new cloudwatch.Metric({
+                            metricName: 'ConcurrentExecutions',
+                            namespace: 'AWS/Lambda',
+                            dimensionsMap: {
+                                FunctionName: props.eventsProcessingFunction.functionName,
+                            },
+                        }).with({
+                            label: 'Lambda Concurrency',
+                            period: cdk.Duration.seconds(300),
+                            statistic: 'Maximum',
+                        }),
+                        new cloudwatch.Metric({
+                            metricName: 'Throttles',
+                            namespace: 'AWS/Lambda',
+                            dimensionsMap: {
+                                FunctionName: props.eventsProcessingFunction.functionName,
+                            },
+                        }).with({
+                            label: 'Lambda Throttles',
+                            period: cdk.Duration.seconds(300),
+                            statistic: 'Sum',
+                        }),
+                    ],
+                    width: 12,
+                    height: 3,
+                    region: cdk.Stack.of(this).region,
+                });
+            const eventIngestionWidget = new cloudwatch.GraphWidget({
+                title: 'Events Ingestion and Delivery',
+                left: [
+                    new cloudwatch.Metric({
+                        metricName: 'IncomingRecords',
+                        namespace: 'AWS/Kinesis',
+                        dimensionsMap: {
+                            StreamName: props.gameEventsStream.streamName,
+                        },
+                    }).with({
+                        label: 'Events Stream Incoming Records (Kinesis)',
+                        color: '#2ca02c',
+                    }),
+                    new cloudwatch.Metric({
+                        metricName: 'DeliveryToS3.Records',
+                        namespace: 'AWS/Firehose',
+                        dimensionsMap: {
+                            DeliveryStreamName: props.gameEventsFirehose.ref,
+                        },
+                    }).with({
+                        label: 'Firehose Records Delivered to S3',
+                        color: '#17becf',
+                    }),
+                    new cloudwatch.Metric({
+                        metricName: 'Count',
+                        namespace: 'AWS/ApiGateway',
+                        dimensionsMap: {
+                            ApiName: props.gameAnalyticsApi.restApiName,
+                            Resource: '/applications/{applicationId}/events',
+                            Stage: props.gameAnalyticsApi.deploymentStage.stageName,
+                            Method: 'POST',
+                        },
+                    }).with({
+                        label: 'Events REST API Request Count',
+                        color: '#1f77b4',
+                    }),
+                ],
+                width: 8,
+                height: 6,
+                region: cdk.Stack.of(this).region,
+                period: cdk.Duration.seconds(60),
+                statistic: 'Sum',
+            });
+        }
         const ingestionLambdaWidget = new cloudwatch.GraphWidget({
             title: 'Event Transformation Lambda Error count and success rate (%)',
             left: [

@@ -22,7 +22,7 @@ import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface ApiConstructProps extends cdk.StackProps {
   gameEventsStream: cdk.aws_kinesis.Stream;
-  gameEventsFirehose: cdk.aws_kinesisfirehose.CfnDeliveryStream;
+  gameEventsFirehose: cdk.aws_kinesisfirehose.CfnDeliveryStream | undefined;
   applicationAdminServiceFunction: cdk.aws_lambda.Function;
   lambdaAuthorizer: cdk.aws_lambda.Function;
   config: GameAnalyticsPipelineConfig;
@@ -53,14 +53,17 @@ export class ApiConstruct extends Construct {
         sid: "ApigatewayPutKinesis",
       })
     );
-    apiGatewayRole.addToPolicy(
-      new iam.PolicyStatement({
-        actions: ["firehose:PutRecord", "firehose:PutRecordBatch"],
-        resources: [props.gameEventsFirehose.attrArn],
-        effect: iam.Effect.ALLOW,
-        sid: "ApigatewayPutFirehose",
-      })
-    );
+    if (props.gameEventsFirehose) {
+      apiGatewayRole.addToPolicy(
+        new iam.PolicyStatement({
+          actions: ["firehose:PutRecord", "firehose:PutRecordBatch"],
+          resources: [props.gameEventsFirehose.attrArn],
+          effect: iam.Effect.ALLOW,
+          sid: "ApigatewayPutFirehose",
+        })
+      );
+    }
+    
     apiGatewayRole.addToPolicy(
       new iam.PolicyStatement({
         actions: ["lambda:InvokeFunction"],
@@ -147,6 +150,10 @@ export class ApiConstruct extends Construct {
       // default to BATCH_FIREHOSE
       case "BATCH_FIREHOSE":
       default: {
+        if (!props.gameEventsFirehose) {
+          throw new Error("Firehose not deployed however STREAMING_MODE is BATCH_FIREHOSE");
+        }
+
         eventDefinition = {
           uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:firehose:action/PutRecordBatch`,
           credentials: apiGatewayRole.roleArn,
