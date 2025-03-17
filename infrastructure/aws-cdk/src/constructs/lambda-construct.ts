@@ -21,7 +21,7 @@ import * as events from "aws-cdk-lib/aws-events";
 import * as eventstargets from "aws-cdk-lib/aws-events-targets";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
-export interface LambdaConstructProps extends cdk.StackProps {  
+export interface LambdaConstructProps extends cdk.StackProps {
   applicationsTable: cdk.aws_dynamodb.Table;
   authorizationsTable: cdk.aws_dynamodb.Table;
 }
@@ -42,7 +42,7 @@ export class LambdaConstruct extends Construct {
     /* eslint-disable @typescript-eslint/no-unused-vars */
     props = { ...defaultProps, ...props };
 
-    const codePath = "../../../business-logic";
+    const codePath = "../../../../business-logic";
 
     /* The following variables define the necessary resources for the `EventsProcessingFunction` serverless
 function. This function to process and transform raw events before they get written to S3. */

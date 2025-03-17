@@ -22,6 +22,7 @@ import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface ApiConstructProps extends cdk.StackProps {
   gameEventsStream: cdk.aws_kinesis.Stream;
+  gameEventsFirehose: cdk.aws_kinesisfirehose.CfnDeliveryStream;
   applicationAdminServiceFunction: cdk.aws_lambda.Function;
   lambdaAuthorizer: cdk.aws_lambda.Function;
   config: GameAnalyticsPipelineConfig;
@@ -54,6 +55,14 @@ export class ApiConstruct extends Construct {
     );
     apiGatewayRole.addToPolicy(
       new iam.PolicyStatement({
+        actions: ["firehose:PutRecord", "firehose:PutRecordBatch"],
+        resources: [props.gameEventsFirehose.attrArn],
+        effect: iam.Effect.ALLOW,
+        sid: "ApigatewayPutFirehose",
+      })
+    );
+    apiGatewayRole.addToPolicy(
+      new iam.PolicyStatement({
         actions: ["lambda:InvokeFunction"],
         resources: [
           props.applicationAdminServiceFunction.functionArn,
@@ -63,6 +72,141 @@ export class ApiConstruct extends Construct {
         sid: "ApigatewayInvokeLambda",
       })
     );
+
+    // event integration definition based on configuration
+    let eventDefinition;
+    switch (props.config.STREAMING_MODE) {
+      case "REAL_TIME_KDS": {
+        eventDefinition = {
+          uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:kinesis:action/PutRecords`,
+          credentials: apiGatewayRole.roleArn,
+          passthroughBehavior: "never",
+          httpMethod: "POST",
+          type: "aws",
+          requestParameters: {
+            "integration.request.header.Content-Type":
+              "'x-amz-json-1.1'",
+          },
+          requestTemplates: {
+            "application/json": `
+            {
+              "StreamName": "${props.gameEventsStream.streamName}",
+              "Records": [
+                #set($i = 0)
+                #foreach($event in $input.path('$.events'))
+                  #set($data = $input.json("$.events[$i]"))
+                  #set($output = "{
+                    ""event"": $data,
+                    ""aws_ga_api_validated_flag"": true,
+                    ""aws_ga_api_requestId"": ""$context.requestId"",
+                    ""aws_ga_api_requestTimeEpoch"": $context.requestTimeEpoch,
+                    ""application_id"": ""$util.escapeJavaScript($input.params().path.get('applicationId'))""
+                  }" )
+                  {
+                    "Data": "$util.base64Encode($output)",
+                    "PartitionKey": "$event.event_id"
+                  }#if($foreach.hasNext),#end
+                  #set($i = $i + 1)
+                #end
+              ]
+            }
+            `,
+          },
+          responses: {
+            default: {
+              statusCode: "200",
+              responseTemplates: {
+                "application/json":
+                  '#set($response = $input.path(\'$\')) #set($records = $input.json(\'$.Records\')) { "Total": $response.Records.size(), "FailedRecordCount": $input.json(\'$.FailedRecordCount\'), "Events": [#foreach($record in $response.Records){#if($record.ErrorCode != $null)"Result": "Error", "ErrorCode": "$record.ErrorCode"}#else"Result": "Ok"}#end#if($foreach.hasNext),#end#end] }\n',
+              },
+            },
+            "4\\d{2}": {
+              statusCode: "400",
+              responseTemplates: {
+                "application/json":
+                  '#set($inputRoot = $input.path(\'$\')) { "error": "BadRequest", "error_detail": $input.json(\'$.message\') }\n',
+              },
+            },
+            "5\\d{2}": {
+              statusCode: "500",
+              responseTemplates: {
+                "application/json":
+                  "#set($inputRoot = $input.path('$'))  { \"error\": $input.json('$.__type'), \"error_detail\": $input.json('$.message') }\n",
+              },
+            },
+          },
+        };
+        break;
+      }
+      case "REAL_TIME_MSK": {
+        // TODO: Add MSK integration
+        console.warn("NOT IMPLEMENTED");
+        eventDefinition = {};
+        break;
+      }
+      // default to BATCH_FIREHOSE
+      case "BATCH_FIREHOSE":
+      default: {
+        eventDefinition = {
+          uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:firehose:action/PutRecordBatch`,
+          credentials: apiGatewayRole.roleArn,
+          passthroughBehavior: "never",
+          httpMethod: "POST",
+          type: "aws",
+          requestParameters: {
+            "integration.request.header.Content-Type":
+              "'x-amz-json-1.1'",
+          },
+          requestTemplates: {
+            "application/json": `
+            {
+              "DeliveryStreamName": "${props.gameEventsFirehose.ref}",
+              "Records": [
+                #set($i = 0)
+                #foreach($event in $input.path('$.events'))
+                  #set($data = $input.json("$.events[$i]"))
+                  #set($output = "{
+                    ""event"": $data,
+                    ""aws_ga_api_validated_flag"": true,
+                    ""aws_ga_api_requestId"": ""$context.requestId"",
+                    ""aws_ga_api_requestTimeEpoch"": $context.requestTimeEpoch,
+                    ""application_id"": ""$util.escapeJavaScript($input.params().path.get('applicationId'))""
+                  }" )
+                  {
+                    "Data": "$util.base64Encode($output)"
+                  }#if($foreach.hasNext),#end
+                  #set($i = $i + 1)
+                #end
+              ]
+            }
+            `,
+          },
+          responses: {
+            default: {
+              statusCode: "200",
+              responseTemplates: {
+                "application/json":
+                  '#set($response = $input.path(\'$\')) #set($records = $input.json(\'$.Records\')) { "Total": $response.RequestResponses.size(), "FailedRecordCount": $input.json(\'$.FailedRecordCount\'), "Events": [#foreach($record in $response.RequestResponses){#if($record.ErrorCode != $null)"Result": "Error", "ErrorCode": "$record.ErrorCode"}#else"Result": "Ok"}#end#if($foreach.hasNext),#end#end] }\n',
+              },
+            },
+            "4\\d{2}": {
+              statusCode: "400",
+              responseTemplates: {
+                "application/json":
+                  '#set($inputRoot = $input.path(\'$\')) { "error": "BadRequest", "error_detail": $input.json(\'$.message\') }\n',
+              },
+            },
+            "5\\d{2}": {
+              statusCode: "500",
+              responseTemplates: {
+                "application/json":
+                  "#set($inputRoot = $input.path('$'))  { \"error\": $input.json('$.__type'), \"error_detail\": $input.json('$.message') }\n",
+              },
+            },
+          },
+        };
+      }
+    }
 
     // Core API, used to manage applications externally
     const gameAnalyticsApi = new apigateway.SpecRestApi(
@@ -555,65 +699,7 @@ export class ApiConstruct extends Construct {
                     lambda_authorizer: [],
                   },
                 ],
-                "x-amazon-apigateway-integration": {
-                  uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:kinesis:action/PutRecords`,
-                  credentials: apiGatewayRole.roleArn,
-                  passthroughBehavior: "never",
-                  httpMethod: "POST",
-                  type: "aws",
-                  requestParameters: {
-                    "integration.request.header.Content-Type":
-                      "'x-amz-json-1.1'",
-                  },
-                  requestTemplates: {
-                    "application/json": `
-                    {
-                      "StreamName": "${props.gameEventsStream.streamName}",
-                      "Records": [
-                        #set($i = 0)
-                        #foreach($event in $input.path('$.events'))
-                          #set($data = $input.json("$.events[$i]"))
-                          #set($output = "{
-                            ""event"": $data,
-                            ""aws_ga_api_validated_flag"": true,
-                            ""aws_ga_api_requestId"": ""$context.requestId"",
-                            ""aws_ga_api_requestTimeEpoch"": $context.requestTimeEpoch,
-                            ""application_id"": ""$util.escapeJavaScript($input.params().path.get('applicationId'))""
-                          }" )
-                          {
-                            "Data": "$util.base64Encode($output)",
-                            "PartitionKey": "$event.event_id"
-                          }#if($foreach.hasNext),#end
-                          #set($i = $i + 1)
-                        #end
-                      ]
-                    }
-                    `,
-                  },
-                  responses: {
-                    default: {
-                      statusCode: "200",
-                      responseTemplates: {
-                        "application/json":
-                          '#set($response = $input.path(\'$\')) #set($records = $input.json(\'$.Records\')) { "Total": $response.Records.size(), "FailedRecordCount": $input.json(\'$.FailedRecordCount\'), "Events": [#foreach($record in $response.Records){#if($record.ErrorCode != $null)"Result": "Error", "ErrorCode": "$record.ErrorCode"}#else"Result": "Ok"}#end#if($foreach.hasNext),#end#end] }\n',
-                      },
-                    },
-                    "4\\d{2}": {
-                      statusCode: "400",
-                      responseTemplates: {
-                        "application/json":
-                          '#set($inputRoot = $input.path(\'$\')) { "error": "BadRequest", "error_detail": $input.json(\'$.message\') }\n',
-                      },
-                    },
-                    "5\\d{2}": {
-                      statusCode: "500",
-                      responseTemplates: {
-                        "application/json":
-                          "#set($inputRoot = $input.path('$'))  { \"error\": $input.json('$.__type'), \"error_detail\": $input.json('$.message') }\n",
-                      },
-                    },
-                  },
-                },
+                "x-amazon-apigateway-integration": eventDefinition,
               },
             },
           },

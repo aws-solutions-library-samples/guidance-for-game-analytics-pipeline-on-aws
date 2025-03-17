@@ -44,7 +44,7 @@ export interface InfrastructureStackProps extends cdk.StackProps {
 export class InfrastructureStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: InfrastructureStackProps) {
     super(scope, id, props);
-    const codePath = "../../business-logic";
+    const codePath = "../../../business-logic";
 
     // ---- S3 Buckets ---- //
 
@@ -282,6 +282,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     // ---- Athena ---- //
     // Define the resources for the `GameAnalyticsWorkgroup` Athena workgroup
+    // Note: Shouldn't this go to Data Lake Construct?
     const gameAnalyticsWorkgroup = new athena.CfnWorkGroup(
       this,
       "GameAnalyticsWorkgroup",
@@ -310,6 +311,7 @@ export class InfrastructureStack extends cdk.Stack {
       authorizationsTable,
     });
 
+    // Shouldn't the below policies just go to Lambda Construct..?
     // Events Processing Function Policy
     lambdaConstruct.eventsProcessingFunction.addToRolePolicy(
       new iam.PolicyStatement({
@@ -387,15 +389,15 @@ export class InfrastructureStack extends cdk.Stack {
     }
 
     // ---- Streaming Analytics ---- //
-    // Create the following resources if and is `ENABLE_STREAMING_ANALYTICS` constant is `True`
-    if (props.config.ENABLE_STREAMING_ANALYTICS) {
+    // Create the following resources if and is `STREAMING_MODE` constant is set to REAL_TIME_KDS
+    if (props.config.STREAMING_MODE === "REAL_TIME_KDS" || props.config.STREAMING_MODE === "REAL_TIME_MSK") {
       // Enables Managed Flink and all metrics surrounding it
 
       managedFlinkConstruct = new ManagedFlinkConstruct(
         this,
         "ManagedFlinkConstruct",
         {
-          gameEventsStream: gameEventsStream,
+          gameEventsStream: gameEventsStream, // Add option for MSK later
           baseCodePath: codePath,
           config: props.config,
         }
@@ -407,6 +409,7 @@ export class InfrastructureStack extends cdk.Stack {
     const gamesApiConstruct = new ApiConstruct(this, "GamesApiConstruct", {
       lambdaAuthorizer: lambdaConstruct.lambdaAuthorizer,
       gameEventsStream: gameEventsStream,
+      gameEventsFirehose: streamingIngestionConstruct.gameEventsFirehose,
       applicationAdminServiceFunction:
         lambdaConstruct.applicationAdminServiceFunction,
       config: props.config,
@@ -454,12 +457,25 @@ export class InfrastructureStack extends cdk.Stack {
       ],
     });
 
+<<<<<<< HEAD:infrastructure/src/app-stack.ts
     if (props.config.ENABLE_REDSHIFT === true) {
       const redshift = new RedshiftConstruct(this, "Redshift", {
         gameEventsStream: gameEventsStream,
         config: props.config,
       });
     }
+=======
+    const dashboardConstruct = new CloudWatchDashboardConstruct(this, "DashboardConstruct", {
+      gameEventsStream: gameEventsStream,
+      metricOutputStream: metricOutputStream,
+      gameEventsFirehose: streamingIngestionConstruct.gameEventsFirehose,
+      gameAnalyticsApi: gamesApiConstruct.gameAnalyticsApi,
+      eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
+      analyticsProcessingFunction: managedFlinkConstruct?.metricProcessingFunction,
+      kinesisAnalyticsApp: managedFlinkConstruct?.managedFlinkApp,
+      streamingAnalyticsEnabled: props.config.STREAMING_MODE === "REAL_TIME_KDS"
+    });
+>>>>>>> feature-v3-alpha:infrastructure/aws-cdk/src/app-stack.ts
 
     // Output important resource information to AWS Console
     new cdk.CfnOutput(this, "AnalyticsBucketOutput", {
