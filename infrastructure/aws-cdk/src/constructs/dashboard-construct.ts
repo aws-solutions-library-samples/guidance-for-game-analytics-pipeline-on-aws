@@ -15,7 +15,7 @@ export interface CloudWatchDashboardConstructProps extends cdk.StackProps {
     gameAnalyticsApi: apigateway.IRestApi;
     eventsProcessingFunction: lambda.Function;
     analyticsProcessingFunction: lambda.Function | undefined;
-    kinesisAnalyticsApp: kinesisanalytics.CfnApplicationV2 | undefined;
+    flinkApp: kinesisanalytics.CfnApplicationV2 | undefined;
     streamingAnalyticsEnabled: boolean;
 }
 const defaultProps: Partial<CloudWatchDashboardConstructProps> = {};
@@ -92,6 +92,7 @@ export class CloudWatchDashboardConstruct extends Construct {
             height: 3,
             region: cdk.Stack.of(this).region,
         });
+        // TODO: Add MSK widgets later
         const eventIngestionWidget = new cloudwatch.GraphWidget({
             title: 'Events Ingestion and Delivery',
             left: [
@@ -266,7 +267,7 @@ export class CloudWatchDashboardConstruct extends Construct {
         // used to hold widget structure for dashboard
         let widgets;
 
-        if (props.streamingAnalyticsEnabled && props.analyticsProcessingFunction != undefined && props.kinesisAnalyticsApp != undefined && props.managedFlinkConstruct != undefined) {
+        if (props.streamingAnalyticsEnabled && props.analyticsProcessingFunction != undefined && props.flinkApp != undefined && props.managedFlinkConstruct != undefined) {
 
             const realTimeHealthWidget = new cloudwatch.SingleValueWidget({
                 title: 'Real-time Analytics Health',
@@ -306,7 +307,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         namespace: 'AWS/KinesisAnalytics',
                         period: cdk.Duration.hours(2),
                         dimensionsMap: {
-                            Application: props.kinesisAnalyticsApp.ref,
+                            Application: props.flinkApp.ref,
                         },
                     }).with({
                         label: "Managed Flink KPUs",
@@ -317,7 +318,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                 height: 3,
                 region: cdk.Stack.of(this).region,
             });
-            // REPLACE THIS WITH FLINK
+
             const realTimeLatencyWidget = new cloudwatch.GraphWidget({
                 title: 'Managed Flink Records Intake',
                 left: [
@@ -330,7 +331,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                                     metricName: 'numRecordsInPerSecond',
                                     namespace: 'AWS/KinesisAnalytics',
                                     dimensionsMap: {
-                                        Application: props.kinesisAnalyticsApp.ref,
+                                        Application: props.flinkApp.ref,
                                     },
                                 }).with({
                                     region: cdk.Stack.of(this).region,
@@ -348,7 +349,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                                     metricName: 'numLateRecordsDropped',
                                     namespace: 'AWS/KinesisAnalytics',
                                     dimensionsMap: {
-                                        Application: props.kinesisAnalyticsApp.ref,
+                                        Application: props.flinkApp.ref,
                                     },
                                 }).with({
                                     region: cdk.Stack.of(this).region,
@@ -374,7 +375,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'containerCPUUtilization',
                         namespace: 'AWS/KinesisAnalytics',
                         dimensionsMap: {
-                            Application: props.kinesisAnalyticsApp.ref,
+                            Application: props.flinkApp.ref,
                         },
                     })
 
@@ -410,14 +411,14 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'containerMemoryUtilization',
                         namespace: 'AWS/KinesisAnalytics',
                         dimensionsMap: {
-                            Application: props.kinesisAnalyticsApp.ref,
+                            Application: props.flinkApp.ref,
                         },
                     }),
                     new cloudwatch.Metric({
                         metricName: 'containerDiskUtilization',
                         namespace: 'AWS/KinesisAnalytics',
                         dimensionsMap: {
-                            Application: props.kinesisAnalyticsApp.ref,
+                            Application: props.flinkApp.ref,
                         },
                     })
                 ],
@@ -426,7 +427,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'threadsCount',
                         namespace: 'AWS/KinesisAnalytics',
                         dimensionsMap: {
-                            Application: props.kinesisAnalyticsApp.ref,
+                            Application: props.flinkApp.ref,
                         },
                     })
                 ],
