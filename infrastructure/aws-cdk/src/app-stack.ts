@@ -34,8 +34,6 @@ import { MetricsConstruct } from "./constructs/metrics-construct";
 import { LambdaConstruct } from "./constructs/lambda-construct";
 import { CloudWatchDashboardConstruct } from "./constructs/dashboard-construct";
 
-import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
-
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
 }
@@ -365,7 +363,6 @@ export class InfrastructureStack extends cdk.Stack {
 
     // Initialize variable, will be checked to see if set properly
     let managedFlinkConstruct;
-    let metricOutputStream;
 
     // ---- Streaming Analytics ---- //
     // Create the following resources if and is `STREAMING_MODE` constant is set to REAL_TIME_KDS
@@ -381,7 +378,6 @@ export class InfrastructureStack extends cdk.Stack {
           config: props.config,
         }
       );
-      metricOutputStream = managedFlinkConstruct.metricOutputStream;
     }
 
     // Creates firehose and logs related to ingestion
@@ -453,7 +449,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     const dashboardConstruct = new CloudWatchDashboardConstruct(this, "DashboardConstruct", {
       gameEventsStream: gameEventsStream,
-      metricOutputStream: metricOutputStream,
+      managedFlinkConstruct: managedFlinkConstruct,
       gameEventsFirehose: streamingIngestionConstruct.gameEventsFirehose,
       gameAnalyticsApi: gamesApiConstruct.gameAnalyticsApi,
       eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,

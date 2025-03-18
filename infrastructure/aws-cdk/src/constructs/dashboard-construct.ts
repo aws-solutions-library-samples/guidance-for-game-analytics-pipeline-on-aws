@@ -6,10 +6,11 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as kinesisanalytics from "aws-cdk-lib/aws-kinesisanalytics";
 import * as kinesisFirehose from "aws-cdk-lib/aws-kinesisfirehose";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import { ManagedFlinkConstruct } from "./flink-construct";
 
 export interface CloudWatchDashboardConstructProps extends cdk.StackProps {
     gameEventsStream: kinesis.Stream;
-    metricOutputStream: kinesis.Stream | undefined;
+    managedFlinkConstruct: ManagedFlinkConstruct | undefined;
     gameEventsFirehose: kinesisFirehose.CfnDeliveryStream;
     gameAnalyticsApi: apigateway.IRestApi;
     eventsProcessingFunction: lambda.Function;
@@ -265,7 +266,7 @@ export class CloudWatchDashboardConstruct extends Construct {
         // used to hold widget structure for dashboard
         let widgets;
 
-        if (props.streamingAnalyticsEnabled && props.analyticsProcessingFunction != undefined && props.kinesisAnalyticsApp != undefined && props.metricOutputStream != undefined) {
+        if (props.streamingAnalyticsEnabled && props.analyticsProcessingFunction != undefined && props.kinesisAnalyticsApp != undefined && props.managedFlinkConstruct != undefined) {
 
             const realTimeHealthWidget = new cloudwatch.SingleValueWidget({
                 title: 'Real-time Analytics Health',
@@ -510,7 +511,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'PutRecord.Latency',
                         namespace: 'AWS/Kinesis',
                         dimensionsMap: {
-                            StreamName: props.metricOutputStream.streamName,
+                            StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
                         },
                     }).with({
                         label: 'PutRecord Write Latency',
@@ -519,7 +520,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'PutRecords.Latency',
                         namespace: 'AWS/Kinesis',
                         dimensionsMap: {
-                            StreamName: props.metricOutputStream.streamName,
+                            StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
                         },
                     }).with({
                         label: 'PutRecords Write Latency',
@@ -528,7 +529,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'GetRecords.Latency',
                         namespace: 'AWS/Kinesis',
                         dimensionsMap: {
-                            StreamName: props.metricOutputStream.streamName,
+                            StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
                         },
                     }).with({
                         label: 'Read Latency',
@@ -540,7 +541,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'GetRecords.IteratorAgeMilliseconds',
                         namespace: 'AWS/Kinesis',
                         dimensionsMap: {
-                            StreamName: props.metricOutputStream.streamName,
+                            StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
                         },
                     }).with({
                         label: 'Consumer Iterator Age',
