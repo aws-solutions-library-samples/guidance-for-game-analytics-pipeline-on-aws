@@ -29,3 +29,5 @@ cdk.context.json
 *.zip
 *.jar
 infrastructure/config.yaml
+business-logic/flink-event-processing/dependency-reduced-pom.xml
+business-logic/flink-event-processing/target/maven-archiver/pom.properties
