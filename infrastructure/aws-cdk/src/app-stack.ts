@@ -454,7 +454,7 @@ export class InfrastructureStack extends cdk.Stack {
       gameEventsFirehose: streamingIngestionConstruct.gameEventsFirehose,
       gameAnalyticsApi: gamesApiConstruct.gameAnalyticsApi,
       eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
-      streamingAnalyticsEnabled: props.config.STREAMING_MODE === "REAL_TIME_KDS"
+      config: props.config
     });
 
     // Output important resource information to AWS Console
