@@ -173,10 +173,13 @@ export class StreamingIngestionConstruct extends Construct {
             }),
         ...(props.config.ENABLE_APACHE_ICEBERG_SUPPORT
           ? {
-              icebergDestinationConfiguration: {
-                catalogConfiguration: {
-                  catalogArn: `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
-                },
+            icebergDestinationConfiguration: {
+              catalogConfiguration: {
+                catalogArn: `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
+              },
+              roleArn: gamesEventsFirehoseRole.roleArn,
+              s3Configuration: {
+                bucketArn: props.analyticsBucket.bucketArn, // Replace with S3 table bucket later
                 roleArn: gamesEventsFirehoseRole.roleArn,
                 s3Configuration: {
                   bucketArn: props.analyticsBucket.bucketArn,
