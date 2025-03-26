@@ -64,10 +64,6 @@ export class ManagedFlinkConstruct extends Construct {
     /* eslint-disable @typescript-eslint/no-unused-vars */
     props = { ...defaultProps, ...props };
     const codePath = `../${props.baseCodePath}`;
-    const stackUniqueIdentifier = Fn.select(
-      0,
-      Fn.split("-", Fn.select(2, Fn.split("/", `${Aws.STACK_ID}`)))
-    );
 
 
     /* The following variables define the necessary resources for the `MetricProcessingFunction` serverless
