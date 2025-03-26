@@ -454,8 +454,6 @@ export class InfrastructureStack extends cdk.Stack {
       gameEventsFirehose: streamingIngestionConstruct.gameEventsFirehose,
       gameAnalyticsApi: gamesApiConstruct.gameAnalyticsApi,
       eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
-      analyticsProcessingFunction: managedFlinkConstruct?.metricProcessingFunction,
-      kinesisAnalyticsApp: managedFlinkConstruct?.managedFlinkApp,
       streamingAnalyticsEnabled: props.config.STREAMING_MODE === "REAL_TIME_KDS"
     });
 

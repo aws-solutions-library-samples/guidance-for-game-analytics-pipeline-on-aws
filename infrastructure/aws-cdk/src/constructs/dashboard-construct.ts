@@ -3,7 +3,6 @@ import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cdk from "aws-cdk-lib";
 import * as kinesis from "aws-cdk-lib/aws-kinesis";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as kinesisanalytics from "aws-cdk-lib/aws-kinesisanalytics";
 import * as kinesisFirehose from "aws-cdk-lib/aws-kinesisfirehose";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import { ManagedFlinkConstruct } from "./flink-construct";
@@ -14,8 +13,6 @@ export interface CloudWatchDashboardConstructProps extends cdk.StackProps {
     gameEventsFirehose: kinesisFirehose.CfnDeliveryStream;
     gameAnalyticsApi: apigateway.IRestApi;
     eventsProcessingFunction: lambda.Function;
-    analyticsProcessingFunction: lambda.Function | undefined;
-    flinkApp: kinesisanalytics.CfnApplicationV2 | undefined;
     streamingAnalyticsEnabled: boolean;
 }
 const defaultProps: Partial<CloudWatchDashboardConstructProps> = {};
@@ -267,7 +264,7 @@ export class CloudWatchDashboardConstruct extends Construct {
         // used to hold widget structure for dashboard
         let widgets;
 
-        if (props.streamingAnalyticsEnabled && props.analyticsProcessingFunction != undefined && props.flinkApp != undefined && props.managedFlinkConstruct != undefined) {
+        if (props.streamingAnalyticsEnabled && props.managedFlinkConstruct != undefined) {
 
             const realTimeHealthWidget = new cloudwatch.SingleValueWidget({
                 title: 'Real-time Analytics Health',
@@ -276,7 +273,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'ConcurrentExecutions',
                         namespace: 'AWS/Lambda',
                         dimensionsMap: {
-                            FunctionName: props.analyticsProcessingFunction.functionName,
+                            FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                         },
                     }).with({
                         label: 'Metrics Processing Lambda Concurrent Executions',
@@ -286,7 +283,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'Duration',
                         namespace: 'AWS/Lambda',
                         dimensionsMap: {
-                            FunctionName: props.analyticsProcessingFunction.functionName,
+                            FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                         },
                     }).with({
                         label: 'Lambda Duration',
@@ -296,7 +293,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'Throttles',
                         namespace: 'AWS/Lambda',
                         dimensionsMap: {
-                            FunctionName: props.analyticsProcessingFunction.functionName,
+                            FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                         },
                     }).with({
                         label: 'Lambda Throttles',
@@ -307,7 +304,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         namespace: 'AWS/KinesisAnalytics',
                         period: cdk.Duration.hours(2),
                         dimensionsMap: {
-                            Application: props.flinkApp.ref,
+                            Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                         },
                     }).with({
                         label: "Managed Flink KPUs",
@@ -331,7 +328,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                                     metricName: 'numRecordsInPerSecond',
                                     namespace: 'AWS/KinesisAnalytics',
                                     dimensionsMap: {
-                                        Application: props.flinkApp.ref,
+                                        Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                                     },
                                 }).with({
                                     region: cdk.Stack.of(this).region,
@@ -349,7 +346,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                                     metricName: 'numLateRecordsDropped',
                                     namespace: 'AWS/KinesisAnalytics',
                                     dimensionsMap: {
-                                        Application: props.flinkApp.ref,
+                                        Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                                     },
                                 }).with({
                                     region: cdk.Stack.of(this).region,
@@ -375,7 +372,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'containerCPUUtilization',
                         namespace: 'AWS/KinesisAnalytics',
                         dimensionsMap: {
-                            Application: props.flinkApp.ref,
+                            Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                         },
                     })
 
@@ -411,14 +408,14 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'containerMemoryUtilization',
                         namespace: 'AWS/KinesisAnalytics',
                         dimensionsMap: {
-                            Application: props.flinkApp.ref,
+                            Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                         },
                     }),
                     new cloudwatch.Metric({
                         metricName: 'containerDiskUtilization',
                         namespace: 'AWS/KinesisAnalytics',
                         dimensionsMap: {
-                            Application: props.flinkApp.ref,
+                            Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                         },
                     })
                 ],
@@ -427,7 +424,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'threadsCount',
                         namespace: 'AWS/KinesisAnalytics',
                         dimensionsMap: {
-                            Application: props.flinkApp.ref,
+                            Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                         },
                     })
                 ],
@@ -449,7 +446,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'Errors',
                         namespace: 'AWS/Lambda',
                         dimensionsMap: {
-                            FunctionName: props.analyticsProcessingFunction.functionName,
+                            FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                         },
                     }).with({
                         label: 'Errors',
@@ -459,7 +456,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'Invocations',
                         namespace: 'AWS/Lambda',
                         dimensionsMap: {
-                            FunctionName: props.analyticsProcessingFunction.functionName,
+                            FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                         },
                     }).with({
                         label: 'Invocations',
@@ -474,7 +471,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                                 metricName: 'Errors',
                                 namespace: 'AWS/Lambda',
                                 dimensionsMap: {
-                                    FunctionName: props.analyticsProcessingFunction.functionName,
+                                    FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                                 },
                                 statistic: 'Sum',
                             }),
@@ -482,7 +479,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                                 metricName: 'Invocations',
                                 namespace: 'AWS/Lambda',
                                 dimensionsMap: {
-                                    FunctionName: props.analyticsProcessingFunction.functionName,
+                                    FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                                 },
                                 statistic: 'Sum',
                             }),
