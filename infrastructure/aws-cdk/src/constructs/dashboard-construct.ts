@@ -9,7 +9,7 @@ import { ManagedFlinkConstruct } from "./flink-construct";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 
 export interface CloudWatchDashboardConstructProps extends cdk.StackProps {
-    gameEventsStream: kinesis.Stream;
+    gameEventsStream: kinesis.Stream | undefined;
     managedFlinkConstruct: ManagedFlinkConstruct | undefined;
     gameEventsFirehose: kinesisFirehose.CfnDeliveryStream;
     gameAnalyticsApi: apigateway.IRestApi;
@@ -90,7 +90,6 @@ export class CloudWatchDashboardConstruct extends Construct {
             height: 3,
             region: cdk.Stack.of(this).region,
         });
-        // TODO: Add MSK widgets later
 
         const ingestionLambdaWidget = new cloudwatch.GraphWidget({
             title: 'Event Transformation Lambda Error count and success rate (%)',
@@ -166,7 +165,7 @@ export class CloudWatchDashboardConstruct extends Construct {
         // used to hold widget structure for dashboard
         let widgets;
 
-        if (props.config.STREAMING_MODE === "REAL_TIME_KDS" && props.managedFlinkConstruct != undefined) {
+        if (props.config.STREAMING_MODE === "REAL_TIME_KDS" && props.managedFlinkConstruct != undefined && props.gameEventsStream != undefined) {
             const eventIngestionWidget = new cloudwatch.GraphWidget({
                 title: 'Events Ingestion and Delivery',
                 left: [
@@ -573,7 +572,7 @@ export class CloudWatchDashboardConstruct extends Construct {
             ];
 
         } else if (props.config.STREAMING_MODE === "REAL_TIME_MSK" && props.managedFlinkConstruct != undefined) {
-
+            // TODO: Add MSK widgets later
             const realTimeHealthWidget = new cloudwatch.SingleValueWidget({
                 title: 'Real-time Analytics Health',
                 metrics: [

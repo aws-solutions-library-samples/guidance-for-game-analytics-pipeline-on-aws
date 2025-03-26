@@ -35,7 +35,7 @@ export interface ManagedFlinkConstructProps extends cdk.StackProps {
    * Base Codepath for business logic folder
    */
   baseCodePath: string;
-  gameEventsStream: kinesis.IStream;
+  gameEventsStream: kinesis.IStream | undefined;
   config: GameAnalyticsPipelineConfig;
 }
 
@@ -165,26 +165,8 @@ export class ManagedFlinkConstruct extends Construct {
             })
           ],
         }),
-        /* Allow flink to access source and sink streams */
-        kinesisStreamAccess: new iam.PolicyDocument({
+        sinkKinesisStreamAccess: new iam.PolicyDocument({
           statements: [
-            new iam.PolicyStatement({
-              sid: "ReadSourceKinesisStream",
-              effect: iam.Effect.ALLOW,
-              actions: [
-                "kinesis:DescribeStream",
-                "kinesis:DescribeStreamSummary",
-                "kinesis:GetShardIterator",
-                "kinesis:DescribeStreamConsumer",
-                "kinesis:RegisterStreamConsumer",
-                "kinesis:GetRecords",
-                "kinesis:ListShards",
-                "kinesis:DescribeLimits",
-                "kinesis:ListStreamConsumers",
-                "kinesis:SubscribeToShard"
-              ],
-              resources: [props.gameEventsStream.streamArn],
-            }),
             new iam.PolicyStatement({
               sid: "WriteSinkKinesisStream",
               effect: iam.Effect.ALLOW,
@@ -203,6 +185,43 @@ export class ManagedFlinkConstruct extends Construct {
       },
     });
 
+    let flinkAppConfig = {};
+
+    if (props.config.STREAMING_MODE === "REAL_TIME_KDS" && props.gameEventsStream != undefined) {
+      /* Allow flink to access source and sink streams */
+      flinkAppRole.addToPolicy(
+        new iam.PolicyStatement({
+          sid: "ReadSourceKinesisStream",
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "kinesis:DescribeStream",
+            "kinesis:DescribeStreamSummary",
+            "kinesis:GetShardIterator",
+            "kinesis:DescribeStreamConsumer",
+            "kinesis:RegisterStreamConsumer",
+            "kinesis:GetRecords",
+            "kinesis:ListShards",
+            "kinesis:DescribeLimits",
+            "kinesis:ListStreamConsumers",
+            "kinesis:SubscribeToShard"
+          ],
+          resources: [props.gameEventsStream.streamArn],
+        }),
+      );
+      // set app config to point to kinesis
+      flinkAppConfig = {
+        "kinesis.stream.arn": props.gameEventsStream.streamArn,
+        "kinesis.stream.name": props.gameEventsStream.streamName,
+        "aws.region": cdk.Aws.REGION,
+        "flink.stream.initpos": "LATEST",
+        "flink.stream.max_record_count": "10000",
+        "kinesis.stream.interval": "500"
+      };
+    } else if (props.config.STREAMING_MODE === "REAL_TIME_MSK") {
+      // TODO: MSK integration
+      flinkAppConfig = {
+      };
+    }
 
     /* The following defines the flink application used to process incoming game events and output them to the stream */
     const managedFlinkApp = new kinesisanalytics.CfnApplicationV2(this, "ManagedFlinkApp",
@@ -243,14 +262,7 @@ export class ManagedFlinkConstruct extends Construct {
               }
             }, {
               propertyGroupId: "sourceConfig",
-              propertyMap: {
-                "kinesis.stream.arn": props.gameEventsStream.streamArn,
-                "kinesis.stream.name": props.gameEventsStream.streamName,
-                "aws.region": cdk.Aws.REGION,
-                "flink.stream.initpos": "LATEST",
-                "flink.stream.max_record_count": "10000",
-                "kinesis.stream.interval": "500"
-              }
+              propertyMap: flinkAppConfig,
             }, {
               propertyGroupId: "sinkConfig",
               propertyMap: {
@@ -278,7 +290,7 @@ export class ManagedFlinkConstruct extends Construct {
         logGroup: flinkLogGroup,
       }
     );
-    
+
 
     /* The ARN of the log stream to write CloudWatch logs to */
     const flinkLogStreamArn = `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:${flinkLogGroup.logGroupName}:log-stream:${flinkLogStream.logStreamName}`;
