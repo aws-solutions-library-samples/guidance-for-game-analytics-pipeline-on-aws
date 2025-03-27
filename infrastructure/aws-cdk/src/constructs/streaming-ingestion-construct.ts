@@ -234,7 +234,7 @@ export class StreamingIngestionConstruct extends Construct {
                 intervalInSeconds: props.config.DEV_MODE ? 60 : 900,
                 sizeInMBs: 128,
               },
-              prefix: `${props.config.RAW_EVENTS_PREFIX}/!{partitionKeyFromQuery:year}/!{partitionKeyFromQuery:month}/!{partitionKeyFromQuery:day}/`,
+              prefix: `${props.config.RAW_EVENTS_PREFIX}/year=!{partitionKeyFromQuery:year}/month=!{partitionKeyFromQuery:month}/day=!{partitionKeyFromQuery:day}/`,
               errorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
               compressionFormat: "UNCOMPRESSED",
               roleArn: gamesEventsFirehoseRole.roleArn,
