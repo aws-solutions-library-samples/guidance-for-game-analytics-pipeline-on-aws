@@ -1,11 +1,11 @@
 # API Reference
-The Game Analytics Pipeline API is the entry point for applications to send data, and it provides functionality for administrators to programmatically configure registered applications. The solution supports HTTPS only, using a certificate managed by AWS. For information about configuring a custom domain for your REST API, refer to [Setting up custom domain names for REST APIs](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.html) in the Amazon API Gateway Developer Guide.
+The Game Analytics Pipeline API is the entry point for applications to send data, and it provides functionality for administrators to programmatically configure registered applications. The solution supports HTTPS only, using a certificate managed by AWS. For information about configuring a custom domain for your REST API, refer to [Setting up custom domain names for REST APIs](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.md) in the Amazon API Gateway Developer Guide.
 
 !!! info 
-    - The base path to the API is: `https://{YOUR_API_URL}/live`.
-    <br>For example, the full path to one of the API calls could be `https://{YOUR_API_URL}/live/applications/{APPLICATION_ID}/authorizations/{API_KEY_ID}`.
-    <br>Refer to the [Getting Started](../getting-started.html) section to get your API URL, and for steps on interacting with the API. Refer to the [Component Deep Dive](../component-deep-dive.html) section to understand how the API's authentication and underlying processes work.
-    - As a quick reference, sending events to Game Analytics Pipeline is under `/applications/{APPLICATION_ID}/events`, and all other API calls are administrative.
+    - The base path to the API is: `https://{YOUR_API_URL}/live` unless you set a different API stage name under the config file.
+        - For example, the full path to one of the API calls could be `https://{YOUR_API_URL}/live/applications/{APPLICATION_ID}/authorizations/{API_KEY_ID}`.
+        - Refer to the [Getting Started](../getting-started.md) section to get your API URL, API stage name, and for steps on interacting with the API. Refer to the [Component Deep Dive](../component-deep-dive.md) section to understand how the API's authentication and underlying processes work.
+    - [Quick link to sending events](./api-reference.md#sending-events). Sending events requires an application and it's corresponding authorization token, for explanations see the other API calls first. All other API calls are administrative.
 
 ---
 ### Applications
@@ -28,7 +28,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
     ```
 
 - **Response**
-    - `200` - Application information is stored in a DynamoDB Table deployed by the solution. See [Component Deep Dive](../component-deep-dive.html) for details on the process.
+    - `200` - Application information is stored in a DynamoDB Table deployed by the solution. See [Component Deep Dive](../component-deep-dive.md) for details on the process.
     ``` hcl
     {
         "ApplicationId": "d76d064f-ca8b-41ff-839f-4735e9a4b69d",
@@ -44,7 +44,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
         - **UpdatedAt** (*DateTime*) - The date and time the application was last updated.
         - **ErrorCode** (*DateTime*) - The date and time the application was created.
 
-    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.html) section for errors.
+    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.
 
 #### GET - List Applications
 - **Description**
@@ -57,7 +57,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
     ```
 
 - **Response**
-    - `200` - Application information is stored in a DynamoDB Table deployed by the solution. See [Component Deep Dive](../component-deep-dive.html) for details on the process.
+    - `200` - Application information is stored in a DynamoDB Table deployed by the solution. See [Component Deep Dive](../component-deep-dive.md) for details on the process.
     ``` hcl
     {
         "Applications": [
@@ -80,7 +80,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
             - **UpdatedAt** (*DateTime*) - The date and time the application was last updated.
             - **ErrorCode** (*DateTime*) - The date and time the application was created.
 
-    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.html) section for errors.
+    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.
 
 ---
 
@@ -97,7 +97,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
     ```
 
 - **Response**
-    - `200` - Application information is stored in a DynamoDB Table deployed by the solution. See [Component Deep Dive](../component-deep-dive.html) for details on the process.
+    - `200` - Application information is stored in a DynamoDB Table deployed by the solution. See [Component Deep Dive](../component-deep-dive.md) for details on the process.
     ``` hcl
     {
         "ApplicationId": "d76d064f-ca8b-41ff-839f-4735e9a4b69d",
@@ -113,7 +113,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
         - **UpdatedAt** (*DateTime*) - The date and time the application was last updated.
         - **ErrorCode** (*DateTime*) - The date and time the application was created.
 
-    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.html) section for errors.
+    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.
 
 #### DELETE - Delete Application
 - **Description**
@@ -136,7 +136,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
     ``` hcl
     "Delete Successful"
     ```
-    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.html) section for errors.
+    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.
 ---
 
 ### Sending Events
@@ -145,21 +145,19 @@ The Game Analytics Pipeline API is the entry point for applications to send data
 #### POST - Send Events
 
 - **Description**
-    - This operation enables you to send a batch game events in a single API request to the Game Analytics Pipeline solution. Please review the [Component Deep Dive](../component-deep-dive.html) section for batching/size/service limits.
+    - This operation enables you to send a batch game events in a single API request to the Game Analytics Pipeline solution. Please review the [Component Deep Dive](../component-deep-dive.md) section for batching/size/service limits.
 
 - **Request**
     - **Header**
-        - **Authorization** (*String*) [Required] - The API Key's Value/code for the application. See either [Getting Started](../getting-started.html) or the below Authorizations/API Key references for high level steps / details on creating or obtaining an API Key. See [Component Deep Dive](../component-deep-dive.html) for more details on the process and [Design Considerations](../design-considerations.html) for reasoning.
+        - **Authorization** (*String*) [Required] - The API Key's Value/code for the application. See either [Getting Started](../getting-started.md) or the below Authorizations/API Key references for high level steps / details on creating or obtaining an API Key. See [Component Deep Dive](../component-deep-dive.md) for more details on the process and [Design Considerations](../design-considerations.md) for reasoning.
     - **Body**
-        - **Destination** (*String*) [Required] - Type of ingest stream. `KDS` for Kinesis Data Streams, `MSK` for Managed MSK, or `Firehose` for Firehose. Should reflect the option you have deployed when going through [Getting Started](../getting-started.html). Also review [Component Deep Dive](../component-deep-dive.html) for comparisons between ingest options.
         - **Events** (*Array*) [Required] - Array/List of game event JSON objects to send to the pipeline **INSERT NOTE ABOUT SCRIPT/SAMPLE OF GAME EVENTS HERE.
     ``` hcl
     POST
     https://{YOUR_API_ENDPOINT_URL}/live/applications/{APPLICATION_ID}/events
     Authorization: "KKNL09jc1Ub7WQzmZZ+9BNfxLCOhhJGKGkpHyWy+uk6J6WrIj3x8tbJLkIkZUSxzBgT4RyUOOy7ZBKSaj0y2Zg=="
     {
-    "destination": "KDS",
-    "events": [Array/List of Game Event Objects]
+        "events": [Array/List of Game Event Objects]
     }
     ```
 
@@ -186,7 +184,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
         - **Result** (*String*) - Response message for an event
         - **ErrorCode** (*String*) - Response code for an error event. 
 
-    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.html) section for errors.
+    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.
 
 ---
 
@@ -194,7 +192,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
 `/applications/{APPLICATION_ID}/authorizations`
 #### POST - Create API Key for Application
 - **Description**
-    - This operation generates a new API key that is authorized to send events to a specific Application. When sending events to an Application with the above `Sending Events` API call, the API Key's value/code is included in the `Authorization` header for security. See [Component Deep Dive](../component-deep-dive.html) for more details on the process and [Design Considerations](../design-considerations.html) for reasoning.
+    - This operation generates a new API key that is authorized to send events to a specific Application. When sending events to an Application with the above `Sending Events` API call, the API Key's value/code is included in the `Authorization` header for security. See [Component Deep Dive](../component-deep-dive.md) for more details on the process and [Design Considerations](../design-considerations.md) for reasoning.
 
 - **Request**
     - **Body**
@@ -210,7 +208,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
     ```
 
 - **Response**
-    - `200` - Key/authorization information is stored in a DynamoDB Table deployed by the solution. See [Component Deep Dive](../component-deep-dive.html) for details on the process.
+    - `200` - Key/authorization information is stored in a DynamoDB Table deployed by the solution. See [Component Deep Dive](../component-deep-dive.md) for details on the process.
     ``` hcl
     {
         "ApiKeyId": "01af2cb3-8b1f-4bc0-801a-884a30fcb8cd",
@@ -232,7 +230,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
         - **UpdatedAt** (*DateTime*) - The date and time the key was last updated.
         - **Enabled** (*Boolean*) - Whether the key is enabled or disabled.
 
-    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.html) section for errors.
+    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.
 
 #### GET - List Authorizations for an Application
 - **Description**
@@ -245,7 +243,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
     ```
 
 - **Response**
-    - `200` - Key/authorization information is stored in a DynamoDB Table deployed by the solution. See [Component Deep Dive](../component-deep-dive.html) for details on the process.
+    - `200` - Key/authorization information is stored in a DynamoDB Table deployed by the solution. See [Component Deep Dive](../component-deep-dive.md) for details on the process.
     ``` hcl
     {
         "Authorizations": [
@@ -274,7 +272,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
             - **UpdatedAt** (*DateTime*) - The date and time the key was last updated.
             - **Enabled** (*Boolean*) - Whether the key is enabled or disabled.
 
-    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.html) section for errors.
+    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.
 
 ---
 
@@ -291,7 +289,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
     ```
 
 - **Response**
-    - `200` - Key/authorization information is stored in a DynamoDB Table deployed by the solution. See [Component Deep Dive](../component-deep-dive.html) for details on the process.
+    - `200` - Key/authorization information is stored in a DynamoDB Table deployed by the solution. See [Component Deep Dive](../component-deep-dive.md) for details on the process.
     ``` hcl
     {
         "ApiKeyId": "01af2cb3-8b1f-4bc0-801a-884a30fcb8cd",
@@ -313,7 +311,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
         - **UpdatedAt** (*DateTime*) - The date and time the key was last updated.
         - **Enabled** (*Boolean*) - Whether the key is enabled or disabled.
 
-    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.html) section for errors.
+    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.
 
 #### DELETE - Delete an Authorization
 - **Description**
@@ -330,7 +328,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
     ``` hcl
     "Delete Successful"
     ```
-    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.html) section for errors.
+    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.
 
 #### PUT - Enable/Disable Authorization
 - **Description**
@@ -340,7 +338,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
     API Gateway authorization caching is enabled in the solution API. It may
     take up to 300 seconds (5 minutes) before a change to the Enabled status of an API
     key is detected by the LambdaAuthorizer Lambda function. To reduce this time,
-    you can [modify or disable the Authorization Cache](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-caching.html). Reducing or removing this cache
+    you can [modify or disable the Authorization Cache](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-caching.md). Reducing or removing this cache
     TTL (time-to-live) results in additional queries to the Authorizations DynamoDB
     table and increases costs.
 
@@ -362,5 +360,5 @@ The Game Analytics Pipeline API is the entry point for applications to send data
         "Enabled": false
     }
     ```
-    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.html) section for errors.
+    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.
 ---

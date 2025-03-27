@@ -9,6 +9,7 @@
 ## Modifying schema
 
 ## Modifying/extending architecture
+- Allow both Redshift and non-redshift
 
 ## Modifying dashboards (ops and analytics)
 
