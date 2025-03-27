@@ -14,9 +14,6 @@ features: # NOTE: Update this for the new page format/order
   - title: Upgrading
     link: upgrading/v2-to-v3-changes.html
     description: List of changes from V2 to v3 and step-by-step guide to upgrading your deployment to v3
-  - title: Troubleshooting
-    link: troubleshooting.html
-    description: List of issue scenarios and steps to troubleshooting them
   - title: Component Deep Dive
     link: component-deep-dive.html
     description: Step-by-step breakdown of the guidance components and end-to-end analytics process through the pipeline
@@ -26,6 +23,9 @@ features: # NOTE: Update this for the new page format/order
   - title: Design Considerations
     link: design-considerations.html
     description: Explanations for choosing the services, architecture design, and processes for this guidance
+  - title: Troubleshooting
+    link: troubleshooting.html
+    description: List of issue scenarios and steps to troubleshooting them
 companies:
   title:
   list:

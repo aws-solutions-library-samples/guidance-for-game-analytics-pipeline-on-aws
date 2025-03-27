@@ -140,7 +140,6 @@ export class ApiConstruct extends Construct {
       }
       case "REAL_TIME_MSK": {
         // TODO: Add MSK integration
-        console.warn("NOT IMPLEMENTED");
         eventDefinition = {};
         break;
       }
