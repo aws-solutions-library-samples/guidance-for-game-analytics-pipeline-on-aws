@@ -84,21 +84,52 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
 
 === "Data Lake Mode"
 
-    1. Amazon Data Firehose performs the following actions on the incoming events:
-        - Provides an ingest buffer on incoming data, holding events until it reaches a certain size or after certain time passes
-        - Performs the following transformations on the data:
-            === "test"
-                - Partitioning based on date (year, month, day)
-            === "test2"
-                - dasd
-        - dsdfsd
-
     ![Architecture-Verbose-DataLake-Mode](media/architecture-verbose-datalake-mode.png)
+
+    1. Amazon Data Firehose performs the following actions on the incoming events:
+    
+        - Provides an ingest buffer on incoming data, holding events until it reaches a certain size or after certain time passes
+        - Triggers a Lambda Function through its [integrated Lambda transformation feature](https://docs.aws.amazon.com/firehose/latest/dev/data-transformation.html) which performs the following:
+            - Validates the event's json format against the AJV2020 standard, a valid Application ID, and the guidance's game event schema set in `business-logic/events-processing/config` (TODO: move this up to be more accessible).
+            - Marks the events with a processing timestamp
+            - Passes the data to a corresponding folder in S3 (prefix is set in config, default is `processed_events`, or if not valid, is still sent to not be lost and sent to a `firehose-errors/!{firehose:error-output-type}/` folder)
+        - If the guidance is set to HIVE tables through the config setting `ENABLE_APACHE_ICEBERG_SUPPORT false` (default), Firehose also performs in-service partitioning on the data based on date (year, month, day), which represents as nested folders in the S3 data store as a SNAPPY parquet format
+        - If the guidance is set to APACHE ICEBERG tables through the config setting `ENABLE_APACHE_ICEBERG_SUPPORT true`, there is no partitioning needed due to how it partitions under the hood
+
+    <br>
+    2. Glue Data Catalog is a centralized metadata repository for the events in the Game Analytics Pipeline. An initial catalog is created when deploying the guidance, but gets updated over time through a continuous schema discovery process through the deployed Glue WorkFlow below
+
+    <br>
+    3. S3 is the central object storage service that holds all event data and acts as a central Data Lake store, which should have `analyticsbucket` in the name when deployed from the guidance. Folder structure for reference:
+
+    - `raw_events` - Can be changed from the config value `RAW_EVENTS_PREFIX`, holds unprocessed data from Firehose
+
+    Folders that will be explained in below sections will also appear, but are shown here for reference:
+
+    - `processed_events` - Can be changed from the config value `PROCESSED_EVENTS_PREFIX`, holds processed data from Glue ETL jobs
+    - `athena_query_results` - Holds logs and results from Athena Queries performed on the bucket
+    - `glue-scripts` - Holds Spark-based ETL scripts used by Glue and modifiable by users to perform ETL
+    - `glueetl-tmp` - Temporary folder for holding ephemeral data transformation when Glue is performing ETL
+
+    <br>
+    4. Glue Workflow is an orchestration feature in AWS Glue. Glue Workflow triggers a series of steps either on demand (default), or if configured during setup, on a regular cron schedule. Glue Workflow performs the following:
+
+    - Triggers a Glue ETL Job on Spark which only processes data since the last invoked job through a [bookmark](https://docs.aws.amazon.com/glue/latest/dg/monitor-continuations.html) and outputs the data in parquet with an additional `application_id` partition key. There are no existing transformations in the script, instead focusing on providing a skeleton script with Glue and Spark best practices
+    - Triggers a Glue Crawler to update the Glue Data Catalog with any schema updates or changes through crawling the events and their schemas
+
+    <br>
+    5. Athena is a serverless analytics query service that can perform ad-hoc queries and connect to analytics dashboards to use the queries to power visualizations. The guidance provides sample queries for common game use cases (see [Customizations](./customizations.md) for more details) along with sample operational CTAS (Create-Table-as-Select) queries that can also perform certain ad-hoc ETL.
+
+    6. Amazon QuickSight or other dashboard technologies can connect to Athena through their plugins, connectors, or direct integration. Dashboards will call Athena to perform the queries that power visualizations and provide insights to users.
 
 === "Redshift Mode"
 
     ![Architecture-Verbose-Redshift-Mode](media/architecture-verbose-redshift-mode.png)
 
 ## Administration
+
+1. Users can administer changes to Application IDs or authorization tokens for the Application IDs through API Gateway. See the [API Reference](./references/api-reference.md) for more details.
+
+2. The guidance also provides an operational CloudWatch dashboard to view infrastructure health and metrics, see the [Operational Dashboard Reference](./references/ops-dashboard-reference.md)
 
 ## Deployment Process
