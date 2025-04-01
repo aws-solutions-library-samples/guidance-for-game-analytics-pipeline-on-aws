@@ -99,10 +99,10 @@ nav:
       - Changelog: upgrading/v2-to-v3-changes.md
       - Upgrade Guide: upgrading/v2-migration.md
       - (old-flink-remove): upgrading/flink-migration.md
-  - Troubleshooting: troubleshooting.md
   - Component Deep Dive: component-deep-dive.md
   - Customizations: customizations.md
   - Design Considerations: design-considerations.md
+  - Troubleshooting: troubleshooting.md
   - Roadmap: roadmap.md
   - Security: security.md
   - Contributing: contributing.md

@@ -2,14 +2,14 @@
 
 Amazon Kinesis Data Analytics for SQL applications, which is used in the original architecture of the Game Analytics Pipeline on AWS, is being discontinued. You can learn more about the discontinuation using the following resources.
 
-- [Amazon Kinesis Data Analytics for SQL Applications discontinuation](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/discontinuation.html)
+- [Amazon Kinesis Data Analytics for SQL Applications discontinuation](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/discontinuation.md)
 
 Amazon Managed Service for Apache Flink is a serverless, low-latency, highly scalable, and highly available real-time stream processing service. Amazon Managed Service for Apache Flink replaces Amazon Kinesis Data Analytics for SQL Applications in the Game Analytics Pipeline on AWS architecture.
 
 Amazon Web Services has published a guide and examples to assist with the migration to Flink. The resources are accessible using the links below.
 
 - [Migrate from Amazon Kinesis Data Analytics for SQL to Amazon Managed Service for Apache Flink and Amazon Managed Service for Apache Flink Studio](https://aws.amazon.com/blogs/big-data/migrate-from-amazon-kinesis-data-analytics-for-sql-to-amazon-managed-service-for-apache-flink-and-amazon-managed-service-for-apache-flink-studio/)
-- [Migrating to Managed Service for Apache Flink Studio Examples](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/migrating-to-kda-studio-overview.html)
+- [Migrating to Managed Service for Apache Flink Studio Examples](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/migrating-to-kda-studio-overview.md)
 
 This page discusses differences in development and deployment specific to the stream processing utilized for the Game Analytics Pipeline on AWS.
 
@@ -130,7 +130,7 @@ CREATE TABLE input_table (
 - `<stream_region>` is replaced with the AWS region of the Kinesis stream
 - `<stream_position>` is replaced with the initial position of the Kinesis stream
 
-In a deployed Managed Flink application, the variables are loaded from the application's configured [runtime properties](https://docs.aws.amazon.com/managed-flink/latest/java/how-properties.html).
+In a deployed Managed Flink application, the variables are loaded from the application's configured [runtime properties](https://docs.aws.amazon.com/managed-flink/latest/java/how-properties.md).
 
 ##### Modifications
 
@@ -500,14 +500,14 @@ HAVING COUNT(*) > 1;
 
 
 ## Metric Output Stream
-The first version of the Game Analytics Pipeline on AWS utilized a [Lambda function as a direct output destination for Kinesis Data Analytics](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/how-it-works-output-lambda-functions.html). The Lambda function processes incoming metrics and emits them to CloudWatch Metrics via the SDK. This feature is not supported natively in Flink.
+The first version of the Game Analytics Pipeline on AWS utilized a [Lambda function as a direct output destination for Kinesis Data Analytics](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/how-it-works-output-lambda-functions.md). The Lambda function processes incoming metrics and emits them to CloudWatch Metrics via the SDK. This feature is not supported natively in Flink.
 
 As an alternative, a separate Kinesis stream was utilized to decouple the Flink application from the Lambda. 
 
 ### Configuring the Stream Shard Count
 The Metric Output Stream is a provisioned Kinesis stream. The number of shards in the stream can be controlled by the `METRIC_STREAM_SHARD_COUNT` parameter in your `config.yaml`. 
 
-The number of shards can be determined using the formula found in the *Provisioned mode features and use cases* subsection of [Choose the data stream capacity mode](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html#provisionedmode) in the *Amazon Kinesis Data Streams Developer Guide*.
+The number of shards can be determined using the formula found in the *Provisioned mode features and use cases* subsection of [Choose the data stream capacity mode](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.md#provisionedmode) in the *Amazon Kinesis Data Streams Developer Guide*.
 
 Throughput considerations are determined by the characteristics of metrics emitted by Flink and the number of consumers for the stream. 
 
@@ -518,9 +518,9 @@ Throughput considerations are determined by the characteristics of metrics emitt
 - The number of consumers is dependent on the number of metric monitoring services, such as Cloudwatch metrics, consuming the stream.
 
 ### Consuming the Stream
-This Kinesis stream is consumed directly by a Lambda which writes each metric record into a CloudWatch metric. The Kinesis stream is connected to the Lambda using a [Kinesis Event Source](https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html). 
+This Kinesis stream is consumed directly by a Lambda which writes each metric record into a CloudWatch metric. The Kinesis stream is connected to the Lambda using a [Kinesis Event Source](https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.md). 
 
-Alternatively, the Kinesis stream can be consumed directly by a tool such as [OpenSearch](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/configure-client-kinesis.html).
+Alternatively, the Kinesis stream can be consumed directly by a tool such as [OpenSearch](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/configure-client-kinesis.md).
 
 ## Development using Studio Notebooks
 

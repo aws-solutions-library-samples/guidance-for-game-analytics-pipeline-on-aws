@@ -25,7 +25,7 @@ Why not use compute fleets (EC2, EKS, ECS, etc) for data processing?
 
 Why not Amazon EMR Serverless?
 
-- Glue provides interfaces for jobs and direct console integration, and EMR requires spark code and notebook just to write scripts. This lets Glue reduce time to getting started, and management overhead. This does not mean EMR is a worse option, Glue just aligns with the specific above tenets more.
+- Glue and Athena provides interfaces for jobs/queries and direct console integration, and EMR requires spark code and notebook just to write scripts. This lets Glue and Athena reduce time to getting started, and management overhead. This does not mean EMR is a worse option, Glue just aligns with the specific above tenets more. The team is open to an EMR deployment option based on user feedback.
 
 ---
 Why not Sagemaker Unified Studio, or Lakehouse?
@@ -33,27 +33,40 @@ Why not Sagemaker Unified Studio, or Lakehouse?
 - This feature is in Preview as of this document, and once it is fully Globally Available, the team will re-assess.
 
 ---
-Why not Glue Workflow instead of Amazon Managed Workflows for Apache Airflow (MWAA)?
+Why Glue Workflow instead of Amazon Managed Workflows for Apache Airflow (MWAA)?
 
-- Glue Workflows is only constrained to Glue, whereas MWAA supports more options. This aligns better with our extensibility tenet.
-
----
-Why use SQS instead of API Gateway?
-
-- TODO: WAIT ON THIS. SQS is cheaper and better for real time, but unify everything under a single interface, can write directly if they want
+- MWAA requires a VPC and all associated networking resources to be created, which adds more networking management overhead and more network-related performance considerations that are otherwise all managed under the hood by Glue Workflows. However, Glue Workflows is only constrained to Glue, whereas MWAA supports more options outside of Glue, which is a case of balancing conflicting aspects of the guidance's tenets. Currently we weigh the less management overhead option over the integration for mainstream alternative options. We are open to feedback to re-align MWAA based on user feedback through Github Issues on the repository.
 
 ---
+Why use API Gateway?
+
+- Compared to direct code to the respective AWS services, or event buses like SQS/EventBridge, API Gateway provides the following benefits:
+    - An authorization workflow using an Authorizer Lambda to ensure events are sending to the correct game/application and not cross-contaminate events. (Up-to-date best practices)
+    - A universal endpoint (RESTful HTTP/HTTPS) that is more compatible and less custom code or libraries required (Less Management Overhead)
+
+- Compared to a Lambda endpoint, API Gateway also provides direct pass-through that would be cheaper, and rejected API calls are still sent to CloudWatch logs, which would be more simplified and managed than Dead-letter-queue or forwarding logic from Lambda
+
+---
+Why can't I deploy both the Data Lake and Redshift option at the same time?
+
+- The choice between Data Lake mode and Redshift mode boils down to your query performance needs and amount of data scanned. The vast majority of customers will only need one option or the other, and in the rare case that there are mixed cases, you can visit the [Customizations page](./customizations.md) to allow both options (Extensibility tenet). Allowing both as a default would create decision paralysis and perceived complexity in the deployed infrastructure, so we skim down the infrastructure to base necessities to address the above core tenets.
+- For infrastructure, the Redshift Data Warehouse option has an integration to store in S3 as a Data Lake store, and has features such as Redshift Spectrum to allow the same query experience regardless of the data store (S3 or Redshift). 
+
+---
+
+Why KDS/MSK in between Flink and Data Lake / Redshift?
+
+---
+
 Why QuickSight?
-- ASKING ANDREI, TBD
 
----
-S3/Athena vs Redshift (TO BE CHANGED)
+- ASKING ANDREI, TBD
 
 ---
 ## Processes
 
-- Why only REST HTTP API, why not send passthrough or direct?
-- Why extra lambdas?
-
+- When should I use Data Lake mode vs Redshift mode?
+- When should I utilize real-time analytics?
+- When should I use KDS vs MSK?
 - Why DynamoDB with application_id 
 - why is the Schema the way we designed it?

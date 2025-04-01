@@ -1,4 +1,4 @@
-The solution configures the following JSON schema to validate telemetry data sent to the solution API. To see how the solution utilizes the JSON schema during the event process, see [Component Deep Dive](../component-deep-dive.html) for details on the process.
+The solution configures the following JSON schema to validate telemetry data sent to the solution API. To see how the solution utilizes the JSON schema during the event process, see [Component Deep Dive](../component-deep-dive.md) for details on the process.
 
 !!! Info
     The `application_id` field is not required when sending events using the
@@ -7,7 +7,7 @@ The solution configures the following JSON schema to validate telemetry data sen
     authorized. Applications that integrate directly with Amazon Kinesis Data Streams
     must provide an `application_id` for each event that is submitted.
 
-There are sample queries built into the solution that you can refer to in [Customizations](../customizations.html). There are also sample scripts that create sample events built into the solution that you can utilize and refer to in [Getting Started](../getting-started.html).
+There are sample queries built into the solution that you can refer to in [Customizations](../customizations.md). There are also sample scripts that create sample events built into the solution that you can utilize and refer to in [Getting Started](../getting-started.md).
 
 ## Event Schema Sample
 
