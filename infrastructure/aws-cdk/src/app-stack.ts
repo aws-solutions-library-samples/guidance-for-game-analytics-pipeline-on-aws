@@ -12,9 +12,8 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-import { DataLakeConstruct } from "./constructs/data-lake-construct";
+
 import * as cdk from "aws-cdk-lib";
-import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as snsSubscriptions from "aws-cdk-lib/aws-sns-subscriptions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
@@ -26,12 +25,16 @@ import * as s3deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as path from "path";
 
+import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "./helpers/config-types";
 import { StreamingIngestionConstruct } from "./constructs/streaming-ingestion-construct";
 import { ApiConstruct } from "./constructs/api-construct";
+import { DataLakeConstruct } from "./constructs/data-lake-construct";
 import { ManagedFlinkConstruct } from "./constructs/flink-construct";
 import { MetricsConstruct } from "./constructs/metrics-construct";
 import { LambdaConstruct } from "./constructs/lambda-construct";
+import { CloudWatchDashboardConstruct } from "./constructs/dashboard-construct";
+import { VpcConstruct } from "./constructs/vpc-construct";
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
@@ -48,6 +51,7 @@ export class InfrastructureStack extends cdk.Stack {
     // Used as log destination
     const solutionLogsBucket = new s3.Bucket(this, "SolutionLogsBucket", {
       objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
+      enforceSSL: true,
       versioned: props.config.DEV_MODE ? false : true,
       removalPolicy: props.config.DEV_MODE
         ? cdk.RemovalPolicy.DESTROY
@@ -194,24 +198,6 @@ export class InfrastructureStack extends cdk.Stack {
       masterKey: snsEncryptionKeyAlias,
     });
 
-    // Glue datalake and processing jobs
-    const dataLakeConstruct = new DataLakeConstruct(this, "DataLakeConstruct", {
-      notificationsTopic: notificationsTopic,
-      config: props.config,
-      analyticsBucket: analyticsBucket,
-    });
-
-    // ---- Kinesis ---- //
-
-    // Input stream for applications
-    const gameEventsStream = new kinesis.Stream(this, "GameEventStream",
-      (props.config.STREAM_PROVISIONED === true) ? {
-        shardCount: props.config.STREAM_SHARD_COUNT,
-        streamMode: kinesis.StreamMode.PROVISIONED,
-      } : {
-        streamMode: kinesis.StreamMode.ON_DEMAND,
-      });
-
     // ---- DynamoDB Tables ---- //
 
     // Table organizes and manages different applications
@@ -286,28 +272,7 @@ export class InfrastructureStack extends cdk.Stack {
       }
     );
 
-    // ---- Athena ---- //
-    // Define the resources for the `GameAnalyticsWorkgroup` Athena workgroup
-    // Note: Shouldn't this go to Data Lake Construct?
-    const gameAnalyticsWorkgroup = new athena.CfnWorkGroup(
-      this,
-      "GameAnalyticsWorkgroup",
-      {
-        name: `GameAnalyticsWorkgroup-${cdk.Aws.STACK_NAME}`,
-        description: "Default workgroup for the solution workload",
-        recursiveDeleteOption: true, // delete the associated queries when stack is deleted
-        state: "ENABLED",
-        workGroupConfiguration: {
-          publishCloudWatchMetricsEnabled: true,
-          resultConfiguration: {
-            encryptionConfiguration: {
-              encryptionOption: "SSE_S3",
-            },
-            outputLocation: `s3://${analyticsBucket.bucketName}/athena_query_results/`,
-          },
-        },
-      }
-    );
+    //////////// ---- CONSTRUCT RESOURCES ---- ////////////
 
     // ---- Functions ---- //
 
@@ -317,8 +282,7 @@ export class InfrastructureStack extends cdk.Stack {
       authorizationsTable,
     });
 
-    // Shouldn't the below policies just go to Lambda Construct..?
-    // Events Processing Function Policy
+    // Events Processing Function Policy added here to connect above DynamoDB resources to Lambda policies
     lambdaConstruct.eventsProcessingFunction.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "DynamoDBAccess",
@@ -333,7 +297,7 @@ export class InfrastructureStack extends cdk.Stack {
         resources: [applicationsTable.tableArn],
       })
     );
-    // Lambda Authorizer Policy
+    // Lambda Authorizer Policy added here to connect above DynamoDB resources to Lambda policies
     lambdaConstruct.lambdaAuthorizer.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "DynamoDBAccess",
@@ -361,47 +325,77 @@ export class InfrastructureStack extends cdk.Stack {
       lambdaConstruct.applicationAdminServiceFunction
     );
 
-    // Initialize variable, will be checked to see if set properly
-    let managedFlinkConstruct;
-    let metricOutputStream;
 
-    // ---- Streaming Analytics ---- //
-    // Create the following resources if and is `STREAMING_MODE` constant is set to REAL_TIME_KDS
-    if (props.config.STREAMING_MODE === "REAL_TIME_KDS" || props.config.STREAMING_MODE === "REAL_TIME_MSK") {
-      // Enables Managed Flink and all metrics surrounding it
+    // ---- Real-time ingest option ---- //
 
-      managedFlinkConstruct = new ManagedFlinkConstruct(
+    // Input stream for applications
+    var gamesEventsStream;
+    var managedFlinkConstruct;
+    var streamingIngestionConstruct;
+    if (props.config.INGEST_MODE === "REAL_TIME_KDS") {
+      gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
+        (props.config.STREAM_PROVISIONED === true) ? {
+          shardCount: props.config.STREAM_SHARD_COUNT,
+          streamMode: kinesis.StreamMode.PROVISIONED,
+        } : {
+          streamMode: kinesis.StreamMode.ON_DEMAND,
+        });
+      
+      if (gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
+        // Enables Managed Flink and all metrics surrounding it
+        managedFlinkConstruct = new ManagedFlinkConstruct(
+          this,
+          "ManagedFlinkConstruct",
+          {
+            gameEventsStream: gamesEventsStream,
+            baseCodePath: codePath,
+            config: props.config,
+          }
+        );
+      }
+    }
+
+    // ---- VPC resources (IF REDSHIFT OR REAL TIME in DEV_MODE is enabled) ---- //
+    var vpcConstruct;
+    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") { // Might add condition that opensearch may be created in dev mode too
+      vpcConstruct = new VpcConstruct(this, "VpcConstruct", {
+        config: props.config,
+      });
+    }
+
+    if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE") {
+      // Glue datalake and processing jobs
+      const dataLakeConstruct = new DataLakeConstruct(this, "DataLakeConstruct", {
+        notificationsTopic: notificationsTopic,
+        config: props.config,
+        analyticsBucket: analyticsBucket,
+      });
+
+      // Creates firehose and logs related to ingestion
+      streamingIngestionConstruct = new StreamingIngestionConstruct(
         this,
-        "ManagedFlinkConstruct",
+        "StreamingIngestionConstruct",
         {
-          gameEventsStream: gameEventsStream, // Add option for MSK later
-          baseCodePath: codePath,
+          applicationsTable: applicationsTable,
+          gamesEventsStream: gamesEventsStream,
+          analyticsBucket: analyticsBucket,
+          rawEventsTable: dataLakeConstruct.rawEventsTable,
+          gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
+          eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
           config: props.config,
         }
       );
-      metricOutputStream = managedFlinkConstruct.metricOutputStream;
+    }
+    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") {
+      // INSERT REDSHIFT CONSTRUCT CODE HERE
     }
 
-    // Creates firehose and logs related to ingestion
-    const streamingIngestionConstruct = new StreamingIngestionConstruct(
-      this,
-      "StreamingIngestionConstruct",
-      {
-        applicationsTable: applicationsTable,
-        gamesEventsStream: gameEventsStream,
-        analyticsBucket: analyticsBucket,
-        rawEventsTable: dataLakeConstruct.rawEventsTable,
-        gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
-        eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
-        config: props.config,
-      }
-    );
-
+    // ---- API ENDPOINT ---- /
     // Create API for admin to manage applications
     const gamesApiConstruct = new ApiConstruct(this, "GamesApiConstruct", {
       lambdaAuthorizer: lambdaConstruct.lambdaAuthorizer,
-      gameEventsStream: gameEventsStream,
-      gameEventsFirehose: streamingIngestionConstruct.gameEventsFirehose,
+      gameEventsStream: gamesEventsStream,
+      gameEventsFirehose: streamingIngestionConstruct?.gameEventsFirehose,
       applicationAdminServiceFunction:
         lambdaConstruct.applicationAdminServiceFunction,
       config: props.config,
@@ -436,11 +430,11 @@ export class InfrastructureStack extends cdk.Stack {
     // Create metrics for solution
     new MetricsConstruct(this, "Metrics Construct", {
       config: props.config,
-      managedFlinkConstruct,
-      notificationsTopic,
-      gamesApiConstruct,
-      streamingIngestionConstruct,
-      gameEventsStream,
+      managedFlinkConstruct: managedFlinkConstruct,
+      notificationsTopic: notificationsTopic,
+      gamesApiConstruct: gamesApiConstruct,
+      streamingIngestionConstruct: streamingIngestionConstruct,
+      gameEventsStream: gamesEventsStream,
       tables: [applicationsTable, authorizationsTable],
       functions: [
         lambdaConstruct.eventsProcessingFunction,
@@ -450,14 +444,12 @@ export class InfrastructureStack extends cdk.Stack {
     });
 
     const dashboardConstruct = new CloudWatchDashboardConstruct(this, "DashboardConstruct", {
-      gameEventsStream: gameEventsStream,
-      metricOutputStream: metricOutputStream,
-      gameEventsFirehose: streamingIngestionConstruct.gameEventsFirehose,
+      gameEventsStream: gamesEventsStream,
+      managedFlinkConstruct: managedFlinkConstruct,
+      gameEventsFirehose: streamingIngestionConstruct?.gameEventsFirehose,
       gameAnalyticsApi: gamesApiConstruct.gameAnalyticsApi,
       eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
-      analyticsProcessingFunction: managedFlinkConstruct?.metricProcessingFunction,
-      kinesisAnalyticsApp: managedFlinkConstruct?.managedFlinkApp,
-      streamingAnalyticsEnabled: props.config.STREAMING_MODE === "REAL_TIME_KDS"
+      config: props.config
     });
 
     // Output important resource information to AWS Console
@@ -466,10 +458,12 @@ export class InfrastructureStack extends cdk.Stack {
       value: analyticsBucket.bucketName,
     });
 
-    new cdk.CfnOutput(this, "GameEventsStreamOutput", {
-      description: "Kinesis Stream for ingestion of raw events",
-      value: gameEventsStream.streamName,
-    });
+    if (props.config.INGEST_MODE === "REAL_TIME_KDS" && gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
+      new cdk.CfnOutput(this, "EventsStreamOutput", {
+        description: "Stream for ingestion of raw events",
+        value: gamesEventsStream.streamName,
+      });
+    }
 
     new cdk.CfnOutput(this, "ApplicationsTableOutput", {
       description:

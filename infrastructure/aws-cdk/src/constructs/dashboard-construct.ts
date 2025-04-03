@@ -3,19 +3,18 @@ import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cdk from "aws-cdk-lib";
 import * as kinesis from "aws-cdk-lib/aws-kinesis";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as kinesisanalytics from "aws-cdk-lib/aws-kinesisanalytics";
 import * as kinesisFirehose from "aws-cdk-lib/aws-kinesisfirehose";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import { ManagedFlinkConstruct } from "./flink-construct";
+import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 
 export interface CloudWatchDashboardConstructProps extends cdk.StackProps {
-    gameEventsStream: kinesis.Stream;
-    metricOutputStream: kinesis.Stream | undefined;
-    gameEventsFirehose: kinesisFirehose.CfnDeliveryStream;
+    gameEventsStream: kinesis.Stream | undefined;
+    managedFlinkConstruct: ManagedFlinkConstruct | undefined;
+    gameEventsFirehose: kinesisFirehose.CfnDeliveryStream | undefined;
     gameAnalyticsApi: apigateway.IRestApi;
     eventsProcessingFunction: lambda.Function;
-    analyticsProcessingFunction: lambda.Function | undefined;
-    flinkApp: kinesisanalytics.CfnApplicationV2 | undefined;
-    streamingAnalyticsEnabled: boolean;
+    config: GameAnalyticsPipelineConfig;
 }
 const defaultProps: Partial<CloudWatchDashboardConstructProps> = {};
 
@@ -39,20 +38,32 @@ export class CloudWatchDashboardConstruct extends Construct {
             width: 24,
             height: 2,
         });
+
+        var dataFreshnessMetric = new cloudwatch.Metric({
+            metricName: '',
+            namespace: '',
+        }).with({
+            label: 'Events Data Freshness Records (Placeholder for Custom Ingest)',
+            color: '#2ca02c',
+        });
+        if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.gameEventsFirehose != undefined) {
+            dataFreshnessMetric = new cloudwatch.Metric({
+                metricName: 'DeliveryToS3.DataFreshness',
+                namespace: 'AWS/Firehose',
+                dimensionsMap: {
+                    DeliveryStreamName: props.gameEventsFirehose.ref,
+                },
+            }).with({
+                label: 'Data Freshness',
+                period: cdk.Duration.seconds(300),
+                statistic: 'Maximum',
+            })
+        }
+
         const eventProcessingHealthWidget = new cloudwatch.SingleValueWidget({
             title: 'Events Processing Health',
             metrics: [
-                new cloudwatch.Metric({
-                    metricName: 'DeliveryToS3.DataFreshness',
-                    namespace: 'AWS/Firehose',
-                    dimensionsMap: {
-                        DeliveryStreamName: props.gameEventsFirehose.ref,
-                    },
-                }).with({
-                    label: 'Data Freshness',
-                    period: cdk.Duration.seconds(300),
-                    statistic: 'Maximum',
-                }),
+                dataFreshnessMetric,
                 new cloudwatch.Metric({
                     metricName: 'Duration',
                     namespace: 'AWS/Lambda',
@@ -91,50 +102,27 @@ export class CloudWatchDashboardConstruct extends Construct {
             height: 3,
             region: cdk.Stack.of(this).region,
         });
-        // TODO: Add MSK widgets later
-        const eventIngestionWidget = new cloudwatch.GraphWidget({
-            title: 'Events Ingestion and Delivery',
-            left: [
-                new cloudwatch.Metric({
-                    metricName: 'IncomingRecords',
-                    namespace: 'AWS/Kinesis',
-                    dimensionsMap: {
-                        StreamName: props.gameEventsStream.streamName,
-                    },
-                }).with({
-                    label: 'Events Stream Incoming Records (Kinesis)',
-                    color: '#2ca02c',
-                }),
-                new cloudwatch.Metric({
-                    metricName: 'DeliveryToS3.Records',
-                    namespace: 'AWS/Firehose',
-                    dimensionsMap: {
-                        DeliveryStreamName: props.gameEventsFirehose.ref,
-                    },
-                }).with({
-                    label: 'Firehose Records Delivered to S3',
-                    color: '#17becf',
-                }),
-                new cloudwatch.Metric({
-                    metricName: 'Count',
-                    namespace: 'AWS/ApiGateway',
-                    dimensionsMap: {
-                        ApiName: props.gameAnalyticsApi.restApiName,
-                        Resource: '/applications/{applicationId}/events',
-                        Stage: props.gameAnalyticsApi.deploymentStage.stageName,
-                        Method: 'POST',
-                    },
-                }).with({
-                    label: 'Events REST API Request Count',
-                    color: '#1f77b4',
-                }),
-            ],
-            width: 8,
-            height: 6,
-            region: cdk.Stack.of(this).region,
-            period: cdk.Duration.seconds(60),
-            statistic: 'Sum',
+
+        var eventIngestionMetric = new cloudwatch.Metric({
+            metricName: '',
+            namespace: '',
+        }).with({
+            label: 'Events Stream Incoming Records (Placeholder for Custom Ingest)',
+            color: '#2ca02c',
         });
+        if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gameEventsStream != undefined) {
+            eventIngestionMetric = new cloudwatch.Metric({
+                metricName: 'IncomingRecords',
+                namespace: 'AWS/Kinesis',
+                dimensionsMap: {
+                    StreamName: props.gameEventsStream.streamName,
+                },
+            }).with({
+                label: 'Events Stream Incoming Records (Kinesis)',
+                color: '#2ca02c',
+            })
+        }
+
         const ingestionLambdaWidget = new cloudwatch.GraphWidget({
             title: 'Event Transformation Lambda Error count and success rate (%)',
             left: [
@@ -199,63 +187,6 @@ export class CloudWatchDashboardConstruct extends Construct {
             },
         })
 
-        const streamLatencyWidget = new cloudwatch.GraphWidget({
-            title: 'Events Stream Latency',
-            left: [
-                new cloudwatch.Metric({
-                    metricName: 'PutRecord.Latency',
-                    namespace: 'AWS/Kinesis',
-                    dimensionsMap: {
-                        StreamName: props.gameEventsStream.streamName,
-                    },
-                }).with({
-                    label: 'PutRecord Write Latency',
-                }),
-                new cloudwatch.Metric({
-                    metricName: 'PutRecords.Latency',
-                    namespace: 'AWS/Kinesis',
-                    dimensionsMap: {
-                        StreamName: props.gameEventsStream.streamName,
-                    },
-                }).with({
-                    label: 'PutRecords Write Latency',
-                }),
-                new cloudwatch.Metric({
-                    metricName: 'GetRecords.Latency',
-                    namespace: 'AWS/Kinesis',
-                    dimensionsMap: {
-                        StreamName: props.gameEventsStream.streamName,
-                    },
-                }).with({
-                    label: 'Read Latency',
-                })
-            ],
-
-            right: [
-                new cloudwatch.Metric({
-                    metricName: 'GetRecords.IteratorAgeMilliseconds',
-                    namespace: 'AWS/Kinesis',
-                    dimensionsMap: {
-                        StreamName: props.gameEventsStream.streamName,
-                    },
-                }).with({
-                    label: 'Consumer Iterator Age',
-                    statistic: 'Maximum',
-                    period: cdk.Duration.seconds(60)
-                })
-            ],
-
-            leftYAxis: {
-                showUnits: false,
-                label: 'Milliseconds',
-            },
-            width: 8,
-            height: 6,
-            region: cdk.Stack.of(this).region,
-            period: cdk.Duration.seconds(60),
-            statistic: 'Average',
-        });
-
         // Real-time widgets
         const realTimeTitleWidget = new cloudwatch.TextWidget({
             markdown: '\n## Real-time Streaming Analytics\nThe below metrics can be used to monitor the real-time streaming SQL analytics of events. Use the Kinesis Data Analytics MillisBehindLatest metric to help you track the lag on the Kinesis SQL Application from the latest events. The Analytics Processing function that processes KDA application outputs can be tracked to measure function concurrency, success percentage, processing duration and throttles.\n',
@@ -266,7 +197,116 @@ export class CloudWatchDashboardConstruct extends Construct {
         // used to hold widget structure for dashboard
         let widgets;
 
-        if (props.streamingAnalyticsEnabled && props.analyticsProcessingFunction != undefined && props.flinkApp != undefined && props.metricOutputStream != undefined) {
+        if ((props.config.INGEST_MODE === "REAL_TIME_KDS") && props.managedFlinkConstruct != undefined && props.gameEventsStream != undefined) {
+            var deliveryMetric = new cloudwatch.Metric({
+                metricName: '',
+                namespace: '',
+            });
+            if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.gameEventsFirehose != undefined) {
+                deliveryMetric = new cloudwatch.Metric({
+                    metricName: 'DeliveryToS3.Records',
+                    namespace: 'AWS/Firehose',
+                    dimensionsMap: {
+                        DeliveryStreamName: props.gameEventsFirehose.ref,
+                    },
+                }).with({
+                    label: 'Firehose Records Delivered to S3',
+                    color: '#17becf',
+                })
+            }
+            // Need to insert REDSHIFT version of this for delivery ingest into Redshift from Kinesis
+
+            const eventIngestionWidget = new cloudwatch.GraphWidget({
+                title: 'Events Ingestion and Delivery',
+                left: [
+                    new cloudwatch.Metric({
+                        metricName: 'IncomingRecords',
+                        namespace: 'AWS/Kinesis',
+                        dimensionsMap: {
+                            StreamName: props.gameEventsStream.streamName,
+                        },
+                    }).with({
+                        label: 'Events Stream Incoming Records (Kinesis)',
+                        color: '#2ca02c',
+                    }),
+                    deliveryMetric,
+                    new cloudwatch.Metric({
+                        metricName: 'Count',
+                        namespace: 'AWS/ApiGateway',
+                        dimensionsMap: {
+                            ApiName: props.gameAnalyticsApi.restApiName,
+                            Resource: '/applications/{applicationId}/events',
+                            Stage: props.gameAnalyticsApi.deploymentStage.stageName,
+                            Method: 'POST',
+                        },
+                    }).with({
+                        label: 'Events REST API Request Count',
+                        color: '#1f77b4',
+                    }),
+                ],
+                width: 8,
+                height: 6,
+                region: cdk.Stack.of(this).region,
+                period: cdk.Duration.seconds(60),
+                statistic: 'Sum',
+            });
+
+            const streamLatencyWidget = new cloudwatch.GraphWidget({
+                title: 'Events Stream Latency',
+                left: [
+                    new cloudwatch.Metric({
+                        metricName: 'PutRecord.Latency',
+                        namespace: 'AWS/Kinesis',
+                        dimensionsMap: {
+                            StreamName: props.gameEventsStream.streamName,
+                        },
+                    }).with({
+                        label: 'PutRecord Write Latency',
+                    }),
+                    new cloudwatch.Metric({
+                        metricName: 'PutRecords.Latency',
+                        namespace: 'AWS/Kinesis',
+                        dimensionsMap: {
+                            StreamName: props.gameEventsStream.streamName,
+                        },
+                    }).with({
+                        label: 'PutRecords Write Latency',
+                    }),
+                    new cloudwatch.Metric({
+                        metricName: 'GetRecords.Latency',
+                        namespace: 'AWS/Kinesis',
+                        dimensionsMap: {
+                            StreamName: props.gameEventsStream.streamName,
+                        },
+                    }).with({
+                        label: 'Read Latency',
+                    })
+                ],
+
+                right: [
+                    new cloudwatch.Metric({
+                        metricName: 'GetRecords.IteratorAgeMilliseconds',
+                        namespace: 'AWS/Kinesis',
+                        dimensionsMap: {
+                            StreamName: props.gameEventsStream.streamName,
+                        },
+                    }).with({
+                        label: 'Consumer Iterator Age',
+                        statistic: 'Maximum',
+                        period: cdk.Duration.seconds(60)
+                    })
+                ],
+
+                leftYAxis: {
+                    showUnits: false,
+                    label: 'Milliseconds',
+                },
+                width: 8,
+                height: 6,
+                region: cdk.Stack.of(this).region,
+                period: cdk.Duration.seconds(60),
+                statistic: 'Average',
+            });
 
             const realTimeHealthWidget = new cloudwatch.SingleValueWidget({
                 title: 'Real-time Analytics Health',
@@ -275,7 +315,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'ConcurrentExecutions',
                         namespace: 'AWS/Lambda',
                         dimensionsMap: {
-                            FunctionName: props.analyticsProcessingFunction.functionName,
+                            FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                         },
                     }).with({
                         label: 'Metrics Processing Lambda Concurrent Executions',
@@ -285,7 +325,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'Duration',
                         namespace: 'AWS/Lambda',
                         dimensionsMap: {
-                            FunctionName: props.analyticsProcessingFunction.functionName,
+                            FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                         },
                     }).with({
                         label: 'Lambda Duration',
@@ -295,7 +335,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'Throttles',
                         namespace: 'AWS/Lambda',
                         dimensionsMap: {
-                            FunctionName: props.analyticsProcessingFunction.functionName,
+                            FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                         },
                     }).with({
                         label: 'Lambda Throttles',
@@ -306,7 +346,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         namespace: 'AWS/KinesisAnalytics',
                         period: cdk.Duration.hours(2),
                         dimensionsMap: {
-                            Application: props.flinkApp.ref,
+                            Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                         },
                     }).with({
                         label: "Managed Flink KPUs",
@@ -330,7 +370,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                                     metricName: 'numRecordsInPerSecond',
                                     namespace: 'AWS/KinesisAnalytics',
                                     dimensionsMap: {
-                                        Application: props.flinkApp.ref,
+                                        Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                                     },
                                 }).with({
                                     region: cdk.Stack.of(this).region,
@@ -348,7 +388,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                                     metricName: 'numLateRecordsDropped',
                                     namespace: 'AWS/KinesisAnalytics',
                                     dimensionsMap: {
-                                        Application: props.flinkApp.ref,
+                                        Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                                     },
                                 }).with({
                                     region: cdk.Stack.of(this).region,
@@ -374,7 +414,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'containerCPUUtilization',
                         namespace: 'AWS/KinesisAnalytics',
                         dimensionsMap: {
-                            Application: props.flinkApp.ref,
+                            Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                         },
                     })
 
@@ -410,14 +450,14 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'containerMemoryUtilization',
                         namespace: 'AWS/KinesisAnalytics',
                         dimensionsMap: {
-                            Application: props.flinkApp.ref,
+                            Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                         },
                     }),
                     new cloudwatch.Metric({
                         metricName: 'containerDiskUtilization',
                         namespace: 'AWS/KinesisAnalytics',
                         dimensionsMap: {
-                            Application: props.flinkApp.ref,
+                            Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                         },
                     })
                 ],
@@ -426,7 +466,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'threadsCount',
                         namespace: 'AWS/KinesisAnalytics',
                         dimensionsMap: {
-                            Application: props.flinkApp.ref,
+                            Application: props.managedFlinkConstruct.managedFlinkApp.ref,
                         },
                     })
                 ],
@@ -448,7 +488,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'Errors',
                         namespace: 'AWS/Lambda',
                         dimensionsMap: {
-                            FunctionName: props.analyticsProcessingFunction.functionName,
+                            FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                         },
                     }).with({
                         label: 'Errors',
@@ -458,7 +498,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'Invocations',
                         namespace: 'AWS/Lambda',
                         dimensionsMap: {
-                            FunctionName: props.analyticsProcessingFunction.functionName,
+                            FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                         },
                     }).with({
                         label: 'Invocations',
@@ -473,7 +513,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                                 metricName: 'Errors',
                                 namespace: 'AWS/Lambda',
                                 dimensionsMap: {
-                                    FunctionName: props.analyticsProcessingFunction.functionName,
+                                    FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                                 },
                                 statistic: 'Sum',
                             }),
@@ -481,7 +521,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                                 metricName: 'Invocations',
                                 namespace: 'AWS/Lambda',
                                 dimensionsMap: {
-                                    FunctionName: props.analyticsProcessingFunction.functionName,
+                                    FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
                                 },
                                 statistic: 'Sum',
                             }),
@@ -511,7 +551,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'PutRecord.Latency',
                         namespace: 'AWS/Kinesis',
                         dimensionsMap: {
-                            StreamName: props.metricOutputStream.streamName,
+                            StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
                         },
                     }).with({
                         label: 'PutRecord Write Latency',
@@ -520,7 +560,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'PutRecords.Latency',
                         namespace: 'AWS/Kinesis',
                         dimensionsMap: {
-                            StreamName: props.metricOutputStream.streamName,
+                            StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
                         },
                     }).with({
                         label: 'PutRecords Write Latency',
@@ -529,7 +569,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'GetRecords.Latency',
                         namespace: 'AWS/Kinesis',
                         dimensionsMap: {
-                            StreamName: props.metricOutputStream.streamName,
+                            StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
                         },
                     }).with({
                         label: 'Read Latency',
@@ -541,7 +581,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         metricName: 'GetRecords.IteratorAgeMilliseconds',
                         namespace: 'AWS/Kinesis',
                         dimensionsMap: {
-                            StreamName: props.metricOutputStream.streamName,
+                            StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
                         },
                     }).with({
                         label: 'Consumer Iterator Age',
@@ -576,7 +616,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                 [titleWidget],
                 [eventProcessingHealthWidget],
                 [streamIngestionTitleWidget],
-                [eventIngestionWidget, ingestionLambdaWidget, streamLatencyWidget]
+                [ingestionLambdaWidget]
             ]
         }
 

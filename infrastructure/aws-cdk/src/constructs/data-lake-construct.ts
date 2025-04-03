@@ -237,6 +237,28 @@ export class DataLakeConstruct extends Construct {
       }
     );
 
+    // ---- Athena ---- //
+    // Define the resources for the `GameAnalyticsWorkgroup` Athena workgroup
+    const gameAnalyticsWorkgroup = new athena.CfnWorkGroup(
+      this,
+      "GameAnalyticsWorkgroup",
+      {
+        name: `GameAnalyticsWorkgroup-${cdk.Aws.STACK_NAME}`,
+        description: "Default workgroup for the solution workload",
+        recursiveDeleteOption: true, // delete the associated queries when stack is deleted
+        state: "ENABLED",
+        workGroupConfiguration: {
+          publishCloudWatchMetricsEnabled: true,
+          resultConfiguration: {
+            encryptionConfiguration: {
+              encryptionOption: "SSE_S3",
+            },
+            outputLocation: `s3://${props.analyticsBucket.bucketName}/athena_query_results/`,
+          },
+        },
+      }
+    );
+
     this.createDefaultAthenaQueries(
       gameEventsDatabase.ref,
       props.config.RAW_EVENTS_TABLE,

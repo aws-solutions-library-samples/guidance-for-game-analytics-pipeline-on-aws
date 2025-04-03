@@ -13,12 +13,12 @@
     "lint": "eslint src/"
   },
   "devDependencies": {
-    "@aws-cdk/aws-lambda-python-alpha": "2.114.1-alpha.0",
     "@aws-cdk/aws-apigatewayv2-alpha": "2.114.1-alpha.0",
     "@aws-cdk/aws-apigatewayv2-authorizers-alpha": "2.114.1-alpha.0",
     "@aws-cdk/aws-apigatewayv2-integrations-alpha": "2.114.1-alpha.0",
+    "@aws-cdk/aws-lambda-python-alpha": "2.114.1-alpha.0",
     "@types/jest": "^29.2.5",
-    "@types/node": "18.11.18",
+    "@types/node": "^18.19.86",
     "@types/uuid": "^9.0.1",
     "aws-cdk": "2.169.0",
     "aws-cdk-lib": "2.169.0",
