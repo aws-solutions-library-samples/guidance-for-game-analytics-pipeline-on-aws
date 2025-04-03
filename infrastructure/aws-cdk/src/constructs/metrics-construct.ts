@@ -31,8 +31,8 @@ export interface MetricsConstructProps extends cdk.StackProps {
     managedFlinkConstruct: ManagedFlinkConstruct | undefined;
     notificationsTopic: cdk.aws_sns.Topic;
     gamesApiConstruct: ApiConstruct;
-    streamingIngestionConstruct: StreamingIngestionConstruct;
-    gameEventsStream: cdk.aws_kinesis.Stream;
+    streamingIngestionConstruct: StreamingIngestionConstruct | undefined;
+    gameEventsStream: cdk.aws_kinesis.Stream | undefined;
     tables: cdk.aws_dynamodb.Table[];
     functions: lambda.Function[];
 }
@@ -50,17 +50,63 @@ export class MetricsConstruct extends Construct {
         props = { ...defaultProps, ...props };
 
         // Metrics if streaming analytics is enabled
-        if ((props.config.STREAMING_MODE === "REAL_TIME_KDS" || props.config.STREAMING_MODE === "REAL_TIME_MSK") && props.managedFlinkConstruct) {
-            // Create the Kinesis Analytics Log Group
-            const analyticsLogGroup = new logs.LogGroup(this, "KinesisAnalyticsLogGroup", {
-                logGroupName: `/aws/lambda/${props.managedFlinkConstruct.metricProcessingFunction.functionName}`,
-                retention: props.config.CLOUDWATCH_RETENTION_DAYS,
-            });
+        if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.managedFlinkConstruct && props.gameEventsStream != undefined) {
+
+            // Kinesis game stream throughput metrics
+            const kinesisReadProvisionedThroughputExceeded = new cloudwatch.Alarm(
+                this,
+                "KinesisReadProvisionedThroughputExceeded",
+                {
+                    alarmDescription: `Kinesis stream is being throttled on reads and may need to be be scaled to support more read throughput, for stack ${cdk.Aws.STACK_NAME}`,
+                    metric: new cloudwatch.Metric({
+                        metricName: "ReadProvisionedThroughputExceeded",
+                        dimensionsMap: {
+                            StreamName: props.gameEventsStream.streamName,
+                        },
+                        namespace: "AWS/Kinesis",
+                        statistic: cloudwatch.Stats.MAXIMUM,
+                        period: cdk.Duration.minutes(1),
+                    }),
+                    evaluationPeriods: 1,
+                    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                    threshold: 0,
+                    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+                    actionsEnabled: true,
+                }
+            );
+            kinesisReadProvisionedThroughputExceeded.addAlarmAction(
+                new cloudwatchActions.SnsAction(props.notificationsTopic)
+            );
+
+            const kinesisWriteProvisionedThroughputExceeded = new cloudwatch.Alarm(
+                this,
+                "KinesisWriteProvisionedThroughputExceeded",
+                {
+                    alarmDescription: `Kinesis stream is being throttled on writes and may need to be be scaled to support more write throughput, for stack ${cdk.Aws.STACK_NAME}`,
+                    metric: new cloudwatch.Metric({
+                        namespace: "AWS/Kinesis",
+                        metricName: "WriteProvisionedThroughputExceeded",
+                        dimensionsMap: {
+                            StreamName: props.gameEventsStream.streamName,
+                        },
+                        statistic: "Maximum",
+                        period: cdk.Duration.seconds(60),
+                    }),
+                    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+                    evaluationPeriods: 1,
+                    threshold: 0,
+                    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                    actionsEnabled: true,
+                }
+            );
+            kinesisWriteProvisionedThroughputExceeded.addAlarmAction(
+                new cloudwatchActions.SnsAction(props.notificationsTopic)
+            );
 
             // Create the Kinesis Analytics Errors Metric Filter
             new logs.MetricFilter(this, "KinesisAnalyticsErrorsFilter", {
                 filterPattern: logs.FilterPattern.numberValue("$.KinesisAnalyticsErrors", ">", 0),
-                logGroup: analyticsLogGroup,
+                logGroup: props.managedFlinkConstruct.analyticsLogGroup,
                 metricName: "KinesisAnalyticsErrors",
                 metricValue: "$.KinesisAnalyticsErrors",
                 metricNamespace: `${cdk.Aws.STACK_NAME}/AWSGameAnalytics`,
@@ -152,7 +198,6 @@ export class MetricsConstruct extends Construct {
                 new cloudwatchActions.SnsAction(props.notificationsTopic)
             );
 
-
             // Kinesis game stream throughput metrics
             const kinesisMetricStreamReadProvisionedThroughputExceeded = new cloudwatch.Alarm(
                 this,
@@ -204,6 +249,61 @@ export class MetricsConstruct extends Construct {
                 new cloudwatchActions.SnsAction(props.notificationsTopic)
             );
 
+        }
+
+        if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.streamingIngestionConstruct != undefined) {
+            // Firehose data metrics
+            const kinesisFirehoseFailedConversions = new cloudwatch.Alarm(
+                this,
+                "KinesisFirehoseFailedConversions",
+                {
+                    alarmDescription: `Alarm to track when Firehose Format Conversion fails, for stack ${cdk.Aws.STACK_NAME}`,
+                    metric: new cloudwatch.Metric({
+                        metricName: "FailedConversion.Records",
+                        namespace: "AWS/Firehose",
+                        dimensionsMap: {
+                            DeliveryStreamName:
+                                props.streamingIngestionConstruct.gameEventsFirehose.ref,
+                        },
+                        statistic: cloudwatch.Stats.SUM,
+                        period: cdk.Duration.minutes(1),
+                    }),
+                    evaluationPeriods: 1,
+                    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                    threshold: 0,
+                    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+                    actionsEnabled: true,
+                }
+            );
+            kinesisFirehoseFailedConversions.addAlarmAction(
+                new cloudwatchActions.SnsAction(props.notificationsTopic)
+            );
+
+            const kinesisFirehoseS3DataFreshness = new cloudwatch.Alarm(
+                this,
+                "KinesisFirehoseS3DataFreshness",
+                {
+                    alarmDescription: `Alarm to track when age of oldest record delivered to S3 exceeds 15 minutes for two consecutive periods, for stack ${cdk.Aws.STACK_NAME}`,
+                    metric: new cloudwatch.Metric({
+                        metricName: "DeliveryToS3.DataFreshness",
+                        namespace: "AWS/Firehose",
+                        dimensionsMap: {
+                            DeliveryStreamName:
+                                props.streamingIngestionConstruct.gameEventsFirehose.ref,
+                        },
+                        statistic: "Average",
+                        period: cdk.Duration.minutes(5),
+                    }),
+                    evaluationPeriods: 2,
+                    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+                    threshold: 900,
+                    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+                    actionsEnabled: true,
+                }
+            );
+            kinesisFirehoseS3DataFreshness.addAlarmAction(
+                new cloudwatchActions.SnsAction(props.notificationsTopic)
+            );
         }
 
         // Table metrics
@@ -299,111 +399,7 @@ export class MetricsConstruct extends Construct {
         apiGateway5XXErrorsAlarm.addAlarmAction(
             new cloudwatchActions.SnsAction(props.notificationsTopic)
         );
-
-        // Firehose data metrics
-        const kinesisFirehoseFailedConversions = new cloudwatch.Alarm(
-            this,
-            "KinesisFirehoseFailedConversions",
-            {
-                alarmDescription: `Alarm to track when Firehose Format Conversion fails, for stack ${cdk.Aws.STACK_NAME}`,
-                metric: new cloudwatch.Metric({
-                    metricName: "FailedConversion.Records",
-                    namespace: "AWS/Firehose",
-                    dimensionsMap: {
-                        DeliveryStreamName:
-                            props.streamingIngestionConstruct.gameEventsFirehose.ref,
-                    },
-                    statistic: cloudwatch.Stats.SUM,
-                    period: cdk.Duration.minutes(1),
-                }),
-                evaluationPeriods: 1,
-                comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-                threshold: 0,
-                treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-                actionsEnabled: true,
-            }
-        );
-        kinesisFirehoseFailedConversions.addAlarmAction(
-            new cloudwatchActions.SnsAction(props.notificationsTopic)
-        );
-
-        const kinesisFirehoseS3DataFreshness = new cloudwatch.Alarm(
-            this,
-            "KinesisFirehoseS3DataFreshness",
-            {
-                alarmDescription: `Alarm to track when age of oldest record delivered to S3 exceeds 15 minutes for two consecutive periods, for stack ${cdk.Aws.STACK_NAME}`,
-                metric: new cloudwatch.Metric({
-                    metricName: "DeliveryToS3.DataFreshness",
-                    namespace: "AWS/Firehose",
-                    dimensionsMap: {
-                        DeliveryStreamName:
-                            props.streamingIngestionConstruct.gameEventsFirehose.ref,
-                    },
-                    statistic: "Average",
-                    period: cdk.Duration.minutes(5),
-                }),
-                evaluationPeriods: 2,
-                comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-                threshold: 900,
-                treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-                actionsEnabled: true,
-            }
-        );
-        kinesisFirehoseS3DataFreshness.addAlarmAction(
-            new cloudwatchActions.SnsAction(props.notificationsTopic)
-        );
-
-        // Kinesis game stream throughput metrics
-        const kinesisReadProvisionedThroughputExceeded = new cloudwatch.Alarm(
-            this,
-            "KinesisReadProvisionedThroughputExceeded",
-            {
-                alarmDescription: `Kinesis stream is being throttled on reads and may need to be be scaled to support more read throughput, for stack ${cdk.Aws.STACK_NAME}`,
-                metric: new cloudwatch.Metric({
-                    metricName: "ReadProvisionedThroughputExceeded",
-                    dimensionsMap: {
-                        StreamName: props.gameEventsStream.streamName,
-                    },
-                    namespace: "AWS/Kinesis",
-                    statistic: cloudwatch.Stats.MAXIMUM,
-                    period: cdk.Duration.minutes(1),
-                }),
-                evaluationPeriods: 1,
-                comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-                threshold: 0,
-                treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-                actionsEnabled: true,
-            }
-        );
-        kinesisReadProvisionedThroughputExceeded.addAlarmAction(
-            new cloudwatchActions.SnsAction(props.notificationsTopic)
-        );
-
-        const kinesisWriteProvisionedThroughputExceeded = new cloudwatch.Alarm(
-            this,
-            "KinesisWriteProvisionedThroughputExceeded",
-            {
-                alarmDescription: `Kinesis stream is being throttled on writes and may need to be be scaled to support more write throughput, for stack ${cdk.Aws.STACK_NAME}`,
-                metric: new cloudwatch.Metric({
-                    namespace: "AWS/Kinesis",
-                    metricName: "WriteProvisionedThroughputExceeded",
-                    dimensionsMap: {
-                        StreamName: props.gameEventsStream.streamName,
-                    },
-                    statistic: "Maximum",
-                    period: cdk.Duration.seconds(60),
-                }),
-                treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-                evaluationPeriods: 1,
-                threshold: 0,
-                comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-                actionsEnabled: true,
-            }
-        );
-        kinesisWriteProvisionedThroughputExceeded.addAlarmAction(
-            new cloudwatchActions.SnsAction(props.notificationsTopic)
-        );
-
+        
         // Function metrics
         const lambdaErrorsAlarm = new cloudwatch.Alarm(this, "LambdaErrorsAlarm", {
             alarmName: `Lambda Errors-${cdk.Aws.STACK_NAME}`,

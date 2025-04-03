@@ -24,9 +24,9 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import * as assets from "aws-cdk-lib/aws-s3-assets";
 
 import * as path from "path";
-import fs from "fs";
 import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
+import { Aws, Fn } from "aws-cdk-lib";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface ManagedFlinkConstructProps extends cdk.StackProps {
@@ -34,7 +34,7 @@ export interface ManagedFlinkConstructProps extends cdk.StackProps {
    * Base Codepath for business logic folder
    */
   baseCodePath: string;
-  gameEventsStream: kinesis.IStream;
+  gameEventsStream: kinesis.IStream | undefined;
   config: GameAnalyticsPipelineConfig;
 }
 
@@ -51,6 +51,7 @@ export class ManagedFlinkConstruct extends Construct {
   public readonly metricProcessingFunction: NodejsFunction;
   public readonly managedFlinkApp: kinesisanalytics.CfnApplicationV2;
   public readonly metricOutputStream: kinesis.Stream;
+  public readonly analyticsLogGroup: logs.LogGroup;
 
   constructor(
     parent: Construct,
@@ -62,7 +63,6 @@ export class ManagedFlinkConstruct extends Construct {
     /* eslint-disable @typescript-eslint/no-unused-vars */
     props = { ...defaultProps, ...props };
     const codePath = `../${props.baseCodePath}`;
-    const flinkAppName = `${cdk.Aws.STACK_NAME}-AnalyticsApplication`;
 
 
     /* The following variables define the necessary resources for the `MetricProcessingFunction` serverless
@@ -114,9 +114,16 @@ export class ManagedFlinkConstruct extends Construct {
       })
     );
 
+    // Create the Kinesis Analytics Log Group
+    const analyticsLogGroup = new logs.LogGroup(this, "KinesisAnalyticsLogGroup", {
+      logGroupName: `/aws/lambda/${metricProcessingFunction.functionName}`,
+      retention: props.config.CLOUDWATCH_RETENTION_DAYS,
+    });
+
     /* The following defines the output stream for windowed metrics */
     const metricOutputStream = new kinesis.Stream(this, "metricOutputStream", {
-      shardCount: props.config.METRIC_STREAM_SHARD_COUNT,
+      shardCount: props.config.STREAM_SHARD_COUNT,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     /* Create an output for the metric output stream to the processing lambda */
@@ -138,22 +145,43 @@ export class ManagedFlinkConstruct extends Construct {
       )
     })
 
-    // Create flink log groups and streams
-    const flinkLogGroup = new logs.LogGroup(this, "flinkLogGroup", {
-      logGroupName: `/aws/kinesis-analytics/${flinkAppName}`,
-      retention: props.config.CLOUDWATCH_RETENTION_DAYS
-    });
-
-    const flinkLogStream = new logs.LogStream(
-      this,
-      "flinkLogStream",
-      {
-        logStreamName: "kinesis-analytics-log-stream",
-        logGroup: flinkLogGroup,
-      }
-    );
-    /* The ARN of the log stream to write CloudWatch logs to */
-    const flinkLogStreamArn = `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:${flinkLogGroup.logGroupName}:log-stream:${flinkLogStream.logStreamName}`;
+    var streamAccess = new iam.PolicyDocument({});
+    if (props.gameEventsStream instanceof kinesis.Stream) {
+      streamAccess = new iam.PolicyDocument({
+        statements: [
+          new iam.PolicyStatement({
+            sid: "ReadSourceKinesisStream",
+            effect: iam.Effect.ALLOW,
+            actions: [
+              "kinesis:DescribeStream",
+              "kinesis:DescribeStreamSummary",
+              "kinesis:GetShardIterator",
+              "kinesis:DescribeStreamConsumer",
+              "kinesis:RegisterStreamConsumer",
+              "kinesis:GetRecords",
+              "kinesis:ListShards",
+              "kinesis:DescribeLimits",
+              "kinesis:ListStreamConsumers",
+              "kinesis:SubscribeToShard"
+            ],
+            resources: [props.gameEventsStream.streamArn],
+          }),
+          new iam.PolicyStatement({
+            sid: "WriteSinkKinesisStream",
+            effect: iam.Effect.ALLOW,
+            actions: [
+              "kinesis:DescribeStream",
+              "kinesis:DescribeStreamSummary",
+              "kinesis:GetShardIterator",
+              "kinesis:GetRecords",
+              "kinesis:ListShards",
+              "kinesis:PutRecord",
+              "kinesis:PutRecords"
+            ],
+            resources: [metricOutputStream.streamArn],
+        })]
+      })
+    }
 
     /* The following variables define the Managed Flink Application's IAM Role. */
     const flinkAppRole = new iam.Role(this, "flinkAppRole", {
@@ -171,82 +199,53 @@ export class ManagedFlinkConstruct extends Construct {
               resources: [
                 `${flinkCodeAsset.bucket.bucketArn}/${flinkCodeAsset.s3ObjectKey}`
               ]
-            }),
-            new iam.PolicyStatement({
-              sid: "ListCloudwatchLogGroups",
-              effect: iam.Effect.ALLOW,
-              actions: [
-                "logs:DescribeLogGroups",
-              ],
-              resources: [
-                `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:*`
-              ]
-            }),
-            new iam.PolicyStatement({
-              sid: "ListCloudwatchLogStreams",
-              effect: iam.Effect.ALLOW,
-              actions: [
-                "logs:DescribeLogStreams",
-              ],
-              resources: [
-                `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:${flinkLogGroup.logGroupName}:log-stream:*`
-              ]
-            }),
-            new iam.PolicyStatement({
-              sid: "PutCloudwatchLogs",
-              effect: iam.Effect.ALLOW,
-              actions: [
-                "logs:PutLogEvents"
-              ],
-              resources: [
-                flinkLogStreamArn
-              ]
             })
           ],
         }),
         /* Allow flink to access source and sink streams */
-        kinesisStreamAccess: new iam.PolicyDocument({
-          statements: [
-            new iam.PolicyStatement({
-              sid: "ReadSourceKinesisStream",
-              effect: iam.Effect.ALLOW,
-              actions: [
-                "kinesis:DescribeStream",
-                "kinesis:DescribeStreamSummary",
-                "kinesis:GetShardIterator",
-                "kinesis:DescribeStreamConsumer",
-                "kinesis:RegisterStreamConsumer",
-                "kinesis:GetRecords",
-                "kinesis:ListShards",
-                "kinesis:DescribeLimits",
-                "kinesis:ListStreamConsumers",
-                "kinesis:SubscribeToShard"
-              ],
-              resources: [props.gameEventsStream.streamArn],
-            }),
-            new iam.PolicyStatement({
-              sid: "WriteSinkKinesisStream",
-              effect: iam.Effect.ALLOW,
-              actions: [
-                "kinesis:DescribeStream",
-                "kinesis:DescribeStreamSummary",
-                "kinesis:GetShardIterator",
-                "kinesis:GetRecords",
-                "kinesis:ListShards",
-                "kinesis:PutRecord",
-                "kinesis:PutRecords"
-              ],
-              resources: [metricOutputStream.streamArn],
-            })]
-        })
+        streamAccess: streamAccess
       },
     });
 
+    let flinkAppConfig = {};
+    if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gameEventsStream != undefined) {
+      /* Allow flink to access source and sink streams */
+      flinkAppRole.addToPolicy(
+        new iam.PolicyStatement({
+          sid: "ReadSourceKinesisStream",
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "kinesis:DescribeStream",
+            "kinesis:DescribeStreamSummary",
+            "kinesis:GetShardIterator",
+            "kinesis:DescribeStreamConsumer",
+            "kinesis:RegisterStreamConsumer",
+            "kinesis:GetRecords",
+            "kinesis:ListShards",
+            "kinesis:DescribeLimits",
+            "kinesis:ListStreamConsumers",
+            "kinesis:SubscribeToShard"
+          ],
+          resources: [props.gameEventsStream.streamArn],
+        }),
+      );
+    
+      // set app config to point to kinesis
+      flinkAppConfig = {
+        "kinesis.stream.arn": props.gameEventsStream.streamArn,
+        "kinesis.stream.name": props.gameEventsStream.streamName,
+        "aws.region": cdk.Aws.REGION,
+        "flink.stream.initpos": "LATEST",
+        "flink.stream.max_record_count": "10000",
+        "kinesis.stream.interval": "500"
+      };
+    }
+
+    var propertyMap : kinesisanalytics.CfnApplicationV2.EnvironmentPropertiesProperty = {}
 
     /* The following defines the flink application used to process incoming game events and output them to the stream */
     const managedFlinkApp = new kinesisanalytics.CfnApplicationV2(this, "ManagedFlinkApp",
       {
-        applicationName: flinkAppName,
         applicationDescription: `Real-time game analytics application, for ${cdk.Aws.STACK_NAME}`,
         runtimeEnvironment: "FLINK-1_20",
         serviceExecutionRole: flinkAppRole.roleArn,
@@ -283,14 +282,7 @@ export class ManagedFlinkConstruct extends Construct {
               }
             }, {
               propertyGroupId: "sourceConfig",
-              propertyMap: {
-                "kinesis.stream.arn": props.gameEventsStream.streamArn,
-                "kinesis.stream.name": props.gameEventsStream.streamName,
-                "aws.region": cdk.Aws.REGION,
-                "flink.stream.initpos": "LATEST",
-                "flink.stream.max_record_count": "10000",
-                "kinesis.stream.interval": "500"
-              }
+              propertyMap: flinkAppConfig,
             }, {
               propertyGroupId: "sinkConfig",
               propertyMap: {
@@ -303,21 +295,72 @@ export class ManagedFlinkConstruct extends Construct {
       }
     )
 
+    // Create flink log groups and streams
+    const flinkLogGroup = new logs.LogGroup(this, "flinkLogGroup", {
+      logGroupName: `/aws/kinesis-analytics/${managedFlinkApp.ref}`,
+      retention: props.config.CLOUDWATCH_RETENTION_DAYS
+    });
+
+    const flinkLogStream = new logs.LogStream(
+      this,
+      "flinkLogStream",
+      {
+        logStreamName: "kinesis-analytics-log-stream",
+        logGroup: flinkLogGroup,
+      }
+    );
+
+
+    /* The ARN of the log stream to write CloudWatch logs to */
+    const flinkLogStreamArn = `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:${flinkLogGroup.logGroupName}:log-stream:${flinkLogStream.logStreamName}`;
+
+    // update IAM role to allow placing logs into log stream
+    flinkAppRole.addToPolicy(new iam.PolicyStatement({
+      sid: "ListCloudwatchLogGroups",
+      effect: iam.Effect.ALLOW,
+      actions: [
+        "logs:DescribeLogGroups",
+      ],
+      resources: [
+        `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:*`
+      ]
+    }),)
+    flinkAppRole.addToPolicy(new iam.PolicyStatement({
+      sid: "ListCloudwatchLogStreams",
+      effect: iam.Effect.ALLOW,
+      actions: [
+        "logs:DescribeLogStreams",
+      ],
+      resources: [
+        `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:${flinkLogGroup.logGroupName}:log-stream:*`
+      ]
+    }))
+    flinkAppRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "PutCloudwatchLogs",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "logs:PutLogEvents"
+        ],
+        resources: [
+          flinkLogStreamArn
+        ]
+      }))
     /* Enable logging for the managed flink application */
     const flinkLoggingConfiguration = new kinesisanalytics.CfnApplicationCloudWatchLoggingOptionV2(this, "FlinkAppLoggingOption",
       {
-        applicationName: flinkAppName,
+        applicationName: managedFlinkApp.ref,
         cloudWatchLoggingOption: {
           logStreamArn: flinkLogStreamArn
         }
       }
     )
-    flinkLoggingConfiguration.addDependency(managedFlinkApp)
-
+    flinkLoggingConfiguration.addDependency(managedFlinkApp);
 
     this.metricProcessingFunction = metricProcessingFunction;
     this.managedFlinkApp = managedFlinkApp;
     this.metricOutputStream = metricOutputStream;
+    this.analyticsLogGroup = analyticsLogGroup;
 
     new cdk.CfnOutput(this, "FlinkAppOutput", {
       description:
