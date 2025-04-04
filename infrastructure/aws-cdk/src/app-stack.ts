@@ -465,6 +465,7 @@ export class InfrastructureStack extends cdk.Stack {
       const redshift = new RedshiftConstruct(this, "Redshift", {
         gameEventsStream: gameEventsStream,
         config: props.config,
+        gamesApiConstruct: gamesApiConstruct
       });
     }
 
