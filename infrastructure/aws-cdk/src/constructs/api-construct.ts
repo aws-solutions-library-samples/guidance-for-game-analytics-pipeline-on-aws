@@ -18,13 +18,16 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
+import { RedshiftConstruct } from "./redshift-construct";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface ApiConstructProps extends cdk.StackProps {
   gameEventsStream: cdk.aws_kinesis.Stream | undefined;
   gameEventsFirehose: cdk.aws_kinesisfirehose.CfnDeliveryStream | undefined;
   applicationAdminServiceFunction: cdk.aws_lambda.Function;
+  redshiftDirectIngestFunction?: cdk.aws_lambda.Function;
   lambdaAuthorizer: cdk.aws_lambda.Function;
+  redshiftConstruct?: RedshiftConstruct
   config: GameAnalyticsPipelineConfig;
 }
 
@@ -68,13 +71,19 @@ export class ApiConstruct extends Construct {
       );
     }
 
+    let apiFunctions = [
+      props.applicationAdminServiceFunction.functionArn,
+      props.lambdaAuthorizer.functionArn
+    ]
+
+    if (props.redshiftDirectIngestFunction) {
+      apiFunctions.push(props.redshiftDirectIngestFunction.functionArn)
+    }
+
     apiGatewayRole.addToPolicy(
       new iam.PolicyStatement({
         actions: ["lambda:InvokeFunction"],
-        resources: [
-          props.applicationAdminServiceFunction.functionArn,
-          props.lambdaAuthorizer.functionArn,
-        ],
+        resources: apiFunctions,
         effect: iam.Effect.ALLOW,
         sid: "ApigatewayInvokeLambda",
       })
@@ -143,11 +152,22 @@ export class ApiConstruct extends Construct {
         },
       };
     }
-    else if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") {
-      // INSERT REDSHIFT CODE HERE
+    else if (props.config.DATA_PLATFORM_MODE === "REDSHIFT" && props.config.INGEST_MODE == "DIRECT_BATCH" && props.redshiftDirectIngestFunction) {
+      eventDefinition = {
+        uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:lambda:path/2015-03-31/functions/${props.redshiftDirectIngestFunction.functionArn}/invocations`,
+        responses: {
+          default: {
+            statusCode: "200",
+          },
+        },
+        passthroughBehavior: "when_no_match",
+        httpMethod: "POST",
+        contentHandling: "CONVERT_TO_TEXT",
+        type: "aws_proxy",
+        credentials: apiGatewayRole.roleArn,
+      }
     }
-    
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gameEventsStream instanceof cdk.aws_kinesis.Stream) {
+    else if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gameEventsStream instanceof cdk.aws_kinesis.Stream) {
       eventDefinition = {
         uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:kinesis:action/PutRecords`,
         credentials: apiGatewayRole.roleArn,

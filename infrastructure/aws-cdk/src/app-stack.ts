@@ -35,6 +35,7 @@ import { MetricsConstruct } from "./constructs/metrics-construct";
 import { LambdaConstruct } from "./constructs/lambda-construct";
 import { CloudWatchDashboardConstruct } from "./constructs/dashboard-construct";
 import { VpcConstruct } from "./constructs/vpc-construct";
+import { RedshiftConstruct } from "./constructs/redshift-construct";
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
@@ -386,8 +387,14 @@ export class InfrastructureStack extends cdk.Stack {
         }
       );
     }
-    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") {
-      // INSERT REDSHIFT CONSTRUCT CODE HERE
+
+    var redshiftConstruct;
+    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT" && vpcConstruct) {
+      redshiftConstruct = new RedshiftConstruct(this, "RedshiftConstruct", {
+        gamesEventsStream: gamesEventsStream,
+        config: props.config,        
+        vpcConstruct: vpcConstruct
+      })
     }
 
     // ---- API ENDPOINT ---- /
@@ -398,6 +405,7 @@ export class InfrastructureStack extends cdk.Stack {
       gameEventsFirehose: streamingIngestionConstruct?.gameEventsFirehose,
       applicationAdminServiceFunction:
         lambdaConstruct.applicationAdminServiceFunction,
+        redshiftConstruct: redshiftConstruct,
       config: props.config,
     });
 
