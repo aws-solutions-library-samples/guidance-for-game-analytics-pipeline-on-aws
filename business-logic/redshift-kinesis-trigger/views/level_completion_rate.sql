@@ -1,4 +1,4 @@
-CREATE VIEW
+CREATE OR REPLACE VIEW
   level_completion_rate AS
 with
   t1 as (

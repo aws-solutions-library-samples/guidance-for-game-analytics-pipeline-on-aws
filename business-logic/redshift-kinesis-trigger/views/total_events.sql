@@ -1,4 +1,4 @@
-CREATE VIEW
+CREATE OR REPLACE VIEW
   total_events AS
 SELECT
   application_id,

@@ -1,4 +1,4 @@
-CREATE VIEW
+CREATE OR REPLACE VIEW
   user_reported_reasons_count AS
 SELECT
   COUNT(

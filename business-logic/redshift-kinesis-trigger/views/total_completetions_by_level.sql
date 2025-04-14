@@ -1,4 +1,4 @@
-CREATE VIEW
+CREATE OR REPLACE VIEW
   total_completions_by_level AS
 SELECT
   JSON_EXTRACT_PATH_TEXT (event_data, 'level_id') as level,

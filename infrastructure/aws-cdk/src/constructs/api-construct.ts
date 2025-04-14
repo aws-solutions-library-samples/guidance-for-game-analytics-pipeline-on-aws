@@ -25,9 +25,8 @@ export interface ApiConstructProps extends cdk.StackProps {
   gameEventsStream: cdk.aws_kinesis.Stream | undefined;
   gameEventsFirehose: cdk.aws_kinesisfirehose.CfnDeliveryStream | undefined;
   applicationAdminServiceFunction: cdk.aws_lambda.Function;
-  redshiftDirectIngestFunction?: cdk.aws_lambda.Function;
   lambdaAuthorizer: cdk.aws_lambda.Function;
-  redshiftConstruct?: RedshiftConstruct
+  redshiftConstruct?: RedshiftConstruct;
   config: GameAnalyticsPipelineConfig;
 }
 
@@ -49,7 +48,10 @@ export class ApiConstruct extends Construct {
       assumedBy: new iam.ServicePrincipal("apigateway.amazonaws.com"),
     });
 
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gameEventsStream instanceof cdk.aws_kinesis.Stream) {
+    if (
+      props.config.INGEST_MODE === "REAL_TIME_KDS" &&
+      props.gameEventsStream instanceof cdk.aws_kinesis.Stream
+    ) {
       apiGatewayRole.addToPolicy(
         new iam.PolicyStatement({
           actions: ["kinesis:PutRecord", "kinesis:PutRecords"],
@@ -60,7 +62,10 @@ export class ApiConstruct extends Construct {
       );
     }
 
-    if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.gameEventsFirehose != undefined) {
+    if (
+      props.config.DATA_PLATFORM_MODE === "DATA_LAKE" &&
+      props.gameEventsFirehose != undefined
+    ) {
       apiGatewayRole.addToPolicy(
         new iam.PolicyStatement({
           actions: ["firehose:PutRecord", "firehose:PutRecordBatch"],
@@ -71,28 +76,31 @@ export class ApiConstruct extends Construct {
       );
     }
 
-    let apiFunctions = [
-      props.applicationAdminServiceFunction.functionArn,
-      props.lambdaAuthorizer.functionArn
-    ]
-
-    if (props.redshiftDirectIngestFunction) {
-      apiFunctions.push(props.redshiftDirectIngestFunction.functionArn)
-    }
-
     apiGatewayRole.addToPolicy(
       new iam.PolicyStatement({
         actions: ["lambda:InvokeFunction"],
-        resources: apiFunctions,
+        resources: [
+          props.applicationAdminServiceFunction.functionArn,
+          props.lambdaAuthorizer.functionArn,
+        ],
         effect: iam.Effect.ALLOW,
         sid: "ApigatewayInvokeLambda",
       })
     );
 
+    if (props.redshiftConstruct?.redshiftDirectIngestQueue) {
+      props.redshiftConstruct.redshiftDirectIngestQueue.grantSendMessages(
+        apiGatewayRole
+      );
+    }
+
     // event integration definition based on configuration, default is DIRECT_BATCH
     var eventDefinition = {};
 
-    if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.gameEventsFirehose != undefined) {
+    if (
+      props.config.DATA_PLATFORM_MODE === "DATA_LAKE" &&
+      props.gameEventsFirehose != undefined
+    ) {
       eventDefinition = {
         uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:firehose:action/PutRecordBatch`,
         credentials: apiGatewayRole.roleArn,
@@ -100,8 +108,7 @@ export class ApiConstruct extends Construct {
         httpMethod: "POST",
         type: "aws",
         requestParameters: {
-          "integration.request.header.Content-Type":
-            "'x-amz-json-1.1'",
+          "integration.request.header.Content-Type": "'x-amz-json-1.1'",
         },
         requestTemplates: {
           "application/json": `
@@ -151,23 +158,37 @@ export class ApiConstruct extends Construct {
           },
         },
       };
-    }
-    else if (props.config.DATA_PLATFORM_MODE === "REDSHIFT" && props.config.INGEST_MODE == "DIRECT_BATCH" && props.redshiftDirectIngestFunction) {
+    } else if (
+      props.config.DATA_PLATFORM_MODE === "REDSHIFT" &&
+      props.config.INGEST_MODE == "DIRECT_BATCH" &&
+      props.redshiftConstruct
+    ) {
+      // set eventDefinition to send direct to sqs
       eventDefinition = {
-        uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:lambda:path/2015-03-31/functions/${props.redshiftDirectIngestFunction.functionArn}/invocations`,
+        uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:sqs:path/${cdk.Aws.ACCOUNT_ID}/${props.redshiftConstruct.redshiftDirectIngestQueue?.queueName}`,
+        credentials: apiGatewayRole.roleArn,
+        passthroughBehavior: "never",
+        httpMethod: "POST",
+        type: "aws",
+        requestParameters: {
+          "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'",
+        },
+        requestTemplates: {
+          "application/json": `Action=SendMessage&MessageBody={
+              "body": $input.body,
+              "applicationId": "$util.escapeJavaScript($input.params('applicationId'))"
+          }`,
+        },
         responses: {
           default: {
-            statusCode: "200",
-          },
+            statusCode: "200"
+          }
         },
-        passthroughBehavior: "when_no_match",
-        httpMethod: "POST",
-        contentHandling: "CONVERT_TO_TEXT",
-        type: "aws_proxy",
-        credentials: apiGatewayRole.roleArn,
-      }
-    }
-    else if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gameEventsStream instanceof cdk.aws_kinesis.Stream) {
+      };
+    } else if (
+      props.config.INGEST_MODE === "REAL_TIME_KDS" &&
+      props.gameEventsStream instanceof cdk.aws_kinesis.Stream
+    ) {
       eventDefinition = {
         uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:kinesis:action/PutRecords`,
         credentials: apiGatewayRole.roleArn,
@@ -175,8 +196,7 @@ export class ApiConstruct extends Construct {
         httpMethod: "POST",
         type: "aws",
         requestParameters: {
-          "integration.request.header.Content-Type":
-            "'x-amz-json-1.1'",
+          "integration.request.header.Content-Type": "'x-amz-json-1.1'",
         },
         requestTemplates: {
           "application/json": `

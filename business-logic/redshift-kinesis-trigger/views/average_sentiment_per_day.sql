@@ -1,4 +1,4 @@
-CREATE VIEW
+CREATE OR REPLACE VIEW
   average_sentiment_per_day AS
 SELECT
   avg(

@@ -18,7 +18,9 @@ import * as kms from "aws-cdk-lib/aws-kms";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as eventsources from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as triggers from "aws-cdk-lib/triggers";
+import * as sqs from "aws-cdk-lib/aws-sqs";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as redshiftserverless from "aws-cdk-lib/aws-redshiftserverless";
 import { Construct } from "constructs";
@@ -40,7 +42,8 @@ const defaultProps = {
 };
 
 export class RedshiftConstruct extends Construct {
-  public readonly directBatchIngestFunction: lambda.Function;
+  // public readonly redshiftDirectIngestFunction?: lambda.Function;
+  public readonly redshiftDirectIngestQueue?: sqs.Queue;
   constructor(parent: Construct, name: string, props: RedshiftConstructProps) {
     super(parent, name);
 
@@ -108,6 +111,9 @@ export class RedshiftConstruct extends Construct {
         manageAdminPassword: true,
       }
     );
+    const secretArn = `arn:aws:secretsmanager:${Stack.of(this).region}:${
+      Stack.of(this).account
+    }:secret:redshift!${namespace.namespaceName}-admin*`;
 
     const workgroup = new redshiftserverless.CfnWorkgroup(
       this,
@@ -130,68 +136,91 @@ export class RedshiftConstruct extends Construct {
     );
 
     const codePath = "../../../../business-logic";
-    if (
-      props.config.INGEST_MODE == "REAL_TIME_KDS" &&
-      props.gamesEventsStream
-    ) {
-      const kinesisTrigger = new triggers.TriggerFunction(
+
+    const kinesisTrigger = new triggers.TriggerFunction(
+      this,
+      "RedshiftKinesisTrigger",
+      {
+        runtime: lambda.Runtime.NODEJS_22_X,
+        handler: "index.handler",
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, `${codePath}/redshift-kinesis-trigger/`)
+        ),
+        timeout: cdk.Duration.minutes(1),
+        environment: {
+          INGEST_MODE: props.config.INGEST_MODE,
+          SECRET_ARN: `redshift!${namespace.namespaceName}-admin`,
+          WORKGROUP_NAME: workgroup.workgroupName,
+          DATABASE_NAME: props.config.EVENTS_DATABASE,
+          REDSHIFT_ROLE_ARN: redshiftRole.roleArn,
+          STREAM_NAME: props.gamesEventsStream?.streamName ?? "",
+        },
+      }
+    );
+
+    kinesisTrigger.executeAfter(namespace, workgroup);
+
+    kinesisTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "DataAPI",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "redshift-data:GetStatementResult",
+          "redshift-data:ListStatements",
+          "redshift-data:ExecuteStatement",
+          "redshift-data:BatchExecuteStatement",
+        ],
+        resources: ["*"],
+      })
+    );
+
+    kinesisTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "DataAPIStatements",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "redshift-data:CancelStatement",
+          "redshift-data:DescribeStatement",
+        ],
+        resources: ["*"],
+      })
+    );
+
+    kinesisTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "SecretsManager",
+        effect: iam.Effect.ALLOW,
+        actions: ["secretsmanager:GetSecretValue"],
+        resources: [secretArn],
+      })
+    );
+
+    kinesisTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "KMS",
+        effect: iam.Effect.ALLOW,
+        actions: ["kms:Decrypt*"],
+        resources: [key.keyArn],
+      })
+    );
+
+    if (props.config.INGEST_MODE == "DIRECT_BATCH") {
+      const ingestQueueDLQ = new sqs.Queue(this, "IngestDLQ");
+      this.redshiftDirectIngestQueue = new sqs.Queue(this, "IngestQueue", {
+        deadLetterQueue: {
+          queue: ingestQueueDLQ,
+          maxReceiveCount: 3,
+        },
+      });
+      const powertoolsLayer = lambda.LayerVersion.fromLayerVersionArn(
         this,
-        "RedshiftKinesisTrigger",
-        {
-          runtime: lambda.Runtime.NODEJS_22_X,
-          handler: "index.handler",
-          code: lambda.Code.fromAsset(
-            path.join(__dirname, `${codePath}/redshift-kinesis-trigger/`)
-          ),
-          timeout: cdk.Duration.minutes(1),
-          environment: {
-            SECRET_ARN: `redshift!${namespace.namespaceName}-admin`,
-            WORKGROUP_NAME: workgroup.workgroupName,
-            DATABASE_NAME: props.config.EVENTS_DATABASE,
-            REDSHIFT_ROLE_ARN: redshiftRole.roleArn,
-            STREAM_NAME: props.gamesEventsStream.streamName,
-          },
-        }
+        "PowertoolsLayer",
+        `arn:aws:lambda:${
+          Stack.of(this).region
+        }:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:24`
       );
 
-      kinesisTrigger.executeAfter(namespace, workgroup);
-      kinesisTrigger.addToRolePolicy(
-        new iam.PolicyStatement({
-          sid: "DataAPI",
-          effect: iam.Effect.ALLOW,
-          actions: [
-            "redshift-data:CancelStatement",
-            "redshift-data:DescribeStatement",
-            "redshift-data:GetStatementResult",
-            "redshift-data:ListStatements",
-            "redshift-data:ExecuteStatement",
-            "redshift-data:BatchExecuteStatement",
-          ],
-          resources: ["*"],
-        })
-      );
-      kinesisTrigger.addToRolePolicy(
-        new iam.PolicyStatement({
-          sid: "SecretsManager",
-          effect: iam.Effect.ALLOW,
-          actions: ["secretsmanager:GetSecretValue"],
-          resources: [
-            `arn:aws:secretsmanager:${Stack.of(this).region}:${
-              Stack.of(this).account
-            }:secret:redshift!${namespace.namespaceName}-admin*`,
-          ],
-        })
-      );
-      kinesisTrigger.addToRolePolicy(
-        new iam.PolicyStatement({
-          sid: "KMS",
-          effect: iam.Effect.ALLOW,
-          actions: ["kms:Decrypt*"],
-          resources: [key.keyArn],
-        })
-      );
-    } else if (props.config.INGEST_MODE == "DIRECT_BATCH") {
-      this.directBatchIngestFunction = new NodejsFunction(
+      const redshiftDirectIngestFunction = new NodejsFunction(
         this,
         "DirectBatchIngestFunction",
         {
@@ -200,6 +229,7 @@ export class RedshiftConstruct extends Construct {
           code: lambda.Code.fromAsset(
             path.join(__dirname, `${codePath}/redshift-direct-ingest/`)
           ),
+          handler: "index.handler",
           memorySize: 256,
           timeout: cdk.Duration.seconds(30),
           runtime: lambda.Runtime.NODEJS_22_X,
@@ -207,9 +237,56 @@ export class RedshiftConstruct extends Construct {
             SECRET_ARN: `redshift!${namespace.namespaceName}-admin`,
             WORKGROUP_NAME: workgroup.workgroupName,
             DATABASE_NAME: props.config.EVENTS_DATABASE,
-            REDSHIFT_ROLE_ARN: redshiftRole.roleArn
+            REDSHIFT_ROLE_ARN: redshiftRole.roleArn,
           },
+          layers: [powertoolsLayer],
         }
+      );
+
+      redshiftDirectIngestFunction.addEventSource(new eventsources.SqsEventSource(this.redshiftDirectIngestQueue, {
+        batchSize: 10,
+        reportBatchItemFailures: true
+      }));
+
+      redshiftDirectIngestFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: "DataAPI",
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "redshift-data:GetStatementResult",
+            "redshift-data:ListStatements",
+            "redshift-data:ExecuteStatement",
+            "redshift-data:BatchExecuteStatement",
+          ],
+          resources: [workgroup.attrWorkgroupWorkgroupArn],
+        })
+      );
+
+      redshiftDirectIngestFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: "DataAPIStatements",
+          effect: iam.Effect.ALLOW,
+          actions: ["redshift-data:DescribeStatement"],
+          resources: ["*"],
+        })
+      );
+
+      redshiftDirectIngestFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: "SecretsManager",
+          effect: iam.Effect.ALLOW,
+          actions: ["secretsmanager:GetSecretValue"],
+          resources: [secretArn],
+        })
+      );
+
+      redshiftDirectIngestFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: "KMS",
+          effect: iam.Effect.ALLOW,
+          actions: ["kms:Decrypt*"],
+          resources: [key.keyArn],
+        })
       );
     }
 

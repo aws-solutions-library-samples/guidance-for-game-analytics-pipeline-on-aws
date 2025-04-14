@@ -1,4 +1,4 @@
-CREATE VIEW
+CREATE OR REPLACE VIEW
   total_iap_transactions_last_month AS
 WITH
   detail AS (

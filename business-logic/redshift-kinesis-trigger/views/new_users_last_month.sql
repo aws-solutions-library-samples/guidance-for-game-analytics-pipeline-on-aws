@@ -1,4 +1,4 @@
-CREATE VIEW
+CREATE OR REPLACE VIEW
   new_users_last_month AS
 WITH
   detail AS (
