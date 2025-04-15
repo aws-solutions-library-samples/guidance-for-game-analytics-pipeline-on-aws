@@ -18,7 +18,9 @@ import * as kms from "aws-cdk-lib/aws-kms";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as eventsources from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
+import * as eventsources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as triggers from "aws-cdk-lib/triggers";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
@@ -219,7 +221,8 @@ export class RedshiftConstruct extends Construct {
           Stack.of(this).region
         }:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:24`
       );
-
+      const directIngestServiceName = "RedshiftDirectIngest"
+      const directIngestMetricNamespace = "RedshiftDirectIngest"
       const redshiftDirectIngestFunction = new NodejsFunction(
         this,
         "DirectBatchIngestFunction",
@@ -238,15 +241,19 @@ export class RedshiftConstruct extends Construct {
             WORKGROUP_NAME: workgroup.workgroupName,
             DATABASE_NAME: props.config.EVENTS_DATABASE,
             REDSHIFT_ROLE_ARN: redshiftRole.roleArn,
+            POWERTOOLS_SERVICE_NAME: directIngestServiceName,
+            POWERTOOLS_METRICS_NAMESPACE: directIngestMetricNamespace
           },
           layers: [powertoolsLayer],
         }
       );
 
-      redshiftDirectIngestFunction.addEventSource(new eventsources.SqsEventSource(this.redshiftDirectIngestQueue, {
-        batchSize: 10,
-        reportBatchItemFailures: true
-      }));
+      redshiftDirectIngestFunction.addEventSource(
+        new eventsources.SqsEventSource(this.redshiftDirectIngestQueue, {
+          batchSize: 10,
+          reportBatchItemFailures: true,
+        })
+      );
 
       redshiftDirectIngestFunction.addToRolePolicy(
         new iam.PolicyStatement({
@@ -287,6 +294,45 @@ export class RedshiftConstruct extends Construct {
           actions: ["kms:Decrypt*"],
           resources: [key.keyArn],
         })
+      );
+
+      const redshiftDataEventsFunction = new NodejsFunction(
+        this,
+        "DirectBatchDataEventsFunction",
+        {
+          description: "Function to handle DataAPI events.",
+          code: lambda.Code.fromAsset(
+            path.join(__dirname, `${codePath}/redshift-data-events/`)
+          ),
+          handler: "index.handler",
+          memorySize: 256,
+          timeout: cdk.Duration.seconds(30),
+          runtime: lambda.Runtime.NODEJS_22_X,
+          environment: {
+            SECRET_ARN: `redshift!${namespace.namespaceName}-admin`,
+            WORKGROUP_NAME: workgroup.workgroupName,
+            DATABASE_NAME: props.config.EVENTS_DATABASE,
+            REDSHIFT_ROLE_ARN: redshiftRole.roleArn,
+            POWERTOOLS_SERVICE_NAME: directIngestServiceName,
+            POWERTOOLS_METRICS_NAMESPACE: directIngestMetricNamespace
+          },
+          layers: [powertoolsLayer],
+        }
+      );
+
+      const eventRule = new events.Rule(this, "DataAPIEventRule", {
+        eventPattern: {
+          source: ["aws.redshift-data"],
+          detailType: ["Redshift Data Statement Status Change"],
+          detail: {
+            statementName: ["BatchIngest"],
+            state: ["FAILED", "FINISHED"],
+          },
+        },
+      });
+
+      eventRule.addTarget(
+        new targets.LambdaFunction(redshiftDataEventsFunction)
       );
     }
 

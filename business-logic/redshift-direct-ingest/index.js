@@ -13,11 +13,8 @@ const {
   processPartialResponse,
 } = require("@aws-lambda-powertools/batch");
 
-const metrics = new Metrics({
-  namespace: "GAP",
-  serviceName: "RedshiftDirectIngest",
-});
-const logger = new Logger({ serviceName: "RedshiftDirectIngest" });
+const metrics = new Metrics();
+const logger = new Logger();
 const processor = new BatchProcessor(EventType.SQS);
 
 const config = {};
@@ -29,8 +26,6 @@ const DATABASE_NAME = process.env.DATABASE_NAME;
 
 const statementPrefix =
   "INSERT INTO event_data (event_id, event_type, event_name, event_version, event_timestamp, app_version, application_id, event_data) VALUES";
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const recordHandler = async (record) => {
   logger.info("Processing record", record);
@@ -52,9 +47,9 @@ const recordHandler = async (record) => {
         .join(", ");
       const statement = `${statementPrefix} ${values};`;
       const id = await executeStatement(statement);
-      await waitForStatement(id);
-      logger.info(`Successfully ingested ${events.length} events`);
-      metrics.addMetric("RecordsWritten", MetricUnit.Count, events.length);
+      logger.info(`Executed statement for ${events.length} events`);
+      metrics.addMetric("RecordsReceived", MetricUnit.Count, events.length);
+      metrics.publishStoredMetrics();
     } catch (error) {
       logger.info("Failed to ingest events", { error });
       throw error;
@@ -72,6 +67,7 @@ const executeStatement = async (statement) => {
   try {
     const input = {
       Sql: statement,
+      StatementName: "BatchIngest",
       SecretArn: SECRET_ARN,
       Database: DATABASE_NAME,
       WithEvent: true,
@@ -85,24 +81,4 @@ const executeStatement = async (statement) => {
     logger.error("Failed to execute statement", { error });
     throw error;
   }
-};
-
-const waitForStatement = async (id, retries = 0) => {
-  if (retries > 20) {
-    throw new Error("Failed to get statement status, took too long.");
-  }
-
-  const describeStatement = { Id: id };
-  const result = await client.send(
-    new DescribeStatementCommand(describeStatement)
-  );
-  if (result.Status == "FAILED") {
-    logger.error("Statement failed", { id });
-    throw new Error(result.Error);
-  } else if (result.Status == "FINISHED") {
-    logger.error("Statement finished", { id });
-    return;
-  }
-  await sleep(200);
-  await waitForStatement(id, retries + 1);
 };
