@@ -171,7 +171,8 @@ export class ApiConstruct extends Construct {
         httpMethod: "POST",
         type: "aws",
         requestParameters: {
-          "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'",
+          "integration.request.header.Content-Type":
+            "'application/x-www-form-urlencoded'",
         },
         requestTemplates: {
           "application/json": `Action=SendMessage&MessageBody={
@@ -181,8 +182,8 @@ export class ApiConstruct extends Construct {
         },
         responses: {
           default: {
-            statusCode: "200"
-          }
+            statusCode: "200",
+          },
         },
       };
     } else if (

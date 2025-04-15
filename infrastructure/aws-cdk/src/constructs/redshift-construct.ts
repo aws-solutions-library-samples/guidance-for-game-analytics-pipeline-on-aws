@@ -48,7 +48,6 @@ const defaultProps = {
 };
 
 export class RedshiftConstruct extends Construct {
-  // public readonly redshiftDirectIngestFunction?: lambda.Function;
   public readonly redshiftDirectIngestQueue?: sqs.Queue;
   constructor(parent: Construct, name: string, props: RedshiftConstructProps) {
     super(parent, name);
