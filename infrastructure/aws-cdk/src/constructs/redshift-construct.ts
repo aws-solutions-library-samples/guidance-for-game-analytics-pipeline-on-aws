@@ -233,7 +233,7 @@ export class RedshiftConstruct extends Construct {
         }
       );
 
-      const topic = new sns.Topic(this, "IngestDLQAlarmTopic");
+      const topic = new sns.Topic(this, "IngestAlarmTopic");
       if (props.config.EMAIL_ADDRESS) {
         topic.addSubscription(
           new snssubs.EmailSubscription(props.config.EMAIL_ADDRESS)
@@ -349,6 +349,35 @@ export class RedshiftConstruct extends Construct {
           layers: [powertoolsLayer],
         }
       );
+
+      redshiftDataEventsFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: "DataAPIStatements",
+          effect: iam.Effect.ALLOW,
+          actions: ["redshift-data:DescribeStatement"],
+          resources: ["*"],
+        })
+      );
+
+      const failedBatchesAlarm = new cloudwatch.Alarm(
+        this,
+        "FailedBatchesAlarm",
+        {
+          comparisonOperator:
+            cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+          threshold: 1,
+          evaluationPeriods: 1,
+          metric: new cloudwatch.Metric({
+            namespace: directIngestMetricNamespace,
+            metricName: "FailedBatches",
+            statistic: cloudwatch.Stats.SUM,
+          }),
+        }
+      );
+
+      const failedBatchesAction = new cwactions.SnsAction(topic);
+      failedBatchesAlarm.addAlarmAction(failedBatchesAction);
+      failedBatchesAlarm.addOkAction(failedBatchesAction);
 
       const eventRule = new events.Rule(this, "DataAPIEventRule", {
         eventPattern: {

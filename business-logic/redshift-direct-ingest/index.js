@@ -1,7 +1,6 @@
 const {
   RedshiftDataClient,
-  ExecuteStatementCommand,
-  DescribeStatementCommand,
+  ExecuteStatementCommand
 } = require("@aws-sdk/client-redshift-data");
 const { v4: uuidv4 } = require("uuid");
 
