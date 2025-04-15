@@ -680,6 +680,85 @@ export class ApiConstruct extends Construct {
                 },
               },
             },
+            "/redshift/setup": {
+              options: {
+                consumes: ["application/json"],
+                produces: ["application/json"],
+                responses: {
+                  "200": {
+                    description: "200 response",
+                    schema: {
+                      $ref: "#/definitions/Empty",
+                    },
+                    headers: {
+                      "Access-Control-Allow-Origin": {
+                        type: "string",
+                      },
+                      "Access-Control-Allow-Methods": {
+                        type: "string",
+                      },
+                      "Access-Control-Allow-Headers": {
+                        type: "string",
+                      },
+                    },
+                  },
+                },
+                security: [
+                  {
+                    sigv4: [],
+                  },
+                ],
+                "x-amazon-apigateway-integration": {
+                  responses: {
+                    default: {
+                      statusCode: "200",
+                      responseParameters: {
+                        "method.response.header.Access-Control-Allow-Methods":
+                          "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
+                        "method.response.header.Access-Control-Allow-Headers":
+                          "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                        "method.response.header.Access-Control-Allow-Origin":
+                          "'*'",
+                      },
+                    },
+                  },
+                  passthroughBehavior: "when_no_match",
+                  requestTemplates: {
+                    "application/json": '{"statusCode": 200}',
+                  },
+                  type: "mock",
+                },
+              },
+              "x-amazon-apigateway-any-method": {
+                produces: ["application/json"],
+                responses: {
+                  "200": {
+                    description: "200 response",
+                    schema: {
+                      $ref: "#/definitions/Empty",
+                    },
+                  },
+                },
+                security: [
+                  {
+                    sigv4: [],
+                  },
+                ],
+                "x-amazon-apigateway-integration": {
+                  uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:lambda:path/2015-03-31/functions/${props.applicationAdminServiceFunction.functionArn}/invocations`,
+                  responses: {
+                    default: {
+                      statusCode: "200",
+                    },
+                  },
+                  passthroughBehavior: "when_no_match",
+                  httpMethod: "POST",
+                  contentHandling: "CONVERT_TO_TEXT",
+                  type: "aws_proxy",
+                  credentials: apiGatewayRole.roleArn,
+                },
+              },
+            },
             "/applications/{applicationId}/events": {
               post: {
                 operationId: "SendEvents",

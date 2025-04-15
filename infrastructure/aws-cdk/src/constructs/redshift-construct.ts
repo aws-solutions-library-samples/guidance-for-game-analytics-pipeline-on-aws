@@ -49,11 +49,15 @@ const defaultProps = {
 
 export class RedshiftConstruct extends Construct {
   public readonly redshiftDirectIngestQueue?: sqs.Queue;
+  public readonly namespace: redshiftserverless.CfnNamespace;
+  public readonly workgroup: redshiftserverless.CfnWorkgroup;
+  public readonly redshiftRole: iam.Role;
+  public readonly key: kms.Key;
   constructor(parent: Construct, name: string, props: RedshiftConstructProps) {
     super(parent, name);
 
     const vpc = props.vpcConstruct.vpc;
-    const key = new kms.Key(this, "RedshiftKMSKey");
+    this.key = new kms.Key(this, "RedshiftKMSKey");
 
     const sg = new ec2.SecurityGroup(this, "RedshiftSecurityGroup", { vpc });
     sg.addIngressRule(
@@ -63,7 +67,7 @@ export class RedshiftConstruct extends Construct {
       false
     );
 
-    const redshiftRole = new iam.Role(this, "RedshiftRole", {
+    this.redshiftRole = new iam.Role(this, "RedshiftRole", {
       assumedBy: new iam.CompositePrincipal(
         new iam.ServicePrincipal("redshift.amazonaws.com"),
         new iam.ServicePrincipal("redshift-serverless.amazonaws.com")
@@ -78,7 +82,7 @@ export class RedshiftConstruct extends Construct {
       props.config.INGEST_MODE == "REAL_TIME_KDS" &&
       props.gamesEventsStream
     ) {
-      redshiftRole.addToPolicy(
+      this.redshiftRole.addToPolicy(
         new iam.PolicyStatement({
           sid: "ReadStream",
           effect: iam.Effect.ALLOW,
@@ -92,7 +96,7 @@ export class RedshiftConstruct extends Construct {
           resources: [props.gamesEventsStream.streamArn],
         })
       );
-      redshiftRole.addToPolicy(
+      this.redshiftRole.addToPolicy(
         new iam.PolicyStatement({
           sid: "ListStream",
           effect: iam.Effect.ALLOW,
@@ -103,30 +107,30 @@ export class RedshiftConstruct extends Construct {
     }
 
     const workloadNameLower = props.config.WORKLOAD_NAME.toLowerCase();
-    const namespace = new redshiftserverless.CfnNamespace(
+    this.namespace = new redshiftserverless.CfnNamespace(
       this,
       "RedshiftNamespace",
       {
         namespaceName: `${workloadNameLower}workspace`,
-        adminPasswordSecretKmsKeyId: key.keyId,
+        adminPasswordSecretKmsKeyId: this.key.keyId,
         dbName: props.config.EVENTS_DATABASE,
-        defaultIamRoleArn: redshiftRole.roleArn,
-        iamRoles: [redshiftRole.roleArn],
-        kmsKeyId: key.keyId,
+        defaultIamRoleArn: this.redshiftRole.roleArn,
+        iamRoles: [this.redshiftRole.roleArn],
+        kmsKeyId: this.key.keyId,
         manageAdminPassword: true,
       }
     );
     const secretArn = `arn:aws:secretsmanager:${Stack.of(this).region}:${
       Stack.of(this).account
-    }:secret:redshift!${namespace.namespaceName}-admin*`;
+    }:secret:redshift!${this.namespace.namespaceName}-admin*`;
 
-    const workgroup = new redshiftserverless.CfnWorkgroup(
+    this.workgroup = new redshiftserverless.CfnWorkgroup(
       this,
       "RedshiftWorkgroup",
       {
         workgroupName: `${workloadNameLower}-workgroup`,
         baseCapacity: props.baseRPU ?? defaultProps.baseRPU,
-        namespaceName: namespace.ref,
+        namespaceName: this.namespace.ref,
         port: props.port ?? defaultProps.port,
         publiclyAccessible: false,
         securityGroupIds: [sg.securityGroupId],
@@ -141,73 +145,6 @@ export class RedshiftConstruct extends Construct {
     );
 
     const codePath = "../../../../business-logic";
-
-    const kinesisTrigger = new triggers.TriggerFunction(
-      this,
-      "RedshiftKinesisTrigger",
-      {
-        runtime: lambda.Runtime.NODEJS_22_X,
-        handler: "index.handler",
-        code: lambda.Code.fromAsset(
-          path.join(__dirname, `${codePath}/redshift-kinesis-trigger/`)
-        ),
-        timeout: cdk.Duration.minutes(1),
-        environment: {
-          INGEST_MODE: props.config.INGEST_MODE,
-          SECRET_ARN: `redshift!${namespace.namespaceName}-admin`,
-          WORKGROUP_NAME: workgroup.workgroupName,
-          DATABASE_NAME: props.config.EVENTS_DATABASE,
-          REDSHIFT_ROLE_ARN: redshiftRole.roleArn,
-          STREAM_NAME: props.gamesEventsStream?.streamName ?? "",
-        },
-      }
-    );
-
-    kinesisTrigger.executeAfter(namespace, workgroup);
-
-    kinesisTrigger.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "DataAPI",
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "redshift-data:GetStatementResult",
-          "redshift-data:ListStatements",
-          "redshift-data:ExecuteStatement",
-          "redshift-data:BatchExecuteStatement",
-        ],
-        resources: ["*"],
-      })
-    );
-
-    kinesisTrigger.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "DataAPIStatements",
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "redshift-data:CancelStatement",
-          "redshift-data:DescribeStatement",
-        ],
-        resources: ["*"],
-      })
-    );
-
-    kinesisTrigger.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "SecretsManager",
-        effect: iam.Effect.ALLOW,
-        actions: ["secretsmanager:GetSecretValue"],
-        resources: [secretArn],
-      })
-    );
-
-    kinesisTrigger.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "KMS",
-        effect: iam.Effect.ALLOW,
-        actions: ["kms:Decrypt*"],
-        resources: [key.keyArn],
-      })
-    );
 
     if (props.config.INGEST_MODE == "DIRECT_BATCH") {
       const ingestQueueDLQ = new sqs.Queue(this, "IngestDLQ");
@@ -266,10 +203,10 @@ export class RedshiftConstruct extends Construct {
           timeout: cdk.Duration.seconds(30),
           runtime: lambda.Runtime.NODEJS_22_X,
           environment: {
-            SECRET_ARN: `redshift!${namespace.namespaceName}-admin`,
-            WORKGROUP_NAME: workgroup.workgroupName,
+            SECRET_ARN: `redshift!${this.namespace.namespaceName}-admin`,
+            WORKGROUP_NAME: this.workgroup.workgroupName,
             DATABASE_NAME: props.config.EVENTS_DATABASE,
-            REDSHIFT_ROLE_ARN: redshiftRole.roleArn,
+            REDSHIFT_ROLE_ARN: this.redshiftRole.roleArn,
             POWERTOOLS_SERVICE_NAME: directIngestServiceName,
             POWERTOOLS_METRICS_NAMESPACE: directIngestMetricNamespace,
           },
@@ -294,7 +231,7 @@ export class RedshiftConstruct extends Construct {
             "redshift-data:ExecuteStatement",
             "redshift-data:BatchExecuteStatement",
           ],
-          resources: [workgroup.attrWorkgroupWorkgroupArn],
+          resources: [this.workgroup.attrWorkgroupWorkgroupArn],
         })
       );
 
@@ -321,7 +258,7 @@ export class RedshiftConstruct extends Construct {
           sid: "KMS",
           effect: iam.Effect.ALLOW,
           actions: ["kms:Decrypt*"],
-          resources: [key.keyArn],
+          resources: [this.key.keyArn],
         })
       );
 
@@ -338,10 +275,10 @@ export class RedshiftConstruct extends Construct {
           timeout: cdk.Duration.seconds(30),
           runtime: lambda.Runtime.NODEJS_22_X,
           environment: {
-            SECRET_ARN: `redshift!${namespace.namespaceName}-admin`,
-            WORKGROUP_NAME: workgroup.workgroupName,
+            SECRET_ARN: `redshift!${this.namespace.namespaceName}-admin`,
+            WORKGROUP_NAME: this.workgroup.workgroupName,
             DATABASE_NAME: props.config.EVENTS_DATABASE,
-            REDSHIFT_ROLE_ARN: redshiftRole.roleArn,
+            REDSHIFT_ROLE_ARN: this.redshiftRole.roleArn,
             POWERTOOLS_SERVICE_NAME: directIngestServiceName,
             POWERTOOLS_METRICS_NAMESPACE: directIngestMetricNamespace,
           },
@@ -396,7 +333,7 @@ export class RedshiftConstruct extends Construct {
 
     new cdk.CfnOutput(this, "RedshiftRoleArn", {
       description: "ARN of the Redshift Serverless Role",
-      value: redshiftRole.roleArn,
+      value: this.redshiftRole.roleArn,
     });
   }
 }
