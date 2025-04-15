@@ -17,6 +17,10 @@ import * as cdk from "aws-cdk-lib";
 import * as kms from "aws-cdk-lib/aws-kms";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as cwactions from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as sns from "aws-cdk-lib/aws-sns";
+import * as snssubs from "aws-cdk-lib/aws-sns-subscriptions";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
@@ -214,6 +218,32 @@ export class RedshiftConstruct extends Construct {
           maxReceiveCount: 3,
         },
       });
+
+      const deadLetterQueueAlarm = new cloudwatch.Alarm(
+        this,
+        "IngestDLQAlarm",
+        {
+          alarmDescription: `Alarm for dead letter ${ingestQueueDLQ.queueName}`,
+          metric: ingestQueueDLQ.metricApproximateNumberOfMessagesVisible(),
+          threshold: 1,
+          evaluationPeriods: 1,
+          comparisonOperator:
+            cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+          treatMissingData: cloudwatch.TreatMissingData.IGNORE,
+        }
+      );
+
+      const topic = new sns.Topic(this, "IngestDLQAlarmTopic");
+      if (props.config.EMAIL_ADDRESS) {
+        topic.addSubscription(
+          new snssubs.EmailSubscription(props.config.EMAIL_ADDRESS)
+        );
+      }
+
+      const snsAction = new cwactions.SnsAction(topic);
+      deadLetterQueueAlarm.addAlarmAction(snsAction);
+      deadLetterQueueAlarm.addOkAction(snsAction);
+
       const powertoolsLayer = lambda.LayerVersion.fromLayerVersionArn(
         this,
         "PowertoolsLayer",
@@ -221,8 +251,8 @@ export class RedshiftConstruct extends Construct {
           Stack.of(this).region
         }:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:24`
       );
-      const directIngestServiceName = "RedshiftDirectIngest"
-      const directIngestMetricNamespace = "RedshiftDirectIngest"
+      const directIngestServiceName = "RedshiftDirectIngest";
+      const directIngestMetricNamespace = "RedshiftDirectIngest";
       const redshiftDirectIngestFunction = new NodejsFunction(
         this,
         "DirectBatchIngestFunction",
@@ -242,7 +272,7 @@ export class RedshiftConstruct extends Construct {
             DATABASE_NAME: props.config.EVENTS_DATABASE,
             REDSHIFT_ROLE_ARN: redshiftRole.roleArn,
             POWERTOOLS_SERVICE_NAME: directIngestServiceName,
-            POWERTOOLS_METRICS_NAMESPACE: directIngestMetricNamespace
+            POWERTOOLS_METRICS_NAMESPACE: directIngestMetricNamespace,
           },
           layers: [powertoolsLayer],
         }
@@ -314,7 +344,7 @@ export class RedshiftConstruct extends Construct {
             DATABASE_NAME: props.config.EVENTS_DATABASE,
             REDSHIFT_ROLE_ARN: redshiftRole.roleArn,
             POWERTOOLS_SERVICE_NAME: directIngestServiceName,
-            POWERTOOLS_METRICS_NAMESPACE: directIngestMetricNamespace
+            POWERTOOLS_METRICS_NAMESPACE: directIngestMetricNamespace,
           },
           layers: [powertoolsLayer],
         }
