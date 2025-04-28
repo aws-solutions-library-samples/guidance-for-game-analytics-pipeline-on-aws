@@ -8,16 +8,15 @@ const path = require("path");
 const fs = require("fs");
 
 const DATA_PLATFORM_MODE = process.env.DATA_PLATFORM_MODE;
-const INGEST_MODE = process.env.INGEST_MODE;
 const SECRET_ARN = process.env.SECRET_ARN;
 const WORKGROUP_NAME = process.env.WORKGROUP_NAME;
 const DATABASE_NAME = process.env.DATABASE_NAME;
 const REDSHIFT_ROLE_ARN = process.env.REDSHIFT_ROLE_ARN;
 const STREAM_NAME = process.env.STREAM_NAME;
+const MATERIALIZED_VIEW_NAME = "event_data";
 
-const real_time_setup_statements = [
-  `CREATE EXTERNAL SCHEMA IF NOT EXISTS kds FROM KINESIS IAM_ROLE '${REDSHIFT_ROLE_ARN}';`,
-  `CREATE OR REPLACE MATERIALIZED VIEW event_data AUTO REFRESH YES AS SELECT 
+const create_schema_statement = `CREATE EXTERNAL SCHEMA IF NOT EXISTS kds FROM KINESIS IAM_ROLE '${REDSHIFT_ROLE_ARN}';`;
+const create_materialized_view_statement = `CREATE MATERIALIZED VIEW ${MATERIALIZED_VIEW_NAME} AUTO REFRESH YES AS SELECT 
       refresh_time,
       approximate_arrival_timestamp,
       partition_key,
@@ -29,12 +28,19 @@ const real_time_setup_statements = [
       json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_version',true)::TEXT as event_version,
       json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_timestamp',true)::BIGINT as event_timestamp,
       json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','app_version',true)::TEXT as app_version,
-      json_extract_path_text(from_varbyte(kinesis_data, 'utf-8'),'application_id',true)::TEXT as application_id,
+      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'application_id',true)::TEXT as application_id,
       json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','application_name',true)::TEXT as application_name,
       json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_data',true)::TEXT as event_data,
       json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','metadata',true)::TEXT as metadata 
-  FROM kds."${STREAM_NAME}";`,
+  FROM kds."${STREAM_NAME}";`;
+
+// When executing create_materialized_view_statement, do not consider the following an error
+// All other statements support CREATE OR REPLACE, or IF NOT EXISTS
+// This allows the setup redshift endpoint to be called multiple times without harm
+const mv_ignore_errors = [
+  `ERROR: relation \"${MATERIALIZED_VIEW_NAME}\" already exists`,
 ];
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function setupRedshift() {
@@ -50,24 +56,20 @@ async function setupRedshift() {
   const client = new RedshiftDataClient(config);
 
   try {
-    if (INGEST_MODE == "REAL_TIME_KDS") {
-      console.log("Setting up REAL_TIME_KDS");
-      for (const statement of real_time_setup_statements) {
-        const id = await executeStatement(client, statement);
-        await waitForStatement(client, id);
-      }
-      console.log("REAL_TIME_KDS setup complete");
-    } else if (INGEST_MODE == "DIRECT_BATCH") {
-      console.log("Setting up DIRECT_BATCH");
-      const statement = fs.readFileSync(
-        `${__dirname}/sql/direct_batch_setup.sql`,
-        "utf8"
-      );
-      const id = await executeStatement(client, statement);
-      await waitForStatement(client, id);
-      console.log("DIRECT_BATCH setup complete");
-    }
+    console.log(`Executing: ${create_schema_statement}`);
+    const cs_id = await executeStatement(client, create_schema_statement);
+    await waitForStatement(client, cs_id);
+    console.log(`Executed: ${create_schema_statement}`);
+
+    console.log(`Executing: ${create_materialized_view_statement}`);
+    const mv_id = await executeStatement(
+      client,
+      create_materialized_view_statement
+    );
+    await waitForStatement(client, mv_id, mv_ignore_errors);
+    console.log(`Executed: ${create_materialized_view_statement}`);
   } catch (error) {
+    console.log("Error setupRedshift A");
     console.log(JSON.stringify(err));
     return Promise.reject(err);
   }
@@ -87,6 +89,7 @@ async function setupRedshift() {
     }
     console.log("Redshift views created");
   } catch (error) {
+    console.log("Error setupRedshift B");
     console.log(JSON.stringify(err));
     return Promise.reject(err);
   }
@@ -94,7 +97,12 @@ async function setupRedshift() {
   return Promise.resolve({ Result: "OK" });
 }
 
-const waitForStatement = async (client, id, retries = 0) => {
+const waitForStatement = async (
+  client,
+  id,
+  ignore_errors = [],
+  retries = 0
+) => {
   if (retries > 20) {
     throw new Error("Failed to get statement status, took too long.");
   }
@@ -104,13 +112,19 @@ const waitForStatement = async (client, id, retries = 0) => {
     new DescribeStatementCommand(describeStatement)
   );
   if (result.Status == "FAILED") {
-    console.log(JSON.stringify(err));
+    if (ignore_errors.includes(result.Error)) {
+      console.log("Ignoring error: " + result.Error);
+      return;
+    }
+
+    console.log("Error waitForStatement");
+    console.log(JSON.stringify(result));
     throw err;
   } else if (result.Status == "FINISHED") {
     return;
   }
   await sleep(500);
-  await waitForStatement(client, id, retries + 1);
+  await waitForStatement(client, id, ignore_errors, retries + 1);
 };
 
 const executeStatement = async (client, statement) => {
@@ -127,6 +141,7 @@ const executeStatement = async (client, statement) => {
     const response = await client.send(command);
     return response.Id;
   } catch (error) {
+    console.log("Error executeStatement");
     console.log(JSON.stringify(err));
     throw error;
   }

@@ -12,32 +12,21 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-import * as path from "path";
 import * as cdk from "aws-cdk-lib";
 import * as kms from "aws-cdk-lib/aws-kms";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
-import * as cwactions from "aws-cdk-lib/aws-cloudwatch-actions";
-import * as sns from "aws-cdk-lib/aws-sns";
-import * as snssubs from "aws-cdk-lib/aws-sns-subscriptions";
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as events from "aws-cdk-lib/aws-events";
-import * as targets from "aws-cdk-lib/aws-events-targets";
-import * as eventsources from "aws-cdk-lib/aws-lambda-event-sources";
-import * as triggers from "aws-cdk-lib/triggers";
 import * as sqs from "aws-cdk-lib/aws-sqs";
-import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as redshiftserverless from "aws-cdk-lib/aws-redshiftserverless";
+import { Stack } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
-import { Stack } from "aws-cdk-lib";
 import { VpcConstruct } from "./vpc-construct";
 
 export interface RedshiftConstructProps extends cdk.StackProps {
   baseRPU?: number;
   port?: number;
-  gamesEventsStream?: cdk.aws_kinesis.Stream;
+  gamesEventsStream: cdk.aws_kinesis.Stream;
   config: GameAnalyticsPipelineConfig;
   vpcConstruct: VpcConstruct;
 }
@@ -78,33 +67,28 @@ export class RedshiftConstruct extends Construct {
       ],
     });
 
-    if (
-      props.config.INGEST_MODE == "REAL_TIME_KDS" &&
-      props.gamesEventsStream
-    ) {
-      this.redshiftRole.addToPolicy(
-        new iam.PolicyStatement({
-          sid: "ReadStream",
-          effect: iam.Effect.ALLOW,
-          actions: [
-            "kinesis:DescribeStreamSummary",
-            "kinesis:GetShardIterator",
-            "kinesis:GetRecords",
-            "kinesis:ListShards",
-            "kinesis:DescribeStream",
-          ],
-          resources: [props.gamesEventsStream.streamArn],
-        })
-      );
-      this.redshiftRole.addToPolicy(
-        new iam.PolicyStatement({
-          sid: "ListStream",
-          effect: iam.Effect.ALLOW,
-          actions: ["kinesis:ListStreams"],
-          resources: ["*"],
-        })
-      );
-    }
+    this.redshiftRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "ReadStream",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "kinesis:DescribeStreamSummary",
+          "kinesis:GetShardIterator",
+          "kinesis:GetRecords",
+          "kinesis:ListShards",
+          "kinesis:DescribeStream",
+        ],
+        resources: [props.gamesEventsStream.streamArn],
+      })
+    );
+    this.redshiftRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "ListStream",
+        effect: iam.Effect.ALLOW,
+        actions: ["kinesis:ListStreams"],
+        resources: ["*"],
+      })
+    );
 
     const workloadNameLower = props.config.WORKLOAD_NAME.toLowerCase();
     this.namespace = new redshiftserverless.CfnNamespace(
@@ -143,193 +127,6 @@ export class RedshiftConstruct extends Construct {
         ],
       }
     );
-
-    const codePath = "../../../../business-logic";
-
-    if (props.config.INGEST_MODE == "DIRECT_BATCH") {
-      const ingestQueueDLQ = new sqs.Queue(this, "IngestDLQ");
-      this.redshiftDirectIngestQueue = new sqs.Queue(this, "IngestQueue", {
-        deadLetterQueue: {
-          queue: ingestQueueDLQ,
-          maxReceiveCount: 3,
-        },
-      });
-
-      const deadLetterQueueAlarm = new cloudwatch.Alarm(
-        this,
-        "IngestDLQAlarm",
-        {
-          alarmDescription: `Alarm for dead letter ${ingestQueueDLQ.queueName}`,
-          metric: ingestQueueDLQ.metricApproximateNumberOfMessagesVisible(),
-          threshold: 1,
-          evaluationPeriods: 1,
-          comparisonOperator:
-            cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-          treatMissingData: cloudwatch.TreatMissingData.IGNORE,
-        }
-      );
-
-      const topic = new sns.Topic(this, "IngestAlarmTopic");
-      if (props.config.EMAIL_ADDRESS) {
-        topic.addSubscription(
-          new snssubs.EmailSubscription(props.config.EMAIL_ADDRESS)
-        );
-      }
-
-      const snsAction = new cwactions.SnsAction(topic);
-      deadLetterQueueAlarm.addAlarmAction(snsAction);
-      deadLetterQueueAlarm.addOkAction(snsAction);
-
-      const powertoolsLayer = lambda.LayerVersion.fromLayerVersionArn(
-        this,
-        "PowertoolsLayer",
-        `arn:aws:lambda:${
-          Stack.of(this).region
-        }:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:24`
-      );
-      const directIngestServiceName = "RedshiftDirectIngest";
-      const directIngestMetricNamespace = "RedshiftDirectIngest";
-      const redshiftDirectIngestFunction = new NodejsFunction(
-        this,
-        "DirectBatchIngestFunction",
-        {
-          description:
-            "Function to ingest data to Redshift in DIRECT_BATCH mode.",
-          code: lambda.Code.fromAsset(
-            path.join(__dirname, `${codePath}/redshift-direct-ingest/`)
-          ),
-          handler: "index.handler",
-          memorySize: 256,
-          timeout: cdk.Duration.seconds(30),
-          runtime: lambda.Runtime.NODEJS_22_X,
-          environment: {
-            SECRET_ARN: `redshift!${this.namespace.namespaceName}-admin`,
-            WORKGROUP_NAME: this.workgroup.workgroupName,
-            DATABASE_NAME: props.config.EVENTS_DATABASE,
-            REDSHIFT_ROLE_ARN: this.redshiftRole.roleArn,
-            POWERTOOLS_SERVICE_NAME: directIngestServiceName,
-            POWERTOOLS_METRICS_NAMESPACE: directIngestMetricNamespace,
-          },
-          layers: [powertoolsLayer],
-        }
-      );
-
-      redshiftDirectIngestFunction.addEventSource(
-        new eventsources.SqsEventSource(this.redshiftDirectIngestQueue, {
-          batchSize: 10,
-          reportBatchItemFailures: true,
-        })
-      );
-
-      redshiftDirectIngestFunction.addToRolePolicy(
-        new iam.PolicyStatement({
-          sid: "DataAPI",
-          effect: iam.Effect.ALLOW,
-          actions: [
-            "redshift-data:GetStatementResult",
-            "redshift-data:ListStatements",
-            "redshift-data:ExecuteStatement",
-            "redshift-data:BatchExecuteStatement",
-          ],
-          resources: [this.workgroup.attrWorkgroupWorkgroupArn],
-        })
-      );
-
-      redshiftDirectIngestFunction.addToRolePolicy(
-        new iam.PolicyStatement({
-          sid: "DataAPIStatements",
-          effect: iam.Effect.ALLOW,
-          actions: ["redshift-data:DescribeStatement"],
-          resources: ["*"],
-        })
-      );
-
-      redshiftDirectIngestFunction.addToRolePolicy(
-        new iam.PolicyStatement({
-          sid: "SecretsManager",
-          effect: iam.Effect.ALLOW,
-          actions: ["secretsmanager:GetSecretValue"],
-          resources: [secretArn],
-        })
-      );
-
-      redshiftDirectIngestFunction.addToRolePolicy(
-        new iam.PolicyStatement({
-          sid: "KMS",
-          effect: iam.Effect.ALLOW,
-          actions: ["kms:Decrypt*"],
-          resources: [this.key.keyArn],
-        })
-      );
-
-      const redshiftDataEventsFunction = new NodejsFunction(
-        this,
-        "DirectBatchDataEventsFunction",
-        {
-          description: "Function to handle DataAPI events.",
-          code: lambda.Code.fromAsset(
-            path.join(__dirname, `${codePath}/redshift-data-events/`)
-          ),
-          handler: "index.handler",
-          memorySize: 256,
-          timeout: cdk.Duration.seconds(30),
-          runtime: lambda.Runtime.NODEJS_22_X,
-          environment: {
-            SECRET_ARN: `redshift!${this.namespace.namespaceName}-admin`,
-            WORKGROUP_NAME: this.workgroup.workgroupName,
-            DATABASE_NAME: props.config.EVENTS_DATABASE,
-            REDSHIFT_ROLE_ARN: this.redshiftRole.roleArn,
-            POWERTOOLS_SERVICE_NAME: directIngestServiceName,
-            POWERTOOLS_METRICS_NAMESPACE: directIngestMetricNamespace,
-          },
-          layers: [powertoolsLayer],
-        }
-      );
-
-      redshiftDataEventsFunction.addToRolePolicy(
-        new iam.PolicyStatement({
-          sid: "DataAPIStatements",
-          effect: iam.Effect.ALLOW,
-          actions: ["redshift-data:DescribeStatement"],
-          resources: ["*"],
-        })
-      );
-
-      const failedBatchesAlarm = new cloudwatch.Alarm(
-        this,
-        "FailedBatchesAlarm",
-        {
-          comparisonOperator:
-            cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-          threshold: 1,
-          evaluationPeriods: 1,
-          metric: new cloudwatch.Metric({
-            namespace: directIngestMetricNamespace,
-            metricName: "FailedBatches",
-            statistic: cloudwatch.Stats.SUM,
-          }),
-        }
-      );
-
-      const failedBatchesAction = new cwactions.SnsAction(topic);
-      failedBatchesAlarm.addAlarmAction(failedBatchesAction);
-      failedBatchesAlarm.addOkAction(failedBatchesAction);
-
-      const eventRule = new events.Rule(this, "DataAPIEventRule", {
-        eventPattern: {
-          source: ["aws.redshift-data"],
-          detailType: ["Redshift Data Statement Status Change"],
-          detail: {
-            statementName: ["BatchIngest"],
-            state: ["FAILED", "FINISHED"],
-          },
-        },
-      });
-
-      eventRule.addTarget(
-        new targets.LambdaFunction(redshiftDataEventsFunction)
-      );
-    }
 
     new cdk.CfnOutput(this, "RedshiftRoleArn", {
       description: "ARN of the Redshift Serverless Role",

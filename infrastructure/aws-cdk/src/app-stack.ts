@@ -283,22 +283,13 @@ export class InfrastructureStack extends cdk.Stack {
       });
     }
 
-    var redshiftConstruct;
-    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT" && vpcConstruct) {
-      redshiftConstruct = new RedshiftConstruct(this, "RedshiftConstruct", {
-        gamesEventsStream: gamesEventsStream,
-        config: props.config,        
-        vpcConstruct: vpcConstruct
-      })
-    }
-
     // ---- Real-time ingest option ---- //
 
     // Input stream for applications
     var gamesEventsStream;
     var managedFlinkConstruct;
     var streamingIngestionConstruct;
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS") {
+    if (props.config.INGEST_MODE === "REAL_TIME_KDS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT" ) {
       gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
         (props.config.STREAM_PROVISIONED === true) ? {
           shardCount: props.config.STREAM_SHARD_COUNT,
@@ -319,6 +310,16 @@ export class InfrastructureStack extends cdk.Stack {
           }
         );
       }
+    }
+
+    // ---- Redshift ---- //
+    var redshiftConstruct;
+    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT" && vpcConstruct && gamesEventsStream) {
+      redshiftConstruct = new RedshiftConstruct(this, "RedshiftConstruct", {
+        gamesEventsStream: gamesEventsStream,
+        config: props.config,        
+        vpcConstruct: vpcConstruct
+      })
     }
 
     // ---- Functions ---- //
