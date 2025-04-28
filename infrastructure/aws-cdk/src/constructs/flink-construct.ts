@@ -22,6 +22,8 @@ import * as kinesis from "aws-cdk-lib/aws-kinesis";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as assets from "aws-cdk-lib/aws-s3-assets";
+import * as opensearch from "aws-cdk-lib/aws-opensearchservice";
+import * as opensearchserverless from 'aws-cdk-lib/aws-opensearchserverless';
 
 import * as path from "path";
 import { Construct } from "constructs";
@@ -239,6 +241,14 @@ export class ManagedFlinkConstruct extends Construct {
         "flink.stream.max_record_count": "10000",
         "kinesis.stream.interval": "500"
       };
+    }
+
+    // TODO: update with correct parameters
+    let flinkOpenSearchConfig = {
+      "opensearch.host": "",
+      "opensearch.index": "",
+      "opensearch.username" : "",
+      "opensearch.password": ""
     }
 
     var propertyMap : kinesisanalytics.CfnApplicationV2.EnvironmentPropertiesProperty = {}
