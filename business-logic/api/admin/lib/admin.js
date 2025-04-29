@@ -553,6 +553,15 @@ class Application {
       });
     }
   }
+
+
+  /**
+   * Set up redshift tables and views
+   */
+  async setupRedshift() {
+    console.log('setupRedshift')
+    return Promise.resolve({ Result: 'OK' })
+  }
 }
 
 module.exports = Application;

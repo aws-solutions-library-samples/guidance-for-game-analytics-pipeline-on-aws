@@ -35,6 +35,7 @@ import { MetricsConstruct } from "./constructs/metrics-construct";
 import { LambdaConstruct } from "./constructs/lambda-construct";
 import { CloudWatchDashboardConstruct } from "./constructs/dashboard-construct";
 import { VpcConstruct } from "./constructs/vpc-construct";
+import { RedshiftConstruct } from "./constructs/redshift-construct";
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
@@ -274,12 +275,62 @@ export class InfrastructureStack extends cdk.Stack {
 
     //////////// ---- CONSTRUCT RESOURCES ---- ////////////
 
+    // ---- VPC resources (IF REDSHIFT OR REAL TIME in DEV_MODE is enabled) ---- //
+    var vpcConstruct;
+    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") { // Might add condition that opensearch may be created in dev mode too
+      vpcConstruct = new VpcConstruct(this, "VpcConstruct", {
+        config: props.config,
+      });
+    }
+
+    // ---- Real-time ingest option ---- //
+
+    // Input stream for applications
+    var gamesEventsStream;
+    var managedFlinkConstruct;
+    var streamingIngestionConstruct;
+    if (props.config.INGEST_MODE === "REAL_TIME_KDS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT" ) {
+      gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
+        (props.config.STREAM_PROVISIONED === true) ? {
+          shardCount: props.config.STREAM_SHARD_COUNT,
+          streamMode: kinesis.StreamMode.PROVISIONED,
+        } : {
+          streamMode: kinesis.StreamMode.ON_DEMAND,
+        });
+      
+      if (gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
+        // Enables Managed Flink and all metrics surrounding it
+        managedFlinkConstruct = new ManagedFlinkConstruct(
+          this,
+          "ManagedFlinkConstruct",
+          {
+            gameEventsStream: gamesEventsStream,
+            baseCodePath: codePath,
+            config: props.config,
+          }
+        );
+      }
+    }
+
+    // ---- Redshift ---- //
+    var redshiftConstruct;
+    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT" && vpcConstruct && gamesEventsStream) {
+      redshiftConstruct = new RedshiftConstruct(this, "RedshiftConstruct", {
+        gamesEventsStream: gamesEventsStream,
+        config: props.config,        
+        vpcConstruct: vpcConstruct
+      })
+    }
+
     // ---- Functions ---- //
 
     // Create lambda functions
     const lambdaConstruct = new LambdaConstruct(this, "LambdaConstruct", {
       applicationsTable,
       authorizationsTable,
+      config: props.config,
+      redshiftConstruct, 
+      gamesEventsStream
     });
 
     // Events Processing Function Policy added here to connect above DynamoDB resources to Lambda policies
@@ -325,44 +376,6 @@ export class InfrastructureStack extends cdk.Stack {
       lambdaConstruct.applicationAdminServiceFunction
     );
 
-
-    // ---- Real-time ingest option ---- //
-
-    // Input stream for applications
-    var gamesEventsStream;
-    var managedFlinkConstruct;
-    var streamingIngestionConstruct;
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS") {
-      gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
-        (props.config.STREAM_PROVISIONED === true) ? {
-          shardCount: props.config.STREAM_SHARD_COUNT,
-          streamMode: kinesis.StreamMode.PROVISIONED,
-        } : {
-          streamMode: kinesis.StreamMode.ON_DEMAND,
-        });
-      
-      if (gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
-        // Enables Managed Flink and all metrics surrounding it
-        managedFlinkConstruct = new ManagedFlinkConstruct(
-          this,
-          "ManagedFlinkConstruct",
-          {
-            gameEventsStream: gamesEventsStream,
-            baseCodePath: codePath,
-            config: props.config,
-          }
-        );
-      }
-    }
-
-    // ---- VPC resources (IF REDSHIFT OR REAL TIME in DEV_MODE is enabled) ---- //
-    var vpcConstruct;
-    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") { // Might add condition that opensearch may be created in dev mode too
-      vpcConstruct = new VpcConstruct(this, "VpcConstruct", {
-        config: props.config,
-      });
-    }
-
     if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE") {
       // Glue datalake and processing jobs
       const dataLakeConstruct = new DataLakeConstruct(this, "DataLakeConstruct", {
@@ -386,9 +399,6 @@ export class InfrastructureStack extends cdk.Stack {
         }
       );
     }
-    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") {
-      // INSERT REDSHIFT CONSTRUCT CODE HERE
-    }
 
     // ---- API ENDPOINT ---- /
     // Create API for admin to manage applications
@@ -398,6 +408,7 @@ export class InfrastructureStack extends cdk.Stack {
       gameEventsFirehose: streamingIngestionConstruct?.gameEventsFirehose,
       applicationAdminServiceFunction:
         lambdaConstruct.applicationAdminServiceFunction,
+        redshiftConstruct: redshiftConstruct,
       config: props.config,
     });
 

@@ -14,7 +14,8 @@
         "express": "*",
         "moment": "*",
         "underscore": "*",
-        "uuid": "*"
+        "uuid": "*",
+        "@aws-sdk/client-redshift-data": "^3.758.0"
     },
     "devDependencies": {
         "@aws-sdk/client-dynamodb": "^3.731.0",

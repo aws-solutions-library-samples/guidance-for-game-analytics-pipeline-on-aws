@@ -18,6 +18,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
+import { RedshiftConstruct } from "./redshift-construct";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface ApiConstructProps extends cdk.StackProps {
@@ -25,6 +26,7 @@ export interface ApiConstructProps extends cdk.StackProps {
   gameEventsFirehose: cdk.aws_kinesisfirehose.CfnDeliveryStream | undefined;
   applicationAdminServiceFunction: cdk.aws_lambda.Function;
   lambdaAuthorizer: cdk.aws_lambda.Function;
+  redshiftConstruct?: RedshiftConstruct;
   config: GameAnalyticsPipelineConfig;
 }
 
@@ -46,7 +48,10 @@ export class ApiConstruct extends Construct {
       assumedBy: new iam.ServicePrincipal("apigateway.amazonaws.com"),
     });
 
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gameEventsStream instanceof cdk.aws_kinesis.Stream) {
+    if (
+      props.config.INGEST_MODE === "REAL_TIME_KDS" &&
+      props.gameEventsStream instanceof cdk.aws_kinesis.Stream
+    ) {
       apiGatewayRole.addToPolicy(
         new iam.PolicyStatement({
           actions: ["kinesis:PutRecord", "kinesis:PutRecords"],
@@ -57,7 +62,10 @@ export class ApiConstruct extends Construct {
       );
     }
 
-    if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.gameEventsFirehose != undefined) {
+    if (
+      props.config.DATA_PLATFORM_MODE === "DATA_LAKE" &&
+      props.gameEventsFirehose != undefined
+    ) {
       apiGatewayRole.addToPolicy(
         new iam.PolicyStatement({
           actions: ["firehose:PutRecord", "firehose:PutRecordBatch"],
@@ -80,10 +88,19 @@ export class ApiConstruct extends Construct {
       })
     );
 
+    if (props.redshiftConstruct?.redshiftDirectIngestQueue) {
+      props.redshiftConstruct.redshiftDirectIngestQueue.grantSendMessages(
+        apiGatewayRole
+      );
+    }
+
     // event integration definition based on configuration, default is DIRECT_BATCH
     var eventDefinition = {};
 
-    if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.gameEventsFirehose != undefined) {
+    if (
+      props.config.DATA_PLATFORM_MODE === "DATA_LAKE" &&
+      props.gameEventsFirehose != undefined
+    ) {
       eventDefinition = {
         uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:firehose:action/PutRecordBatch`,
         credentials: apiGatewayRole.roleArn,
@@ -91,8 +108,7 @@ export class ApiConstruct extends Construct {
         httpMethod: "POST",
         type: "aws",
         requestParameters: {
-          "integration.request.header.Content-Type":
-            "'x-amz-json-1.1'",
+          "integration.request.header.Content-Type": "'x-amz-json-1.1'",
         },
         requestTemplates: {
           "application/json": `
@@ -142,12 +158,38 @@ export class ApiConstruct extends Construct {
           },
         },
       };
-    }
-    else if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") {
-      // INSERT REDSHIFT CODE HERE
-    }
-    
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gameEventsStream instanceof cdk.aws_kinesis.Stream) {
+    } else if (
+      props.config.DATA_PLATFORM_MODE === "REDSHIFT" &&
+      props.config.INGEST_MODE == "DIRECT_BATCH" &&
+      props.redshiftConstruct
+    ) {
+      // set eventDefinition to send direct to sqs
+      eventDefinition = {
+        uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:sqs:path/${cdk.Aws.ACCOUNT_ID}/${props.redshiftConstruct.redshiftDirectIngestQueue?.queueName}`,
+        credentials: apiGatewayRole.roleArn,
+        passthroughBehavior: "never",
+        httpMethod: "POST",
+        type: "aws",
+        requestParameters: {
+          "integration.request.header.Content-Type":
+            "'application/x-www-form-urlencoded'",
+        },
+        requestTemplates: {
+          "application/json": `Action=SendMessage&MessageBody={
+              "body": $input.body,
+              "applicationId": "$util.escapeJavaScript($input.params('applicationId'))"
+          }`,
+        },
+        responses: {
+          default: {
+            statusCode: "200",
+          },
+        },
+      };
+    } else if (
+      props.config.INGEST_MODE === "REAL_TIME_KDS" &&
+      props.gameEventsStream instanceof cdk.aws_kinesis.Stream
+    ) {
       eventDefinition = {
         uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:kinesis:action/PutRecords`,
         credentials: apiGatewayRole.roleArn,
@@ -155,8 +197,7 @@ export class ApiConstruct extends Construct {
         httpMethod: "POST",
         type: "aws",
         requestParameters: {
-          "integration.request.header.Content-Type":
-            "'x-amz-json-1.1'",
+          "integration.request.header.Content-Type": "'x-amz-json-1.1'",
         },
         requestTemplates: {
           "application/json": `
@@ -561,6 +602,85 @@ export class ApiConstruct extends Construct {
               },
             },
             "/applications/{applicationId}/authorizations/{apiKeyId}": {
+              options: {
+                consumes: ["application/json"],
+                produces: ["application/json"],
+                responses: {
+                  "200": {
+                    description: "200 response",
+                    schema: {
+                      $ref: "#/definitions/Empty",
+                    },
+                    headers: {
+                      "Access-Control-Allow-Origin": {
+                        type: "string",
+                      },
+                      "Access-Control-Allow-Methods": {
+                        type: "string",
+                      },
+                      "Access-Control-Allow-Headers": {
+                        type: "string",
+                      },
+                    },
+                  },
+                },
+                security: [
+                  {
+                    sigv4: [],
+                  },
+                ],
+                "x-amazon-apigateway-integration": {
+                  responses: {
+                    default: {
+                      statusCode: "200",
+                      responseParameters: {
+                        "method.response.header.Access-Control-Allow-Methods":
+                          "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
+                        "method.response.header.Access-Control-Allow-Headers":
+                          "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                        "method.response.header.Access-Control-Allow-Origin":
+                          "'*'",
+                      },
+                    },
+                  },
+                  passthroughBehavior: "when_no_match",
+                  requestTemplates: {
+                    "application/json": '{"statusCode": 200}',
+                  },
+                  type: "mock",
+                },
+              },
+              "x-amazon-apigateway-any-method": {
+                produces: ["application/json"],
+                responses: {
+                  "200": {
+                    description: "200 response",
+                    schema: {
+                      $ref: "#/definitions/Empty",
+                    },
+                  },
+                },
+                security: [
+                  {
+                    sigv4: [],
+                  },
+                ],
+                "x-amazon-apigateway-integration": {
+                  uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:lambda:path/2015-03-31/functions/${props.applicationAdminServiceFunction.functionArn}/invocations`,
+                  responses: {
+                    default: {
+                      statusCode: "200",
+                    },
+                  },
+                  passthroughBehavior: "when_no_match",
+                  httpMethod: "POST",
+                  contentHandling: "CONVERT_TO_TEXT",
+                  type: "aws_proxy",
+                  credentials: apiGatewayRole.roleArn,
+                },
+              },
+            },
+            "/redshift/setup": {
               options: {
                 consumes: ["application/json"],
                 produces: ["application/json"],

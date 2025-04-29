@@ -39,13 +39,7 @@ export class CloudWatchDashboardConstruct extends Construct {
             height: 2,
         });
 
-        var dataFreshnessMetric = new cloudwatch.Metric({
-            metricName: '',
-            namespace: '',
-        }).with({
-            label: 'Events Data Freshness Records (Placeholder for Custom Ingest)',
-            color: '#2ca02c',
-        });
+        let dataFreshnessMetric;
         if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.gameEventsFirehose != undefined) {
             dataFreshnessMetric = new cloudwatch.Metric({
                 metricName: 'DeliveryToS3.DataFreshness',
@@ -63,7 +57,7 @@ export class CloudWatchDashboardConstruct extends Construct {
         const eventProcessingHealthWidget = new cloudwatch.SingleValueWidget({
             title: 'Events Processing Health',
             metrics: [
-                dataFreshnessMetric,
+                ...(dataFreshnessMetric ? [dataFreshnessMetric]: []),          
                 new cloudwatch.Metric({
                     metricName: 'Duration',
                     namespace: 'AWS/Lambda',
@@ -102,26 +96,6 @@ export class CloudWatchDashboardConstruct extends Construct {
             height: 3,
             region: cdk.Stack.of(this).region,
         });
-
-        var eventIngestionMetric = new cloudwatch.Metric({
-            metricName: '',
-            namespace: '',
-        }).with({
-            label: 'Events Stream Incoming Records (Placeholder for Custom Ingest)',
-            color: '#2ca02c',
-        });
-        if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gameEventsStream != undefined) {
-            eventIngestionMetric = new cloudwatch.Metric({
-                metricName: 'IncomingRecords',
-                namespace: 'AWS/Kinesis',
-                dimensionsMap: {
-                    StreamName: props.gameEventsStream.streamName,
-                },
-            }).with({
-                label: 'Events Stream Incoming Records (Kinesis)',
-                color: '#2ca02c',
-            })
-        }
 
         const ingestionLambdaWidget = new cloudwatch.GraphWidget({
             title: 'Event Transformation Lambda Error count and success rate (%)',
@@ -196,12 +170,9 @@ export class CloudWatchDashboardConstruct extends Construct {
 
         // used to hold widget structure for dashboard
         let widgets;
-
+        
+        let deliveryMetric;
         if ((props.config.INGEST_MODE === "REAL_TIME_KDS") && props.managedFlinkConstruct != undefined && props.gameEventsStream != undefined) {
-            var deliveryMetric = new cloudwatch.Metric({
-                metricName: '',
-                namespace: '',
-            });
             if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.gameEventsFirehose != undefined) {
                 deliveryMetric = new cloudwatch.Metric({
                     metricName: 'DeliveryToS3.Records',
@@ -213,7 +184,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                     label: 'Firehose Records Delivered to S3',
                     color: '#17becf',
                 })
-            }
+            }            
             // Need to insert REDSHIFT version of this for delivery ingest into Redshift from Kinesis
 
             const eventIngestionWidget = new cloudwatch.GraphWidget({
@@ -229,7 +200,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         label: 'Events Stream Incoming Records (Kinesis)',
                         color: '#2ca02c',
                     }),
-                    deliveryMetric,
+                    ...(deliveryMetric ? [deliveryMetric]: []),
                     new cloudwatch.Metric({
                         metricName: 'Count',
                         namespace: 'AWS/ApiGateway',
