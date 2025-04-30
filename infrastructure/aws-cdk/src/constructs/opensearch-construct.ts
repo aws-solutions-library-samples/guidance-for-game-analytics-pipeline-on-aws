@@ -1,0 +1,84 @@
+/**
+ * Copyright 2023 Amazon.com, Inc. and its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the 'License').
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *   http://aws.amazon.com/asl/
+ *
+ * or in the 'license' file accompanying this file. This file is distributed
+ * on an 'AS IS' BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
+import * as path from "path";
+import * as kinesis from "aws-cdk-lib/aws-kinesis";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import { aws_opensearchserverless as opensearchserverless } from 'aws-cdk-lib';
+import { aws_osis as osis } from 'aws-cdk-lib';
+
+import { Aws, Fn } from "aws-cdk-lib";
+import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
+
+
+/* eslint-disable @typescript-eslint/no-empty-interface */
+export interface OpenSearchConstructProps extends cdk.StackProps {
+  metricOutputStream: kinesis.IStream;
+  config: GameAnalyticsPipelineConfig;
+}
+
+const defaultProps: Partial<OpenSearchConstructProps> = {};
+
+/**
+ * Deploys the OpenSearch Construct construct
+ */
+export class OpenSearchConstruct extends Construct {
+
+  constructor(parent: Construct, name: string, props: OpenSearchConstructProps) {
+    super(parent, name);
+
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    props = { ...defaultProps, ...props };
+
+    const codePath = "../../../../business-logic";
+
+    // dead letter queue for ingestion pipeline
+    const dlqBucket = new s3.Bucket(this, "DeadLetterQueue", {
+      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
+      removalPolicy: props.config.DEV_MODE
+        ? cdk.RemovalPolicy.DESTROY
+        : cdk.RemovalPolicy.RETAIN,
+      autoDeleteObjects: props.config.DEV_MODE ? true : false,
+      versioned: props.config.DEV_MODE ? false : true,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL
+    });
+
+    // serverless time series cluster
+    const osCollection = new opensearchserverless.CfnCollection(this, 'GameAnalyticsCollection', {
+      name: 'gap-collection',
+      description: 'Serverless OpenSearch Collection for analyzing real-time timeseries game event data',
+      standbyReplicas: "ENABLED",
+      type: 'TIMESERIES',
+    });
+
+    // game metric index
+
+    // IAM admin security config for opensearch serverless
+
+    // access policy for IAM Admin users
+
+    // iam policy for ingestion pipeline
+
+    // opensearch ingestion pipeline
+
+    // network config for ingestion pipeline
+
+    // access policy for ingestion pipeline
+
+  }
+}

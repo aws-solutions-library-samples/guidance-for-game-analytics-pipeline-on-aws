@@ -35,6 +35,7 @@ import { MetricsConstruct } from "./constructs/metrics-construct";
 import { LambdaConstruct } from "./constructs/lambda-construct";
 import { CloudWatchDashboardConstruct } from "./constructs/dashboard-construct";
 import { VpcConstruct } from "./constructs/vpc-construct";
+import { OpenSearchConstruct } from "./constructs/opensearch-construct";
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
@@ -332,6 +333,7 @@ export class InfrastructureStack extends cdk.Stack {
     var gamesEventsStream;
     var managedFlinkConstruct;
     var streamingIngestionConstruct;
+    var opensearchConstruct;
     if (props.config.INGEST_MODE === "REAL_TIME_KDS") {
       gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
         (props.config.STREAM_PROVISIONED === true) ? {
@@ -340,7 +342,7 @@ export class InfrastructureStack extends cdk.Stack {
         } : {
           streamMode: kinesis.StreamMode.ON_DEMAND,
         });
-      
+
       if (gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
         // Enables Managed Flink and all metrics surrounding it
         managedFlinkConstruct = new ManagedFlinkConstruct(
@@ -352,6 +354,16 @@ export class InfrastructureStack extends cdk.Stack {
             config: props.config,
           }
         );
+
+        // enable opensearch for metric dashboarding
+        opensearchConstruct = new OpenSearchConstruct(
+          this,
+          "OpenSearchConstruct",
+          {
+            metricOutputStream: managedFlinkConstruct.metricOutputStream,
+            config: props.config
+          }
+        )
       }
     }
 

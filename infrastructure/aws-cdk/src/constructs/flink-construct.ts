@@ -22,8 +22,6 @@ import * as kinesis from "aws-cdk-lib/aws-kinesis";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as assets from "aws-cdk-lib/aws-s3-assets";
-import * as opensearch from "aws-cdk-lib/aws-opensearchservice";
-import * as opensearchserverless from 'aws-cdk-lib/aws-opensearchserverless';
 
 import * as path from "path";
 import { Construct } from "constructs";
@@ -243,14 +241,6 @@ export class ManagedFlinkConstruct extends Construct {
       };
     }
 
-    // TODO: update with correct parameters
-    let flinkOpenSearchConfig = {
-      "opensearch.host": "",
-      "opensearch.index": "",
-      "opensearch.username" : "",
-      "opensearch.password": ""
-    }
-
     var propertyMap : kinesisanalytics.CfnApplicationV2.EnvironmentPropertiesProperty = {}
 
     /* The following defines the flink application used to process incoming game events and output them to the stream */
@@ -296,6 +286,7 @@ export class ManagedFlinkConstruct extends Construct {
             }, {
               propertyGroupId: "sinkConfig",
               propertyMap: {
+                "sink.connector": "kinesis",
                 "kinesis.stream.arn": metricOutputStream.streamArn,
                 "aws.region": cdk.Aws.REGION
               }
