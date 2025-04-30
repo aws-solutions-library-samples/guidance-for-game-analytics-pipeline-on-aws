@@ -66,6 +66,43 @@ export class OpenSearchConstruct extends Construct {
       type: 'TIMESERIES',
     });
 
+
+    // defines opensearch encryption to be an AWS managed key
+    const osEncryptionPolicyDefinition = { "Rules": [{ "ResourceType": "collection", "Resource": ["collection/gap-collection"] }], "AWSOwnedKey": true }
+
+    const osEncryptionPolicy = new opensearchserverless.CfnSecurityPolicy(this, 'GameAnalyticsCollectionEncryptionPolicy', {
+      name: 'gap-encryption-policy',
+      policy: JSON.stringify(osEncryptionPolicyDefinition),
+      type: 'encryption'
+    });
+    osCollection.addDependency(osEncryptionPolicy);
+
+    // enable network access to collection
+    const networkPolicyDefinition = [{
+      "Rules": [
+        {
+          "Resource": [
+            "collection/gap-collection"
+          ],
+          "ResourceType": "collection"
+        },
+        {
+          "Resource": [
+            "collection/gap-collection"
+          ],
+          "ResourceType": "collection"
+        }
+      ],
+      "AllowFromPublic": true
+    },
+    ]
+
+    const osNetworkPolicy = new opensearchserverless.CfnSecurityPolicy(this, 'GameAnalyticsCollectionNetworkPolicy', {
+      name: 'gap-network-policy',
+      policy: JSON.stringify(networkPolicyDefinition),
+      type: 'network'
+    });
+
     // game metric index
 
     // IAM admin security config for opensearch serverless
