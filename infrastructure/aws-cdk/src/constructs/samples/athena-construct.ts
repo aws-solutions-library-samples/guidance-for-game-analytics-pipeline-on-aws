@@ -31,9 +31,9 @@ export interface AthenaQueryConstructProps extends cdk.StackProps {
 const defaultProps: Partial<AthenaQueryConstructProps> = {};
 
 /**
- * Deploys the DataLake construct
+ * Deploys the Athena Sample Queries construct
  *
- * Creates Glue to turn analytics s3 bucket into Datalake. Creates Jobs that can be used to process s3 data for Athena.
+ * Creates sample Athena queries to query data present in the data lake.
  */
 export class AthenaQueryConstruct extends Construct {
 

@@ -37,6 +37,7 @@ import { CloudWatchDashboardConstruct } from "./constructs/dashboard-construct";
 import { VpcConstruct } from "./constructs/vpc-construct";
 import { OpenSearchConstruct } from "./constructs/opensearch-construct";
 import { AthenaQueryConstruct } from "./constructs/samples/athena-construct";
+import { DataProcessingConstruct } from "./constructs/data-processing-construct";
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
@@ -383,6 +384,15 @@ export class InfrastructureStack extends cdk.Stack {
         notificationsTopic: notificationsTopic,
         config: props.config,
         analyticsBucket: analyticsBucket,
+      });
+
+      // create data integration jobs
+      const dataProcessingConstruct = new DataProcessingConstruct(this, "DataProcessingConstruct", {
+        notificationsTopic: notificationsTopic,
+        analyticsBucket: analyticsBucket,
+        gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
+        rawEventsTable: dataLakeConstruct.rawEventsTable,
+        config: props.config,
       });
 
       // create sample athena queries
