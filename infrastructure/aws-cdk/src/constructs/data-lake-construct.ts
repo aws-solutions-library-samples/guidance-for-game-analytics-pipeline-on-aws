@@ -56,11 +56,11 @@ export class DataLakeConstruct extends Construct {
       "GameEventsDatabase",
       {
         catalogId: cdk.Aws.ACCOUNT_ID,
-        databaseName: props.config.EVENTS_DATABASE,
         databaseInput: {
           description: `Database for game analytics events for stack: ${cdk.Aws.STACK_NAME}`,
-          locationUri: props.analyticsBucket.bucketArn,
+          locationUri: props.analyticsBucket.s3UrlForObject(),
         },
+        databaseName: props.config.EVENTS_DATABASE,
       }
     );
 
