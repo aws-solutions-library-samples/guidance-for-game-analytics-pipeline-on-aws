@@ -286,13 +286,15 @@ export class InfrastructureStack extends cdk.Stack {
       });
     }
 
+
     // ---- Real-time ingest option ---- //
 
     // Input stream for applications
     var gamesEventsStream;
     var managedFlinkConstruct;
     var streamingIngestionConstruct;
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT" ) {
+    var opensearchConstruct;
+    if (props.config.INGEST_MODE === "REAL_TIME_KDS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT") {
       gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
         (props.config.STREAM_PROVISIONED === true) ? {
           shardCount: props.config.STREAM_SHARD_COUNT,
@@ -300,7 +302,7 @@ export class InfrastructureStack extends cdk.Stack {
         } : {
           streamMode: kinesis.StreamMode.ON_DEMAND,
         });
-      
+
       if (gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
         // Enables Managed Flink and all metrics surrounding it
         managedFlinkConstruct = new ManagedFlinkConstruct(
@@ -312,6 +314,17 @@ export class InfrastructureStack extends cdk.Stack {
             config: props.config,
           }
         );
+
+        // enable opensearch for metric dashboarding
+
+        opensearchConstruct = new OpenSearchConstruct(
+          this,
+          "OpenSearchConstruct",
+          {
+            metricOutputStream: managedFlinkConstruct.metricOutputStream,
+            config: props.config
+          }
+        )
       }
     }
 
@@ -320,7 +333,7 @@ export class InfrastructureStack extends cdk.Stack {
     if (props.config.DATA_PLATFORM_MODE === "REDSHIFT" && vpcConstruct && gamesEventsStream) {
       redshiftConstruct = new RedshiftConstruct(this, "RedshiftConstruct", {
         gamesEventsStream: gamesEventsStream,
-        config: props.config,        
+        config: props.config,
         vpcConstruct: vpcConstruct
       })
     }
@@ -332,7 +345,7 @@ export class InfrastructureStack extends cdk.Stack {
       applicationsTable,
       authorizationsTable,
       config: props.config,
-      redshiftConstruct, 
+      redshiftConstruct,
       gamesEventsStream
     });
 
@@ -380,46 +393,6 @@ export class InfrastructureStack extends cdk.Stack {
     );
 
 
-    // ---- Real-time ingest option ---- //
-
-    // Input stream for applications
-    var gamesEventsStream;
-    var managedFlinkConstruct;
-    var streamingIngestionConstruct;
-    var opensearchConstruct;
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS") {
-      gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
-        (props.config.STREAM_PROVISIONED === true) ? {
-          shardCount: props.config.STREAM_SHARD_COUNT,
-          streamMode: kinesis.StreamMode.PROVISIONED,
-        } : {
-          streamMode: kinesis.StreamMode.ON_DEMAND,
-        });
-
-      if (gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
-        // Enables Managed Flink and all metrics surrounding it
-        managedFlinkConstruct = new ManagedFlinkConstruct(
-          this,
-          "ManagedFlinkConstruct",
-          {
-            gameEventsStream: gamesEventsStream,
-            baseCodePath: codePath,
-            config: props.config,
-          }
-        );
-
-        // enable opensearch for metric dashboarding
-        
-        opensearchConstruct = new OpenSearchConstruct(
-          this,
-          "OpenSearchConstruct",
-          {
-            metricOutputStream: managedFlinkConstruct.metricOutputStream,
-            config: props.config
-          }
-        )
-      }
-    }
 
     // ---- VPC resources (IF REDSHIFT OR REAL TIME in DEV_MODE is enabled) ---- //
     var vpcConstruct;
@@ -477,7 +450,7 @@ export class InfrastructureStack extends cdk.Stack {
       gameEventsFirehose: streamingIngestionConstruct?.gameEventsFirehose,
       applicationAdminServiceFunction:
         lambdaConstruct.applicationAdminServiceFunction,
-        redshiftConstruct: redshiftConstruct,
+      redshiftConstruct: redshiftConstruct,
       config: props.config,
     });
 
