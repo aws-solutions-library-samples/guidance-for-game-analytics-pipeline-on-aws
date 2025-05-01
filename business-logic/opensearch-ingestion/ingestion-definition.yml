@@ -1,0 +1,39 @@
+version: '2'
+gap-ingestion:
+  source:
+    kinesis_data_streams:
+      acknowledgments: true
+      streams:
+        - stream_name: ${stream_name}
+          initial_position: LATEST
+          checkpoint_interval: PT2M
+          compression: none
+      codec:
+        newline: {}
+      records_to_accumulate: '100'
+      buffer_timeout: PT1S
+      consumer_strategy: polling
+      polling:
+        max_polling_records: '10000'
+        idle_time_between_reads: PT0.25S
+      aws:
+        region: ${region}
+  processor:
+    - parse_json:
+        handle_failed_events: skip
+  sink:
+    - opensearch:
+        hosts:
+          - '${host_name}'
+        aws:
+          serverless: true
+          region: ${region}
+          serverless_options:
+            network_policy_name: ${network_policy_name}
+        index_type: custom
+        index: 'gap_index_${getMetadata("stream_name")}'
+        dlq:
+          s3:
+            bucket: ${dlq_bucket_name}
+            region: ${region}
+        document_version_type: internal
