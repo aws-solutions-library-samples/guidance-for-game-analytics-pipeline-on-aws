@@ -17,13 +17,20 @@ import { Construct } from "constructs";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as events from "aws-cdk-lib/aws-events";
 import * as eventstargets from "aws-cdk-lib/aws-events-targets";
+import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
+import { RedshiftConstruct } from "./redshift-construct";
+import { Stack } from "aws-cdk-lib";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface LambdaConstructProps extends cdk.StackProps {
   applicationsTable: cdk.aws_dynamodb.Table;
   authorizationsTable: cdk.aws_dynamodb.Table;
+  config: GameAnalyticsPipelineConfig;
+  redshiftConstruct?: RedshiftConstruct;
+  gamesEventsStream?: cdk.aws_kinesis.Stream;
 }
 
 const defaultProps: Partial<LambdaConstructProps> = {};
@@ -85,6 +92,17 @@ function. This function to process and transform raw events before they get writ
       },
     });
 
+    let redshiftEnv = {};
+    if (props.redshiftConstruct) {
+      redshiftEnv = {
+        SECRET_ARN: `redshift!${props.redshiftConstruct.namespace.namespaceName}-admin`,
+        WORKGROUP_NAME: props.redshiftConstruct.workgroup.workgroupName,
+        DATABASE_NAME: props.config.EVENTS_DATABASE,
+        REDSHIFT_ROLE_ARN: props.redshiftConstruct.redshiftRole.roleArn,
+        STREAM_NAME: props.gamesEventsStream?.streamName ?? "",
+      };
+    }
+
     /* The following variables define the necessary resources for the `ApplicationAdminServiceFunction`.
 This function provides the application admin microservice. */
     this.applicationAdminServiceFunction = new NodejsFunction(
@@ -93,12 +111,10 @@ This function provides the application admin microservice. */
       {
         description:
           "This function provides the application admin microservice.",
-        entry: path.join(__dirname, `${codePath}/api/admin/index.js`),
-        depsLockFilePath: path.join(
-          __dirname,
-          `${codePath}/api/admin/package-lock.json`
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, `${codePath}/api/admin/`)
         ),
-
+        handler: "index.handler",
         memorySize: 128,
         timeout: cdk.Duration.seconds(60),
         runtime: lambda.Runtime.NODEJS_22_X,
@@ -106,8 +122,63 @@ This function provides the application admin microservice. */
           AUTHORIZATIONS_TABLE: props.authorizationsTable.tableName,
           APPLICATION_AUTHORIZATIONS_INDEX: "ApplicationAuthorizations",
           APPLICATIONS_TABLE: props.applicationsTable.tableName,
+          INGEST_MODE: props.config.INGEST_MODE,
+          DATA_PLATFORM_MODE: props.config.DATA_PLATFORM_MODE,
+          ...redshiftEnv,
         },
       }
     );
+
+    if (props.redshiftConstruct) {
+      const secretArn = `arn:aws:secretsmanager:${Stack.of(this).region}:${
+        Stack.of(this).account
+      }:secret:redshift!${
+        props.redshiftConstruct.namespace.namespaceName
+      }-admin*`;
+
+      this.applicationAdminServiceFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: "DataAPI",
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "redshift-data:GetStatementResult",
+            "redshift-data:ListStatements",
+            "redshift-data:ExecuteStatement",
+            "redshift-data:BatchExecuteStatement",
+          ],
+          resources: ["*"],
+        })
+      );
+
+      this.applicationAdminServiceFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: "DataAPIStatements",
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "redshift-data:CancelStatement",
+            "redshift-data:DescribeStatement",
+          ],
+          resources: ["*"],
+        })
+      );
+
+      this.applicationAdminServiceFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: "SecretsManager",
+          effect: iam.Effect.ALLOW,
+          actions: ["secretsmanager:GetSecretValue"],
+          resources: [secretArn],
+        })
+      );
+
+      this.applicationAdminServiceFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: "KMS",
+          effect: iam.Effect.ALLOW,
+          actions: ["kms:Decrypt*"],
+          resources: [props.redshiftConstruct.key.keyArn],
+        })
+      );
+    }
   }
 }

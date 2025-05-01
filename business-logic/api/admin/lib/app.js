@@ -22,6 +22,7 @@
  * Lib
  */
 const Application = require('./admin.js');
+const {setupRedshift} = require('./redshift.js')
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -247,6 +248,21 @@ const getAuthorizationDetail = async (req, res) => {
   }
 };
 
+const setupRedshiftHandler = async (req, res) => {
+  console.log('Attempting to set up redshift')
+  // let _application = new Application();
+  try {
+    const result = await setupRedshift();
+    res.json(result);
+  } catch (err) {
+    console.log(JSON.stringify(err));
+    return res.status(err.code).json({
+      'error': err.error,
+      'error_detail': err.message
+    });
+  }
+}
+
 /****************************
  * Event methods *
 ****************************/
@@ -264,6 +280,7 @@ router.get('/applications/:applicationId/authorizations/:apiKeyId', getAuthoriza
 router.put('/applications/:applicationId/authorizations/:apiKeyId', modifyAuthorization);
 router.delete('/applications/:applicationId/authorizations', deleteAuthorization);
 router.delete('/applications/:applicationId/authorizations/:apiKeyId', deleteAuthorization);
+router.post('/redshift/setup', setupRedshiftHandler);
 //router.put('/registrations/:registration_name', updateRegistration);
 
 app.use('/', router);
