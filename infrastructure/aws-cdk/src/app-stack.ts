@@ -36,6 +36,7 @@ import { LambdaConstruct } from "./constructs/lambda-construct";
 import { CloudWatchDashboardConstruct } from "./constructs/dashboard-construct";
 import { VpcConstruct } from "./constructs/vpc-construct";
 import { OpenSearchConstruct } from "./constructs/opensearch-construct";
+import { AthenaQueryConstruct } from "./constructs/samples/athena-construct";
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
@@ -356,6 +357,7 @@ export class InfrastructureStack extends cdk.Stack {
         );
 
         // enable opensearch for metric dashboarding
+        /*
         opensearchConstruct = new OpenSearchConstruct(
           this,
           "OpenSearchConstruct",
@@ -363,7 +365,7 @@ export class InfrastructureStack extends cdk.Stack {
             metricOutputStream: managedFlinkConstruct.metricOutputStream,
             config: props.config
           }
-        )
+        )*/
       }
     }
 
@@ -382,6 +384,13 @@ export class InfrastructureStack extends cdk.Stack {
         config: props.config,
         analyticsBucket: analyticsBucket,
       });
+
+      // create sample athena queries
+      const athenaConstruct = new AthenaQueryConstruct(this, "AthenaQueryConstruct", {
+        gameAnalyticsWorkgroup: dataLakeConstruct.gameAnalyticsWorkgroup,
+        gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
+        config: props.config,
+      })
 
       // Creates firehose and logs related to ingestion
       streamingIngestionConstruct = new StreamingIngestionConstruct(

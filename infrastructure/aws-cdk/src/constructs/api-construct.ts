@@ -145,9 +145,7 @@ export class ApiConstruct extends Construct {
     }
     else if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") {
       // INSERT REDSHIFT CODE HERE
-    }
-    
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gameEventsStream instanceof cdk.aws_kinesis.Stream) {
+    } else if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gameEventsStream instanceof cdk.aws_kinesis.Stream) {
       eventDefinition = {
         uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:kinesis:action/PutRecords`,
         credentials: apiGatewayRole.roleArn,
