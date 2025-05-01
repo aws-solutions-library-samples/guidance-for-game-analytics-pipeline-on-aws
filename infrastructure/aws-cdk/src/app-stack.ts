@@ -358,7 +358,7 @@ export class InfrastructureStack extends cdk.Stack {
         );
 
         // enable opensearch for metric dashboarding
-        /*
+        
         opensearchConstruct = new OpenSearchConstruct(
           this,
           "OpenSearchConstruct",
@@ -366,7 +366,7 @@ export class InfrastructureStack extends cdk.Stack {
             metricOutputStream: managedFlinkConstruct.metricOutputStream,
             config: props.config
           }
-        )*/
+        )
       }
     }
 
