@@ -24,6 +24,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { aws_opensearchserverless as opensearchserverless } from 'aws-cdk-lib';
 import { aws_osis as osis } from 'aws-cdk-lib';
+import * as logs from "aws-cdk-lib/aws-logs";
 
 import { Aws, Fn } from "aws-cdk-lib";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
@@ -62,7 +63,7 @@ export class OpenSearchConstruct extends Construct {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL
     });
 
-    const collectionName = `${props.config.WORKLOAD_NAME}-metrics`.toLowerCase().substring(0, 28);
+    const collectionName = `${props.config.WORKLOAD_NAME}-metrics`.toLowerCase().substring(0, 28).replace(new RegExp('[^a-z0-9\-]+', 'g'), '');
 
     // serverless time series cluster
     const osCollection = new opensearchserverless.CfnCollection(this, 'GameAnalyticsCollection', {
@@ -127,13 +128,114 @@ export class OpenSearchConstruct extends Construct {
 
 
     // load ingestion definition
+    const pipelineName = `${props.config.WORKLOAD_NAME}-ingestion`.substring(0, 28).toLowerCase().replace(new RegExp('[^a-z0-9\-]+', 'g'), '');
+
+    // ingestion iam role
+
+    const ingestionRole = new iam.Role(this, "IngestionRole", {
+      assumedBy: new iam.ServicePrincipal("osis-pipelines.amazonaws.com"),
+      inlinePolicies: {
+        pipelineAccessPermissions: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: [
+                "kinesis:DescribeStream",
+                "kinesis:DescribeStreamSummary",
+                "kinesis:GetRecords",
+                "kinesis:GetShardIterator",
+                "kinesis:ListShards",
+                "kinesis:ListStreams",
+                "kinesis:ListStreamConsumers",
+                "kinesis:RegisterStreamConsumer"],
+              resources: [props.metricOutputStream.streamArn],
+              effect: iam.Effect.ALLOW,
+              sid: "allowReadFromStream",
+            }),
+            new iam.PolicyStatement({
+              actions: [
+                "aoss:APIAccessAll",
+                "aoss:BatchGetCollection"],
+              resources: [osCollection.attrArn],
+              effect: iam.Effect.ALLOW,
+              sid: "allowAPIs",
+            }),
+            new iam.PolicyStatement({
+              actions: [
+                "aoss:CreateSecurityPolicy",
+                "aoss:UpdateSecurityPolicy",
+                "aoss:GetSecurityPolicy"],
+              resources: ['*'],
+              conditions: {
+                "StringLike": {
+                  "aoss:collection": [
+                    osCollection.name
+                  ]
+                },
+                "StringEquals": {
+                  "aws:ResourceAccount": [
+                    cdk.Aws.ACCOUNT_ID
+                  ]
+                }
+              },
+              effect: iam.Effect.ALLOW,
+              sid: "allowSecurityPolicy",
+            }),
+            new iam.PolicyStatement({
+              actions: ["s3:PutObject"],
+              resources: [dlqBucket.arnForObjects("*")],
+              effect: iam.Effect.ALLOW,
+              sid: "s3Access",
+            })
+          ]
+        })
+      }
+    });
+
+    ingestionRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "kinesis:DescribeStream",
+          "kinesis:DescribeStreamSummary",
+          "kinesis:GetRecords",
+          "kinesis:GetShardIterator",
+          "kinesis:ListShards",
+          "kinesis:ListStreams",
+          "kinesis:ListStreamConsumers",
+          "kinesis:RegisterStreamConsumer"],
+        resources: [props.metricOutputStream.streamArn],
+        effect: iam.Effect.ALLOW,
+        sid: "allowReadFromStream",
+      })
+    );
+
     const unformattedIngestionDefinition = fs.readFileSync(`${codePath}/opensearch-ingestion/ingestion-definition.yml`, "utf8")
 
     const formattedIngestionDefinition = cdk.Fn.sub(unformattedIngestionDefinition, {
+      pipeline_name: pipelineName,
       stream_name: props.metricOutputStream.streamName,
       host_name: osCollection.attrCollectionEndpoint,
-      network_policy_name: osNetworkPolicy.ref,
+      network_policy_name: osNetworkPolicy.name,
+      role: ingestionRole.roleArn,
       dlq_bucket_name: dlqBucket.bucketName
+    })
+
+    const ingestionLogGroup = new logs.LogGroup(this, "IngestionLogGroup", {
+      logGroupName: `/aws/vendedlogs/OpenSearchIngestion/${pipelineName}/audit-logs`,
+      retention: props.config.CLOUDWATCH_RETENTION_DAYS,
+      removalPolicy: cdk.RemovalPolicy.DESTROY
+    });
+
+    const ingestionPipeline = new osis.CfnPipeline(this, "GapIngestionPipeline", {
+      minUnits: 2,
+      maxUnits: 4,
+      pipelineConfigurationBody: formattedIngestionDefinition,
+      pipelineName: pipelineName,
+      logPublishingOptions: {
+        cloudWatchLogDestination: {
+          logGroup: ingestionLogGroup.logGroupName
+        },
+        isLoggingEnabled: true
+      },
     })
 
 

@@ -1,5 +1,5 @@
 version: '2'
-gap-ingestion:
+${pipeline_name}:
   source:
     kinesis_data_streams:
       acknowledgments: true
@@ -17,7 +17,8 @@ gap-ingestion:
         max_polling_records: '10000'
         idle_time_between_reads: PT0.25S
       aws:
-        region: ${region}
+        region: ${AWS::Region}
+        sts_role_arn: ${role}
   processor:
     - parse_json:
         handle_failed_events: skip
@@ -27,13 +28,15 @@ gap-ingestion:
           - '${host_name}'
         aws:
           serverless: true
-          region: ${region}
+          region: ${AWS::Region}
+          sts_role_arn: ${role}
           serverless_options:
             network_policy_name: ${network_policy_name}
         index_type: custom
-        index: 'gap_index_${getMetadata("stream_name")}'
+        index: 'game_metrics'
         dlq:
           s3:
             bucket: ${dlq_bucket_name}
-            region: ${region}
+            region: ${AWS::Region}
+            sts_role_arn: ${role}
         document_version_type: internal
