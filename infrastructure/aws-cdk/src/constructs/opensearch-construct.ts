@@ -13,7 +13,6 @@
  * permissions and limitations under the License.
  */
 
-import * as yaml from "js-yaml";
 import * as fs from "fs";
 
 import * as cdk from "aws-cdk-lib";
@@ -26,7 +25,6 @@ import { aws_opensearchserverless as opensearchserverless } from 'aws-cdk-lib';
 import { aws_osis as osis } from 'aws-cdk-lib';
 import * as logs from "aws-cdk-lib/aws-logs";
 
-import { Aws, Fn } from "aws-cdk-lib";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 
 
@@ -93,26 +91,6 @@ export class OpenSearchConstruct extends Construct {
     osEncryptionPolicy.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
     osCollection.addDependency(osEncryptionPolicy);
 
-    // enable network access to collection
-    const networkPolicyDefinition = [{
-      "Rules": [
-        {
-          "Resource": [
-            `collection/${collectionName}`
-          ],
-          "ResourceType": "collection"
-        }
-      ],
-      "AllowFromPublic": true
-    },
-    ]
-
-    const osNetworkPolicy = new opensearchserverless.CfnSecurityPolicy(this, 'GameAnalyticsCollectionNetworkPolicy', {
-      name: `gap-network-policy`,
-      policy: JSON.stringify(networkPolicyDefinition),
-      type: 'network'
-    });
-    osNetworkPolicy.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
 
     // enable data access to collection
 
@@ -214,7 +192,7 @@ export class OpenSearchConstruct extends Construct {
       pipeline_name: pipelineName,
       stream_name: props.metricOutputStream.streamName,
       host_name: osCollection.attrCollectionEndpoint,
-      network_policy_name: osNetworkPolicy.name,
+      network_policy_name: collectionName,
       role: ingestionRole.roleArn,
       dlq_bucket_name: dlqBucket.bucketName
     })
@@ -226,7 +204,7 @@ export class OpenSearchConstruct extends Construct {
     });
 
     const ingestionPipeline = new osis.CfnPipeline(this, "GapIngestionPipeline", {
-      minUnits: 2,
+      minUnits: 2, // TODO - make configurable
       maxUnits: 4,
       pipelineConfigurationBody: formattedIngestionDefinition,
       pipelineName: pipelineName,
@@ -238,8 +216,29 @@ export class OpenSearchConstruct extends Construct {
       },
     })
 
+    // enable network access to collection
+    const networkPolicyDefinition = [{
+      "Rules": [
+        {
+          "Resource": [
+            `collection/${collectionName}`
+          ],
+          "ResourceType": "collection"
+        }
+      ],
+      "AllowFromPublic": true
+    },
+    ]
 
-    // network config for ingestion pipeline
+    const stack = cdk.Stack.of(this);
+
+    const osNetworkPolicy = new opensearchserverless.CfnSecurityPolicy(this, 'GameAnalyticsCollectionNetworkPolicy', {
+      name: collectionName,
+      policy: stack.toJsonString(networkPolicyDefinition),
+      type: 'network'
+    });
+    osNetworkPolicy.addDependency(osCollection)
+    osNetworkPolicy.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
 
     // access policy for ingestion pipeline
 
