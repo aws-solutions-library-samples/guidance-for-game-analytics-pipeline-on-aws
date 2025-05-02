@@ -127,30 +127,14 @@ export class OpenSearchConstruct extends Construct {
 
 
     // load ingestion definition
-    let unformattedIngestionDefinition = fs.readFileSync(`${codePath}/opensearch-ingestion/ingestion-definition.yml`, "utf8")
+    const unformattedIngestionDefinition = fs.readFileSync(`${codePath}/opensearch-ingestion/ingestion-definition.yml`, "utf8")
 
-    let defObject: any = yaml.load(unformattedIngestionDefinition)
-    
-    console.log(JSON.stringify(defObject))
-    defObject['gap-ingestion']['source']['kinesis_data_streams']['streams'][0]['stream_name'] = props.metricOutputStream.streamName
-    defObject['gap-ingestion']['source']['kinesis_data_streams']['aws']['region'] = cdk.Aws.REGION
-    defObject['gap-ingestion']['sink'][0]['opensearch']['hosts'][0] = osCollection.attrCollectionEndpoint
-    defObject['gap-ingestion']['sink'][0]['opensearch']['aws']['region'] = cdk.Aws.REGION
-    defObject['gap-ingestion']['sink'][0]['opensearch']['aws']['serverless_options']['network_policy_name'] = osNetworkPolicy.ref
-    defObject['gap-ingestion']['sink'][0]['opensearch']['dlq']['s3']['bucket'] = dlqBucket.bucketName
-    defObject['gap-ingestion']['sink'][0]['opensearch']['dlq']['s3']['region'] = cdk.Aws.REGION
-    console.log(JSON.stringify(defObject))
-
-    /*
-    let formattedDef = unformattedIngestionDefinition
-      .replace('${stream_name}', props.metricOutputStream.streamName)
-      .replace('${region}', cdk.Aws.REGION)
-      .replace('${host_name}', osCollection.attrCollectionEndpoint)
-      .replace('${network_policy_name}', osNetworkPolicy.ref)
-      .replace('${dlq_bucket_name}', dlqBucket.bucketName);
-
-    console.log(formattedDef);
-    */
+    const formattedIngestionDefinition = cdk.Fn.sub(unformattedIngestionDefinition, {
+      stream_name: props.metricOutputStream.streamName,
+      host_name: osCollection.attrCollectionEndpoint,
+      network_policy_name: osNetworkPolicy.ref,
+      dlq_bucket_name: dlqBucket.bucketName
+    })
 
 
     // network config for ingestion pipeline
