@@ -92,6 +92,31 @@ export class OpenSearchConstruct extends Construct {
     osCollection.addDependency(osEncryptionPolicy);
 
 
+    // enable network access to collection
+    const networkPolicyDefinition = [{
+      "Rules": [
+        {
+          "Resource": [
+            `collection/${collectionName}`
+          ],
+          "ResourceType": "collection"
+        }
+      ],
+      "AllowFromPublic": true
+    },
+    ]
+
+    const stack = cdk.Stack.of(this);
+
+    const osNetworkPolicy = new opensearchserverless.CfnSecurityPolicy(this, 'GameAnalyticsCollectionNetworkPolicy', {
+      name: collectionName,
+      policy: stack.toJsonString(networkPolicyDefinition),
+      type: 'network'
+    });
+    osNetworkPolicy.addDependency(osCollection)
+    osNetworkPolicy.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
+
+
     // enable data access to collection
 
     // game metric index
@@ -216,31 +241,47 @@ export class OpenSearchConstruct extends Construct {
       },
     })
 
-    // enable network access to collection
-    const networkPolicyDefinition = [{
-      "Rules": [
-        {
-          "Resource": [
-            `collection/${collectionName}`
-          ],
-          "ResourceType": "collection"
-        }
-      ],
-      "AllowFromPublic": true
-    },
-    ]
-
-    const stack = cdk.Stack.of(this);
-
-    const osNetworkPolicy = new opensearchserverless.CfnSecurityPolicy(this, 'GameAnalyticsCollectionNetworkPolicy', {
-      name: collectionName,
-      policy: stack.toJsonString(networkPolicyDefinition),
-      type: 'network'
-    });
-    osNetworkPolicy.addDependency(osCollection)
-    osNetworkPolicy.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
-
     // access policy for ingestion pipeline
 
+    const accesspolicyDef = [
+      // TODO - add access to IAM admin user
+      {
+        "Rules": [
+          {
+            "Resource": [
+              `collection/${collectionName}`
+            ],
+            "Permission": [
+              "aoss:UpdateCollectionItems",
+              "aoss:DescribeCollectionItems"
+            ],
+            "ResourceType": "collection"
+          },
+          {
+            "Resource": [
+              `index/${collectionName}/*`
+            ],
+            "Permission": [
+              "aoss:CreateIndex",
+              "aoss:UpdateIndex",
+              "aoss:DescribeIndex",
+              "aoss:ReadDocument",
+              "aoss:WriteDocument"
+            ],
+            "ResourceType": "index"
+          }
+        ],
+        "Principal": [
+          ingestionRole.roleArn
+        ],
+        "Description": "Pipeline-Data-Policy"
+      }
+    ]
+
+    const metricCollectionAccessPolicy = new opensearchserverless.CfnAccessPolicy(this, 'MetricCollectionAccessPolicy', {
+      name: collectionName,
+      policy: stack.toJsonString(accesspolicyDef),
+      type: 'data',
+    });
   }
 }
