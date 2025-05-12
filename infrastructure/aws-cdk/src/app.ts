@@ -20,6 +20,10 @@ const account =
 
 const env = {region , account };
 
+if (config.DATA_PLATFORM_MODE === "REDSHIFT" && config.INGEST_MODE === "DIRECT_BATCH") {
+    throw new Error("REDSHIFT mode does not support DIRECT_BATCH, please see documentation (Design Considerations) for details.");
+}
+
 // Core infrastructure
 new InfrastructureStack(app, "CentralizedGameAnalytics", {
     stackName: `${config.WORKLOAD_NAME}`,
