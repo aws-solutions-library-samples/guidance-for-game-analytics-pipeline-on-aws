@@ -15,14 +15,18 @@ Upgraded infrastructure to the following: (INSERT BEFORE AND AFTERS HERE)
 !!! Info
     Explanations can be found in [Component Deep Dive](../component-deep-dive.md) and [Design Considerations](../design-considerations.md)
 - Replaced Kinesis Data Analytics with Managed Flink
-- Added deployment options for MSK and Direct Batching to Firehose
+- Added deployment option for Direct Batching to Firehose
 - Removed Ops-pipeline components (Github Actions, CodeBuild, CodePipeline)
 - Added S3 Tables option for Iceberg table support
 ---
 
 ## <u>Configuration Updates</u>
-- Added option/support for `ON_DEMAND` Kinesis Data Streams
+- Added option/support for `ON_DEMAND` Kinesis Data Streams through `STREAM_PROVISIONED : true/false`
+- Replaced `ENABLE_STREAMING_ANALYTICS` with `INGEST_MODE: "REAL_TIME_KDS" | "DIRECT_BATCH"` to support future ingest options
+- Added `DATA_PLATFORM_MODE: "DATA_LAKE" | "REDSHIFT"` to support Redshift deployment option
 - Added default values for configuration template file
+- Added "iac" field to top-level package.json to support CDK or Terraform deployment options
+- Reorganized config variables to functional groups
 - TODO: Add deltas between before and after files
 ---
 

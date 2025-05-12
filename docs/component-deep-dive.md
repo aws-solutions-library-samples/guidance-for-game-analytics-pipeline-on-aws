@@ -16,7 +16,7 @@ From there the Guidance allows several ingest options:
 
 1. `DIRECT_BATCH` - Does not deploy the real-time infrastructure components. Sends directly via batch in near-real-time, either to Firehose for `DATA_LAKE` mode, or to Redshift for `REDSHIFT` mode.
 
-2. `REAL_TIME_KDS` or `REAL_TIME_MSK` - Deploys additional real-time infrastructure components for real-time analysis
+2. `REAL_TIME_KDS` - Deploys additional real-time infrastructure components for real-time analysis
 
 ![Architecture-Simplified-Real-Time](media/architecture-simplified-real-time.png)
 
@@ -45,7 +45,6 @@ The Game Analytics Pipeline Guidance can accept from any HTTP/HTTPS REST based s
 4. [Based on the guidance configurations](./component-deep-dive.md#overview), API Gateway performs the following:
 
     - `REAL_TIME_KDS` - [Sends a passthrough call directly to Amazon Kinesis Data Streams](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services.html) via stream in real-time
-    - `REAL_TIME_MSK` - [Sends a call to a Lambda Function that interfaces as a Kafka client, sending to Amazon Managed Streaming for Apache Kafka (MSK)](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html) via stream in real-time
     - `DIRECT_BATCH` - [Sends a passthrough call directly to the Amazon services](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services.html) via batch in near-real-time, either to Firehose for `DATA_LAKE` mode, or to Redshift for `REDSHIFT` mode.
 
 ![Architecture-Verbose-Endpoint](media/architecture-verbose-endpoint.png)
@@ -54,31 +53,17 @@ The Game Analytics Pipeline Guidance can accept from any HTTP/HTTPS REST based s
 
 ## 3. Real-Time (Optional)
 
-=== "Kinesis Data Streams"
+1. If Real-Time is enabled with Kinesis Data Streams, all incoming events from all clients will have their data ingested into Kinesis Data Streams. Kinesis Data Streams will send multiple outputs, one to the Data Lake / Redshift store for long term analytics, and the other to Managed Flink for real-time ETL
 
-    1. If Real-Time is enabled with Kinesis Data Streams, all incoming events from all clients will have their data ingested into Kinesis Data Streams. Kinesis Data Streams will send multiple outputs, one to the Data Lake / Redshift store for long term analytics, and the other to Managed Flink for real-time ETL
+2. Managed Flink performs SQL based queries on time windows of the incoming streaming data, sending the query outputs to OpenSearch service
 
-    2. Managed Flink performs SQL based queries on time windows of the incoming streaming data, sending the query outputs to OpenSearch service
+3. OpenSearch ingests the query outputs and the integrated Kibana dashboard can be accessed by users to view created widgets that display graphs and information in real-time
 
-    3. OpenSearch ingests the query outputs and the integrated Kibana dashboard can be accessed by users to view created widgets that display graphs and information in real-time
-
-    ![Architecture-Verbose-Real-Time-KDS](media/architecture-verbose-real-time-kds.png)
-
-=== "Managed Streaming for Apache Kafka (MSK)"
-
-    1. If Real-Time is enabled with MSK, a Lambda function powers the logic behind the API Gateway calls to interface as a Kafka producer client to proxy and send to the MSK service. This is because as of now there is no direct integration to the service from API Gateway.  
-    
-    2. MSK will send multiple outputs, one to the Data Lake / Redshift store for long term analytics, and the other to Managed Flink for real-time ETL
-
-    3. Managed Flink performs SQL based queries on time windows of the incoming streaming data, sending the query outputs to OpenSearch service
-
-    4. OpenSearch ingests the query outputs and the integrated Kibana dashboard can be accessed by users to view created widgets that display graphs and information in real-time
-
-    ![Architecture-Verbose-Real-Time-MSK](media/architecture-verbose-real-time-msk.png)
+![Architecture-Verbose-Real-Time-KDS](media/architecture-verbose-real-time-kds.png)
 
 ## 4. Data Platform
 
-If `REAL_TIME_KDS` or `REAL_TIME_MSK` is enabled, events come from the respective streaming service.
+If `REAL_TIME_KDS` is enabled, events come from the respective streaming service.
 
 If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
 

@@ -2,7 +2,7 @@
   "name": "project-root",
   "version": "0.0.1",
   "config": {
-    "iac": "cdk"
+    "iac": "tf"
   },
   "scripts": {
     "build": "python3 build.py",
@@ -11,9 +11,9 @@
     "cdk:deploy.bootstrap": "cd infrastructure/aws-cdk && npm install && npm run bootstrap",
     "cdk:deploy": "cd infrastructure/aws-cdk && npm run cdk deploy -- -c stack_name=\"${STACK_NAME:-}\" --all --require-approval never",
     "cdk:destroy": "cd infrastructure/aws-cdk && npm run cdk destroy -- -c stack_name=\"${STACK_NAME:-}\" --all",
-    "tf:deploy.bootstrap": "cd infrastructure/terraform && echo 'Terraform Deploy Bootstrap'",
-    "tf:deploy": "cd infrastructure/terraform && echo 'Terraform Deploy'",
-    "tf:destroy": "cd infrastructure/terraform && echo 'Terraform Destroy'",
+    "tf:deploy.bootstrap": "cd infrastructure/terraform/src && terraform init && terraform validate && terraform plan",
+    "tf:deploy": "cd infrastructure/terraform/src && terraform apply && terraform output",
+    "tf:destroy": "cd infrastructure/terraform/src && terraform destroy",
     "deploy.bootstrap": "npm run $npm_package_config_iac:deploy.bootstrap",
     "deploy": "npm run $npm_package_config_iac:deploy",
     "destroy": "npm run $npm_package_config_iac:destroy"

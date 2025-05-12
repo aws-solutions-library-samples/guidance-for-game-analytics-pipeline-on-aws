@@ -33,6 +33,15 @@ Why not Sagemaker Unified Studio, or Lakehouse?
 - This feature is in Preview as of this document, and once it is fully Globally Available, the team will re-assess.
 
 ---
+Why not use Kafka or Amazon Managed Service for Kafka (MSK)?
+
+- The team has put substantial effort to integrate Kafka into the guidance, but are limited by the following factors:
+    1. Non-managed Kafka has management overhead that conflicts with the guidance tenets
+    2. Amazon Managed MSK meets all of the architectural needs of the guidance, but limitations with IaC (CDK or Terraform) in which deploying Kafka requires live compute to execute the commands needed to create the initial Kafka topic. This would require a custom resource deployment which greatly complicates the deployment process and diagnosing deployments of the guidance, conflicting with the guidance tenets.
+    
+- For the time being, the team plans to add documentation to extend the solution for Kafka in the [Customizations page](./customizations.md), and integrate Kafka support as a direct feature once in-place topic creation is supported for MSK.
+
+---
 Why Glue Workflow instead of Amazon Managed Workflows for Apache Airflow (MWAA)?
 
 - MWAA requires a VPC and all associated networking resources to be created, which adds more networking management overhead and more network-related performance considerations that are otherwise all managed under the hood by Glue Workflows. However, Glue Workflows is only constrained to Glue, whereas MWAA supports more options outside of Glue, which is a case of balancing conflicting aspects of the guidance's tenets. Currently we weigh the less management overhead option over the integration for mainstream alternative options. We are open to feedback to re-align MWAA based on user feedback through Github Issues on the repository.
@@ -54,7 +63,7 @@ Why can't I deploy both the Data Lake and Redshift option at the same time?
 
 ---
 
-Why KDS/MSK in between Flink and Data Lake / Redshift?
+Why KDS in between Flink and Data Lake / Redshift?
 
 ---
 
@@ -67,6 +76,5 @@ Why QuickSight?
 
 - When should I use Data Lake mode vs Redshift mode?
 - When should I utilize real-time analytics?
-- When should I use KDS vs MSK?
 - Why DynamoDB with application_id 
 - why is the Schema the way we designed it?
