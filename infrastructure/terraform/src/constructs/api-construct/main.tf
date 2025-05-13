@@ -18,6 +18,7 @@ resource "aws_iam_role" "api_gateway_role" {
 
 // IAM Policy for API Gateway to put records to Kinesis
 resource "aws_iam_role_policy" "api_gateway_kinesis_policy" {
+  count = var.ingest_mode == "KINESIS_DATA_STREAMS" ? 1 : 0
   role = aws_iam_role.api_gateway_role.id
 
   policy = jsonencode({
@@ -37,6 +38,7 @@ resource "aws_iam_role_policy" "api_gateway_kinesis_policy" {
 
 // IAM Policy for API Gateway to put records to Firehose
 resource "aws_iam_role_policy" "api_gateway_firehose_policy" {
+  count = var.data_platform_mode == "DATA_LAKE" ? 1 : 0
   role = aws_iam_role.api_gateway_role.id
 
   policy = jsonencode({
@@ -75,7 +77,31 @@ resource "aws_iam_role_policy" "api_gateway_lambda_policy" {
 
 locals {
   api_gateway_body = {
-      REAL_TIME_KDS = {
+      DIRECT_BATCH = {
+          value = <<EOT
+{
+                            "DeliveryStreamName": "${var.game_events_firehose_arn}",
+                            "Records": [
+                                #set($i = 0)
+                                #foreach($event in $input.path('$.events'))
+                                  #set($data = $input.json("$.events[$i]"))
+                                  #set($output = "{
+                                    ""event"": $data,
+                                    ""aws_ga_api_validated_flag"": true,
+                                    ""aws_ga_api_requestId"": ""$context.requestId"",
+                                    ""aws_ga_api_requestTimeEpoch"": $context.requestTimeEpoch,
+                                    ""application_id"": ""$util.escapeJavaScript($input.params().path.get('applicationId'))""
+                                  }" )
+                                  {
+                                    "Data": "$util.base64Encode($output)"
+                                  }#if($foreach.hasNext),#end
+                                  #set($i = $i + 1)
+                                #end
+                            ]
+                        }
+EOT
+        },
+      KINESIS_DATA_STREAMS = {
           value = <<EOT
 {
                             "StreamName": "${var.game_events_stream_arn}",
@@ -99,55 +125,8 @@ locals {
                             ]
                         }
 EOT
-      },
-      BATCH_FIREHOSE = {
-          value = <<EOT
-{
-                            "DeliveryStreamName": "${var.game_events_firehose_arn}",
-                            "Records": [
-                                #set($i = 0)
-                                #foreach($event in $input.path('$.events'))
-                                  #set($data = $input.json("$.events[$i]"))
-                                  #set($output = "{
-                                    ""event"": $data,
-                                    ""aws_ga_api_validated_flag"": true,
-                                    ""aws_ga_api_requestId"": ""$context.requestId"",
-                                    ""aws_ga_api_requestTimeEpoch"": $context.requestTimeEpoch,
-                                    ""application_id"": ""$util.escapeJavaScript($input.params().path.get('applicationId'))""
-                                  }" )
-                                  {
-                                    "Data": "$util.base64Encode($output)"
-                                  }#if($foreach.hasNext),#end
-                                  #set($i = $i + 1)
-                                #end
-                            ]
-                        }
-EOT
-        }
+      }
     }
-  api_gateway_body_test = <<EOT
-    {
-      "StreamName": "${var.game_events_stream_arn}",
-      "Records": [
-        #set($i = 0)
-        #foreach($event in $input.path('$.events'))
-          #set($data = $input.json("$.events[$i]"))
-          #set($output = "{
-            ""event"": $data,
-            ""aws_ga_api_validated_flag"": true,
-            ""aws_ga_api_requestId"": ""$context.requestId"",
-            ""aws_ga_api_requestTimeEpoch"": $context.requestTimeEpoch,
-            ""application_id"": ""$util.escapeJavaScript($input.params().path.get('applicationId'))""
-          }" )
-          {
-            "Data": "$util.base64Encode($output)",
-            "PartitionKey": "$event.event_id"
-          }#if($foreach.hasNext),#end
-          #set($i = $i + 1)
-        #end
-      ]
-    }
-    EOT
 }
 
 // API Gateway REST API

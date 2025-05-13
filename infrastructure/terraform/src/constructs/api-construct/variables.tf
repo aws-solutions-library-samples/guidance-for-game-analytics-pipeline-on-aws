@@ -33,6 +33,11 @@ variable "ingest_mode" {
   description = "Streaming mode of the ingest"
 }
 
+variable "data_platform_mode" {
+  type = string
+  description = "Target platform for the data (Redshift or S3 Data Lake)"
+}
+
 variable "application_admin_service_function_arn" {
   type = string
   description = "ARN of the Lambda function for application admin service"

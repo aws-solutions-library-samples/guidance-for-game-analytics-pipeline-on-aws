@@ -165,7 +165,7 @@ export class StreamingIngestionConstruct extends Construct {
 
     var firehoseIngestDeliveryStreamType = "DIRECT_BATCH";
     var firehoseSourceConfiguration;
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
+    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" && props.gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
       firehoseIngestDeliveryStreamType = "KinesisStreamAsSource";
       firehoseSourceConfiguration = {
         kinesisStreamSourceConfiguration: {

@@ -208,7 +208,7 @@ export class ManagedFlinkConstruct extends Construct {
     });
 
     let flinkAppConfig = {};
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.gameEventsStream != undefined) {
+    if (props.config.REAL_TIME_ANALYTICS === true && props.gameEventsStream != undefined) {
       /* Allow flink to access source and sink streams */
       flinkAppRole.addToPolicy(
         new iam.PolicyStatement({

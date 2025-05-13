@@ -50,7 +50,7 @@ export class MetricsConstruct extends Construct {
         props = { ...defaultProps, ...props };
 
         // Metrics if streaming analytics is enabled
-        if (props.config.INGEST_MODE === "REAL_TIME_KDS" && props.managedFlinkConstruct && props.gameEventsStream != undefined) {
+        if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" && props.managedFlinkConstruct && props.gameEventsStream != undefined) {
 
             // Kinesis game stream throughput metrics
             const kinesisReadProvisionedThroughputExceeded = new cloudwatch.Alarm(

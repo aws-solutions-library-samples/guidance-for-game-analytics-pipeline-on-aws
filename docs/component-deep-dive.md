@@ -16,7 +16,7 @@ From there the Guidance allows several ingest options:
 
 1. `DIRECT_BATCH` - Does not deploy the real-time infrastructure components. Sends directly via batch in near-real-time, either to Firehose for `DATA_LAKE` mode, or to Redshift for `REDSHIFT` mode.
 
-2. `REAL_TIME_KDS` - Deploys additional real-time infrastructure components for real-time analysis
+2. `KINESIS_DATA_STREAMS` - Deploys additional real-time infrastructure components for real-time analysis
 
 ![Architecture-Simplified-Real-Time](media/architecture-simplified-real-time.png)
 
@@ -44,7 +44,7 @@ The Game Analytics Pipeline Guidance can accept from any HTTP/HTTPS REST based s
 
 4. [Based on the guidance configurations](./component-deep-dive.md#overview), API Gateway performs the following:
 
-    - `REAL_TIME_KDS` - [Sends a passthrough call directly to Amazon Kinesis Data Streams](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services.html) via stream in real-time
+    - `KINESIS_DATA_STREAMS` - [Sends a passthrough call directly to Amazon Kinesis Data Streams](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services.html) via stream in real-time
     - `DIRECT_BATCH` - [Sends a passthrough call directly to the Amazon services](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services.html) via batch in near-real-time, either to Firehose for `DATA_LAKE` mode, or to Redshift for `REDSHIFT` mode.
 
 ![Architecture-Verbose-Endpoint](media/architecture-verbose-endpoint.png)
@@ -63,7 +63,7 @@ The Game Analytics Pipeline Guidance can accept from any HTTP/HTTPS REST based s
 
 ## 4. Data Platform
 
-If `REAL_TIME_KDS` is enabled, events come from the respective streaming service.
+If `KINESIS_DATA_STREAMS` is enabled, events come from the respective streaming service.
 
 If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
 
