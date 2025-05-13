@@ -115,7 +115,7 @@ resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
   destination = var.enable_apache_iceberg_support ? "iceberg" : "extended_s3"
 
   dynamic "kinesis_source_configuration" {
-    for_each = var.ingest_mode == "REAL_TIME_KDS" ? [1] : []
+    for_each = var.ingest_mode == "KINESIS_DATA_STREAMS" ? [1] : []
     content {
       kinesis_stream_arn = var.game_events_stream_arn
       role_arn           = aws_iam_role.firehose_role.arn

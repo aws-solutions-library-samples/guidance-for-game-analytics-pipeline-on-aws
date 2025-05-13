@@ -495,8 +495,15 @@ locals {
   }
   EOT
 
+  widgets_list = []
 
   widgets_without_analytics = <<-EOT
+  {
+    "widgets": ${widgets_list}
+  }
+  EOT
+
+ /* widgets_without_analytics = <<-EOT
   {
     "widgets": [
       ${local.title_widget},
@@ -505,7 +512,7 @@ locals {
       [${local.event_ingestion_widget}, ${local.ingestion_lambda_widget}, ${local.stream_latency_widget}]
     ]
   }
-  EOT
+  EOT*/
 
   widgets_with_analytics = <<-EOT
   {
@@ -521,7 +528,7 @@ locals {
   }
   EOT
 
-  widgets = var.ingest_mode == "REAL_TIME_KDS" ? local.widgets_with_analytics : local.widgets_without_analytics
+  widgets = var.ingest_mode == "KINESIS_DATA_STREAMS" ? local.widgets_with_analytics : local.widgets_without_analytics
 }
 
 resource "aws_cloudwatch_dashboard" "pipeline_ops_dashboard" {

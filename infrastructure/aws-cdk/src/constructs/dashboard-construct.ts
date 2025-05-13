@@ -172,7 +172,7 @@ export class CloudWatchDashboardConstruct extends Construct {
         let widgets;
         
         let deliveryMetric;
-        if ((props.config.INGEST_MODE === "REAL_TIME_KDS") && props.managedFlinkConstruct != undefined && props.gameEventsStream != undefined) {
+        if ((props.config.INGEST_MODE === "KINESIS_DATA_STREAMS") && props.managedFlinkConstruct != undefined && props.gameEventsStream != undefined) {
             if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.gameEventsFirehose != undefined) {
                 deliveryMetric = new cloudwatch.Metric({
                     metricName: 'DeliveryToS3.Records',

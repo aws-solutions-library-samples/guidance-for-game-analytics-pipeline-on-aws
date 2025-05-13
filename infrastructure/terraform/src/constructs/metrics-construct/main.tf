@@ -1,6 +1,6 @@
 # Kinesis Analytics Errors Metric Filter
 resource "aws_cloudwatch_log_metric_filter" "kinesis_analytics_errors_filter" {
-  count = var.ingest_mode == "REAL_TIME_KDS" ? 1 : 0
+  count = var.ingest_mode == "KINESIS_DATA_STREAMS" ? 1 : 0
 
   name           = "${var.stack_name}-KinesisAnalyticsErrorsFilter"
   pattern        = "{$.KinesisAnalyticsErrors > 0}"
@@ -15,7 +15,7 @@ resource "aws_cloudwatch_log_metric_filter" "kinesis_analytics_errors_filter" {
 
 # Kinesis Analytics Errors Alarm
 resource "aws_cloudwatch_metric_alarm" "kinesis_analytics_errors_alarm" {
-  count = var.ingest_mode == "REAL_TIME_KDS" ? 1 : 0
+  count = var.ingest_mode == "KINESIS_DATA_STREAMS" ? 1 : 0
 
   alarm_name          = "${var.stack_name}-KinesisAnalyticsErrorsAlarm"
   comparison_operator = "GreaterThanThreshold"
@@ -34,7 +34,7 @@ resource "aws_cloudwatch_metric_alarm" "kinesis_analytics_errors_alarm" {
 
 # Streaming Analytics Lambda Errors Alarm
 resource "aws_cloudwatch_metric_alarm" "streaming_analytics_lambda_errors_alarm" {
-  count = var.ingest_mode == "REAL_TIME_KDS" ? 1 : 0
+  count = var.ingest_mode == "KINESIS_DATA_STREAMS" ? 1 : 0
 
   alarm_name          = "StreamingAnalyticsLambdaErrorsAlarm (${var.stack_name})"
   comparison_operator = "GreaterThanThreshold"
@@ -56,7 +56,7 @@ resource "aws_cloudwatch_metric_alarm" "streaming_analytics_lambda_errors_alarm"
 
 # Streaming Analytics Lambda Throttles Alarm
 resource "aws_cloudwatch_metric_alarm" "streaming_analytics_lambda_throttles_alarm" {
-  count = var.ingest_mode == "REAL_TIME_KDS" ? 1 : 0
+  count = var.ingest_mode == "KINESIS_DATA_STREAMS" ? 1 : 0
 
   alarm_name          = "StreamingAnalyticsLambdaThrottlesAlarm (${var.stack_name})"
   comparison_operator = "GreaterThanThreshold"

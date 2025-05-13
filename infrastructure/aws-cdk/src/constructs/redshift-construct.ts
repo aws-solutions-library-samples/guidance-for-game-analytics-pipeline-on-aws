@@ -37,7 +37,6 @@ const defaultProps = {
 };
 
 export class RedshiftConstruct extends Construct {
-  public readonly redshiftDirectIngestQueue?: sqs.Queue;
   public readonly namespace: redshiftserverless.CfnNamespace;
   public readonly workgroup: redshiftserverless.CfnWorkgroup;
   public readonly redshiftRole: iam.Role;

@@ -49,7 +49,7 @@ export class ApiConstruct extends Construct {
     });
 
     if (
-      props.config.INGEST_MODE === "REAL_TIME_KDS" &&
+      props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" &&
       props.gameEventsStream instanceof cdk.aws_kinesis.Stream
     ) {
       apiGatewayRole.addToPolicy(
@@ -88,17 +88,11 @@ export class ApiConstruct extends Construct {
       })
     );
 
-    if (props.redshiftConstruct?.redshiftDirectIngestQueue) {
-      props.redshiftConstruct.redshiftDirectIngestQueue.grantSendMessages(
-        apiGatewayRole
-      );
-    }
-
     // event integration definition based on configuration, default is DIRECT_BATCH
     var eventDefinition = {};
 
     if (
-      props.config.DATA_PLATFORM_MODE === "DATA_LAKE" &&
+      props.config.INGEST_MODE === "DIRECT_BATCH" &&
       props.gameEventsFirehose != undefined
     ) {
       eventDefinition = {
@@ -159,35 +153,7 @@ export class ApiConstruct extends Construct {
         },
       };
     } else if (
-      props.config.DATA_PLATFORM_MODE === "REDSHIFT" &&
-      props.config.INGEST_MODE == "DIRECT_BATCH" &&
-      props.redshiftConstruct
-    ) {
-      // set eventDefinition to send direct to sqs
-      eventDefinition = {
-        uri: `arn:${cdk.Aws.PARTITION}:apigateway:${cdk.Aws.REGION}:sqs:path/${cdk.Aws.ACCOUNT_ID}/${props.redshiftConstruct.redshiftDirectIngestQueue?.queueName}`,
-        credentials: apiGatewayRole.roleArn,
-        passthroughBehavior: "never",
-        httpMethod: "POST",
-        type: "aws",
-        requestParameters: {
-          "integration.request.header.Content-Type":
-            "'application/x-www-form-urlencoded'",
-        },
-        requestTemplates: {
-          "application/json": `Action=SendMessage&MessageBody={
-              "body": $input.body,
-              "applicationId": "$util.escapeJavaScript($input.params('applicationId'))"
-          }`,
-        },
-        responses: {
-          default: {
-            statusCode: "200",
-          },
-        },
-      };
-    } else if (
-      props.config.INGEST_MODE === "REAL_TIME_KDS" &&
+      props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" &&
       props.gameEventsStream instanceof cdk.aws_kinesis.Stream
     ) {
       eventDefinition = {

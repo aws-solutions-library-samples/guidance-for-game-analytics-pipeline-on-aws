@@ -520,6 +520,7 @@ module "games_api_construct" {
   stack_name = local.config.WORKLOAD_NAME
   api_stage_name = local.config.API_STAGE_NAME
   ingest_mode = local.config.INGEST_MODE
+  data_platform_mode = local.config.DATA_PLATFORM_MODE
 }
 
 // ---- METRICS & ALARMS ---- /
@@ -552,7 +553,7 @@ resource "aws_sns_topic_policy" "notifications_topic_policy" {
 
 // Create flink components
 module "flink_construct" {
-  count = local.config.INGEST_MODE == "REAL_TIME_KDS" ? 1 : 0
+  count = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? 1 : 0
   source = "./constructs/flink-construct"
 
   stack_name                       = local.config.WORKLOAD_NAME
@@ -580,9 +581,9 @@ module "metrics_construct" {
   ]
   cloudwatch_retention_days        = local.config.CLOUDWATCH_RETENTION_DAYS
   kinesis_stream_name              = aws_kinesis_stream.game_events_stream.name
-  kinesis_metrics_stream_name      = local.config.INGEST_MODE == "REAL_TIME_KDS" ? module.flink_construct[0].kinesis_metrics_stream_name : null
-  analytics_processing_function_name = local.config.INGEST_MODE == "REAL_TIME_KDS" ? module.flink_construct[0].kinesis_metrics_stream_name : null
-  kinesis_analytics_log_group_name =   local.config.INGEST_MODE == "REAL_TIME_KDS" ? module.flink_construct[0].kinesis_analytics_log_group_name : null
+  kinesis_metrics_stream_name      = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? module.flink_construct[0].kinesis_metrics_stream_name : null
+  analytics_processing_function_name = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? module.flink_construct[0].kinesis_metrics_stream_name : null
+  kinesis_analytics_log_group_name =   local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? module.flink_construct[0].kinesis_analytics_log_group_name : null
   api_gateway_name                 = module.games_api_construct.game_analytics_api_name
   stack_name                       = local.config.WORKLOAD_NAME
   firehose_delivery_stream_name    = module.streaming_ingestion_construct.game_events_firehose_name

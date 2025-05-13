@@ -289,7 +289,7 @@ export class InfrastructureStack extends cdk.Stack {
     var gamesEventsStream;
     var managedFlinkConstruct;
     var streamingIngestionConstruct;
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT" ) {
+    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT" ) {
       gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
         (props.config.STREAM_PROVISIONED === true) ? {
           shardCount: props.config.STREAM_SHARD_COUNT,
@@ -298,7 +298,7 @@ export class InfrastructureStack extends cdk.Stack {
           streamMode: kinesis.StreamMode.ON_DEMAND,
         });
       
-      if (gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
+      if (props.config.REAL_TIME_ANALYTICS === true && gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
         // Enables Managed Flink and all metrics surrounding it
         managedFlinkConstruct = new ManagedFlinkConstruct(
           this,
@@ -469,7 +469,7 @@ export class InfrastructureStack extends cdk.Stack {
       value: analyticsBucket.bucketName,
     });
 
-    if (props.config.INGEST_MODE === "REAL_TIME_KDS" && gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
+    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" && gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
       new cdk.CfnOutput(this, "EventsStreamOutput", {
         description: "Stream for ingestion of raw events",
         value: gamesEventsStream.streamName,
