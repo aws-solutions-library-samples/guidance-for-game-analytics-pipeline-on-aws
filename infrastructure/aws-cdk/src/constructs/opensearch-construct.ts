@@ -22,6 +22,7 @@ import * as kinesis from "aws-cdk-lib/aws-kinesis";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { aws_opensearchserverless as opensearchserverless } from 'aws-cdk-lib';
+import { aws_opensearchservice as opensearchservice } from 'aws-cdk-lib';
 import { aws_osis as osis } from 'aws-cdk-lib';
 import * as logs from "aws-cdk-lib/aws-logs";
 
@@ -121,7 +122,44 @@ export class OpenSearchConstruct extends Construct {
 
     // game metric index
 
-    // IAM admin security config for opensearch serverless
+    // IAM admin
+
+    const osAdmin = new iam.Role(this, "OpenSearchAdmin", {
+      roleName: `${props.config.WORKLOAD_NAME}-OpenSearchAdmin`,
+      assumedBy: new iam.AccountPrincipal(cdk.Aws.ACCOUNT_ID),
+      inlinePolicies: {
+        opensearchAccessPermissions: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: [
+                "es:GetApplication",
+                "es:ListApplications",
+                "es:UpdateApplication",
+                "es:AddTags",
+                "es:ListTags",
+                "es:RemoveTags",
+                "aoss:APIAccessAll",
+                "es:ESHttp*",
+                "opensearch:StartDirectQuery",
+                "opensearch:GetDirectQuery",
+                "opensearch:CancelDirectQuery",
+                "opensearch:GetDirectQueryResult",
+                "opensearch:ApplicationAccessAll",
+                "aoss:BatchGetCollection",
+                "aoss:ListCollections",
+                "aoss:DashboardsAccessAll",
+                "es:DescribeDomain",
+                "es:DescribeDomains",
+                "es:ListDomainNames",
+                "es:GetDirectQueryDataSource",
+                "es:ListDirectQueryDataSources"
+              ],
+              resources: ['*']
+            })
+          ]
+        })
+      }
+    })
 
     // access policy for IAM Admin users
 
@@ -252,6 +290,40 @@ export class OpenSearchConstruct extends Construct {
               `collection/${collectionName}`
             ],
             "Permission": [
+              "aoss:CreateCollectionItems",
+              "aoss:DeleteCollectionItems",
+              "aoss:UpdateCollectionItems",
+              "aoss:DescribeCollectionItems"
+            ],
+            "ResourceType": "collection"
+          },
+          {
+            "Resource": [
+              `index/${collectionName}/*`
+            ],
+            "Permission": [
+              "aoss:CreateIndex",
+              "aoss:DeleteIndex",
+              "aoss:UpdateIndex",
+              "aoss:DescribeIndex",
+              "aoss:ReadDocument",
+              "aoss:WriteDocument"
+            ],
+            "ResourceType": "index"
+          }
+        ],
+        "Principal": [
+          osAdmin.roleArn
+        ],
+        "Description": "Allow access by Opensearch Admin"
+      },
+      {
+        "Rules": [
+          {
+            "Resource": [
+              `collection/${collectionName}`
+            ],
+            "Permission": [
               "aoss:UpdateCollectionItems",
               "aoss:DescribeCollectionItems"
             ],
@@ -285,5 +357,20 @@ export class OpenSearchConstruct extends Construct {
     });
     metricCollectionAccessPolicy.addDependency(osCollection);
     metricCollectionAccessPolicy.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
+
+    // ui application
+    const gapInterface = new opensearchservice.CfnApplication(this, 'GAPOpenSearchInterface', {
+      name: collectionName,
+      appConfigs: [{
+        key: 'opensearchDashboards.dashboardAdmin.users',
+        value: '*'
+      }],
+      dataSources: [{
+        dataSourceArn: osCollection.attrArn,
+        dataSourceDescription: "Game Analytics Pipeline Metric Collection"
+      }]
+    });
+    gapInterface.addDependency(osCollection);
+    gapInterface.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
   }
 }
