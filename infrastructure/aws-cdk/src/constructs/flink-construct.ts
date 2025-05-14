@@ -286,6 +286,7 @@ export class ManagedFlinkConstruct extends Construct {
             }, {
               propertyGroupId: "sinkConfig",
               propertyMap: {
+                "sink.connector": "kinesis",
                 "kinesis.stream.arn": metricOutputStream.streamArn,
                 "aws.region": cdk.Aws.REGION
               }

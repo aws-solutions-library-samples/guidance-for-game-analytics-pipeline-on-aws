@@ -36,6 +36,9 @@ import { LambdaConstruct } from "./constructs/lambda-construct";
 import { CloudWatchDashboardConstruct } from "./constructs/dashboard-construct";
 import { VpcConstruct } from "./constructs/vpc-construct";
 import { RedshiftConstruct } from "./constructs/redshift-construct";
+import { OpenSearchConstruct } from "./constructs/opensearch-construct";
+import { AthenaQueryConstruct } from "./constructs/samples/athena-construct";
+import { DataProcessingConstruct } from "./constructs/data-processing-construct";
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
@@ -283,12 +286,14 @@ export class InfrastructureStack extends cdk.Stack {
       });
     }
 
+
     // ---- Real-time ingest option ---- //
 
     // Input stream for applications
     var gamesEventsStream;
     var managedFlinkConstruct;
     var streamingIngestionConstruct;
+    var opensearchConstruct;
     if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT" ) {
       gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
         (props.config.STREAM_PROVISIONED === true) ? {
@@ -309,6 +314,17 @@ export class InfrastructureStack extends cdk.Stack {
             config: props.config,
           }
         );
+
+        // enable opensearch for metric dashboarding
+
+        opensearchConstruct = new OpenSearchConstruct(
+          this,
+          "OpenSearchConstruct",
+          {
+            metricOutputStream: managedFlinkConstruct.metricOutputStream,
+            config: props.config
+          }
+        )
       }
     }
 
@@ -317,7 +333,7 @@ export class InfrastructureStack extends cdk.Stack {
     if (props.config.DATA_PLATFORM_MODE === "REDSHIFT" && vpcConstruct && gamesEventsStream) {
       redshiftConstruct = new RedshiftConstruct(this, "RedshiftConstruct", {
         gamesEventsStream: gamesEventsStream,
-        config: props.config,        
+        config: props.config,
         vpcConstruct: vpcConstruct
       })
     }
@@ -329,7 +345,7 @@ export class InfrastructureStack extends cdk.Stack {
       applicationsTable,
       authorizationsTable,
       config: props.config,
-      redshiftConstruct, 
+      redshiftConstruct,
       gamesEventsStream
     });
 
@@ -376,6 +392,16 @@ export class InfrastructureStack extends cdk.Stack {
       lambdaConstruct.applicationAdminServiceFunction
     );
 
+
+
+    // ---- VPC resources (IF REDSHIFT OR REAL TIME in DEV_MODE is enabled) ---- //
+    var vpcConstruct;
+    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") { // Might add condition that opensearch may be created in dev mode too
+      vpcConstruct = new VpcConstruct(this, "VpcConstruct", {
+        config: props.config,
+      });
+    }
+
     if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE") {
       // Glue datalake and processing jobs
       const dataLakeConstruct = new DataLakeConstruct(this, "DataLakeConstruct", {
@@ -383,6 +409,22 @@ export class InfrastructureStack extends cdk.Stack {
         config: props.config,
         analyticsBucket: analyticsBucket,
       });
+
+      // create data integration jobs
+      const dataProcessingConstruct = new DataProcessingConstruct(this, "DataProcessingConstruct", {
+        notificationsTopic: notificationsTopic,
+        analyticsBucket: analyticsBucket,
+        gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
+        rawEventsTable: dataLakeConstruct.rawEventsTable,
+        config: props.config,
+      });
+
+      // create sample athena queries
+      const athenaConstruct = new AthenaQueryConstruct(this, "AthenaQueryConstruct", {
+        gameAnalyticsWorkgroup: dataLakeConstruct.gameAnalyticsWorkgroup,
+        gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
+        config: props.config,
+      })
 
       // Creates firehose and logs related to ingestion
       streamingIngestionConstruct = new StreamingIngestionConstruct(
@@ -408,7 +450,7 @@ export class InfrastructureStack extends cdk.Stack {
       gameEventsFirehose: streamingIngestionConstruct?.gameEventsFirehose,
       applicationAdminServiceFunction:
         lambdaConstruct.applicationAdminServiceFunction,
-        redshiftConstruct: redshiftConstruct,
+      redshiftConstruct: redshiftConstruct,
       config: props.config,
     });
 

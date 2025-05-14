@@ -32,6 +32,8 @@ terraform.tfstate*
 infrastructure/terraform/src/builds/
 
 node_modules/
+*package-lock.json
+infrastructure/aws-cdk/config.yaml
 infrastructure/config.yaml
 business-logic/flink-event-processing/dependency-reduced-pom.xml
 business-logic/flink-event-processing/target/deploy.zip
