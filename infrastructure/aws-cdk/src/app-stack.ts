@@ -293,6 +293,7 @@ export class InfrastructureStack extends cdk.Stack {
     var gamesEventsStream;
     var managedFlinkConstruct;
     var streamingIngestionConstruct;
+    var opensearchConstruct;
     if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT" ) {
       gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
         (props.config.STREAM_PROVISIONED === true) ? {
