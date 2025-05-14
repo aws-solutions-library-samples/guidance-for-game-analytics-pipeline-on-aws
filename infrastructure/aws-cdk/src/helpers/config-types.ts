@@ -3,8 +3,9 @@ export interface GameAnalyticsPipelineConfig {
   WORKLOAD_NAME: string;
   DEV_MODE: boolean;
 
-  INGEST_MODE: "DIRECT_BATCH" | "REAL_TIME_KDS";
+  INGEST_MODE: "DIRECT_BATCH" | "KINESIS_DATA_STREAMS";
   DATA_PLATFORM_MODE: "DATA_LAKE" | "REDSHIFT";
+  REAL_TIME_ANALYTICS: boolean;
   ENABLE_APACHE_ICEBERG_SUPPORT: boolean;
 
   EVENTS_DATABASE: string;
