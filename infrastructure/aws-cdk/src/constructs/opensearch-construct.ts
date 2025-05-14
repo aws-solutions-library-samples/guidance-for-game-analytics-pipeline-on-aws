@@ -61,7 +61,7 @@ export class OpenSearchConstruct extends Construct {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL
     });
 
-    const collectionName = `${props.config.WORKLOAD_NAME}-metrics`.toLowerCase().substring(0, 28).replace(new RegExp('[^a-z0-9\-]+', 'g'), '');
+    const collectionName = `${props.config.WORKLOAD_NAME}`.toLowerCase().substring(0, 28).replace(new RegExp('[^a-z0-9\-]+', 'g'), '');
 
     // serverless time series cluster
     const osCollection = new opensearchserverless.CfnCollection(this, 'GameAnalyticsCollection', {
@@ -84,7 +84,7 @@ export class OpenSearchConstruct extends Construct {
     }
 
     const osEncryptionPolicy = new opensearchserverless.CfnSecurityPolicy(this, 'GameAnalyticsCollectionEncryptionPolicy', {
-      name: `gap-encryption-policy`,
+      name: collectionName,
       policy: JSON.stringify(osEncryptionPolicyDefinition),
       type: 'encryption'
     });
@@ -283,5 +283,7 @@ export class OpenSearchConstruct extends Construct {
       policy: stack.toJsonString(accesspolicyDef),
       type: 'data',
     });
+    metricCollectionAccessPolicy.addDependency(osCollection);
+    metricCollectionAccessPolicy.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
   }
 }
