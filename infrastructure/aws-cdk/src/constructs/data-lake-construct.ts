@@ -130,6 +130,11 @@ export class DataLakeConstruct extends Construct {
                 }/${props.config.RAW_EVENTS_TABLE.toLowerCase()}`,
                 storedAsSubDirectories: false,
               },
+              partitionKeys: [
+                  { name: "year", type: "string" },
+                  { name: "month", type: "string" },
+                  { name: "day", type: "string" },
+              ],
               tableType: "EXTERNAL_TABLE",
             },
             openTableFormatInput: {
@@ -175,6 +180,11 @@ export class DataLakeConstruct extends Construct {
                   { name: "metadata", type: "string" },
                 ],
               },
+              partitionKeys: [
+                  { name: "year", type: "string" },
+                  { name: "month", type: "string" },
+                  { name: "day", type: "string" },
+              ],
             },
           }),
     });
