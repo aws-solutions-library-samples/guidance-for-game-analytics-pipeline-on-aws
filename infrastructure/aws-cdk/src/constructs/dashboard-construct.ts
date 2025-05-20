@@ -292,35 +292,6 @@ export class CloudWatchDashboardConstruct extends Construct {
                 const realTimeHealthWidget = new cloudwatch.SingleValueWidget({
                     title: 'Real-time Analytics Health',
                     metrics: [
-                        new cloudwatch.Metric({
-                            metricName: 'ConcurrentExecutions',
-                            namespace: 'AWS/Lambda',
-                            dimensionsMap: {
-                                FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
-                            },
-                        }).with({
-                            label: 'Metrics Processing Lambda Concurrent Executions',
-                            statistic: 'Maximum',
-                        }),
-                        new cloudwatch.Metric({
-                            metricName: 'Duration',
-                            namespace: 'AWS/Lambda',
-                            dimensionsMap: {
-                                FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
-                            },
-                        }).with({
-                            label: 'Lambda Duration',
-                            statistic: 'Average',
-                        }),
-                        new cloudwatch.Metric({
-                            metricName: 'Throttles',
-                            namespace: 'AWS/Lambda',
-                            dimensionsMap: {
-                                FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
-                            },
-                        }).with({
-                            label: 'Lambda Throttles',
-                        }),
                         // This metric receives one sample per billing period (one hour). To visualize the number of KPUs over time, use MAX or AVG over a period of at least one (1) hour.
                         new cloudwatch.Metric({
                             metricName: 'KPUs',
@@ -462,69 +433,6 @@ export class CloudWatchDashboardConstruct extends Construct {
                     height: 6,
                 });
 
-                const realTimeLambdaWidget = new cloudwatch.GraphWidget({
-                    title: 'Metrics Processing Lambda Error count and success rate (%)',
-                    left: [
-                        new cloudwatch.Metric({
-                            metricName: 'Errors',
-                            namespace: 'AWS/Lambda',
-                            dimensionsMap: {
-                                FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
-                            },
-                        }).with({
-                            label: 'Errors',
-                            color: '#D13212',
-                        }),
-                        new cloudwatch.Metric({
-                            metricName: 'Invocations',
-                            namespace: 'AWS/Lambda',
-                            dimensionsMap: {
-                                FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
-                            },
-                        }).with({
-                            label: 'Invocations',
-                        }),
-                    ],
-                    right: [
-                        new cloudwatch.MathExpression({
-                            expression: '100 - 100 * metricErrors / MAX([metricErrors, metricInvocations])',
-                            label: 'Success rate (%)',
-                            usingMetrics: {
-                                "metricErrors": new cloudwatch.Metric({
-                                    metricName: 'Errors',
-                                    namespace: 'AWS/Lambda',
-                                    dimensionsMap: {
-                                        FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
-                                    },
-                                    statistic: 'Sum',
-                                }),
-                                "metricInvocations": new cloudwatch.Metric({
-                                    metricName: 'Invocations',
-                                    namespace: 'AWS/Lambda',
-                                    dimensionsMap: {
-                                        FunctionName: props.managedFlinkConstruct.metricProcessingFunction.functionName,
-                                    },
-                                    statistic: 'Sum',
-                                }),
-                            },
-                        }),
-                    ],
-                    width: 8,
-                    height: 6,
-                    region: cdk.Stack.of(this).region,
-                    period: cdk.Duration.seconds(60),
-                    statistic: 'Sum',
-                    rightYAxis: {
-                        max: 100,
-                        label: 'Percent',
-                        showUnits: false,
-                    },
-                    leftYAxis: {
-                        showUnits: false,
-                        label: '',
-                    },
-                })
-
                 const metricStreamLatencyWidget = new cloudwatch.GraphWidget({
                     title: 'Metrics Stream Latency',
                     left: [
@@ -589,7 +497,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                     [eventIngestionWidget, ingestionLambdaWidget, streamLatencyWidget],
                     [realTimeTitleWidget],
                     [realTimeLatencyWidget, flinkCPUUtilizationWidget, FlinkResourceUtilizationWidget],
-                    [metricStreamLatencyWidget, realTimeLambdaWidget]
+                    [metricStreamLatencyWidget]
                 ];
 
             } else {

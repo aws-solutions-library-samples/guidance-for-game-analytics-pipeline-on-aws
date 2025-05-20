@@ -16,7 +16,6 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 
-import * as logs from "aws-cdk-lib/aws-logs";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cloudwatchActions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -103,14 +102,6 @@ export class MetricsConstruct extends Construct {
                 new cloudwatchActions.SnsAction(props.notificationsTopic)
             );
 
-            // Create the Kinesis Analytics Errors Metric Filter
-            new logs.MetricFilter(this, "KinesisAnalyticsErrorsFilter", {
-                filterPattern: logs.FilterPattern.numberValue("$.KinesisAnalyticsErrors", ">", 0),
-                logGroup: props.managedFlinkConstruct.analyticsLogGroup,
-                metricName: "KinesisAnalyticsErrors",
-                metricValue: "$.KinesisAnalyticsErrors",
-                metricNamespace: `${cdk.Aws.STACK_NAME}/AWSGameAnalytics`,
-            });
 
             const metric = new cloudwatch.MathExpression({
                 expression: "m1",
@@ -140,61 +131,6 @@ export class MetricsConstruct extends Construct {
             );
 
             kinesisAnalyticsErrorsAlarm.addAlarmAction(
-                new cloudwatchActions.SnsAction(props.notificationsTopic)
-            );
-
-            const streamingAnalyticsLambdaErrorsAlarm = new cloudwatch.Alarm(
-                this,
-                "StreamingAnalyticsLambdaErrorsAlarm",
-                {
-                    alarmName: `StreamingAnalyticsLambdaErrorsAlarm (${cdk.Aws.STACK_NAME})`,
-                    alarmDescription: `Lambda Errors > 0, for stack ${cdk.Aws.STACK_NAME} streaming analytics`,
-                    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-                    evaluationPeriods: 6,
-                    datapointsToAlarm: 1,
-                    threshold: 0,
-                    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-                    actionsEnabled: true,
-                    metric: new cloudwatch.MathExpression({
-                        expression: "m1",
-                        usingMetrics: {
-                            m1: this.createLambdaMetric(
-                                props.managedFlinkConstruct?.metricProcessingFunction,
-                                "Errors"
-                            ),
-                        },
-                    }),
-                }
-            );
-            streamingAnalyticsLambdaErrorsAlarm.addAlarmAction(
-                new cloudwatchActions.SnsAction(props.notificationsTopic)
-            );
-
-            const streamingAnalyticsLambdaThrottlesAlarm = new cloudwatch.Alarm(
-                this,
-                "StreamingAnalyticsLambdaThrottlesAlarm",
-                {
-                    alarmName: `StreamingAnalyticsLambdaThrottlesAlarm (${cdk.Aws.STACK_NAME})`,
-                    actionsEnabled: true,
-                    alarmDescription: `Lambda Throttles > 0, for stack ${cdk.Aws.STACK_NAME} streaming analytics`,
-                    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-                    datapointsToAlarm: 1,
-                    evaluationPeriods: 2,
-                    threshold: 0,
-                    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-                    metric: new cloudwatch.MathExpression({
-                        expression: "m1",
-                        usingMetrics: {
-                            m1: this.createLambdaMetric(
-                                props.managedFlinkConstruct?.metricProcessingFunction,
-                                "Throttles"
-                            ),
-                        },
-                        period: cdk.Duration.seconds(300),
-                    }),
-                }
-            );
-            streamingAnalyticsLambdaThrottlesAlarm.addAlarmAction(
                 new cloudwatchActions.SnsAction(props.notificationsTopic)
             );
 
