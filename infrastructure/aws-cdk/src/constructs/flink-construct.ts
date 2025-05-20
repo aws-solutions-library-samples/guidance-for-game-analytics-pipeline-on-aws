@@ -48,10 +48,8 @@ const defaultProps: Partial<ManagedFlinkConstructProps> = {};
  * starts the Managed Flink app automatically using a custom resource
  */
 export class ManagedFlinkConstruct extends Construct {
-  public readonly metricProcessingFunction: NodejsFunction;
   public readonly managedFlinkApp: kinesisanalytics.CfnApplicationV2;
   public readonly metricOutputStream: kinesis.Stream;
-  public readonly analyticsLogGroup: logs.LogGroup;
 
   constructor(
     parent: Construct,
@@ -64,78 +62,11 @@ export class ManagedFlinkConstruct extends Construct {
     props = { ...defaultProps, ...props };
     const codePath = `../${props.baseCodePath}`;
 
-
-    /* The following variables define the necessary resources for the `MetricProcessingFunction` serverless
-    function. This function consumes outputs from the metric output stream and writes them to 
-    CloudWatch custom metrics. */
-    const metricProcessingFunction = new NodejsFunction(
-      this,
-      "MetricProcessingFunction",
-      {
-        description:
-          "Consumes outputs from Managed Flink application for processing",
-        entry: path.join(
-          __dirname,
-          `${codePath}/metric-handler/index.js`
-        ),
-        depsLockFilePath: path.join(
-          __dirname,
-          `${codePath}/metric-handler/package-lock.json`
-        ),
-
-        memorySize: 128,
-        timeout: cdk.Duration.seconds(60),
-        runtime: lambda.Runtime.NODEJS_22_X,
-        environment: {
-          stackName: cdk.Aws.STACK_NAME,
-          CW_NAMESPACE: `${cdk.Aws.STACK_NAME}/AWSGameAnalytics`,
-        },
-      }
-    );
-    metricProcessingFunction.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "CloudWatch",
-        effect: iam.Effect.ALLOW,
-        actions: ["cloudwatch:PutMetricData"],
-        resources: ["*"],
-      })
-    );
-    metricProcessingFunction.addToRolePolicy(
-      new iam.PolicyStatement({
-        sid: "XRay",
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "xray:PutTraceSegments",
-          "xray:PutTelemetryRecords",
-          "xray:GetSamplingRules",
-          "xray:GetSamplingTargets",
-        ],
-        resources: ["*"],
-      })
-    );
-
-    // Create the Kinesis Analytics Log Group
-    const analyticsLogGroup = new logs.LogGroup(this, "KinesisAnalyticsLogGroup", {
-      logGroupName: `/aws/lambda/${metricProcessingFunction.functionName}`,
-      retention: props.config.CLOUDWATCH_RETENTION_DAYS,
-    });
-
     /* The following defines the output stream for windowed metrics */
     const metricOutputStream = new kinesis.Stream(this, "metricOutputStream", {
       shardCount: props.config.STREAM_SHARD_COUNT,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
-
-    /* Create an output for the metric output stream to the processing lambda */
-    const metricLambdaOutputSource = new lambdaEventSources.KinesisEventSource(
-      metricOutputStream,
-      {
-        startingPosition: lambda.StartingPosition.TRIM_HORIZON
-      }
-    );
-
-    // link event source to lambda
-    metricProcessingFunction.addEventSource(metricLambdaOutputSource);
 
     /* Create an s3 asset for the flink code package */
     const flinkCodeAsset = new assets.Asset(this, "flinkCodeAsset", {
@@ -358,10 +289,8 @@ export class ManagedFlinkConstruct extends Construct {
     )
     flinkLoggingConfiguration.addDependency(managedFlinkApp);
 
-    this.metricProcessingFunction = metricProcessingFunction;
     this.managedFlinkApp = managedFlinkApp;
     this.metricOutputStream = metricOutputStream;
-    this.analyticsLogGroup = analyticsLogGroup;
 
     new cdk.CfnOutput(this, "FlinkAppOutput", {
       description:

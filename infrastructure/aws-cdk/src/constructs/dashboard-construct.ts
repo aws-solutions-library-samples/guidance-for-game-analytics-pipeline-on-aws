@@ -292,6 +292,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                 const realTimeHealthWidget = new cloudwatch.SingleValueWidget({
                     title: 'Real-time Analytics Health',
                     metrics: [
+                        /* INFO: Kinesis to CloudWatch lambda metrics, not used after OpenSearch migration
                         new cloudwatch.Metric({
                             metricName: 'ConcurrentExecutions',
                             namespace: 'AWS/Lambda',
@@ -321,6 +322,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         }).with({
                             label: 'Lambda Throttles',
                         }),
+                        */
                         // This metric receives one sample per billing period (one hour). To visualize the number of KPUs over time, use MAX or AVG over a period of at least one (1) hour.
                         new cloudwatch.Metric({
                             metricName: 'KPUs',
@@ -462,6 +464,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                     height: 6,
                 });
 
+                /* INFO: Tracks real-time lambda, not used after opensearch migration
                 const realTimeLambdaWidget = new cloudwatch.GraphWidget({
                     title: 'Metrics Processing Lambda Error count and success rate (%)',
                     left: [
@@ -524,6 +527,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                         label: '',
                     },
                 })
+                    */
 
                 const metricStreamLatencyWidget = new cloudwatch.GraphWidget({
                     title: 'Metrics Stream Latency',
@@ -589,7 +593,7 @@ export class CloudWatchDashboardConstruct extends Construct {
                     [eventIngestionWidget, ingestionLambdaWidget, streamLatencyWidget],
                     [realTimeTitleWidget],
                     [realTimeLatencyWidget, flinkCPUUtilizationWidget, FlinkResourceUtilizationWidget],
-                    [metricStreamLatencyWidget, realTimeLambdaWidget]
+                    [metricStreamLatencyWidget]
                 ];
 
             } else {
