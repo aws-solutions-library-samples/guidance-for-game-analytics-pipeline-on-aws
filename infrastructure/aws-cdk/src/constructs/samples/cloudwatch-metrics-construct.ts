@@ -29,7 +29,7 @@ import { GameAnalyticsPipelineConfig } from "../../helpers/config-types";
 import { Aws, Fn } from "aws-cdk-lib";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
-export interface ManagedFlinkConstructProps extends cdk.StackProps {
+export interface CustomMetricsConstructProps extends cdk.StackProps {
     /**
      * Base Codepath for business logic folder
      */
@@ -38,7 +38,7 @@ export interface ManagedFlinkConstructProps extends cdk.StackProps {
     config: GameAnalyticsPipelineConfig;
 }
 
-const defaultProps: Partial<ManagedFlinkConstructProps> = {};
+const defaultProps: Partial<CustomMetricsConstructProps> = {};
 
 /**
  * Deploys the Managed Flink construct
@@ -47,14 +47,14 @@ const defaultProps: Partial<ManagedFlinkConstructProps> = {};
  * Enables logging on the Managed Flink application and stores logs in a namespace for the application
  * starts the Managed Flink app automatically using a custom resource
  */
-export class ManagedFlinkConstruct extends Construct {
+export class CustomMetricsConstruct extends Construct {
     public readonly metricProcessingFunction: NodejsFunction;
     public readonly analyticsLogGroup: logs.LogGroup;
 
     constructor(
         parent: Construct,
         name: string,
-        props: ManagedFlinkConstructProps
+        props: CustomMetricsConstructProps
     ) {
         super(parent, name);
 
