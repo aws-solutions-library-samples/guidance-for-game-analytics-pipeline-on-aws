@@ -15,9 +15,6 @@
 
 import * as cdk from "aws-cdk-lib";
 import * as kinesisanalytics from "aws-cdk-lib/aws-kinesisanalytics";
-import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as kinesis from "aws-cdk-lib/aws-kinesis";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
@@ -26,7 +23,6 @@ import * as assets from "aws-cdk-lib/aws-s3-assets";
 import * as path from "path";
 import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
-import { Aws, Fn } from "aws-cdk-lib";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface ManagedFlinkConstructProps extends cdk.StackProps {

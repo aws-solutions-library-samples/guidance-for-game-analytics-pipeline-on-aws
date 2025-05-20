@@ -103,6 +103,7 @@ export class MetricsConstruct extends Construct {
                 new cloudwatchActions.SnsAction(props.notificationsTopic)
             );
 
+            /* INFO: Depreciated with OpenSearch migration
             // Create the Kinesis Analytics Errors Metric Filter
             new logs.MetricFilter(this, "KinesisAnalyticsErrorsFilter", {
                 filterPattern: logs.FilterPattern.numberValue("$.KinesisAnalyticsErrors", ">", 0),
@@ -111,6 +112,7 @@ export class MetricsConstruct extends Construct {
                 metricValue: "$.KinesisAnalyticsErrors",
                 metricNamespace: `${cdk.Aws.STACK_NAME}/AWSGameAnalytics`,
             });
+            */
 
             const metric = new cloudwatch.MathExpression({
                 expression: "m1",
@@ -143,6 +145,7 @@ export class MetricsConstruct extends Construct {
                 new cloudwatchActions.SnsAction(props.notificationsTopic)
             );
 
+            /* INFO: Depreciated with migration to opensearch
             const streamingAnalyticsLambdaErrorsAlarm = new cloudwatch.Alarm(
                 this,
                 "StreamingAnalyticsLambdaErrorsAlarm",
@@ -166,10 +169,10 @@ export class MetricsConstruct extends Construct {
                     }),
                 }
             );
+            
             streamingAnalyticsLambdaErrorsAlarm.addAlarmAction(
                 new cloudwatchActions.SnsAction(props.notificationsTopic)
             );
-
             const streamingAnalyticsLambdaThrottlesAlarm = new cloudwatch.Alarm(
                 this,
                 "StreamingAnalyticsLambdaThrottlesAlarm",
@@ -194,9 +197,11 @@ export class MetricsConstruct extends Construct {
                     }),
                 }
             );
+            
             streamingAnalyticsLambdaThrottlesAlarm.addAlarmAction(
                 new cloudwatchActions.SnsAction(props.notificationsTopic)
             );
+            */
 
             // Kinesis game stream throughput metrics
             const kinesisMetricStreamReadProvisionedThroughputExceeded = new cloudwatch.Alarm(
