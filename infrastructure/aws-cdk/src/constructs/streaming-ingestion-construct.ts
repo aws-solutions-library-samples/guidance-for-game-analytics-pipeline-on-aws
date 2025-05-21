@@ -209,7 +209,7 @@ export class StreamingIngestionConstruct extends Construct {
           ],
           cloudWatchLoggingOptions: {
             enabled: true,
-            logGroupName: firehouseS3DeliveryLogStream.logStreamName,
+            logGroupName: firehoseLogGroup.logGroupName,
             logStreamName: firehouseS3DeliveryLogStream.logStreamName,
           },
           processingConfiguration: {
