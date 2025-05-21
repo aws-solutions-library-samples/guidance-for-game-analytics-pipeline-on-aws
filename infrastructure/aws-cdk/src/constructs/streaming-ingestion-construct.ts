@@ -191,6 +191,7 @@ export class StreamingIngestionConstruct extends Construct {
             catalogArn: `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
           },
           roleArn: gamesEventsFirehoseRole.roleArn,
+          appendOnly: true,
           s3Configuration: {
             bucketArn: props.analyticsBucket.bucketArn,
             roleArn: gamesEventsFirehoseRole.roleArn,
@@ -352,7 +353,7 @@ export class StreamingIngestionConstruct extends Construct {
       }
     )
 
-    var firehoseSettings : kinesisFirehose.CfnDeliveryStreamProps = {
+    var firehoseSettings: kinesisFirehose.CfnDeliveryStreamProps = {
       deliveryStreamType: firehoseIngestDeliveryStreamType,
       ...firehoseSourceConfiguration,
       ...firehoseDestinationConfiguration
@@ -362,7 +363,7 @@ export class StreamingIngestionConstruct extends Construct {
     const gameEventsFirehose = new kinesisFirehose.CfnDeliveryStream(
       this,
       "game-events-firehose",
-        firehoseSettings
+      firehoseSettings
     );
 
     this.gameEventsFirehose = gameEventsFirehose;
