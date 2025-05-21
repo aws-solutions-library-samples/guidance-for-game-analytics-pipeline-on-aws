@@ -204,7 +204,7 @@ export class StreamingIngestionConstruct extends Construct {
               destinationDatabaseName: props.config.EVENTS_DATABASE,
               destinationTableName: props.config.RAW_EVENTS_TABLE,
               s3ErrorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
-              uniqueKeys: ["event_timestamp"],
+              uniqueKeys: ["event_id"],
             },
           ],
           cloudWatchLoggingOptions: {
