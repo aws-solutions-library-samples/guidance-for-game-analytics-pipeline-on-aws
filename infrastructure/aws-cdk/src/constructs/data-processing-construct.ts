@@ -234,7 +234,7 @@ export class DataProcessingConstruct extends Construct {
 
     const gameEventsIcebergJob = new glueCfn.CfnJob(this, "IcebergEtl", {
       description: `Etl job for processing existing raw game event data, for stack ${cdk.Aws.STACK_NAME} to Apache Iceberg table.`,
-      glueVersion: "4.0",
+      glueVersion: "5.0",
       maxRetries: 0,
       maxCapacity: 10,
       timeout: 30,

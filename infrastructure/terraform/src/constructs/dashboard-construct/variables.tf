@@ -1,9 +1,3 @@
-# Variables
-variable "stack_name" {
-  type          = string
-  description   = "Name of the stack"
-}
-
 variable "workload_name" {
   type          = string
   description   = "Name of the workload"
@@ -54,5 +48,13 @@ variable "redshift_namespace_db_name" {
 }
 
 variable "redshift_workgroup_name" {
+  type = string
+}
+
+variable "data_platform_mode" {
+  type = string
+}
+
+variable "real_time_analytics" {
   type = string
 }

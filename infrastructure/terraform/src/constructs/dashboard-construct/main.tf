@@ -147,46 +147,7 @@ locals {
   EOT
 
   // Data Lake Mode Widgets (If Data Lake Mode is enabled)
-
-  event_processing_lambda_health_widget = <<-EOT
-  {
-    "type": "singleValue",
-    "width": 12,
-    "height": 3,
-    "properties": {
-      "metrics": [
-        ["AWS/Lambda", "Duration", {
-          "label": "Lambda Duration",
-          "period": 300,
-          "stat": "Average",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "ConcurrentExecutions", {
-          "label": "Lambda Concurrency",
-          "period": 300,
-          "stat": "Maximum",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "Throttles", {
-          "label": "Lambda Throttles",
-          "period": 300,
-          "stat": "Sum",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }]
-      ],
-      "title": "Events Processing Health",
-      "region": "${data.aws_region.current.name}"
-    }
-  }
-  EOT
-
-  event_processing_firehose_health_widget = <<-EOT
+  event_processing_health_widget = <<-EOT
   {
     "type": "singleValue",
     "width": 12,
@@ -197,6 +158,13 @@ locals {
           "label": "Data Freshness",
           "period": 300,
           "stat": "Maximum",
+          "dimensions": {
+            "DeliveryStreamName": "${var.game_events_firehose_name}"
+          }
+        }],
+        ["AWS/Firehose", "DeliveryToS3.Records", {
+          "label": "Firehose Records Delivered to S3",
+          "period": 300,
           "dimensions": {
             "DeliveryStreamName": "${var.game_events_firehose_name}"
           }
@@ -224,6 +192,30 @@ locals {
           "dimensions": {
             "FunctionName": "${var.events_processing_function}"
           }
+        }],
+        ["AWS/Lambda", "Duration", {
+          "label": "Lambda Duration",
+          "period": 300,
+          "stat": "Average",
+          "dimensions": {
+            "FunctionName": "${var.events_processing_function}"
+          }
+        }],
+        ["AWS/Lambda", "ConcurrentExecutions", {
+          "label": "Lambda Concurrency",
+          "period": 300,
+          "stat": "Maximum",
+          "dimensions": {
+            "FunctionName": "${var.events_processing_function}"
+          }
+        }],
+        ["AWS/Lambda", "Throttles", {
+          "label": "Lambda Throttles",
+          "period": 300,
+          "stat": "Sum",
+          "dimensions": {
+            "FunctionName": "${var.events_processing_function}"
+          }
         }]
       ],
       "title": "Events Processing Health",
@@ -232,7 +224,6 @@ locals {
   }
   EOT
 
-  // Real time Widgets (If Real Time is enabled)
   ingestion_lambda_widget = <<-EOT
   {
     "type": "graph",
@@ -281,7 +272,7 @@ locals {
   }
   EOT
 
-  // Real-time widgets
+  // Real time Widgets (If Real Time is enabled)
   realtime_title_widget = <<-EOT
   {
     "type": "text",
@@ -293,48 +284,6 @@ locals {
   }
   EOT
   
-  realtime_health_widget = <<-EOT
-  {
-    "type": "singleValue",
-    "width": 12,
-    "height": 3,
-    "properties": {
-      "metrics": [
-        ["AWS/Lambda", "ConcurrentExecutions", {
-          "label": "Metrics Processing Lambda Concurrent Executions",
-          "stat": "Maximum",
-          "dimensions": {
-            "DeliveryStreamName": "${var.analytics_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "Duration", {
-          "label": "Lambda Duration",
-          "stat": "Average",
-          "dimensions": {
-            "FunctionName": "${var.analytics_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "Throttles", {
-          "label": "Lambda Throttles",
-          "dimensions": {
-            "FunctionName": "${var.analytics_processing_function}"
-          }
-        }],
-        ["AWS/KinesisAnalytics", "KPUs", {
-          "label": "Managed Flink KPUs",
-          "stat": "Maximum",
-          "period": 7200,
-          "dimensions": {
-            "Application": "${var.flink_app}"
-          }
-        }]
-      ],
-      "title": "Real-time Analytics Health",
-      "region": "${data.aws_region.current.name}"
-    }
-  }
-  EOT
-
   realtime_latency_widget = <<-EOT
   {
     "type": "graph",
@@ -426,6 +375,48 @@ locals {
   }
   EOT
 
+  realtime_health_widget = <<-EOT
+  {
+    "type": "singleValue",
+    "width": 12,
+    "height": 3,
+    "properties": {
+      "metrics": [
+        ["AWS/Lambda", "ConcurrentExecutions", {
+          "label": "Metrics Processing Lambda Concurrent Executions",
+          "stat": "Maximum",
+          "dimensions": {
+            "DeliveryStreamName": "${var.analytics_processing_function}"
+          }
+        }],
+        ["AWS/Lambda", "Duration", {
+          "label": "Lambda Duration",
+          "stat": "Average",
+          "dimensions": {
+            "FunctionName": "${var.analytics_processing_function}"
+          }
+        }],
+        ["AWS/Lambda", "Throttles", {
+          "label": "Lambda Throttles",
+          "dimensions": {
+            "FunctionName": "${var.analytics_processing_function}"
+          }
+        }],
+        ["AWS/KinesisAnalytics", "KPUs", {
+          "label": "Managed Flink KPUs",
+          "stat": "Maximum",
+          "period": 7200,
+          "dimensions": {
+            "Application": "${var.flink_app}"
+          }
+        }]
+      ],
+      "title": "Real-time Analytics Health",
+      "region": "${data.aws_region.current.name}"
+    }
+  }
+  EOT
+
   flink_resource_utilization_widget = <<-EOT
   {
     "type": "graph",
@@ -457,54 +448,6 @@ locals {
           "label": "Percent",
           "min": 1,
           "max": 100
-        }
-      }
-    }
-  }
-  EOT
-
-  realtime_lambda_widget = <<-EOT
-  {
-    "type": "graph",
-    "width": 8,
-    "height": 6,
-    "properties": {
-      "metrics": [
-        ["AWS/Lambda", "Errors", {
-          "label": "Errors",
-          "color": "#D13212",
-          "dimensions": {
-            "FunctionName": "${var.analytics_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "Invocations", {
-          "label": "Invocations",
-          "dimensions": {
-            "FunctionName": "${var.analytics_processing_function}"
-          }
-        }],
-        [{ 
-          "expression": "100 - 100 * errors / MAX([errors, invocations])", 
-          "label": "Success rate (%)",
-          "id": "availability", 
-          "yAxis": "right", 
-          "region": "${data.aws_region.current.name}"
-        }]
-      ],
-      "title": "Metrics Processing Lambda Error count and success rate (%)",
-      "region": "${data.aws_region.current.name}",
-      "period": 60,
-      "stat": "Sum",
-      "stacked": false,
-      "yAxis": {
-        "right": {
-          "max": 100,
-          "label": "Percent",
-          "showUnits": false
-        },
-        "left": {
-          "showUnits": false,
-          "label": ""
         }
       }
     }
@@ -561,40 +504,23 @@ locals {
   }
   EOT
 
-  widgets_list = []
+  widgets_list = [local.title_widget, local.api_ingestion_widget]
+  kinesis_widgets = [local.stream_ingestion_title_widget, local.event_ingestion_widget, local.stream_latency_widget]
+  redshift_widgets = [local.redshift_utilization_widget]
+  datalake_widgets = [local.event_processing_health_widget, local.ingestion_lambda_widget]
+  realtime_widgets = [local.realtime_title_widget, local.realtime_latency_widget, local.flink_cpu_utilization_widget, local.realtime_health_widget, local.flink_resource_utilization_widget, local.metric_stream_latency_widget]
 
-  widgets_without_analytics = <<-EOT
-  {
-    "widgets": ${widgets_list}
-  }
-  EOT
+  widgets_list_ingest_check = var.ingest_mode == "KINESIS_DATA_STREAMS" ? concat(local.widgets_list, local.kinesis_widgets) : local.widgets_list
+  widgets_list_platform_check = var.data_platform_mode == "REDSHIFT" ? concat(local.widgets_list_ingest_check, local.redshift_widgets) : concat(local.widgets_list_ingest_check, local.datalake_widgets)
+  widgets_list_realtime_check = var.real_time_analytics == true ? concat(local.widgets_list_platform_check, local.realtime_widgets) : local.widgets_list_platform_check
 
- /* widgets_without_analytics = <<-EOT
-  {
-    "widgets": [
-      ${local.title_widget},
-      ${local.event_processing_health_widget},
-      ${local.stream_ingestion_title_widget},
-      [${local.event_ingestion_widget}, ${local.ingestion_lambda_widget}, ${local.stream_latency_widget}]
-    ]
-  }
-  EOT*/
-
-  widgets_with_analytics = <<-EOT
+  widgets = <<-EOT
   {
     "widgets": [
-      ${local.title_widget},
-      ${local.event_processing_health_widget},
-      ${local.stream_ingestion_title_widget},
-      [${local.event_ingestion_widget}, ${local.ingestion_lambda_widget}, ${local.stream_latency_widget}],
-      ${local.realtime_title_widget},
-      [${local.realtime_latency_widget}, ${local.flink_cpu_utilization_widget}, ${local.flink_resource_utilization_widget}],
-      [${local.metric_stream_latency_widget}, ${local.realtime_lambda_widget}]
+      ${local.widgets_list_realtime_check}
     ]
   }
   EOT
-
-  widgets = var.ingest_mode == "KINESIS_DATA_STREAMS" ? local.widgets_with_analytics : local.widgets_without_analytics
 }
 
 resource "aws_cloudwatch_dashboard" "pipeline_ops_dashboard" {
