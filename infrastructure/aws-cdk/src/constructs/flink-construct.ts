@@ -136,28 +136,7 @@ export class ManagedFlinkConstruct extends Construct {
 
     let flinkAppConfig = {};
     if (props.config.REAL_TIME_ANALYTICS === true && props.gameEventsStream != undefined) {
-      /* Allow flink to access source and sink streams */
-      flinkAppRole.addToPolicy(
-        new iam.PolicyStatement({
-          sid: "ReadSourceKinesisStream",
-          effect: iam.Effect.ALLOW,
-          actions: [
-            "kinesis:DescribeStream",
-            "kinesis:DescribeStreamSummary",
-            "kinesis:GetShardIterator",
-            "kinesis:DescribeStreamConsumer",
-            "kinesis:RegisterStreamConsumer",
-            "kinesis:GetRecords",
-            "kinesis:ListShards",
-            "kinesis:DescribeLimits",
-            "kinesis:ListStreamConsumers",
-            "kinesis:SubscribeToShard"
-          ],
-          resources: [props.gameEventsStream.streamArn],
-        }),
-      );
-    
-      // set app config to point to kinesis
+      // Set app config to point to kinesis
       flinkAppConfig = {
         "kinesis.stream.arn": props.gameEventsStream.streamArn,
         "kinesis.stream.name": props.gameEventsStream.streamName,

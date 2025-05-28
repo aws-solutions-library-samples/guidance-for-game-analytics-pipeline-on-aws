@@ -2,88 +2,6 @@ data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
-/* The following variables define the necessary resources for the `MetricProcessingFunction` serverless
-function. This function consumes outputs from the metric output stream and writes them to 
-CloudWatch custom metrics. */
-module "metric_processing_function" {
-  source = "terraform-aws-modules/lambda/aws"
-  // TODO = remove 2 from function name when ready to remove original
-  function_name = "${var.stack_name}-MetricProcessingFunction"
-  description   = "Consumes outputs from Managed Flink application for processing"
-  handler       = "index.handler"
-  runtime       = "nodejs22.x"
-  source_path   = "${path.root}/../../../business-logic/metric-handler"
-  timeout       = 60
-  memory_size   = 128
-
-  create_role = false
-  lambda_role = aws_iam_role.metric_processing_function_role.arn
-
-  environment_variables = {
-    stackName    = var.stack_name
-    CW_NAMESPACE = "${var.stack_name}/AWSGameAnalytics"
-  }
-}
-
-# IAM roles for Lambda functions
-resource "aws_iam_role" "metric_processing_function_role" {
-  name = "${var.stack_name}-metric-processing-function-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-
-}
-
-resource "aws_iam_role_policy" "metric_processing_function_role_policy" {
-  role = aws_iam_role.metric_processing_function_role.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "xray:PutTraceSegments",
-          "xray:PutTelemetryRecords",
-          "xray:GetSamplingRules",
-          "xray:GetSamplingTargets",
-        ]
-        Effect   = "Allow"
-        Resource = "*"
-      },
-      {
-        Action   = "cloudwatch:PutMetricData"
-        Effect   = "Allow"
-        Resource = "*"
-      },
-      {
-        Action = [
-          "kinesis:DescribeStream",
-          "kinesis:DescribeStreamSummary",
-          "kinesis:GetShardIterator",
-          "kinesis:DescribeStreamConsumer",
-          "kinesis:RegisterStreamConsumer",
-          "kinesis:GetRecords",
-          "kinesis:ListShards",
-          "kinesis:DescribeLimits",
-          "kinesis:ListStreamConsumers",
-          "kinesis:SubscribeToShard"
-        ]
-        Effect   = "Allow"
-        Resource = aws_kinesis_stream.metric_output_stream.arn
-      }
-    ]
-  })
-}
-
 // Input stream for applications
 resource "aws_kinesis_stream" "metric_output_stream" {
   name        = "${var.stack_name}-MetricOutputStream-${var.suffix}"
@@ -94,24 +12,13 @@ resource "aws_kinesis_stream" "metric_output_stream" {
   }
 }
 
-resource "aws_lambda_event_source_mapping" "metric_lambda_output_source" {
-  event_source_arn = aws_kinesis_stream.metric_output_stream.arn
-  function_name     = module.metric_processing_function.lambda_function_arn
-  starting_position = "TRIM_HORIZON"
+resource "aws_s3_object" "flink_artifact" {
+  bucket = var.analytics_bucket_name
+  key    = "flink-scripts/${var.flink_deploy_artifact}"
+  source = "${path.root}/../../../business-logic/flink-event-processing/target/${var.flink_deploy_artifact}"
 }
 
-# Kinesis Analytics Log Group
-resource "aws_cloudwatch_log_group" "flink_log_group" {
-  name              = "/aws/kinesis-analytics/${var.stack_name}-AnalyticsApplication"
-  retention_in_days = var.cloudwatch_retention_days
-}
-
-resource "aws_cloudwatch_log_stream" "flink_log_stream" {
-  name           = "${var.stack_name}-kinesis-analytics-log-stream"
-  log_group_name = aws_cloudwatch_log_group.flink_log_group.name
-}
-
-# IAM roles for Lambda functions
+# IAM roles for Flink
 resource "aws_iam_role" "flink_app_role" {
   name = "${var.stack_name}-flink-app-role"
 
@@ -129,7 +36,43 @@ resource "aws_iam_role" "flink_app_role" {
   })
 }
 
-
+resource "aws_iam_role_policy" "metric_processing_function_role_policy" {
+  role = aws_iam_role.metric_processing_function_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "kinesis:DescribeStream",
+          "kinesis:DescribeStreamSummary",
+          "kinesis:GetShardIterator",
+          "kinesis:DescribeStreamConsumer",
+          "kinesis:RegisterStreamConsumer",
+          "kinesis:GetRecords",
+          "kinesis:ListShards",
+          "kinesis:DescribeLimits",
+          "kinesis:ListStreamConsumers",
+          "kinesis:SubscribeToShard"
+        ]
+        Effect   = "Allow"
+        Resource = aws_kinesis_stream.game_events_stream.arn
+      },
+      {
+        Action = [
+          "kinesis:DescribeStream",
+          "kinesis:DescribeStreamSummary",
+          "kinesis:GetShardIterator",
+          "kinesis:GetRecords",
+          "kinesis:ListShards",
+          "kinesis:PutRecord",
+          "kinesis:PutRecords"
+        ]
+        Effect   = "Allow"
+        Resource = aws_kinesis_stream.metric_output_stream.arn
+      }
+    ]
+  })
+}
 
 resource "aws_iam_role_policy" "flink_app_role_policy" {
   role = aws_iam_role.flink_app_role.id
@@ -140,7 +83,16 @@ resource "aws_iam_role_policy" "flink_app_role_policy" {
         Action   = "s3:GetObject"
         Effect   = "Allow"
         Resource = aws_s3_object.flink_artifact.arn
-      },
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "flink_app_role_access_policy" {
+  role = aws_iam_role.flink_app_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
       {
         Action   = "logs:DescribeLogGroups"
         Effect   = "Allow"
@@ -170,7 +122,7 @@ resource "aws_iam_role_policy" "flink_app_role_policy" {
           "kinesis:SubscribeToShard"
         ]
         Effect   = "Allow"
-        Resource = "${var.game_events_stream_arn}"
+        Resource = aws_kinesis_stream.game_events_stream.arn
       },
       {
         Action = [
@@ -183,17 +135,21 @@ resource "aws_iam_role_policy" "flink_app_role_policy" {
           "kinesis:PutRecords"
         ]
         Effect   = "Allow"
-        Resource = "${aws_kinesis_stream.metric_output_stream.arn}"
+        Resource = aws_kinesis_stream.metric_output_stream.arn
       }
     ]
   })
 }
 
+# Kinesis Analytics Log Group
+resource "aws_cloudwatch_log_group" "flink_log_group" {
+  name              = "/aws/kinesis-analytics/${var.stack_name}-AnalyticsApplication"
+  retention_in_days = var.cloudwatch_retention_days
+}
 
-resource "aws_s3_object" "flink_artifact" {
-  bucket = var.analytics_bucket_name
-  key    = "flink-scripts/${var.flink_deploy_artifact}"
-  source = "${path.root}/../../../business-logic/flink-event-processing/target/${var.flink_deploy_artifact}"
+resource "aws_cloudwatch_log_stream" "flink_log_stream" {
+  name           = "${var.stack_name}-kinesis-analytics-log-stream"
+  log_group_name = aws_cloudwatch_log_group.flink_log_group.name
 }
 
 resource "aws_kinesisanalyticsv2_application" "managed_flink_app" {
