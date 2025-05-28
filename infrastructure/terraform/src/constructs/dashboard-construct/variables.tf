@@ -48,3 +48,11 @@ variable "api_stage_name" {
 variable "flink_app" {
   type = string
 }
+
+variable "redshift_namespace_db_name" {
+  type = string
+}
+
+variable "redshift_workgroup_name" {
+  type = string
+}

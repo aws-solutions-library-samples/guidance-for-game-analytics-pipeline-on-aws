@@ -11,7 +11,32 @@ locals {
   }
   EOT
 
-  // Stream Ingestion Widgets
+  // API Widget
+  api_ingestion_widget = <<-EOT
+  {
+    "type": "singleValue",
+    "width": 8,
+    "height": 6,
+    "properties": {
+      "metrics": [
+        ["AWS/ApiGateway", "Count", {
+          "label": "Events REST API Request Count",
+          "color": "#1f77b4",
+          "dimensions": {
+            "ApiName": "${var.api_gateway_name}",
+            "Resource": "/applications/{applicationId}/events",
+            "Stage": "${var.api_stage_name}",
+            "Method": "POST"
+          }
+        }]
+      ],
+      "title": "Events Ingestion and Delivery",
+      "region": "${data.aws_region.current.name}"
+    }
+  }
+  EOT
+
+  // KDS Widgets (If KDS Ingest Mode is enabled)
   stream_ingestion_title_widget = <<-EOT
   {
     "type": "text",
@@ -23,53 +48,6 @@ locals {
   }
   EOT
 
-  event_processing_health_widget = <<-EOT
-  {
-    "type": "singleValue",
-    "width": 12,
-    "height": 3,
-    "properties": {
-      "metrics": [
-        ["AWS/Firehose", "DeliveryToS3.DataFreshness", {
-          "label": "Data Freshness",
-          "period": 300,
-          "stat": "Maximum",
-          "dimensions": {
-            "DeliveryStreamName": "${var.game_events_firehose_name}"
-          }
-        }],
-        ["AWS/Lambda", "Duration", {
-          "label": "Lambda Duration",
-          "period": 300,
-          "stat": "Average",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "ConcurrentExecutions", {
-          "label": "Lambda Concurrency",
-          "period": 300,
-          "stat": "Maximum",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "Throttles", {
-          "label": "Lambda Throttles",
-          "period": 300,
-          "stat": "Sum",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }]
-      ],
-      "title": "Events Processing Health",
-      "region": "${data.aws_region.current.name}"
-    }
-  }
-  EOT
-
-  // Remember to add widgets for MSK
   event_ingestion_widget = <<-EOT
   {
     "type": "graph",
@@ -83,84 +61,12 @@ locals {
           "dimensions": {
             "StreamName": "${var.game_events_stream_name}"
           }
-        }],
-        ["AWS/Firehose", "DeliveryToS3.Records", {
-          "label": "Firehose Records Delivered to S3",
-          "color": "#17becf",
-          "dimensions": {
-            "DeliveryStreamName": "${var.game_events_firehose_name}"
-          }
-        }],
-        ["AWS/ApiGateway", "Count", {
-          "label": "Events REST API Request Count",
-          "color": "#1f77b4",
-          "dimensions": {
-            "ApiName": "${var.api_gateway_name}",
-            "Resource": "/applications/{applicationId}/events",
-            "Stage": "${var.api_stage_name}",
-            "Method": "POST"
-          }
         }]
       ],
       "title": "Events Ingestion and Delivery",
       "region": "${data.aws_region.current.name}",
       "period": 60,
-      "stat": "Sum",
-      "stacked": false,
-      "yAxis": {
-        "left": {
-          "label": "Count",
-          "showUnits": false
-        }
-      }
-    }
-  }
-  EOT
-
-  ingestion_lambda_widget = <<-EOT
-  {
-    "type": "graph",
-    "width": 8,
-    "height": 6,
-    "properties": {
-      "metrics": [
-        ["AWS/Lambda", "Errors", {
-          "label": "Errors",
-          "color": "#D13212",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "Invocations", {
-          "label": "Invocations",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        [{ 
-          "expression": "100 - 100 * errors / MAX([errors, invocations])", 
-          "label": "Success rate (%)",
-          "id": "availability", 
-          "yAxis": "right", 
-          "region": "${data.aws_region.current.name}"
-        }]
-      ],
-      "title": "Lambda Error count and success rate (%)",
-      "region": "${data.aws_region.current.name}",
-      "period": 60,
-      "stat": "Sum",
-      "stacked": false,
-      "yAxis": {
-        "right": {
-          "max": 100,
-          "label": "Percent",
-          "showUnits": false
-        },
-        "left": {
-          "showUnits": false,
-          "label": ""
-        }
-      }
+      "stat": "Sum"
     }
   }
   EOT
@@ -209,6 +115,166 @@ locals {
         "left": {
           "showUnits": false,
           "label": "Milliseconds"
+        }
+      }
+    }
+  }
+  EOT
+
+  // Redshift Widgets (If Redshift Mode is enabled)
+  redshift_utilization_widget = <<-EOT
+  {
+    "type": "graph",
+    "width": 8,
+    "height": 6,
+    "properties": {
+      "metrics": [
+        ["AWS/Redshift-Serverless", "DatabaseConnections", {
+          "label": "Database Connections",
+          "color": "#1f77b4",
+          "dimensions": {
+            "DatabaseName": "${var.redshift_namespace_db_name}",
+            "Workgroup": "${var.redshift_workgroup_name}"
+          }
+        }]
+      ],
+      "title": "Redshift Serverless Resource Utilization",
+      "region": "${data.aws_region.current.name}",
+      "period": 60,
+      "stat": "Sum"
+    }
+  }
+  EOT
+
+  // Data Lake Mode Widgets (If Data Lake Mode is enabled)
+
+  event_processing_lambda_health_widget = <<-EOT
+  {
+    "type": "singleValue",
+    "width": 12,
+    "height": 3,
+    "properties": {
+      "metrics": [
+        ["AWS/Lambda", "Duration", {
+          "label": "Lambda Duration",
+          "period": 300,
+          "stat": "Average",
+          "dimensions": {
+            "FunctionName": "${var.events_processing_function}"
+          }
+        }],
+        ["AWS/Lambda", "ConcurrentExecutions", {
+          "label": "Lambda Concurrency",
+          "period": 300,
+          "stat": "Maximum",
+          "dimensions": {
+            "FunctionName": "${var.events_processing_function}"
+          }
+        }],
+        ["AWS/Lambda", "Throttles", {
+          "label": "Lambda Throttles",
+          "period": 300,
+          "stat": "Sum",
+          "dimensions": {
+            "FunctionName": "${var.events_processing_function}"
+          }
+        }]
+      ],
+      "title": "Events Processing Health",
+      "region": "${data.aws_region.current.name}"
+    }
+  }
+  EOT
+
+  event_processing_firehose_health_widget = <<-EOT
+  {
+    "type": "singleValue",
+    "width": 12,
+    "height": 3,
+    "properties": {
+      "metrics": [
+        ["AWS/Firehose", "DeliveryToS3.DataFreshness", {
+          "label": "Data Freshness",
+          "period": 300,
+          "stat": "Maximum",
+          "dimensions": {
+            "DeliveryStreamName": "${var.game_events_firehose_name}"
+          }
+        }],
+        ["AWS/Lambda", "Duration", {
+          "label": "Lambda Duration",
+          "period": 300,
+          "stat": "Average",
+          "dimensions": {
+            "FunctionName": "${var.events_processing_function}"
+          }
+        }],
+        ["AWS/Lambda", "ConcurrentExecutions", {
+          "label": "Lambda Concurrency",
+          "period": 300,
+          "stat": "Maximum",
+          "dimensions": {
+            "FunctionName": "${var.events_processing_function}"
+          }
+        }],
+        ["AWS/Lambda", "Throttles", {
+          "label": "Lambda Throttles",
+          "period": 300,
+          "stat": "Sum",
+          "dimensions": {
+            "FunctionName": "${var.events_processing_function}"
+          }
+        }]
+      ],
+      "title": "Events Processing Health",
+      "region": "${data.aws_region.current.name}"
+    }
+  }
+  EOT
+
+  // Real time Widgets (If Real Time is enabled)
+  ingestion_lambda_widget = <<-EOT
+  {
+    "type": "graph",
+    "width": 8,
+    "height": 6,
+    "properties": {
+      "metrics": [
+        ["AWS/Lambda", "Errors", {
+          "label": "Errors",
+          "color": "#D13212",
+          "dimensions": {
+            "FunctionName": "${var.events_processing_function}"
+          }
+        }],
+        ["AWS/Lambda", "Invocations", {
+          "label": "Invocations",
+          "dimensions": {
+            "FunctionName": "${var.events_processing_function}"
+          }
+        }],
+        [{ 
+          "expression": "100 - 100 * errors / MAX([errors, invocations])", 
+          "label": "Success rate (%)",
+          "id": "availability", 
+          "yAxis": "right", 
+          "region": "${data.aws_region.current.name}"
+        }]
+      ],
+      "title": "Lambda Error count and success rate (%)",
+      "region": "${data.aws_region.current.name}",
+      "period": 60,
+      "stat": "Sum",
+      "stacked": false,
+      "yAxis": {
+        "right": {
+          "max": 100,
+          "label": "Percent",
+          "showUnits": false
+        },
+        "left": {
+          "showUnits": false,
+          "label": ""
         }
       }
     }

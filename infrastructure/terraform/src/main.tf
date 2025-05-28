@@ -10,6 +10,7 @@ module "config-validator" {
   source = "./constructs/config-validator-construct"
   ingest_mode=local.config.INGEST_MODE
   data_platform_mode=local.config.DATA_PLATFORM_MODE
+  real_time_analytics=local.config.REAL_TIME_ANALYTICS
 }
 
 resource "random_string" "stack-random-id-suffix" {
@@ -258,43 +259,6 @@ resource "aws_sns_topic" "notifications" {
   kms_master_key_id = aws_kms_alias.sns_encryption_key_alias.target_key_id
 }
 
-// Glue datalake and processing jobs
-module "data_lake_construct" {
-  source = "./constructs/data-lake-construct"
-  stack_name = local.config.WORKLOAD_NAME
-  events_database = local.config.EVENTS_DATABASE
-  raw_events_table_name = local.config.RAW_EVENTS_TABLE
-  raw_events_prefix = local.config.RAW_EVENTS_PREFIX
-  glue_tmp_prefix = local.config.GLUE_TMP_PREFIX
-  processed_events_prefix = local.config.PROCESSED_EVENTS_PREFIX
-  enable_apache_iceberg_support = local.config.ENABLE_APACHE_ICEBERG_SUPPORT
-  notifications_topic_arn = aws_sns_topic.notifications.arn
-  analytics_bucket_arn = aws_s3_bucket.analytics_bucket.arn
-  analytics_bucket_name    = aws_s3_bucket.analytics_bucket.id
-}
-
-// ---- Kinesis ---- //
-
-// Input stream for applications
-resource "aws_kinesis_stream" "game_events_stream" {
-  name             = "${local.config.WORKLOAD_NAME}-GameEventStream-${random_string.stack-random-id-suffix.result}"
-  shard_count      = local.config.STREAM_PROVISIONED ? local.config.STREAM_SHARD_COUNT : null
-
-  stream_mode_details {
-    stream_mode = local.config.STREAM_PROVISIONED ? "PROVISIONED" : "ON_DEMAND"
-  }
-
-  shard_level_metrics = [
-    "IncomingBytes",
-    "OutgoingBytes",
-    "IncomingRecords",
-    "OutgoingRecords",
-    "ReadProvisionedThroughputExceeded",
-    "WriteProvisionedThroughputExceeded",
-    "IteratorAgeMilliseconds"
-  ]
-}
-
 // ---- DynamoDB Tables ---- //
 
 // Table organizes and manages different applications
@@ -374,25 +338,62 @@ resource "aws_dynamodb_table" "authorizations_table" {
   }
 }
 
-// ---- Athena ---- //
-// Define the resources for the `GameAnalyticsWorkgroup` Athena workgroup
-resource "aws_athena_workgroup" "game_analytics_workgroup" {
-  name        = "${local.config.WORKLOAD_NAME}-GameAnalyticsWorkgroup-${random_string.stack-random-id-suffix.result}"
-  description = "Default workgroup for the solution workload"
-  force_destroy = true
+// ---- Kinesis ---- //
 
-  configuration {
-    enforce_workgroup_configuration    = true
-    publish_cloudwatch_metrics_enabled = true
+// Input stream for applications
+resource "aws_kinesis_stream" "game_events_stream" {
+  count            = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" || local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? 1 : 0
+  name             = "${local.config.WORKLOAD_NAME}-GameEventStream-${random_string.stack-random-id-suffix.result}"
+  shard_count      = local.config.STREAM_PROVISIONED ? local.config.STREAM_SHARD_COUNT : null
 
-    result_configuration {
-      output_location = "s3://${aws_s3_bucket.analytics_bucket.id}/athena_query_results/"
-
-      encryption_configuration {
-        encryption_option = "SSE_S3"
-      }
-    }
+  stream_mode_details {
+    stream_mode = local.config.STREAM_PROVISIONED ? "PROVISIONED" : "ON_DEMAND"
   }
+
+  shard_level_metrics = [
+    "IncomingBytes",
+    "OutgoingBytes",
+    "IncomingRecords",
+    "OutgoingRecords",
+    "ReadProvisionedThroughputExceeded",
+    "WriteProvisionedThroughputExceeded",
+    "IteratorAgeMilliseconds"
+  ]
+}
+
+//////////// ---- CONSTRUCT RESOURCES ---- ////////////
+
+// ---- VPC resources (IF REDSHIFT OR REAL TIME in DEV_MODE is enabled) ---- //
+module "vpc_construct" {
+  source = "./constructs/vpc-construct"
+  count = local.config.DATA_PLATFORM_MODE != "REDSHIFT" ? 1 : 0
+}
+
+// Create flink components
+module "flink_construct" {
+  count = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" && local.config.REAL_TIME_ANALYTICS ? 1 : 0
+  source = "./constructs/flink-construct"
+
+  stack_name                       = local.config.WORKLOAD_NAME
+  stream_shard_count               = local.config.STREAM_SHARD_COUNT
+  cloudwatch_retention_days        = local.config.CLOUDWATCH_RETENTION_DAYS
+  analytics_bucket_arn = aws_s3_bucket.analytics_bucket.arn
+  analytics_bucket_name    = aws_s3_bucket.analytics_bucket.id
+  game_events_stream_name              = aws_kinesis_stream.game_events_stream.name
+  game_events_stream_arn           = aws_kinesis_stream.game_events_stream.arn
+  suffix                           = random_string.stack-random-id-suffix.result
+}
+
+// Enable opensearch for real-time dashboards
+module "opensearch_construct" {
+  count = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" && local.config.REAL_TIME_ANALYTICS ? 1 : 0
+  source = "./constructs/opensearch-construct"
+}
+
+// ---- Redshift ---- //
+module "redshift_construct" {
+  count = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? 1 : 0
+  source = "./constructs/redshift-construct"
 }
 
 // ---- Functions ---- //
@@ -490,8 +491,38 @@ resource "aws_dynamodb_table_item" "authorizations_table_permissions" {
   ]
 }
 
+// Glue datalake and processing jobs
+module "data_lake_construct" {
+  count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
+  source = "./constructs/data-lake-construct"
+  stack_name = local.config.WORKLOAD_NAME
+  events_database = local.config.EVENTS_DATABASE
+  raw_events_table_name = local.config.RAW_EVENTS_TABLE
+  raw_events_prefix = local.config.RAW_EVENTS_PREFIX
+  glue_tmp_prefix = local.config.GLUE_TMP_PREFIX
+  processed_events_prefix = local.config.PROCESSED_EVENTS_PREFIX
+  enable_apache_iceberg_support = local.config.ENABLE_APACHE_ICEBERG_SUPPORT
+  notifications_topic_arn = aws_sns_topic.notifications.arn
+  analytics_bucket_arn = aws_s3_bucket.analytics_bucket.arn
+  analytics_bucket_name    = aws_s3_bucket.analytics_bucket.id
+}
+
+module "data_processing_construct" {
+  count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
+  source = "./constructs/data-processing-construct"
+}
+
+module "athena_construct" {
+  count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
+  source = "./constructs/samples/athena-construct"
+  events_database = module.data_lake_construct.game_events_database_name
+  game_events_workgroup = module.data_lake_construct.game_analytics_workgroup.id
+  raw_events_table = module.data_lake_construct.aws_glue_catalog_table.raw_events_table.name
+}
+
 // Creates firehose and logs related to ingestion
 module "streaming_ingestion_construct" {
+  count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
   source = "./constructs/streaming-ingestion-construct"
 
   game_events_stream_arn = aws_kinesis_stream.game_events_stream.arn
@@ -508,7 +539,7 @@ module "streaming_ingestion_construct" {
   stack_name = local.config.WORKLOAD_NAME
 }
 
-// Create API for admin to manage applications
+// ---- API ENDPOINT ---- /
 module "games_api_construct" {
   source = "./constructs/api-construct"
   lambda_authorizer_arn = module.lambda_construct.lambda_authorizer_function_arn
@@ -551,21 +582,6 @@ resource "aws_sns_topic_policy" "notifications_topic_policy" {
   policy = data.aws_iam_policy_document.notifications_topic_policy.json
 }
 
-// Create flink components
-module "flink_construct" {
-  count = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? 1 : 0
-  source = "./constructs/flink-construct"
-
-  stack_name                       = local.config.WORKLOAD_NAME
-  stream_shard_count               = local.config.STREAM_SHARD_COUNT
-  cloudwatch_retention_days        = local.config.CLOUDWATCH_RETENTION_DAYS
-  analytics_bucket_arn = aws_s3_bucket.analytics_bucket.arn
-  analytics_bucket_name    = aws_s3_bucket.analytics_bucket.id
-  game_events_stream_name              = aws_kinesis_stream.game_events_stream.name
-  game_events_stream_arn           = aws_kinesis_stream.game_events_stream.arn
-  suffix                           = random_string.stack-random-id-suffix.result
-}
-
 // Create metrics for solution
 module "metrics_construct" {
   source = "./constructs/metrics-construct"
@@ -589,4 +605,18 @@ module "metrics_construct" {
   firehose_delivery_stream_name    = module.streaming_ingestion_construct.game_events_firehose_name
   ingest_mode       = local.config.INGEST_MODE
   notifications_topic_arn          = aws_sns_topic.notifications.arn
+}
+
+module "dashboard_construct" {
+  source = "./constructs/dashboard-construct"
+
+  game_events_stream_name              = aws_kinesis_stream.game_events_stream.name
+  stack_name                       = local.config.WORKLOAD_NAME
+  flink_app                        = 
+  analytics_processing_function    = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? module.flink_construct[0].kinesis_metrics_stream_name : null
+  events_processing_function       = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? module.flink_construct[0].kinesis_metrics_stream_name : null
+  api_gateway_name                 = module.games_api_construct.game_analytics_api_name
+  ingest_mode       = local.config.INGEST_MODE
+  firehose_delivery_stream_name    = module.streaming_ingestion_construct.game_events_firehose_name
+  api_stage_name
 }

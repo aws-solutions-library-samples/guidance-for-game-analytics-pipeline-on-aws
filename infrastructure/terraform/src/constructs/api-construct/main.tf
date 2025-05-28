@@ -209,14 +209,3 @@ resource "aws_lambda_permission" "application_admin_service_permission" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.game_analytics_api.execution_arn}/*/*/applications/*"
 }
-
-# Outputs
-output "api_url" {
-  description = "URL of the API Gateway"
-  value       = "${aws_api_gateway_deployment.game_analytics_api_deployment.invoke_url}${aws_api_gateway_stage.game_analytics_api_stage.stage_name}"
-}
-
-output "api_execution_arn" {
-  description = "Execution ARN of the API Gateway"
-  value       = aws_api_gateway_rest_api.game_analytics_api.execution_arn
-}
