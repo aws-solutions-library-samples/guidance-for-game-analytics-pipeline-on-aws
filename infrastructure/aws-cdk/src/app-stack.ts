@@ -17,7 +17,6 @@ import * as cdk from "aws-cdk-lib";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as snsSubscriptions from "aws-cdk-lib/aws-sns-subscriptions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import * as athena from "aws-cdk-lib/aws-athena";
 import * as kms from "aws-cdk-lib/aws-kms";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as kinesis from "aws-cdk-lib/aws-kinesis";
@@ -280,7 +279,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     // ---- VPC resources (IF REDSHIFT OR REAL TIME in DEV_MODE is enabled) ---- //
     var vpcConstruct;
-    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") { // Might add condition that opensearch may be created in dev mode too
+    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") {
       vpcConstruct = new VpcConstruct(this, "VpcConstruct", {
         config: props.config,
       });
@@ -315,8 +314,7 @@ export class InfrastructureStack extends cdk.Stack {
           }
         );
 
-        // enable opensearch for metric dashboarding
-
+        // Enable opensearch for real-time dashboards
         opensearchConstruct = new OpenSearchConstruct(
           this,
           "OpenSearchConstruct",
@@ -392,16 +390,6 @@ export class InfrastructureStack extends cdk.Stack {
       lambdaConstruct.applicationAdminServiceFunction
     );
 
-
-
-    // ---- VPC resources (IF REDSHIFT OR REAL TIME in DEV_MODE is enabled) ---- //
-    var vpcConstruct;
-    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") { // Might add condition that opensearch may be created in dev mode too
-      vpcConstruct = new VpcConstruct(this, "VpcConstruct", {
-        config: props.config,
-      });
-    }
-
     if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE") {
       // Glue datalake and processing jobs
       const dataLakeConstruct = new DataLakeConstruct(this, "DataLakeConstruct", {
@@ -443,7 +431,6 @@ export class InfrastructureStack extends cdk.Stack {
     }
 
     // ---- API ENDPOINT ---- /
-    // Create API for admin to manage applications
     const gamesApiConstruct = new ApiConstruct(this, "GamesApiConstruct", {
       lambdaAuthorizer: lambdaConstruct.lambdaAuthorizer,
       gameEventsStream: gamesEventsStream,
@@ -502,6 +489,7 @@ export class InfrastructureStack extends cdk.Stack {
       gameEventsFirehose: streamingIngestionConstruct?.gameEventsFirehose,
       gameAnalyticsApi: gamesApiConstruct.gameAnalyticsApi,
       eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
+      redshiftConstruct: redshiftConstruct,
       config: props.config
     });
 
