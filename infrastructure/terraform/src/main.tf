@@ -394,6 +394,11 @@ module "opensearch_construct" {
 module "redshift_construct" {
   count = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? 1 : 0
   source = "./constructs/redshift-construct"
+
+  stack_name = local.config.WORKLOAD_NAME
+  vpc_id = module.vpc_construct.main.vpc_id
+  game_events_stream_arn = aws_kinesis_stream.game_events_stream.arn
+  events_database = local.config.EVENTS_DATABASE
 }
 
 // ---- Functions ---- //
@@ -624,8 +629,8 @@ module "dashboard_construct" {
   api_gateway_name                    = module.games_api_construct.game_analytics_api_name
   api_stage_name                      = module.games_api_construct.api_stage_name
   flink_app                           = module.flink_construct.flink_app_output
-  redshift_namespace_db_name          = 
-  redshift_workgroup_name             = 
+  redshift_namespace_db_name          = module.redshift_construct.awscc_redshiftserverless_namespace.name
+  redshift_workgroup_name             = module.redshift_construct.aws_redshiftserverless_workgroup.name
   data_platform_mode                  = local.config.DATA_PLATFORM_MODE
   real_time_analytics                 = local.config.REAL_TIME_ANALYTICS
 }
