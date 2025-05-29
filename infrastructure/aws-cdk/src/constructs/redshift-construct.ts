@@ -16,7 +16,6 @@ import * as cdk from "aws-cdk-lib";
 import * as kms from "aws-cdk-lib/aws-kms";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as redshiftserverless from "aws-cdk-lib/aws-redshiftserverless";
 import { Stack } from "aws-cdk-lib";
 import { Construct } from "constructs";
@@ -94,7 +93,7 @@ export class RedshiftConstruct extends Construct {
       this,
       "RedshiftNamespace",
       {
-        namespaceName: `${workloadNameLower}workspace`,
+        namespaceName: `${workloadNameLower}-workspace`,
         adminPasswordSecretKmsKeyId: this.key.keyId,
         dbName: props.config.EVENTS_DATABASE,
         defaultIamRoleArn: this.redshiftRole.roleArn,
@@ -103,9 +102,6 @@ export class RedshiftConstruct extends Construct {
         manageAdminPassword: true,
       }
     );
-    const secretArn = `arn:aws:secretsmanager:${Stack.of(this).region}:${
-      Stack.of(this).account
-    }:secret:redshift!${this.namespace.namespaceName}-admin*`;
 
     this.workgroup = new redshiftserverless.CfnWorkgroup(
       this,
