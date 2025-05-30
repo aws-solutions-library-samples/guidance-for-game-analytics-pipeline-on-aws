@@ -409,6 +409,9 @@ module "lambda_construct" {
   applications_table_name  = aws_dynamodb_table.applications_table.name
   authorizations_table_name = aws_dynamodb_table.authorizations_table.name
   stack_name = local.config.WORKLOAD_NAME
+  data_platform_mode = local.config.DATA_PLATFORM_MODE
+  events_database = local.config.EVENTS_DATABASE
+  ingest_mode = local.config.INGEST_MODE
 }
 
 // Events Processing Function Policy
