@@ -11,3 +11,15 @@ variable "authorizations_table_name" {
 variable "stack_name" {
   type        = string
 }
+
+variable "ingest_mode" {
+  type        = string
+}
+
+variable "data_platform_mode" {
+  type        = string
+}
+
+variable "events_database" {
+  type        = string
+}
