@@ -12,7 +12,7 @@ resource "aws_glue_catalog_database" "game_events_database" {
 // ---- Athena ---- //
 // Define the resources for the `GameAnalyticsWorkgroup` Athena workgroup
 resource "aws_athena_workgroup" "game_analytics_workgroup" {
-  name        = "${local.config.WORKLOAD_NAME}-GameAnalyticsWorkgroup-${random_string.stack-random-id-suffix.result}"
+  name        = "${var.stack_name}-GameAnalyticsWorkgroup-${var.stack_suffix}"
   description = "Default workgroup for the solution workload"
   force_destroy = true
 
@@ -21,7 +21,7 @@ resource "aws_athena_workgroup" "game_analytics_workgroup" {
     publish_cloudwatch_metrics_enabled = true
 
     result_configuration {
-      output_location = "s3://${aws_s3_bucket.analytics_bucket.id}/athena_query_results/"
+      output_location = "s3://${var.analytics_bucket_name}/athena_query_results/"
 
       encryption_configuration {
         encryption_option = "SSE_S3"

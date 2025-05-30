@@ -1,3 +1,5 @@
+data "aws_region" "current" {}
+
 locals {
   // Title widget
   title_widget = <<-EOT

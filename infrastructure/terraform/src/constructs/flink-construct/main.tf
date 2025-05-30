@@ -36,8 +36,8 @@ resource "aws_iam_role" "flink_app_role" {
   })
 }
 
-resource "aws_iam_role_policy" "metric_processing_function_role_policy" {
-  role = aws_iam_role.metric_processing_function_role.id
+resource "aws_iam_role_policy" "flink_app_stream_access_policy" {
+  role = aws_iam_role.flink_app_role.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -55,7 +55,7 @@ resource "aws_iam_role_policy" "metric_processing_function_role_policy" {
           "kinesis:SubscribeToShard"
         ]
         Effect   = "Allow"
-        Resource = aws_kinesis_stream.game_events_stream.arn
+        Resource = var.game_events_stream_arn
       },
       {
         Action = [
@@ -88,7 +88,7 @@ resource "aws_iam_role_policy" "flink_app_role_policy" {
   })
 }
 
-resource "aws_iam_role_policy" "flink_app_role_access_policy" {
+resource "aws_iam_role_policy" "flink_app_log_access_policy" {
   role = aws_iam_role.flink_app_role.id
   policy = jsonencode({
     Version = "2012-10-17"
@@ -107,35 +107,6 @@ resource "aws_iam_role_policy" "flink_app_role_access_policy" {
         Action   = "logs:PutLogEvents"
         Effect   = "Allow"
         Resource = "${aws_cloudwatch_log_stream.flink_log_stream.arn}"
-      },
-      {
-        Action = [
-          "kinesis:DescribeStream",
-          "kinesis:DescribeStreamSummary",
-          "kinesis:GetShardIterator",
-          "kinesis:DescribeStreamConsumer",
-          "kinesis:RegisterStreamConsumer",
-          "kinesis:GetRecords",
-          "kinesis:ListShards",
-          "kinesis:DescribeLimits",
-          "kinesis:ListStreamConsumers",
-          "kinesis:SubscribeToShard"
-        ]
-        Effect   = "Allow"
-        Resource = aws_kinesis_stream.game_events_stream.arn
-      },
-      {
-        Action = [
-          "kinesis:DescribeStream",
-          "kinesis:DescribeStreamSummary",
-          "kinesis:GetShardIterator",
-          "kinesis:GetRecords",
-          "kinesis:ListShards",
-          "kinesis:PutRecord",
-          "kinesis:PutRecords"
-        ]
-        Effect   = "Allow"
-        Resource = aws_kinesis_stream.metric_output_stream.arn
       }
     ]
   })

@@ -73,6 +73,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "solution_logs_bucket" {
   bucket = aws_s3_bucket.solution_logs_bucket.id
 
   rule {
+    filter {
+      prefix = ""
+    }
     id = "S3StandardInfrequentAccess"
     status = "Enabled"
 
@@ -379,8 +382,8 @@ module "flink_construct" {
   cloudwatch_retention_days        = local.config.CLOUDWATCH_RETENTION_DAYS
   analytics_bucket_arn = aws_s3_bucket.analytics_bucket.arn
   analytics_bucket_name    = aws_s3_bucket.analytics_bucket.id
-  game_events_stream_name              = aws_kinesis_stream.game_events_stream.name
-  game_events_stream_arn           = aws_kinesis_stream.game_events_stream.arn
+  game_events_stream_name              = aws_kinesis_stream.game_events_stream[0].name
+  game_events_stream_arn           = aws_kinesis_stream.game_events_stream[0].arn
   suffix                           = random_string.stack-random-id-suffix.result
 }
 
@@ -396,9 +399,11 @@ module "redshift_construct" {
   source = "./constructs/redshift-construct"
 
   stack_name = local.config.WORKLOAD_NAME
-  vpc_id = module.vpc_construct.main.vpc_id
-  game_events_stream_arn = aws_kinesis_stream.game_events_stream.arn
+  vpc_id = module.vpc_construct[0].vpc_id
+  vpc_cidr = module.vpc_construct[0].vpc_cidr
+  game_events_stream_arn = aws_kinesis_stream.game_events_stream[0].arn
   events_database = local.config.EVENTS_DATABASE
+  vpc_subnets = module.vpc_construct[0].vpc_subnets
 }
 
 // ---- Functions ---- //
@@ -509,13 +514,14 @@ module "data_lake_construct" {
   enable_apache_iceberg_support = local.config.ENABLE_APACHE_ICEBERG_SUPPORT
   notifications_topic_arn = aws_sns_topic.notifications.arn
   analytics_bucket_name    = aws_s3_bucket.analytics_bucket.id
+  stack_suffix = random_string.stack-random-id-suffix.result
 }
 
 module "data_processing_construct" {
   count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
   source = "./constructs/data-processing-construct"
   stack_name = local.config.WORKLOAD_NAME
-  events_database = local.config.EVENTS_DATABASE
+  events_database = module.data_lake_construct[0].game_events_database
   raw_events_table_name = local.config.RAW_EVENTS_TABLE
   glue_tmp_prefix = local.config.GLUE_TMP_PREFIX
   processed_events_prefix = local.config.PROCESSED_EVENTS_PREFIX
@@ -527,9 +533,9 @@ module "data_processing_construct" {
 module "athena_construct" {
   count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
   source = "./constructs/samples/athena-construct"
-  events_database = module.data_lake_construct.game_events_database_name
-  game_events_workgroup = module.data_lake_construct.game_analytics_workgroup.id
-  raw_events_table = module.data_lake_construct.aws_glue_catalog_table.raw_events_table.name
+  events_database = module.data_lake_construct[0].game_events_database_name
+  game_events_workgroup = module.data_lake_construct[0].athena_workgroup_id
+  raw_events_table = local.config.RAW_EVENTS_TABLE
 }
 
 // Creates firehose and logs related to ingestion
@@ -537,10 +543,10 @@ module "streaming_ingestion_construct" {
   count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
   source = "./constructs/streaming-ingestion-construct"
 
-  game_events_stream_arn = aws_kinesis_stream.game_events_stream.arn
+  game_events_stream_arn = aws_kinesis_stream.game_events_stream[0].arn
   analytics_bucket_arn = aws_s3_bucket.analytics_bucket.arn
-  raw_events_table_name = module.data_lake_construct.raw_events_table_name
-  game_events_database_name = module.data_lake_construct.game_events_database_name
+  raw_events_table_name = module.data_lake_construct[0].raw_events_table_name
+  game_events_database_name = module.data_lake_construct[0].game_events_database_name
   events_processing_function_arn = module.lambda_construct.events_processing_function_arn
   enable_apache_iceberg_support = local.config.ENABLE_APACHE_ICEBERG_SUPPORT
   s3_backup_mode = local.config.S3_BACKUP_MODE
@@ -555,10 +561,10 @@ module "streaming_ingestion_construct" {
 module "games_api_construct" {
   source = "./constructs/api-construct"
   lambda_authorizer_arn = module.lambda_construct.lambda_authorizer_function_arn
-  game_events_stream_arn = aws_kinesis_stream.game_events_stream.arn
-  game_events_stream_name = aws_kinesis_stream.game_events_stream.name
-  game_events_firehose_arn = module.streaming_ingestion_construct.game_events_firehose_arn
-  game_events_firehose_name = module.streaming_ingestion_construct.game_events_firehose_name
+  game_events_stream_arn = aws_kinesis_stream.game_events_stream[0].arn
+  game_events_stream_name = aws_kinesis_stream.game_events_stream[0].name
+  game_events_firehose_arn = module.streaming_ingestion_construct[0].game_events_firehose_arn
+  game_events_firehose_name = module.streaming_ingestion_construct[0].game_events_firehose_name
   application_admin_service_function_arn = module.lambda_construct.application_admin_service_function_arn
   stack_name = local.config.WORKLOAD_NAME
   api_stage_name = local.config.API_STAGE_NAME
@@ -608,13 +614,11 @@ module "metrics_construct" {
     module.lambda_construct.application_admin_service_function_name,
   ]
   cloudwatch_retention_days           = local.config.CLOUDWATCH_RETENTION_DAYS
-  kinesis_stream_name                 = aws_kinesis_stream.game_events_stream.name
+  kinesis_stream_name                 = aws_kinesis_stream.game_events_stream[0].name
   kinesis_metrics_stream_name         = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? module.flink_construct[0].kinesis_metrics_stream_name : null
-  analytics_processing_function_name  = local.config.DATA_PLATFORM_MODE == "KINESIS_DATA_STREAMS" ? module.flink_construct[0].kinesis_metrics_stream_name : null
-  kinesis_analytics_log_group_name    =   local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? module.flink_construct[0].kinesis_analytics_log_group_name : null
   api_gateway_name                    = module.games_api_construct.game_analytics_api_name
   stack_name                          = local.config.WORKLOAD_NAME
-  firehose_delivery_stream_name       = module.streaming_ingestion_construct.game_events_firehose_name
+  firehose_delivery_stream_name       = module.streaming_ingestion_construct[0].game_events_firehose_name
   ingest_mode                         = local.config.INGEST_MODE
   notifications_topic_arn             = aws_sns_topic.notifications.arn
 }
@@ -624,16 +628,16 @@ module "dashboard_construct" {
 
   workload_name                       = local.config.WORKLOAD_NAME
   ingest_mode                         = local.config.INGEST_MODE
-  game_events_stream_name             = aws_kinesis_stream.game_events_stream.name
-  metrics_stream_name                 = module.flink_construct.metric_output_stream.name
-  game_events_firehose_name           = module.streaming_ingestion_construct.game_events_firehose_name
+  game_events_stream_name             = aws_kinesis_stream.game_events_stream[0].name
+  metrics_stream_name                 = module.flink_construct[0].kinesis_metrics_stream_name
+  game_events_firehose_name           = module.streaming_ingestion_construct[0].game_events_firehose_name
   events_processing_function          = module.lambda_construct.events_processing_function_arn
   analytics_processing_function       = local.config.DATA_PLATFORM_MODE == "KINESIS_DATA_STREAMS" ? module.flink_construct[0].kinesis_metrics_stream_name : null
   api_gateway_name                    = module.games_api_construct.game_analytics_api_name
   api_stage_name                      = module.games_api_construct.api_stage_name
-  flink_app                           = module.flink_construct.flink_app_output
-  redshift_namespace_db_name          = module.redshift_construct.awscc_redshiftserverless_namespace.name
-  redshift_workgroup_name             = module.redshift_construct.aws_redshiftserverless_workgroup.name
+  flink_app                           = module.flink_construct[0].flink_app_output
+  redshift_namespace_db_name          = module.redshift_construct[0].redshift_namespace_name
+  redshift_workgroup_name             = module.redshift_construct[0].redshift_workgroup_name
   data_platform_mode                  = local.config.DATA_PLATFORM_MODE
   real_time_analytics                 = local.config.REAL_TIME_ANALYTICS
 }

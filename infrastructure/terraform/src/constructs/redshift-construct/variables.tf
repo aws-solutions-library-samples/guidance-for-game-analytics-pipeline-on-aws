@@ -7,6 +7,10 @@ variable "vpc_id" {
   type = string
 }
 
+variable "vpc_cidr" {
+  type = string
+}
+
 variable "game_events_stream_arn" {
   type = string
   description = "ARN of the Kinesis stream for game events"
@@ -14,4 +18,8 @@ variable "game_events_stream_arn" {
 
 variable "events_database" {
   type        = string
+}
+
+variable "vpc_subnets" {
+  type        = list(string)
 }
