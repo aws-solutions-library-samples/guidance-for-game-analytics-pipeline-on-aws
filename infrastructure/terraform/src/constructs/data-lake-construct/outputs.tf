@@ -11,11 +11,6 @@ output "raw_events_table_name" {
   value = aws_glue_catalog_table.raw_events_table.name
 }
 
-output "game_events_etl_job" {
-  description = "ETL Job for processing game events into optimized format for analytics"
-  value       = aws_glue_job.game_events_etl_job.name
-}
-
 output "game_events_database" {
   description = "Glue Catalog Database for storing game analytics events"
   value       = aws_glue_catalog_database.game_events_database.name

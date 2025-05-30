@@ -1,3 +1,6 @@
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
+
 ### IAM Role for Glue ETL Job
 resource "aws_iam_role" "game_events_etl_role" {
   name = "${var.stack_name}-GameEventsEtlRole"
@@ -73,8 +76,8 @@ resource "aws_iam_role_policy" "etl_glue_table_access_policy" {
         ]
         Resource = [
           "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog",
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${aws_glue_catalog_database.game_events_database.name}/*",
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${aws_glue_catalog_database.game_events_database.name}"
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.events_database}/*",
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${var.events_database}"
         ]
       }
     ]
@@ -98,7 +101,7 @@ resource "aws_iam_role_policy" "etl_glue_database_access_policy" {
         ]
         Resource = [
           "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog",
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${aws_glue_catalog_database.game_events_database.name}"
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${var.events_database}"
         ]
       }
     ]
@@ -203,8 +206,8 @@ resource "aws_iam_role_policy" "crawler_glue_table_access_policy" {
         ]
         Resource = [
           "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog",
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${aws_glue_catalog_database.game_events_database.name}/*",
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${aws_glue_catalog_database.game_events_database.name}"
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.events_database}/*",
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${var.events_database}"
         ]
       }
     ]
@@ -228,7 +231,7 @@ resource "aws_iam_role_policy" "crawler_glue_database_access_policy" {
         ]
         Resource = [
           "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog",
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${aws_glue_catalog_database.game_events_database.name}"
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${var.events_database}"
         ]
       }
     ]
@@ -307,7 +310,7 @@ resource "aws_glue_job" "game_events_etl_job" {
     "--enable-metrics"                   = "true"
     "--enable-continuous-cloudwatch-log" = "true"
     "--enable-glue-datacatalog"          = "true"
-    "--database_name"                    = aws_glue_catalog_database.game_events_database.name
+    "--database_name"                    = var.events_database
     "--raw_events_table_name"            = var.raw_events_table_name
     "--analytics_bucket"                 = "s3://${var.analytics_bucket_name}/"
     "--processed_data_prefix"            = var.processed_events_prefix
@@ -361,7 +364,7 @@ resource "aws_glue_job" "game_events_etl_iceberg_job" {
 
 # Glue Crawler
 resource "aws_glue_crawler" "events_crawler" {
-  database_name = aws_glue_catalog_database.game_events_database.name
+  database_name = var.events_database
   name          = "${var.stack_name}-EventsCrawler"
   role          = aws_iam_role.glue_crawler_role.arn
   description = "AWS Glue Crawler for partitioned data, for stack ${var.stack_name}"
@@ -398,8 +401,8 @@ resource "aws_glue_workflow" "game_events_workflow" {
     "--enable-metrics"                   = "true"
     "--enable-continuous-cloudwatch-log" = "true"
     "--enable-glue-datacatalog"          = "true"
-    "--database_name"                    = aws_glue_catalog_database.game_events_database.name
-    "--raw_events_table_name"            = aws_glue_catalog_table.raw_events_table.name
+    "--database_name"                    = var.events_database
+    "--raw_events_table_name"            = var.raw_events_table_name
     "--analytics_bucket"                 = "s3://${var.analytics_bucket_name}/"
     "--processed_data_prefix"            = var.processed_events_prefix
     "--glue_tmp_prefix"                  = var.glue_tmp_prefix

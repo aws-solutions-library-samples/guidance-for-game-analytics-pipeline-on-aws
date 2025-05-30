@@ -32,50 +32,6 @@ resource "aws_cloudwatch_metric_alarm" "kinesis_analytics_errors_alarm" {
   alarm_actions = [var.notifications_topic_arn]
 }
 
-# Streaming Analytics Lambda Errors Alarm
-resource "aws_cloudwatch_metric_alarm" "streaming_analytics_lambda_errors_alarm" {
-  count = var.ingest_mode == "KINESIS_DATA_STREAMS" ? 1 : 0
-
-  alarm_name          = "StreamingAnalyticsLambdaErrorsAlarm (${var.stack_name})"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 6
-  threshold           = 0
-  datapoints_to_alarm = 1
-  metric_name         = "Errors"
-  namespace           = "AWS/Lambda"
-  period              = 300
-  statistic           = "Sum"
-  dimensions = {
-    FunctionName = var.analytics_processing_function_name
-  }
-  alarm_description  = "Lambda Errors > 0, for stack ${var.stack_name} streaming analytics"
-  treat_missing_data = "notBreaching"
-
-  alarm_actions = [var.notifications_topic_arn]
-}
-
-# Streaming Analytics Lambda Throttles Alarm
-resource "aws_cloudwatch_metric_alarm" "streaming_analytics_lambda_throttles_alarm" {
-  count = var.ingest_mode == "KINESIS_DATA_STREAMS" ? 1 : 0
-
-  alarm_name          = "StreamingAnalyticsLambdaThrottlesAlarm (${var.stack_name})"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  threshold           = 0
-  datapoints_to_alarm = 1
-  metric_name         = "Throttles"
-  namespace           = "AWS/Lambda"
-  period              = 300
-  statistic           = "Sum"
-  dimensions = {
-    FunctionName = var.analytics_processing_function_name
-  }
-  alarm_description  = "Lambda Throttles > 0, for stack ${var.stack_name} streaming analytics"
-  treat_missing_data = "notBreaching"
-
-  alarm_actions = [var.notifications_topic_arn]
-}
-
 # DynamoDB Errors Alarm
 resource "aws_cloudwatch_metric_alarm" "dynamodb_errors_alarm" {
   alarm_name          = "DynamoDBErrorsAlarm (${var.stack_name})"

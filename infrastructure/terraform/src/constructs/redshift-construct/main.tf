@@ -72,7 +72,7 @@ resource "aws_iam_role_policy" "redshift_role_kinesis_policy" {
 }
 
 resource "awscc_redshiftserverless_namespace" "redshift_namespace" {
-  namespace_name      = lower(var.stack_name) + "-workspace"
+  namespace_name      = "${lower(var.stack_name)}-workspace"
   admin_password_secret_kms_key_id = aws_kms_key.redshift_kms_key
   db_name             = var.events_database
   default_iam_role_arn = aws_iam_role.redshift_role.arn
@@ -82,7 +82,7 @@ resource "awscc_redshiftserverless_namespace" "redshift_namespace" {
 }
 
 resource "aws_redshiftserverless_workgroup" "redshift_workgroup" {
-  workgroup_name = lower(var.stack_name) + "-workgroup"
+  workgroup_name = "${lower(var.stack_name)}-workgroup"
   base_capacity = 16
   namespace_name = awscc_redshiftserverless_namespace.redshift_namespace.name
   port = 5439

@@ -14,10 +14,6 @@ variable "notifications_topic_arn" {
   type        = string
 }
 
-variable "analytics_processing_function_name" {
-  type        = string
-}
-
 variable "kinesis_analytics_log_group_name" {
   type        = string
 }

@@ -21,3 +21,7 @@ variable "analytics_bucket_name" {
 variable "raw_events_prefix" {
   type        = string
 }
+
+variable "stack_suffix" {
+  type        = string
+}
