@@ -14,10 +14,6 @@ variable "notifications_topic_arn" {
   type        = string
 }
 
-variable "kinesis_analytics_log_group_name" {
-  type        = string
-}
-
 variable "dynamodb_table_names" {
   type        = list(string)
 }

@@ -1,18 +1,3 @@
-# Kinesis Analytics Errors Metric Filter
-resource "aws_cloudwatch_log_metric_filter" "kinesis_analytics_errors_filter" {
-  count = var.ingest_mode == "KINESIS_DATA_STREAMS" ? 1 : 0
-
-  name           = "${var.stack_name}-KinesisAnalyticsErrorsFilter"
-  pattern        = "{$.KinesisAnalyticsErrors > 0}"
-  log_group_name = var.kinesis_analytics_log_group_name
-
-  metric_transformation {
-    name      = "${var.stack_name}-KinesisAnalyticsErrors"
-    namespace = "${var.stack_name}/AWSGameAnalytics"
-    value     = "$.KinesisAnalyticsErrors"
-  }
-}
-
 # Kinesis Analytics Errors Alarm
 resource "aws_cloudwatch_metric_alarm" "kinesis_analytics_errors_alarm" {
   count = var.ingest_mode == "KINESIS_DATA_STREAMS" ? 1 : 0

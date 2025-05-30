@@ -12,7 +12,7 @@ resource "aws_glue_catalog_database" "game_events_database" {
 // ---- Athena ---- //
 // Define the resources for the `GameAnalyticsWorkgroup` Athena workgroup
 resource "aws_athena_workgroup" "game_analytics_workgroup" {
-  name        = "${local.config.WORKLOAD_NAME}-GameAnalyticsWorkgroup-${var.stack_suffix}"
+  name        = "${var.stack_name}-GameAnalyticsWorkgroup-${var.stack_suffix}"
   description = "Default workgroup for the solution workload"
   force_destroy = true
 
