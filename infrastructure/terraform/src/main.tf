@@ -387,6 +387,17 @@ module "flink_construct" {
   suffix                           = random_string.stack-random-id-suffix.result
 }
 
+// Enable opensearch for real-time dashboards
+module "opensearch_construct" {
+  count = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? 1 : 0
+  source = "./constructs/opensearch-construct"
+
+  stack_name                       = local.config.WORKLOAD_NAME
+  cloudwatch_retention_days        = local.config.CLOUDWATCH_RETENTION_DAYS
+  dev_mode                         = local.config.DEV_MODE
+  metric_output_stream_arn         = module.flink_construct[0].metric_output_stream_arn
+  metric_output_stream_name        = module.flink_construct[0].kinesis_metrics_stream_name
+}
 
 // ---- Redshift ---- //
 module "redshift_construct" {
@@ -593,18 +604,6 @@ data "aws_iam_policy_document" "notifications_topic_policy" {
 resource "aws_sns_topic_policy" "notifications_topic_policy" {
   arn    = aws_sns_topic.notifications.arn
   policy = data.aws_iam_policy_document.notifications_topic_policy.json
-}
-
-
-module "opensearch_construct" {
-  count = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? 1 : 0
-  source = "./constructs/opensearch-construct"
-
-  stack_name                       = local.config.WORKLOAD_NAME
-  cloudwatch_retention_days        = local.config.CLOUDWATCH_RETENTION_DAYS
-  dev_mode                         = local.config.DEV_MODE
-  metric_output_stream_arn         = module.flink_construct[0].metric_output_stream_arn
-  metric_output_stream_name        = module.flink_construct[0].kinesis_metrics_stream_name
 }
 
 // Create metrics for solution
