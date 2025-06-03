@@ -395,7 +395,7 @@ module "opensearch_construct" {
   stack_name                       = local.config.WORKLOAD_NAME
   cloudwatch_retention_days        = local.config.CLOUDWATCH_RETENTION_DAYS
   dev_mode                         = local.config.DEV_MODE
-  metric_output_stream_arn         = module.flink_construct[0].metric_output_stream_arn
+  metric_output_stream_arn         = module.flink_construct[0].kinesis_metrics_stream_arn
   metric_output_stream_name        = module.flink_construct[0].kinesis_metrics_stream_name
 }
 
