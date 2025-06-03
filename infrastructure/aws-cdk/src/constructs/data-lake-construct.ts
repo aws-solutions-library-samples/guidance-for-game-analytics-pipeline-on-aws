@@ -20,9 +20,6 @@ import { aws_glue as glue } from "aws-cdk-lib";
 
 import * as glueCfn from "aws-cdk-lib/aws-glue";
 import * as sns from "aws-cdk-lib/aws-sns";
-import * as events from "aws-cdk-lib/aws-events";
-import * as eventstargets from "aws-cdk-lib/aws-events-targets";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as athena from "aws-cdk-lib/aws-athena";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */

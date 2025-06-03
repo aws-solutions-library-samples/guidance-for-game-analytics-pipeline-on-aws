@@ -64,6 +64,13 @@ module "application_admin_service_function" {
       AUTHORIZATIONS_TABLE             = var.authorizations_table_name
       APPLICATION_AUTHORIZATIONS_INDEX = "ApplicationAuthorizations"
       APPLICATIONS_TABLE               = var.applications_table_name
+      INGEST_MODE                      = var.ingest_mode
+      DATA_PLATFORM_MODE               = var.data_platform_mode
+      SECRET_ARN                       = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:redshift!${aws_secretsmanager_secret.redshift_admin_secret.name}-*"
+      WORKGROUP_NAME                   = aws_redshift_workgroup.redshift_workgroup.name
+      DATABASE_NAME                    = var.events_database
+      REDSHIFT_ROLE_ARN                = aws_iam_role.redshift_role.arn
+      STREAM_NAME                      = aws_kinesis_stream.games_events_stream.name
   }
 }
 
@@ -114,6 +121,49 @@ resource "aws_iam_role" "application_admin_service_function_role" {
         Principal = {
           Service = "lambda.amazonaws.com"
         }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "application_admin_service_function_policy" {
+  name = "${var.stack_name}-application-admin-service-function-policy"
+  role = "application_admin_service_function_role"
+
+  policy = jsonencode({
+    Version: "2012-10-17",
+    Statement = [
+      {
+        Effect: "Allow",
+        Action: [
+          "redshift-data:GetStatementResult",
+          "redshift-data:ListStatements",
+          "redshift-data:ExecuteStatement",
+          "redshift-data:BatchExecuteStatement"
+        ],
+        Resource: "*"
+      },
+      {
+        Effect: "Allow",
+        Action: [
+          "redshift-data:CancelStatement",
+          "redshift-data:DescribeStatement"
+        ],
+        Resource: "*"
+      },
+      {
+        Effect: "Allow",
+        Action: [
+          "secretsmanager:GetSecretValue"
+        ],
+        Resource: "${aws_secretsmanager_secret.redshift_admin_secret.arn}"
+      },
+      {
+        Effect: "Allow",
+        Action: [
+          "kms:Decrypt*"
+        ],
+        Resource: "${aws_kms_key.redshift_key.arn}"
       }
     ]
   })

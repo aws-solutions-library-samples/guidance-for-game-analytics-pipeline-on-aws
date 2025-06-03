@@ -6,6 +6,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as kinesisFirehose from "aws-cdk-lib/aws-kinesisfirehose";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import { ManagedFlinkConstruct } from "./flink-construct";
+import { RedshiftConstruct } from "./redshift-construct";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 
 export interface CloudWatchDashboardConstructProps extends cdk.StackProps {
@@ -14,6 +15,7 @@ export interface CloudWatchDashboardConstructProps extends cdk.StackProps {
     gameEventsFirehose: kinesisFirehose.CfnDeliveryStream | undefined;
     gameAnalyticsApi: apigateway.IRestApi;
     eventsProcessingFunction: lambda.Function;
+    redshiftConstruct: RedshiftConstruct | undefined;
     config: GameAnalyticsPipelineConfig;
 }
 const defaultProps: Partial<CloudWatchDashboardConstructProps> = {};
@@ -32,183 +34,11 @@ export class CloudWatchDashboardConstruct extends Construct {
             height: 2,
         });
 
-        // Stream Ingestion Widgets
-        const streamIngestionTitleWidget = new cloudwatch.TextWidget({
-            markdown: '\n## Stream Ingestion & Processing\nThis section covers metrics related to ingestion of data into the solution\'s Events Stream and processing by Kinesis Data Firehose and AWS Lambda Events Processing Function. Use the metrics here to track data freshness/latency and any issues with processor throttling/errors.\n',
-            width: 24,
-            height: 2,
-        });
-
-        var dataFreshnessMetric = (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.gameEventsFirehose != undefined) ? new cloudwatch.Metric({
-            metricName: 'DeliveryToS3.DataFreshness',
-            namespace: 'AWS/Firehose',
-            dimensionsMap: {
-                DeliveryStreamName: props.gameEventsFirehose.ref,
-            },
-        }).with({
-            label: 'Data Freshness',
-            period: cdk.Duration.seconds(300),
-            statistic: 'Maximum',
-        }) : undefined;
-
-        const lambdaDurationMetric = new cloudwatch.Metric({
-            metricName: 'Duration',
-            namespace: 'AWS/Lambda',
-            dimensionsMap: {
-                FunctionName: props.eventsProcessingFunction.functionName,
-            },
-        }).with({
-            label: 'Lambda Duration',
-            period: cdk.Duration.seconds(300),
-            statistic: 'Average',
-        });
-
-        const concurrentExecutionsMetric = new cloudwatch.Metric({
-            metricName: 'ConcurrentExecutions',
-            namespace: 'AWS/Lambda',
-            dimensionsMap: {
-                FunctionName: props.eventsProcessingFunction.functionName,
-            },
-        }).with({
-            label: 'Lambda Concurrency',
-            period: cdk.Duration.seconds(300),
-            statistic: 'Maximum',
-        })
-
-        const lambdaThrottlesMetric = new cloudwatch.Metric({
-            metricName: 'Throttles',
-            namespace: 'AWS/Lambda',
-            dimensionsMap: {
-                FunctionName: props.eventsProcessingFunction.functionName,
-            },
-        }).with({
-            label: 'Lambda Throttles',
-            period: cdk.Duration.seconds(300),
-            statistic: 'Sum',
-        });
-
-        const eventProcessingHealthWidget = new cloudwatch.SingleValueWidget({
-            title: 'Events Processing Health',
-            metrics: (dataFreshnessMetric != undefined) ? [dataFreshnessMetric, lambdaDurationMetric, concurrentExecutionsMetric, lambdaThrottlesMetric] : [lambdaDurationMetric, concurrentExecutionsMetric, lambdaThrottlesMetric],
-            width: 12,
-            height: 3,
-            region: cdk.Stack.of(this).region,
-        });
-
-        var eventIngestionMetric = (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" && props.gameEventsStream != undefined) ?
-            new cloudwatch.Metric({
-                metricName: 'IncomingRecords',
-                namespace: 'AWS/Kinesis',
-                dimensionsMap: {
-                    StreamName: props.gameEventsStream.streamName,
-                },
-            }).with({
-                label: 'Events Stream Incoming Records (Kinesis)',
-                color: '#2ca02c',
-            })
-            : undefined;
-
-        const ingestionLambdaWidget = new cloudwatch.GraphWidget({
-            title: 'Event Transformation Lambda Error count and success rate (%)',
+        // API Widget
+        const apiIngestionWidget = new cloudwatch.GraphWidget({
+            title: 'Events Ingestion and Delivery',
             left: [
                 new cloudwatch.Metric({
-                    metricName: 'Errors',
-                    namespace: 'AWS/Lambda',
-                    dimensionsMap: {
-                        FunctionName: props.eventsProcessingFunction.functionName,
-                    },
-                }).with({
-                    label: 'Errors',
-                    color: '#D13212',
-                }),
-                new cloudwatch.Metric({
-                    metricName: 'Invocations',
-                    namespace: 'AWS/Lambda',
-                    dimensionsMap: {
-                        FunctionName: props.eventsProcessingFunction.functionName,
-                    },
-                }).with({
-                    label: 'Invocations',
-                }),
-            ],
-            right: [
-                new cloudwatch.MathExpression({
-                    expression: '100 - 100 * metricErrors / MAX([metricErrors, metricInvocations])',
-                    label: 'Success rate (%)',
-                    usingMetrics: {
-                        "metricErrors": new cloudwatch.Metric({
-                            metricName: 'Errors',
-                            namespace: 'AWS/Lambda',
-                            dimensionsMap: {
-                                FunctionName: props.eventsProcessingFunction.functionName,
-                                Resource: props.eventsProcessingFunction.functionArn,
-                            },
-                            statistic: 'Sum',
-                        }),
-                        "metricInvocations": new cloudwatch.Metric({
-                            metricName: 'Invocations',
-                            namespace: 'AWS/Lambda',
-                            dimensionsMap: {
-                                FunctionName: props.eventsProcessingFunction.functionName,
-                            },
-                            statistic: 'Sum',
-                        }),
-                    },
-                }),
-            ],
-            width: 8,
-            height: 6,
-            region: cdk.Stack.of(this).region,
-            period: cdk.Duration.seconds(60),
-            statistic: 'Sum',
-            rightYAxis: {
-                max: 100,
-                label: 'Percent',
-                showUnits: false,
-            },
-            leftYAxis: {
-                showUnits: false,
-                label: '',
-            },
-        })
-
-        // Real-time widgets
-        const realTimeTitleWidget = new cloudwatch.TextWidget({
-            markdown: '\n## Real-time Streaming Analytics\nThe below metrics can be used to monitor the real-time streaming SQL analytics of events. Use the Kinesis Data Analytics MillisBehindLatest metric to help you track the lag on the Kinesis SQL Application from the latest events. The Analytics Processing function that processes KDA application outputs can be tracked to measure function concurrency, success percentage, processing duration and throttles.\n',
-            width: 24,
-            height: 2,
-        });
-
-        // used to hold widget structure for dashboard
-        let widgets;
-
-        let deliveryMetric;
-        if ((props.config.INGEST_MODE === "KINESIS_DATA_STREAMS") && props.managedFlinkConstruct != undefined && props.gameEventsStream != undefined) {
-            if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.gameEventsFirehose != undefined) {
-                deliveryMetric = new cloudwatch.Metric({
-                    metricName: 'DeliveryToS3.Records',
-                    namespace: 'AWS/Firehose',
-                    dimensionsMap: {
-                        DeliveryStreamName: props.gameEventsFirehose.ref,
-                    },
-                }).with({
-                    label: 'Firehose Records Delivered to S3',
-                    color: '#17becf',
-                })
-                // Need to insert REDSHIFT version of this for delivery ingest into Redshift from Kinesis
-
-                const incomingRecordsMetric = new cloudwatch.Metric({
-                    metricName: 'IncomingRecords',
-                    namespace: 'AWS/Kinesis',
-                    dimensionsMap: {
-                        StreamName: props.gameEventsStream.streamName,
-                    },
-                }).with({
-                    label: 'Events Stream Incoming Records (Kinesis)',
-                    color: '#2ca02c',
-                })
-
-                const apiGatewayCountMetric = new cloudwatch.Metric({
                     metricName: 'Count',
                     namespace: 'AWS/ApiGateway',
                     dimensionsMap: {
@@ -220,19 +50,46 @@ export class CloudWatchDashboardConstruct extends Construct {
                 }).with({
                     label: 'Events REST API Request Count',
                     color: '#1f77b4',
-                })
+                }),
+            ],
+            width: 8,
+            height: 6,
+            region: cdk.Stack.of(this).region,
+            period: cdk.Duration.seconds(60),
+            statistic: 'Sum',
+        });
 
-                const eventIngestionWidget = new cloudwatch.GraphWidget({
+        // KDS Widgets (If KDS Ingest Mode is enabled)
+        let kdsWidgets : cloudwatch.IWidget[] = [];
+
+        if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" && props.gameEventsStream != undefined) {
+            kdsWidgets = [
+                new cloudwatch.TextWidget({
+                    markdown: '\n## Stream Ingestion & Processing\nThis section covers metrics related to ingestion of data into the solution\'s Events Stream and processing by Kinesis Data Firehose and AWS Lambda Events Processing Function. Use the metrics here to track data freshness/latency and any issues with processor throttling/errors.\n',
+                    width: 24,
+                    height: 2,
+                }),
+                new cloudwatch.GraphWidget({
                     title: 'Events Ingestion and Delivery',
-                    left: (deliveryMetric != undefined) ? [incomingRecordsMetric, deliveryMetric, apiGatewayCountMetric] : [incomingRecordsMetric, apiGatewayCountMetric],
+                    left: [
+                        new cloudwatch.Metric({
+                            metricName: 'IncomingRecords',
+                            namespace: 'AWS/Kinesis',
+                            dimensionsMap: {
+                                StreamName: props.gameEventsStream.streamName,
+                            },
+                        }).with({
+                            label: 'Events Stream Incoming Records (Kinesis)',
+                            color: '#2ca02c',
+                        })
+                    ],
                     width: 8,
                     height: 6,
                     region: cdk.Stack.of(this).region,
                     period: cdk.Duration.seconds(60),
                     statistic: 'Sum',
-                });
-
-                const streamLatencyWidget = new cloudwatch.GraphWidget({
+                }),
+                new cloudwatch.GraphWidget({
                     title: 'Events Stream Latency',
                     left: [
                         new cloudwatch.Metric({
@@ -287,234 +144,380 @@ export class CloudWatchDashboardConstruct extends Construct {
                     region: cdk.Stack.of(this).region,
                     period: cdk.Duration.seconds(60),
                     statistic: 'Average',
-                });
+                })
+            ];
+        }
 
-                const realTimeHealthWidget = new cloudwatch.SingleValueWidget({
-                    title: 'Real-time Analytics Health',
-                    metrics: [
-                        // This metric receives one sample per billing period (one hour). To visualize the number of KPUs over time, use MAX or AVG over a period of at least one (1) hour.
+        // Redshift Widgets (If Redshift Mode is enabled)
+        let redshiftWidgets : cloudwatch.IWidget[] = [];
+        if (props.config.DATA_PLATFORM_MODE === "REDSHIFT" && props.redshiftConstruct != undefined) {
+            redshiftWidgets = [
+                new cloudwatch.GraphWidget({
+                    title: "Redshift Serverless Resource Utilization",
+                    left: [
                         new cloudwatch.Metric({
-                            metricName: 'KPUs',
-                            namespace: 'AWS/KinesisAnalytics',
-                            period: cdk.Duration.hours(2),
+                            metricName: "DatabaseConnections",
+                            namespace: "AWS/Redshift-Serverless",
                             dimensionsMap: {
-                                Application: props.managedFlinkConstruct.managedFlinkApp.ref,
+                                DatabaseName: props.redshiftConstruct.namespace.attrNamespaceDbName,
+                                Workgroup: props.redshiftConstruct.workgroup.attrWorkgroupWorkgroupName,
+                            },
+                            }).with({
+                            label: "Database Connections",
+                            color: "#1f77b4",
+                            })
+                    ],
+                    width: 8,
+                    height: 6,
+                })
+            ];
+        }
+
+        // Data Lake Mode Widgets (If Data Lake Mode is enabled)
+        let dataLakeWidgets : cloudwatch.IWidget[] = [];
+        if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.gameEventsFirehose != undefined) {
+            dataLakeWidgets = [
+                new cloudwatch.SingleValueWidget({
+                    title: 'Events Processing Health',
+                    metrics: [     
+                        new cloudwatch.Metric({
+                            metricName: 'DeliveryToS3.DataFreshness',
+                            namespace: 'AWS/Firehose',
+                            dimensionsMap: {
+                                DeliveryStreamName: props.gameEventsFirehose.ref,
                             },
                         }).with({
-                            label: "Managed Flink KPUs",
+                            label: 'Data Freshness',
+                            period: cdk.Duration.seconds(300),
                             statistic: 'Maximum',
+                        }),     
+                        new cloudwatch.Metric({
+                            metricName: 'DeliveryToS3.Records',
+                            namespace: 'AWS/Firehose',
+                            dimensionsMap: {
+                                DeliveryStreamName: props.gameEventsFirehose.ref,
+                            },
+                        }).with({
+                            label: 'Firehose Records Delivered to S3',
+                            color: '#17becf',
+                        }),
+                        new cloudwatch.Metric({
+                            metricName: 'Duration',
+                            namespace: 'AWS/Lambda',
+                            dimensionsMap: {
+                                FunctionName: props.eventsProcessingFunction.functionName,
+                            },
+                        }).with({
+                            label: 'Lambda Duration',
+                            period: cdk.Duration.seconds(300),
+                            statistic: 'Average',
+                        }),
+                        new cloudwatch.Metric({
+                            metricName: 'ConcurrentExecutions',
+                            namespace: 'AWS/Lambda',
+                            dimensionsMap: {
+                                FunctionName: props.eventsProcessingFunction.functionName,
+                            },
+                        }).with({
+                            label: 'Lambda Concurrency',
+                            period: cdk.Duration.seconds(300),
+                            statistic: 'Maximum',
+                        }),
+                        new cloudwatch.Metric({
+                            metricName: 'Throttles',
+                            namespace: 'AWS/Lambda',
+                            dimensionsMap: {
+                                FunctionName: props.eventsProcessingFunction.functionName,
+                            },
+                        }).with({
+                            label: 'Lambda Throttles',
+                            period: cdk.Duration.seconds(300),
+                            statistic: 'Sum',
                         }),
                     ],
                     width: 12,
                     height: 3,
                     region: cdk.Stack.of(this).region,
-                });
-
-                const realTimeLatencyWidget = new cloudwatch.GraphWidget({
-                    title: 'Managed Flink Records Intake',
-                    left: [
-                        new cloudwatch.MathExpression({
-                            expression: 'recInPerSec * 60 / 4',
-                            label: 'Number of Records Recieved',
-                            usingMetrics: {
-                                "recInPerSec":
-                                    new cloudwatch.Metric({
-                                        metricName: 'numRecordsInPerSecond',
-                                        namespace: 'AWS/KinesisAnalytics',
-                                        dimensionsMap: {
-                                            Application: props.managedFlinkConstruct.managedFlinkApp.ref,
-                                        },
-                                    }).with({
-                                        region: cdk.Stack.of(this).region,
-                                        statistic: 'Sum',
-                                        period: cdk.Duration.minutes(1)
-                                    }),
-                            },
-                        }),
-                        new cloudwatch.MathExpression({
-                            expression: 'recDroppedPerMin / 4',
-                            label: 'Number of Late Records Dropped',
-                            usingMetrics: {
-                                "recDroppedPerMin":
-                                    new cloudwatch.Metric({
-                                        metricName: 'numLateRecordsDropped',
-                                        namespace: 'AWS/KinesisAnalytics',
-                                        dimensionsMap: {
-                                            Application: props.managedFlinkConstruct.managedFlinkApp.ref,
-                                        },
-                                    }).with({
-                                        region: cdk.Stack.of(this).region,
-                                        statistic: 'Sum',
-                                        period: cdk.Duration.minutes(1),
-                                    }),
-                            },
-                        }),
-                    ],
-                    leftYAxis: {
-                        showUnits: false,
-                        label: 'Count',
-                    },
-                    width: 8,
-                    height: 6,
-                    period: cdk.Duration.seconds(60),
-                });
-
-                const flinkCPUUtilizationWidget = new cloudwatch.GraphWidget({
-                    title: 'Managed Flink Container CPU Utilization',
+                }),
+                new cloudwatch.GraphWidget({
+                    title: 'Event Transformation Lambda Error count and success rate (%)',
                     left: [
                         new cloudwatch.Metric({
-                            metricName: 'containerCPUUtilization',
-                            namespace: 'AWS/KinesisAnalytics',
+                            metricName: 'Errors',
+                            namespace: 'AWS/Lambda',
                             dimensionsMap: {
-                                Application: props.managedFlinkConstruct.managedFlinkApp.ref,
+                                FunctionName: props.eventsProcessingFunction.functionName,
                             },
-                        })
-
-                    ],
-                    leftAnnotations: [
-                        {
-                            value: 75,
-                            label: "Scale Up Threshold",
-                            color: cloudwatch.Color.RED
-                        },
-                        {
-                            value: 10,
-                            label: "Scale Down Threshold",
-                            color: cloudwatch.Color.GREEN
-                        }
-                    ],
-                    leftYAxis: {
-                        min: 1,
-                        max: 100,
-                        label: 'Percent',
-                        showUnits: false,
-                    },
-                    width: 8,
-                    height: 6,
-                    period: cdk.Duration.seconds(60),
-                });
-
-
-                const FlinkResourceUtilizationWidget = new cloudwatch.GraphWidget({
-                    title: 'Managed Flink Container Resource Utilization',
-                    left: [
-                        new cloudwatch.Metric({
-                            metricName: 'containerMemoryUtilization',
-                            namespace: 'AWS/KinesisAnalytics',
-                            dimensionsMap: {
-                                Application: props.managedFlinkConstruct.managedFlinkApp.ref,
-                            },
+                        }).with({
+                            label: 'Errors',
+                            color: '#D13212',
                         }),
                         new cloudwatch.Metric({
-                            metricName: 'containerDiskUtilization',
-                            namespace: 'AWS/KinesisAnalytics',
+                            metricName: 'Invocations',
+                            namespace: 'AWS/Lambda',
                             dimensionsMap: {
-                                Application: props.managedFlinkConstruct.managedFlinkApp.ref,
+                                FunctionName: props.eventsProcessingFunction.functionName,
                             },
-                        })
+                        }).with({
+                            label: 'Invocations',
+                        }),
                     ],
                     right: [
-                        new cloudwatch.Metric({
-                            metricName: 'threadsCount',
-                            namespace: 'AWS/KinesisAnalytics',
-                            dimensionsMap: {
-                                Application: props.managedFlinkConstruct.managedFlinkApp.ref,
+                        new cloudwatch.MathExpression({
+                            expression: '100 - 100 * metricErrors / MAX([metricErrors, metricInvocations])',
+                            label: 'Success rate (%)',
+                            usingMetrics: {
+                                "metricErrors": new cloudwatch.Metric({
+                                    metricName: 'Errors',
+                                    namespace: 'AWS/Lambda',
+                                    dimensionsMap: {
+                                        FunctionName: props.eventsProcessingFunction.functionName,
+                                        Resource: props.eventsProcessingFunction.functionArn,
+                                    },
+                                    statistic: 'Sum',
+                                }),
+                                "metricInvocations": new cloudwatch.Metric({
+                                    metricName: 'Invocations',
+                                    namespace: 'AWS/Lambda',
+                                    dimensionsMap: {
+                                        FunctionName: props.eventsProcessingFunction.functionName,
+                                    },
+                                    statistic: 'Sum',
+                                }),
                             },
-                        })
-                    ],
-                    leftYAxis: {
-                        min: 1,
-                        max: 100,
-                        label: 'Percent',
-                        showUnits: false,
-                    },
-
-                    width: 8,
-                    height: 6,
-                });
-
-                const metricStreamLatencyWidget = new cloudwatch.GraphWidget({
-                    title: 'Metrics Stream Latency',
-                    left: [
-                        new cloudwatch.Metric({
-                            metricName: 'PutRecord.Latency',
-                            namespace: 'AWS/Kinesis',
-                            dimensionsMap: {
-                                StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
-                            },
-                        }).with({
-                            label: 'PutRecord Write Latency',
                         }),
-                        new cloudwatch.Metric({
-                            metricName: 'PutRecords.Latency',
-                            namespace: 'AWS/Kinesis',
-                            dimensionsMap: {
-                                StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
-                            },
-                        }).with({
-                            label: 'PutRecords Write Latency',
-                        }),
-                        new cloudwatch.Metric({
-                            metricName: 'GetRecords.Latency',
-                            namespace: 'AWS/Kinesis',
-                            dimensionsMap: {
-                                StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
-                            },
-                        }).with({
-                            label: 'Read Latency',
-                        }),
-
                     ],
-                    right: [
-                        new cloudwatch.Metric({
-                            metricName: 'GetRecords.IteratorAgeMilliseconds',
-                            namespace: 'AWS/Kinesis',
-                            dimensionsMap: {
-                                StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
-                            },
-                        }).with({
-                            label: 'Consumer Iterator Age',
-                            statistic: 'Maximum',
-                            period: cdk.Duration.seconds(60)
-                        })
-                    ],
-                    leftYAxis: {
-                        showUnits: false,
-                        label: 'Milliseconds',
-                    },
                     width: 8,
                     height: 6,
                     region: cdk.Stack.of(this).region,
                     period: cdk.Duration.seconds(60),
-                    statistic: 'Average',
-                });
-
-                // create dashboard with analytics widgets
-                widgets = [
-                    [titleWidget],
-                    [eventProcessingHealthWidget, realTimeHealthWidget],
-                    [streamIngestionTitleWidget],
-                    [eventIngestionWidget, ingestionLambdaWidget, streamLatencyWidget],
-                    [realTimeTitleWidget],
-                    [realTimeLatencyWidget, flinkCPUUtilizationWidget, FlinkResourceUtilizationWidget],
-                    [metricStreamLatencyWidget]
-                ];
-
-            } else {
-                widgets = [
-                    [titleWidget],
-                    [eventProcessingHealthWidget],
-                    [streamIngestionTitleWidget],
-                    [ingestionLambdaWidget]
-                ]
-            }
-
-
-
-            const dashboard = new cloudwatch.Dashboard(this, 'PipelineOpsDashboard', {
-                dashboardName: `PipelineOpsDashboard_${cdk.Aws.STACK_NAME}`,
-                widgets: widgets
-            });
+                    statistic: 'Sum',
+                    rightYAxis: {
+                        max: 100,
+                        label: 'Percent',
+                        showUnits: false,
+                    },
+                    leftYAxis: {
+                        showUnits: false,
+                        label: '',
+                    },
+                })
+            ];
         }
+
+        // Real time Widgets (If Real Time is enabled)
+        let realTimeWidgets : cloudwatch.IWidget[][] = [];
+        if (props.config.REAL_TIME_ANALYTICS === true && props.managedFlinkConstruct != undefined) {
+            realTimeWidgets = [
+                [
+                    new cloudwatch.TextWidget({
+                        markdown: '\n## Real-time Streaming Analytics\nThe below metrics can be used to monitor the real-time streaming SQL analytics of events. Use the Kinesis Data Analytics MillisBehindLatest metric to help you track the lag on the Kinesis SQL Application from the latest events. The Analytics Processing function that processes KDA application outputs can be tracked to measure function concurrency, success percentage, processing duration and throttles.\n',
+                        width: 24,
+                        height: 2,
+                    })
+                ],
+                [
+                    new cloudwatch.GraphWidget({
+                        title: 'Managed Flink Records Intake',
+                        left: [
+                            new cloudwatch.MathExpression({
+                                expression: 'recInPerSec * 60 / 4',
+                                label: 'Number of Records Recieved',
+                                usingMetrics: {
+                                    "recInPerSec":
+                                        new cloudwatch.Metric({
+                                            metricName: 'numRecordsInPerSecond',
+                                            namespace: 'AWS/KinesisAnalytics',
+                                            dimensionsMap: {
+                                                Application: props.managedFlinkConstruct.managedFlinkApp.ref,
+                                            },
+                                        }).with({
+                                            region: cdk.Stack.of(this).region,
+                                            statistic: 'Sum',
+                                            period: cdk.Duration.minutes(1)
+                                        }),
+                                },
+                            }),
+                            new cloudwatch.MathExpression({
+                                expression: 'recDroppedPerMin / 4',
+                                label: 'Number of Late Records Dropped',
+                                usingMetrics: {
+                                    "recDroppedPerMin":
+                                        new cloudwatch.Metric({
+                                            metricName: 'numLateRecordsDropped',
+                                            namespace: 'AWS/KinesisAnalytics',
+                                            dimensionsMap: {
+                                                Application: props.managedFlinkConstruct.managedFlinkApp.ref,
+                                            },
+                                        }).with({
+                                            region: cdk.Stack.of(this).region,
+                                            statistic: 'Sum',
+                                            period: cdk.Duration.minutes(1),
+                                        }),
+                                },
+                            }),
+                        ],
+                        leftYAxis: {
+                            showUnits: false,
+                            label: 'Count',
+                        },
+                        width: 8,
+                        height: 6,
+                        period: cdk.Duration.seconds(60),
+                    }),
+                    new cloudwatch.GraphWidget({
+                        title: 'Managed Flink Container CPU Utilization',
+                        left: [
+                            new cloudwatch.Metric({
+                                metricName: 'containerCPUUtilization',
+                                namespace: 'AWS/KinesisAnalytics',
+                                dimensionsMap: {
+                                    Application: props.managedFlinkConstruct.managedFlinkApp.ref,
+                                },
+                            })
+                        ],
+                        leftAnnotations: [
+                            {
+                                value: 75,
+                                label: "Scale Up Threshold",
+                                color: cloudwatch.Color.RED
+                            },
+                            {
+                                value: 10,
+                                label: "Scale Down Threshold",
+                                color: cloudwatch.Color.GREEN
+                            }
+                        ],
+                        leftYAxis: {
+                            min: 1,
+                            max: 100,
+                            label: 'Percent',
+                            showUnits: false,
+                        },
+                        width: 8,
+                        height: 6,
+                        period: cdk.Duration.seconds(60),
+                    }),
+                    new cloudwatch.GraphWidget({
+                        title: 'Managed Flink Container Resource Utilization',
+                        left: [
+                            new cloudwatch.Metric({
+                                metricName: 'containerMemoryUtilization',
+                                namespace: 'AWS/KinesisAnalytics',
+                                dimensionsMap: {
+                                    Application: props.managedFlinkConstruct.managedFlinkApp.ref,
+                                },
+                            }),
+                            new cloudwatch.Metric({
+                                metricName: 'containerDiskUtilization',
+                                namespace: 'AWS/KinesisAnalytics',
+                                dimensionsMap: {
+                                    Application: props.managedFlinkConstruct.managedFlinkApp.ref,
+                                },
+                            })
+                        ],
+                        right: [
+                            new cloudwatch.Metric({
+                                metricName: 'threadsCount',
+                                namespace: 'AWS/KinesisAnalytics',
+                                dimensionsMap: {
+                                    Application: props.managedFlinkConstruct.managedFlinkApp.ref,
+                                },
+                            })
+                        ],
+                        leftYAxis: {
+                            min: 1,
+                            max: 100,
+                            label: 'Percent',
+                            showUnits: false,
+                        },
+
+                        width: 8,
+                        height: 6,
+                    })
+                ],
+                [
+                    new cloudwatch.GraphWidget({
+                        title: 'Metrics Stream Latency',
+                        left: [
+                            new cloudwatch.Metric({
+                                metricName: 'PutRecord.Latency',
+                                namespace: 'AWS/Kinesis',
+                                dimensionsMap: {
+                                    StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
+                                },
+                            }).with({
+                                label: 'PutRecord Write Latency',
+                            }),
+                            new cloudwatch.Metric({
+                                metricName: 'PutRecords.Latency',
+                                namespace: 'AWS/Kinesis',
+                                dimensionsMap: {
+                                    StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
+                                },
+                            }).with({
+                                label: 'PutRecords Write Latency',
+                            }),
+                            new cloudwatch.Metric({
+                                metricName: 'GetRecords.Latency',
+                                namespace: 'AWS/Kinesis',
+                                dimensionsMap: {
+                                    StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
+                                },
+                            }).with({
+                                label: 'Read Latency',
+                            }),
+
+                        ],
+                        right: [
+                            new cloudwatch.Metric({
+                                metricName: 'GetRecords.IteratorAgeMilliseconds',
+                                namespace: 'AWS/Kinesis',
+                                dimensionsMap: {
+                                    StreamName: props.managedFlinkConstruct.metricOutputStream.streamName,
+                                },
+                            }).with({
+                                label: 'Consumer Iterator Age',
+                                statistic: 'Maximum',
+                                period: cdk.Duration.seconds(60)
+                            })
+                        ],
+                        leftYAxis: {
+                            showUnits: false,
+                            label: 'Milliseconds',
+                        },
+                        width: 8,
+                        height: 6,
+                        region: cdk.Stack.of(this).region,
+                        period: cdk.Duration.seconds(60),
+                        statistic: 'Average',
+                    })
+                ]
+            ];
+        }
+
+        // Conditionally build out the dashboard
+        let widgets : cloudwatch.IWidget[][] = [];
+        widgets.push(
+            [titleWidget],
+            [apiIngestionWidget]
+        );
+        if (kdsWidgets.length > 0) {
+            widgets.push(kdsWidgets)
+        }
+        if (redshiftWidgets.length > 0) {
+            widgets.push(redshiftWidgets)
+        }
+        if (dataLakeWidgets.length > 0) {
+            widgets.push(dataLakeWidgets)
+        }
+        if (realTimeWidgets.length > 0) {
+            widgets = widgets.concat(realTimeWidgets)
+        }
+
+        const dashboard = new cloudwatch.Dashboard(this, 'PipelineOpsDashboard', {
+            dashboardName: `PipelineOpsDashboard_${cdk.Aws.STACK_NAME}`,
+            widgets: widgets
+        });
     }
 }

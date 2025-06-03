@@ -84,11 +84,6 @@ export class StreamingIngestionConstruct extends Construct {
         resources: [props.gamesEventsStream.streamArn],
       })
     }
-    if (props.gamesEventsStream instanceof cdk.aws_msk.CfnServerlessCluster) {
-      streamAccessPolicy = new iam.PolicyStatement({
-        // INSERT MSK ACCESS POLICIES HERE  
-      })
-    }
 
     // Role for firehose
     const gamesEventsFirehoseRole = new iam.Role(

@@ -42,6 +42,16 @@ resource "aws_iam_role_policy" "firehose_delivery_policy" {
     Statement = [
       {
         Action = [
+          "kinesis:DescribeStream",
+          "kinesis:GetShardIterator",
+          "kinesis:GetRecords",
+          "kinesis:ListShards"
+        ]
+        Effect = "Allow"
+        Resource = var.game_events_stream_arn
+      },
+      {
+        Action = [
           "s3:AbortMultipartUpload",
           "s3:GetBucketLocation",
           "s3:GetObject",
@@ -62,16 +72,6 @@ resource "aws_iam_role_policy" "firehose_delivery_policy" {
         ]
         Effect = "Allow"
         Resource = var.events_processing_function_arn
-      },
-      {
-        Action = [
-          "kinesis:DescribeStream",
-          "kinesis:GetShardIterator",
-          "kinesis:GetRecords",
-          "kinesis:ListShards"
-        ]
-        Effect = "Allow"
-        Resource = var.game_events_stream_arn
       },
       {
         Action = [

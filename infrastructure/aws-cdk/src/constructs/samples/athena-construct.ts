@@ -217,7 +217,6 @@ export class AthenaQueryConstruct extends Construct {
     /* eslint-disable @typescript-eslint/no-unused-vars */
     props = { ...defaultProps, ...props };
 
-
     this.createDefaultAthenaQueries(
       props.gameEventsDatabase.ref,
       props.config.RAW_EVENTS_TABLE,
