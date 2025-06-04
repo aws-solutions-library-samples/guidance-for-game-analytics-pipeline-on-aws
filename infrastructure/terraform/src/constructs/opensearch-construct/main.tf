@@ -132,21 +132,6 @@ resource "aws_iam_role" "ingestion_role" {
           Effect = "Allow"
           Action = ["s3:PutObject"]
           Resource = ["${aws_s3_bucket.dead_letter_queue.arn}/*"]
-        },
-        {
-          Sid    = "allowReadFromStream"
-          Effect = "Allow"
-          Action = [
-            "kinesis:DescribeStream",
-            "kinesis:DescribeStreamSummary",
-            "kinesis:GetRecords",
-            "kinesis:GetShardIterator",
-            "kinesis:ListShards",
-            "kinesis:ListStreams",
-            "kinesis:ListStreamConsumers",
-            "kinesis:RegisterStreamConsumer"
-          ]
-          Resource = [var.metric_output_stream_arn]
         }
       ]
     })

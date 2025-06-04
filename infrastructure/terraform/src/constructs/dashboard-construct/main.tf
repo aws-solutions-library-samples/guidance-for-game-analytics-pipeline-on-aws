@@ -525,7 +525,7 @@ locals {
 
 resource "random_string" "stack_random_id_suffix" {
   length = 8
-  lower  = false
+  special = false
 }
 
 resource "aws_cloudwatch_dashboard" "pipeline_ops_dashboard" {
