@@ -71,7 +71,7 @@ module "application_admin_service_function" {
       DATA_PLATFORM_MODE               = var.data_platform_mode
       DATABASE_NAME                    = var.events_database
       STREAM_NAME                      = length(var.games_events_stream_name) == 1 ? var.games_events_stream_name[0] : ""
-  }, var.redshift_enabled ? {
+  }, var.data_platform_mode == "REDSHIFT" ? {
       SECRET_ARN                       = "redshift!${var.redshift_namespace_name[0]}-admin"
       WORKGROUP_NAME                   = var.redshift_workgroup_name[0]
       REDSHIFT_ROLE_ARN                = var.redshift_role_arn[0]
@@ -132,7 +132,7 @@ resource "aws_iam_role" "application_admin_service_function_role" {
 }
 
 resource "aws_iam_role_policy" "application_admin_service_function_policy" {
-  count = var.redshift_enabled ? 1 : 0
+  count = var.data_platform_mode == "REDSHIFT" ? 1 : 0
   name = "${var.stack_name}-application-admin-service-function-policy"
   role = aws_iam_role.application_admin_service_function_role.name
 

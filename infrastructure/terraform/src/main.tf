@@ -423,7 +423,6 @@ module "lambda_construct" {
   data_platform_mode = local.config.DATA_PLATFORM_MODE
   events_database = local.config.EVENTS_DATABASE
   ingest_mode = local.config.INGEST_MODE
-  redshift_enabled = local.config.DATA_PLATFORM_MODE == "REDSHIFT"
   redshift_namespace_name = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_namespace_name] : []
   redshift_key_arn =  local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_key_arn] : []
   redshift_workgroup_name =  local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_workgroup_name] : []

@@ -25,10 +25,6 @@ variable "stack_name" {
   type        = string
 }
 
-variable "redshift_enabled" {
-  type        = bool
-}
-
 variable "redshift_namespace_name" {
   type        = list(string)
 }
