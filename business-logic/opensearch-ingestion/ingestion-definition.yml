@@ -17,7 +17,7 @@ ${pipeline_name}:
         max_polling_records: '10000'
         idle_time_between_reads: PT0.25S
       aws:
-        region: ${AWS::Region}
+        region: ${region}
         sts_role_arn: ${role}
   processor:
     - parse_json:
@@ -28,7 +28,7 @@ ${pipeline_name}:
           - '${host_name}'
         aws:
           serverless: true
-          region: ${AWS::Region}
+          region: ${region}
           sts_role_arn: ${role}
           serverless_options:
             network_policy_name: ${network_policy_name}
@@ -37,6 +37,6 @@ ${pipeline_name}:
         dlq:
           s3:
             bucket: ${dlq_bucket_name}
-            region: ${AWS::Region}
+            region: ${region}
             sts_role_arn: ${role}
         document_version_type: internal

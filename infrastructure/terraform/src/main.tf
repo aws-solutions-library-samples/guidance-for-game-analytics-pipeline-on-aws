@@ -389,8 +389,14 @@ module "flink_construct" {
 
 // Enable opensearch for real-time dashboards
 module "opensearch_construct" {
-  count = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" && local.config.REAL_TIME_ANALYTICS ? 1 : 0
+  count = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? 1 : 0
   source = "./constructs/opensearch-construct"
+
+  stack_name                       = local.config.WORKLOAD_NAME
+  cloudwatch_retention_days        = local.config.CLOUDWATCH_RETENTION_DAYS
+  dev_mode                         = local.config.DEV_MODE
+  metric_output_stream_arn         = module.flink_construct[0].kinesis_metrics_stream_arn
+  metric_output_stream_name        = module.flink_construct[0].kinesis_metrics_stream_name
 }
 
 // ---- Redshift ---- //
@@ -417,6 +423,11 @@ module "lambda_construct" {
   data_platform_mode = local.config.DATA_PLATFORM_MODE
   events_database = local.config.EVENTS_DATABASE
   ingest_mode = local.config.INGEST_MODE
+  redshift_namespace_name = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_namespace_name] : []
+  redshift_key_arn =  local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_key_arn] : []
+  redshift_workgroup_name =  local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_workgroup_name] : []
+  redshift_role_arn =  local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_role_arn] : []
+  games_events_stream_name = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [aws_kinesis_stream.game_events_stream[0].name] : []
 }
 
 // Events Processing Function Policy
@@ -628,16 +639,16 @@ module "dashboard_construct" {
 
   workload_name                       = local.config.WORKLOAD_NAME
   ingest_mode                         = local.config.INGEST_MODE
-  game_events_stream_name             = aws_kinesis_stream.game_events_stream[0].name
-  metrics_stream_name                 = module.flink_construct[0].kinesis_metrics_stream_name
-  game_events_firehose_name           = module.streaming_ingestion_construct[0].game_events_firehose_name
+  game_events_stream_name             = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" || local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? aws_kinesis_stream.game_events_stream[0].name : ""
+  game_events_firehose_name           = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.streaming_ingestion_construct[0].game_events_firehose_name : ""
   events_processing_function          = module.lambda_construct.events_processing_function_arn
-  analytics_processing_function       = local.config.DATA_PLATFORM_MODE == "KINESIS_DATA_STREAMS" ? module.flink_construct[0].kinesis_metrics_stream_name : null
+  analytics_processing_function       = local.config.REAL_TIME_ANALYTICS == true ? module.flink_construct[0].kinesis_metrics_stream_name : ""
   api_gateway_name                    = module.games_api_construct.game_analytics_api_name
-  api_stage_name                      = module.games_api_construct.api_stage_name
-  flink_app                           = module.flink_construct[0].flink_app_output
-  redshift_namespace_db_name          = module.redshift_construct[0].redshift_namespace_name
-  redshift_workgroup_name             = module.redshift_construct[0].redshift_workgroup_name
+  api_stage_name                      = module.games_api_construct.game_analytics_api_stage_name
+  metrics_stream_name                 = local.config.REAL_TIME_ANALYTICS == true ? module.flink_construct[0].kinesis_metrics_stream_name : ""
+  flink_app                           = local.config.REAL_TIME_ANALYTICS == true ? module.flink_construct[0].flink_app_output : ""
+  redshift_namespace_db_name          = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? module.redshift_construct[0].redshift_namespace_name : ""
+  redshift_workgroup_name             = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? module.redshift_construct[0].redshift_workgroup_name : ""
   data_platform_mode                  = local.config.DATA_PLATFORM_MODE
   real_time_analytics                 = local.config.REAL_TIME_ANALYTICS
 }
