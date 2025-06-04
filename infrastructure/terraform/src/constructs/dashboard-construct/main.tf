@@ -516,13 +516,11 @@ locals {
   widgets_list_platform_check = var.data_platform_mode == "REDSHIFT" ? concat(local.widgets_list_ingest_check, local.redshift_widgets) : concat(local.widgets_list_ingest_check, local.datalake_widgets)
   widgets_list_realtime_check = var.real_time_analytics == true ? concat(local.widgets_list_platform_check, local.realtime_widgets) : local.widgets_list_platform_check
 
-  widgets = <<-EOT
+  widgets = jsonencode(
   {
-    "widgets": [
-      ${local.widgets_list_realtime_check}
-    ]
+    "widgets": local.widgets_list_realtime_check
   }
-  EOT
+  )
 }
 
 resource "random_string" "stack_random_id_suffix" {
