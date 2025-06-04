@@ -1,6 +1,9 @@
 # Lambda function: EventsProcessingFunction
 /* The following variables define the necessary resources for the `EventsProcessingFunction` serverless
 function. This function to process and transform raw events before they get written to S3. */
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
+
 module "events_processing_function" {
   source = "terraform-aws-modules/lambda/aws"
 
@@ -60,18 +63,19 @@ module "application_admin_service_function" {
   create_role = false
   lambda_role = aws_iam_role.application_admin_service_function_role.arn
 
-  environment_variables = {
+  environment_variables = merge({
       AUTHORIZATIONS_TABLE             = var.authorizations_table_name
       APPLICATION_AUTHORIZATIONS_INDEX = "ApplicationAuthorizations"
       APPLICATIONS_TABLE               = var.applications_table_name
       INGEST_MODE                      = var.ingest_mode
       DATA_PLATFORM_MODE               = var.data_platform_mode
-      SECRET_ARN                       = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:redshift!${aws_secretsmanager_secret.redshift_admin_secret.name}-*"
-      WORKGROUP_NAME                   = aws_redshift_workgroup.redshift_workgroup.name
       DATABASE_NAME                    = var.events_database
-      REDSHIFT_ROLE_ARN                = aws_iam_role.redshift_role.arn
-      STREAM_NAME                      = aws_kinesis_stream.games_events_stream.name
-  }
+      STREAM_NAME                      = length(var.games_events_stream_name) == 1 ? var.games_events_stream_name[0] : ""
+  }, var.redshift_enabled ? {
+      SECRET_ARN                       = "redshift!${var.redshift_namespace_name[0]}-admin"
+      WORKGROUP_NAME                   = var.redshift_workgroup_name[0]
+      REDSHIFT_ROLE_ARN                = var.redshift_role_arn[0]
+  } : {})
 }
 
 # IAM roles for Lambda functions
@@ -109,6 +113,7 @@ resource "aws_iam_role" "lambda_authorizer_role" {
   })
 }
 
+
 resource "aws_iam_role" "application_admin_service_function_role" {
   name = "${var.stack_name}-application-admin-service-function-role"
 
@@ -127,8 +132,9 @@ resource "aws_iam_role" "application_admin_service_function_role" {
 }
 
 resource "aws_iam_role_policy" "application_admin_service_function_policy" {
+  count = var.redshift_enabled ? 1 : 0
   name = "${var.stack_name}-application-admin-service-function-policy"
-  role = "application_admin_service_function_role"
+  role = aws_iam_role.application_admin_service_function_role.name
 
   policy = jsonencode({
     Version: "2012-10-17",
@@ -156,14 +162,14 @@ resource "aws_iam_role_policy" "application_admin_service_function_policy" {
         Action: [
           "secretsmanager:GetSecretValue"
         ],
-        Resource: "${aws_secretsmanager_secret.redshift_admin_secret.arn}"
+        Resource: "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:redshift!${var.redshift_namespace_name[0]}-admin*"
       },
       {
         Effect: "Allow",
         Action: [
           "kms:Decrypt*"
         ],
-        Resource: "${aws_kms_key.redshift_key.arn}"
+        Resource: "${var.redshift_key_arn[0]}"
       }
     ]
   })

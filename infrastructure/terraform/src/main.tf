@@ -423,6 +423,12 @@ module "lambda_construct" {
   data_platform_mode = local.config.DATA_PLATFORM_MODE
   events_database = local.config.EVENTS_DATABASE
   ingest_mode = local.config.INGEST_MODE
+  redshift_enabled = length(module.redshift_construct) > 0
+  redshift_namespace_name = length(module.redshift_construct) > 0 ? [module.redshift_construct[0].redshift_namespace_name] : []
+  redshift_key_arn =  length(module.redshift_construct) > 0 ? [module.redshift_construct[0].redshift_key_arn] : []
+  redshift_workgroup_name =  length(module.redshift_construct) > 0 ? [module.redshift_construct[0].redshift_workgroup_name] : []
+  redshift_role_arn =  length(module.redshift_construct) > 0 ? [module.redshift_construct[0].redshift_role_arn] : []
+  games_events_stream_name = length(aws_kinesis_stream.game_events_stream) > 0 ? [aws_kinesis_stream.game_events_stream[0].name] : []
 }
 
 // Events Processing Function Policy
