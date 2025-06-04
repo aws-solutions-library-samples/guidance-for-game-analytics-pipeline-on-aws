@@ -19,6 +19,6 @@ variable "cloudwatch_retention_days" {
 }
 
 locals {
-  collection_name = substr(lower(replace(var.stack_name, "/[^a-z0-9-]+/", "")), 0, 28)
-  pipeline_name = substr(lower(replace("${var.stack_name}-ingestion", "/[^a-z0-9-]+/", "")), 0, 28)
+  collection_name = substr(lower(replace(lower(var.stack_name), "/[^a-z0-9-]+/", "")), 0, 28)
+  pipeline_name = substr(lower(replace("${lower(var.stack_name)}-ingestion", "/[^a-z0-9-]+/", "")), 0, 28)
 }

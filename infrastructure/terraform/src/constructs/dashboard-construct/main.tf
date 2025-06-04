@@ -2,8 +2,7 @@ data "aws_region" "current" {}
 
 locals {
   // Title widget
-  title_widget = <<-EOT
-  {
+  title_widget = {
     "type": "text",
     "width": 24,
     "height": 2,
@@ -11,11 +10,9 @@ locals {
       "markdown": "\n# **Game Analytics Pipeline - Operational Health**\nThis dashboard contains operational metrics for the Game Analytics Pipeline. Use these metrics to help you monitor the operational status of the AWS services used in the solution and track important application metrics.\n"
     }
   }
-  EOT
 
   // API Widget
-  api_ingestion_widget = <<-EOT
-  {
+  api_ingestion_widget = {
     "type": "singleValue",
     "width": 8,
     "height": 6,
@@ -36,11 +33,9 @@ locals {
       "region": "${data.aws_region.current.name}"
     }
   }
-  EOT
 
   // KDS Widgets (If KDS Ingest Mode is enabled)
-  stream_ingestion_title_widget = <<-EOT
-  {
+  stream_ingestion_title_widget = {
     "type": "text",
     "width": 24,
     "height": 2,
@@ -48,10 +43,9 @@ locals {
       "markdown": "\n## Stream Ingestion & Processing\nThis section covers metrics related to ingestion of data into the solution's Events Stream and processing by Kinesis Data Firehose and AWS Lambda Events Processing Function. Use the metrics here to track data freshness/latency and any issues with processor throttling/errors.\n"
     }
   }
-  EOT
+  
 
-  event_ingestion_widget = <<-EOT
-  {
+  event_ingestion_widget = {
     "type": "graph",
     "width": 8,
     "height": 6,
@@ -71,10 +65,9 @@ locals {
       "stat": "Sum"
     }
   }
-  EOT
+  
 
-  stream_latency_widget = <<-EOT
-  {
+  stream_latency_widget = {
     "type": "graph",
     "width": 8,
     "height": 6,
@@ -121,11 +114,10 @@ locals {
       }
     }
   }
-  EOT
+  
 
   // Redshift Widgets (If Redshift Mode is enabled)
-  redshift_utilization_widget = <<-EOT
-  {
+  redshift_utilization_widget = {
     "type": "graph",
     "width": 8,
     "height": 6,
@@ -146,11 +138,10 @@ locals {
       "stat": "Sum"
     }
   }
-  EOT
+  
 
   // Data Lake Mode Widgets (If Data Lake Mode is enabled)
-  event_processing_health_widget = <<-EOT
-  {
+  event_processing_health_widget = {
     "type": "singleValue",
     "width": 12,
     "height": 3,
@@ -224,10 +215,9 @@ locals {
       "region": "${data.aws_region.current.name}"
     }
   }
-  EOT
+  
 
-  ingestion_lambda_widget = <<-EOT
-  {
+  ingestion_lambda_widget = {
     "type": "graph",
     "width": 8,
     "height": 6,
@@ -272,11 +262,10 @@ locals {
       }
     }
   }
-  EOT
+  
 
   // Real time Widgets (If Real Time is enabled)
-  realtime_title_widget = <<-EOT
-  {
+  realtime_title_widget = {
     "type": "text",
     "width": 24,
     "height": 2,
@@ -284,10 +273,9 @@ locals {
       "markdown": "\n## Real-time Streaming Analytics\nThe below metrics can be used to monitor the real-time streaming SQL analytics of events. Use the Kinesis Data Analytics MillisBehindLatest metric to help you track the lag on the Kinesis SQL Application from the latest events. The Analytics Processing function that processes KDA application outputs can be tracked to measure function concurrency, success percentage, processing duration and throttles.\n"
     }
   }
-  EOT
   
-  realtime_latency_widget = <<-EOT
-  {
+  
+  realtime_latency_widget = {
     "type": "graph",
     "width": 8,
     "height": 6,
@@ -333,10 +321,9 @@ locals {
       }
     }
   }
-  EOT
+  
 
-  flink_cpu_utilization_widget = <<-EOT
-  {
+  flink_cpu_utilization_widget = {
     "type": "graph",
     "width": 8,
     "height": 6,
@@ -375,10 +362,9 @@ locals {
       "region": "${data.aws_region.current.name}"
     }
   }
-  EOT
+  
 
-  realtime_health_widget = <<-EOT
-  {
+  realtime_health_widget = {
     "type": "singleValue",
     "width": 12,
     "height": 3,
@@ -417,10 +403,9 @@ locals {
       "region": "${data.aws_region.current.name}"
     }
   }
-  EOT
+  
 
-  flink_resource_utilization_widget = <<-EOT
-  {
+  flink_resource_utilization_widget = {
     "type": "graph",
     "width": 8,
     "height": 6,
@@ -454,10 +439,9 @@ locals {
       }
     }
   }
-  EOT
+  
 
-  metric_stream_latency_widget = <<-EOT
-  {
+  metric_stream_latency_widget = {
     "type": "graph",
     "width": 8,
     "height": 6,
@@ -504,7 +488,7 @@ locals {
       }
     }
   }
-  EOT
+  
 
   widgets_list = [local.title_widget, local.api_ingestion_widget]
   kinesis_widgets = [local.stream_ingestion_title_widget, local.event_ingestion_widget, local.stream_latency_widget]
@@ -512,13 +496,15 @@ locals {
   datalake_widgets = [local.event_processing_health_widget, local.ingestion_lambda_widget]
   realtime_widgets = [local.realtime_title_widget, local.realtime_latency_widget, local.flink_cpu_utilization_widget, local.realtime_health_widget, local.flink_resource_utilization_widget, local.metric_stream_latency_widget]
 
-  widgets_list_ingest_check = var.ingest_mode == "KINESIS_DATA_STREAMS" ? concat(local.widgets_list, local.kinesis_widgets) : local.widgets_list
-  widgets_list_platform_check = var.data_platform_mode == "REDSHIFT" ? concat(local.widgets_list_ingest_check, local.redshift_widgets) : concat(local.widgets_list_ingest_check, local.datalake_widgets)
-  widgets_list_realtime_check = var.real_time_analytics == true ? concat(local.widgets_list_platform_check, local.realtime_widgets) : local.widgets_list_platform_check
+  combined_widgets_list = concat(
+  local.widgets_list, 
+  [for widget in local.kinesis_widgets: widget if var.ingest_mode == "KINESIS_DATA_STREAMS"],
+  [for widget in local.redshift_widgets: widget if var.data_platform_mode == "REDSHIFT"],
+  [for widget in local.realtime_widgets: widget if var.real_time_analytics == true])
 
   widgets = jsonencode(
   {
-    "widgets": local.widgets_list_realtime_check
+    "widgets": local.combined_widgets_list
   }
   )
 }
