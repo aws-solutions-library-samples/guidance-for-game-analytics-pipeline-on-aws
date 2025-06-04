@@ -6,6 +6,7 @@ resource "aws_s3_bucket" "dead_letter_queue" {
     enabled = var.dev_mode ? false : true
   }
 }
+data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
@@ -167,18 +168,19 @@ resource "aws_osis_pipeline" "ingestion" {
   max_units = 4
   
   pipeline_configuration_body = templatefile("${path.root}/../../../business-logic/opensearch-ingestion/ingestion-definition.yml", {
-    pipeline_name    = local.pipeline_name
-    stream_name      = var.metric_output_stream_name
-    host_name        = aws_opensearchserverless_collection.game_analytics_collection.collection_endpoint
+    pipeline_name       = local.pipeline_name
+    stream_name         = var.metric_output_stream_name
+    host_name           = aws_opensearchserverless_collection.game_analytics_collection.collection_endpoint
     network_policy_name = aws_opensearchserverless_collection.game_analytics_collection.name
-    role             = aws_iam_role.ingestion_role.arn
-    dlq_bucket_name  = aws_s3_bucket.dead_letter_queue.id
+    role                = aws_iam_role.ingestion_role.arn
+    dlq_bucket_name     = aws_s3_bucket.dead_letter_queue.id
+    region              = data.aws_region.current.name
   })
 
   log_publishing_options {
     is_logging_enabled         = true
     cloudwatch_log_destination {
-      log_group = aws_cloudwatch_log_group.ingestion
+      log_group = aws_cloudwatch_log_group.ingestion.name
     }
   }
 }
@@ -297,18 +299,17 @@ resource "aws_iam_role" "opensearch_admin" {
 
 // ui application
 
-/*
-resource "aws_opensearch_application" "dashboard" {
+
+resource "awscc_opensearchservice_application" "dashboard" {
   name = aws_opensearchserverless_collection.game_analytics_collection.name
 
-  app_config {
+  app_configs = [{
     key   = "opensearchDashboards.dashboardAdmin.users"
     value = "*"
-  }
+  }]
 
-  data_source {
+  data_sources = [{
     data_source_arn         = aws_opensearchserverless_collection.game_analytics_collection.arn
     data_source_description = "Game Analytics Pipeline Metric Collection"
-  }
+  }]
 }
-*/

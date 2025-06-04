@@ -256,7 +256,8 @@ export class OpenSearchConstruct extends Construct {
       host_name: osCollection.attrCollectionEndpoint,
       network_policy_name: collectionName,
       role: ingestionRole.roleArn,
-      dlq_bucket_name: dlqBucket.bucketName
+      dlq_bucket_name: dlqBucket.bucketName,
+      region: cdk.Aws.REGION
     })
 
     const ingestionLogGroup = new logs.LogGroup(this, "IngestionLogGroup", {
