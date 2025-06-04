@@ -5,6 +5,6 @@ resource "aws_vpc" "infra_vpc" {
 data "aws_subnets" "infra_vpc_subnets" {
   filter {
     name   = "vpc-id"
-    values = [aws_vpc.infra_vpc]
+    values = [aws_vpc.infra_vpc.id]
   }
 }
