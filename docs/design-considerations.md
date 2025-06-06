@@ -63,18 +63,51 @@ Why can't I deploy both the Data Lake and Redshift option at the same time?
 
 ---
 
-Why KDS in between Flink and Data Lake / Redshift?
+Why is there a Kinesis Data Stream in between Flink and Opensearch for Real-Time-Analytics?
+- The Flink connector for OpenSearch currently only supports authentication via username/password which does not play well with serverless and CDK (encoding password via plaintext, no CDK construct to create it, etc). Kinesis Data Streams allows us to have an intermediary stream for Flink to output to. From there, we can ingest it using a separate OpenSearch ingestion pipeline. The pipeline does not require credential passing and handles things like scaling and failed delivery streams, and leaves the door open for other integrations if needed, such as CloudWatch metrics (V1/V2 style) or firehose.
 
 ---
 
-Why QuickSight?
-
-- ASKING ANDREI, TBD
-
----
 ## Processes
 
-- When should I use Data Lake mode vs Redshift mode?
-- When should I utilize real-time analytics?
-- Why DynamoDB with application_id 
-- why is the Schema the way we designed it?
+---
+
+When should I use Data Lake mode vs Redshift mode?
+- TODO: Need answer from Satesh
+
+---
+
+When should I utilize real-time analytics?
+
+1. Live events such as initial launches, new version launches, live-stream events, in-game events in which insights are time-sensitive to gather and action on
+
+2. Live-Ops best practices for comparing on-the-ground insights vs aggregate insights. For example, sometimes checking for insights at particular (or random) points in time can provide different insights than viewing data in larger aggregated time windows. Viewing both and comparing can provide good quality insights.
+
+3. Investigating bugs or player reports as resolution in real-time, especially if they are ongoing
+
+---
+Why do we use `application_id`, and using a DynamoDB table for managing them?
+
+- This is to address customers who would like to perform analytics across multiple games, or to ensure analytics within a single game when ingesting from multiple games. The analytics pipeline can query and partition for a single `application_id`, which are stored and managed from a DynamoDB table alongside authentication secrets to prevent cross-contamination. The DynamoDB table can be interfaced via API endpoint or directly on the AWS Console.
+
+---
+Why is the Schema the way we designed it?
+
+- Sample Event Schema for reference:
+``` hcl
+{
+    "event_id": "34c74de5-69d9-4f06-86ac-4b98fef8bca9",
+    "event_name": "login",
+    "event_type": "client",
+    "event_version": "1.0.0",
+    "event_timestamp": 1737658977,
+    "app_version": "1.0.0",
+    "event_data":
+    {
+        "platform": "pc",
+        "last_login_time": 1737658477
+    }
+}
+```
+
+- The default Schema for the guidance has a high-level schema structure for events that all events should have uniformly, and a nested `event_data` structure for event-specific variables. This separation allows schema standardization enforcement while allowing flexibility. As schemas and event types change, the `event_version` can track the versioning, and `app_version` can track against game versions. 

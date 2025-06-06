@@ -57,7 +57,7 @@ The Game Analytics Pipeline Guidance can accept from any HTTP/HTTPS REST based s
 
 2. Managed Flink performs SQL based queries on time windows of the incoming streaming data, sending the query outputs to OpenSearch service
 
-3. OpenSearch ingests the query outputs and the integrated Kibana dashboard can be accessed by users to view created widgets that display graphs and information in real-time
+3. Kinesis Data Streams ingests from Managed Flink to OpenSearch, which ingests the query outputs and the integrated Kibana dashboard can be accessed by users to view created widgets that display graphs and information in real-time
 
 ![Architecture-Verbose-Real-Time-KDS](media/architecture-verbose-real-time-kds.png)
 
@@ -75,7 +75,7 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
     
         - Provides an ingest buffer on incoming data, holding events until it reaches a certain size or after certain time passes
         - Triggers a Lambda Function through its [integrated Lambda transformation feature](https://docs.aws.amazon.com/firehose/latest/dev/data-transformation.html) which performs the following:
-            - Validates the event's json format against the AJV2020 standard, a valid Application ID, and the guidance's game event schema set in `business-logic/events-processing/config` (TODO: move this up to be more accessible).
+            - Validates the event's json format against the AJV2020 standard, a valid Application ID, and the guidance's game event schema set in `business-logic/events-processing/config`
             - Marks the events with a processing timestamp
             - Passes the data to a corresponding folder in S3 (prefix is set in config, default is `processed_events`, or if not valid, is still sent to not be lost and sent to a `firehose-errors/!{firehose:error-output-type}/` folder)
         - If the guidance is set to HIVE tables through the config setting `ENABLE_APACHE_ICEBERG_SUPPORT false` (default), Firehose also performs in-service partitioning on the data based on date (year, month, day), which represents as nested folders in the S3 data store as a SNAPPY parquet format
@@ -116,5 +116,3 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
 1. Users can administer changes to Application IDs or authorization tokens for the Application IDs through API Gateway. See the [API Reference](./references/api-reference.md) for more details.
 
 2. The guidance also provides an operational CloudWatch dashboard to view infrastructure health and metrics, see the [Operational Dashboard Reference](./references/ops-dashboard-reference.md)
-
-## Deployment Process
