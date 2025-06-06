@@ -362,3 +362,24 @@ The Game Analytics Pipeline API is the entry point for applications to send data
     ```
     - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.
 ---
+
+### Redshift
+`/redshift/setup`
+#### POST - Set up Redshift
+- **Description**
+    - This operation sets up Redshift materialized views from Kinesis during setup process
+
+- **Request**
+    ``` hcl
+    POST
+    https://{YOUR_API_ENDPOINT_URL}/live/applications/redshift/setup
+    ```
+
+- **Response**
+    - `200` - Completes process and returns OK. Can be called multiple times without issues. See [Getting Started](../getting-started.md) for details on the process.
+    ``` hcl
+    {
+    }
+    ```
+
+    - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.
