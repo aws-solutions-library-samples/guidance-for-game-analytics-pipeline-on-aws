@@ -100,7 +100,7 @@ Using the provided devcontainer environment, run the following command to copy t
 ```bash
 cp ./infrastructure/config.yaml.TEMPLATE ./infrastructure/config.yaml
 ```
-Open the `./infrastructure/config.yaml` file for editing. Configure the parameters for the pipeline according to the options available in [Customizations](customizations.md).
+Open the `./infrastructure/config.yaml` file for editing. Configure the parameters for the pipeline according to the options available in the [Config Reference](./references/config-reference.md).
 
 ## Deployment
 
@@ -166,9 +166,9 @@ For instructions on how to configure SigV4 Authentication, refer to the document
 
 If the `REAL_TIME_ANALYTICS` configuration is set to `true`, a Flink Application will be created. This application needs to be in the `RUNNING` state for incoming events to be processed in real time. 
 
-1. Navigate to the AWS Console. Open the console for Managed Apache Flink by searching "Flink" in the search bar and selecting "Managed Apache Flink."
+1. Navigate to the AWS Console. Open the console for [Managed Apache Flink](https://console.aws.amazon.com/flink)
 
-2. Click on the Apache Flink applications page on the side menu. 
+2. Click on the **Apache Flink applications** page on the side menu. 
 
 3. Locate the Flink Application created by Game Analytics Pipeline. The name will end in `-AnalyticsApplication` or contain `ManagedFlinkConstruct`. Click on the blue link under Application name to navigate to the control page.
 
