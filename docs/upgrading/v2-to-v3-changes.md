@@ -22,7 +22,8 @@ Upgraded infrastructure to the following: (INSERT BEFORE AND AFTERS HERE)
 
 ## <u>Configuration Updates</u>
 - Added option/support for `ON_DEMAND` Kinesis Data Streams through `STREAM_PROVISIONED : true/false`
-- Replaced `ENABLE_STREAMING_ANALYTICS` with `INGEST_MODE: "KINESIS_DATA_STREAMS" | "DIRECT_BATCH"` to support future ingest options
+- Replaced `ENABLE_STREAMING_ANALYTICS` with `REAL_TIME_ANALYTICS: true | false`
+- Added `INGEST_MODE: "KINESIS_DATA_STREAMS" | "DIRECT_BATCH"` to support future ingest options
 - Added `DATA_PLATFORM_MODE: "DATA_LAKE" | "REDSHIFT"` to support Redshift deployment option
 - Added default values for configuration template file
 - Added "iac" field to top-level package.json to support CDK or Terraform deployment options

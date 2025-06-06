@@ -35,11 +35,3 @@ new InfrastructureStack(app, "CentralizedGameAnalytics", {
     config,
     env
 });
-
-// Deployment through pipeline
-/*new PipelineStack(app, "PipelineStack", {
-    stackName: `${config.WORKLOAD_NAME}-Toolchain`,
-    description : "Guidance for the Game Analytics Pipeline on AWS (SO0096)",
-    config,
-    env,
-});*/
