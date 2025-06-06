@@ -8,12 +8,14 @@ The following resources are required to install, configure, and deploy the game 
 
 - **Amazon Web Services Account**
 - **[GitHub Account](https://docs.github.com/en/get-started/start-your-journey/creating-an-account-on-github)**
-- **[Visual Studio Code](https://code.visualstudio.com/Download)**
+- **[Visual Studio Code](https://code.visualstudio.com/Download)\***
 - **API Client: [Postman Desktop](https://www.postman.com/) or [Bruno](https://www.usebruno.com/)**
+
+*\*Other code editors can also be used, but tooling support may be limited*
 
 ### Option 1 - Dev Container (Recommended)
 
-A Visual Studio Code [dev container](https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/adding-a-dev-container-configuration/introduction-to-dev-containers) configuration has been provided for you. This image container the necessary *Python*, *NodeJS*, and the *AWS CDK* versions needed to implement this guidance. It is **recommended**, that you use the pre-configured [environment](https://code.visualstudio.com/docs/devcontainers/containers) as your development environment.
+A [development container](https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/adding-a-dev-container-configuration/introduction-to-dev-containers) configuration has been provided for you. This image container the necessary *Python*, *NodeJS*, and the *AWS CDK* versions needed to implement this guidance. It is **recommended**, that you use the pre-configured [environment](https://code.visualstudio.com/docs/devcontainers/containers) as your development environment.
 
 To use Dev Containers, a container platform such as [Docker Desktop (local)](https://www.docker.com/products/docker-desktop/) or [Finch](https://runfinch.com/) must be installed and running.
 
@@ -25,6 +27,8 @@ Install the Dev Containers extension for Visual Studio Code.
 
 2. Click **Install** to add the extension to VSCode
 
+*\*Other code editors such as the [Jetbrains suite](https://plugins.jetbrains.com/plugin/21962-dev-containers) also support Dev Containers.*
+
 #### (Optional) Configure VSCode to use Finch
 
 Finch is an open source client for container development. 
@@ -35,7 +39,7 @@ After Finch is installed and running, follow the [instructions in the Finch docu
 
 #### Using the Dev Container
 
-After following the instructions in [Installation](#installation), when the project is opened in VSCode, a popup will appear indicating that the folder contains a dev container configuration. To utilize the Dev Container environment, click on “Reopen in Container”.
+After following the instructions in [Installation](#installation), when the project is opened in your code editor, a popup will appear indicating that the folder contains a dev container configuration. To utilize the Dev Container environment, click on “Reopen in Container”.
 
 ### Option 2 - Manual Install
 
@@ -92,7 +96,7 @@ Before deploying the sample code, deployment parameters need to be customized to
 
 A configuration template file, called `config.yaml.TEMPLATE` has been provided as a reference for use case customizations. 
 
-Using the provided Visual Studio Code devcontainer environment, run the following command to copy the template to  `./infrastructure/config.yaml`:
+Using the provided devcontainer environment, run the following command to copy the template to  `./infrastructure/config.yaml`:
 ```bash
 cp ./infrastructure/config.yaml.TEMPLATE ./infrastructure/config.yaml
 ```
