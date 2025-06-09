@@ -84,6 +84,10 @@ export class DataLakeConstruct extends Construct {
       }
     );
 
+    /* 
+    // Enables the recommended encryption settings for the account Glue Data Catalog
+    // Applies to all databases and tables in the account; uncomment to apply
+    // Do not apply this setting if the account already has data encryption enabled to avoid conflicts
     const cfnDataCatalogEncryptionSettings =
       new glue.CfnDataCatalogEncryptionSettings(
         this,
@@ -100,6 +104,7 @@ export class DataLakeConstruct extends Construct {
           },
         }
       );
+    */
 
     // Glue table for raw events that come in from stream
     const rawEventsTable = new glueCfn.CfnTable(this, "GameRawEventsTable", {
