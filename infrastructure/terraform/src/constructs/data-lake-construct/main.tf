@@ -30,6 +30,10 @@ resource "aws_athena_workgroup" "game_analytics_workgroup" {
   }
 }
 
+/*
+// Enables the recommended encryption settings for the account Glue Data Catalog
+// Applies to all databases and tables in the account; uncomment to apply
+// Do not apply this setting if the account already has data encryption enabled to avoid conflicts
 resource "aws_glue_data_catalog_encryption_settings" "data_catalog_encryption_settings" {
   data_catalog_encryption_settings {
     connection_password_encryption {
@@ -41,6 +45,7 @@ resource "aws_glue_data_catalog_encryption_settings" "data_catalog_encryption_se
     }
   }
 }
+*/
 
 # Glue Table for raw events
 resource "aws_glue_catalog_table" "raw_events_table" {
