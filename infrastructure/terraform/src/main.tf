@@ -520,6 +520,7 @@ module "data_lake_construct" {
   count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
   source = "./constructs/data-lake-construct"
   stack_name = local.config.WORKLOAD_NAME
+  events_database_name = local.config.EVENTS_DATABASE
   raw_events_table_name = local.config.RAW_EVENTS_TABLE
   raw_events_prefix = local.config.RAW_EVENTS_PREFIX
   enable_apache_iceberg_support = local.config.ENABLE_APACHE_ICEBERG_SUPPORT

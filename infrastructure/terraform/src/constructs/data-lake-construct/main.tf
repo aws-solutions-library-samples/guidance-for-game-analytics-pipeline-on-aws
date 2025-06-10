@@ -4,7 +4,7 @@ data "aws_caller_identity" "current" {}
 
 # Glue Database
 resource "aws_glue_catalog_database" "game_events_database" {
-  name        = "game_events_database"
+  name        = "${var.events_database_name}"
   description = "Database for game analytics events for stack: ${var.stack_name}"
   location_uri = "s3://${var.analytics_bucket_name}"
 }
