@@ -84,15 +84,15 @@ There are two easy ways to migrate your data depending on the current AWS Analyt
 ### Amazon Athena
 
 ```
-INSERT INTO {name_space}.{v3_table} SELECT * FROM {name_space}.v2_table
+INSERT INTO "database"."raw_events_table_v3" SELECT * FROM "database"."raw_events_table_v2"
 ```
 
 You can use the same for Apache Iceberg table:
 
 ```
-INSERT INTO {name_space}.{v3_iceberg_table}
+INSERT INTO "database"."iceberg_table"
 SELECT event_id, event_type, event_name, event_version, event_timestamp, app_version, application_id, application_name, event_data, metadata 
-FROM {name_space}.{v3_table}
+FROM "database"."raw_events_table"
 ```
 
 ### AWS Glue
