@@ -59,10 +59,7 @@ export class RedshiftConstruct extends Construct {
         new iam.ServicePrincipal("redshift.amazonaws.com"),
         new iam.ServicePrincipal("redshift-serverless.amazonaws.com")
       ),
-      path: "/",
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonRedshiftFullAccess"),
-      ],
+      path: "/"
     });
 
     this.redshiftRole.addToPolicy(
