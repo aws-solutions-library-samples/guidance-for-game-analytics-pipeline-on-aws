@@ -431,6 +431,38 @@ module "lambda_construct" {
 }
 
 // Events Processing Function Policy
+data "aws_iam_policy_document" "admin_function_policy_document" {
+  statement {
+    sid    = "DynamoDBAccess"
+    effect = "Allow"
+    actions = [
+                "dynamodb:BatchGetItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+                "dynamodb:GetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:PutItem",
+                "dynamodb:Query",
+                "dynamodb:Scan",
+                "dynamodb:UpdateItem"
+    ]
+    resources = [
+      aws_dynamodb_table.applications_table.arn,
+      aws_dynamodb_table.authorizations_table.arn,
+      "${aws_dynamodb_table.authorizations_table.arn}/index/*"
+    ]
+  }
+}
+resource "aws_iam_role_policy" "admin_function_policy" {
+  name   = "${local.config.WORKLOAD_NAME}-events-processing-function-policy"
+  role   = module.lambda_construct.admin_function_role_name
+  policy = data.aws_iam_policy_document.admin_function_policy_document.json
+}
+
+// Events Processing Function Policy
 data "aws_iam_policy_document" "events_processing_function_policy_document" {
   statement {
     sid    = "DynamoDBAccess"

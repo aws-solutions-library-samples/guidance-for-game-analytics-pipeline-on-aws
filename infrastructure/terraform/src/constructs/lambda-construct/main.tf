@@ -96,6 +96,17 @@ resource "aws_iam_role" "events_processing_function_role" {
   })
 }
 
+# managed policies for events processin function
+resource "aws_iam_role_policy_attachment" "events_processing_function_role_basic_execution_attachment" {
+  role       = aws_iam_role.events_processing_function_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "events_processing_function_role_xray_attachment" {
+  role       = aws_iam_role.events_processing_function_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess"
+}
+
 resource "aws_iam_role" "lambda_authorizer_role" {
   name = "${var.stack_name}-lambda-authorizer-role"
 
@@ -111,6 +122,10 @@ resource "aws_iam_role" "lambda_authorizer_role" {
       }
     ]
   })
+}
+resource "aws_iam_role_policy_attachment" "lambda_authorizer_role_basic_execution_attachment" {
+  role       = aws_iam_role.lambda_authorizer_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 
@@ -129,6 +144,10 @@ resource "aws_iam_role" "application_admin_service_function_role" {
       }
     ]
   })
+}
+resource "aws_iam_role_policy_attachment" "application_admin_role_basic_execution_attachment" {
+  role       = aws_iam_role.application_admin_service_function_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy" "application_admin_service_function_policy" {
