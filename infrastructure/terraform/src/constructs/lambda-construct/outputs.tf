@@ -8,6 +8,11 @@ output "lambda_authorizer_role_name" {
   description = "Name of the IAM role for the Lambda authorizer function"
 }
 
+output "admin_function_role_name" {
+  value       = aws_iam_role.application_admin_service_function_role.name
+  description = "Name of the IAM role for the Lambda authorizer function"
+}
+
 output "events_processing_function_arn" {
   value = module.events_processing_function.lambda_function_arn
 }
