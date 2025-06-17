@@ -2,7 +2,7 @@
   "name": "project-root",
   "version": "0.0.1",
   "config": {
-    "iac": "tf"
+    "iac": "cdk"
   },
   "scripts": {
     "build": "python3 build.py",
