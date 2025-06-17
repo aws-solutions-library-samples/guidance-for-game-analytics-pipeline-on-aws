@@ -12,7 +12,7 @@
 			"version": "latest",
 			"dockerDashComposeVersion": "v1"
 		},
-		"ghcr.io/devcontainers-contrib/features/aws-cdk:2": {
+		"ghcr.io/devcontainers-extra/features/aws-cdk:2": {
 			"version": "2.169.0"
 		},
 		"ghcr.io/devcontainers/features/java:1": {
