@@ -3,7 +3,7 @@ output "redshift_role_arn" {
 }
 
 output "redshift_namespace_name" {
-  value = awscc_redshiftserverless_namespace.redshift_namespace.namespace_name
+  value = aws_redshiftserverless_namespace.redshift_namespace.namespace_name
 }
 
 output "redshift_workgroup_name" {
