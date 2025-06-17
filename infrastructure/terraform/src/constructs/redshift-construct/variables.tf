@@ -20,6 +20,6 @@ variable "events_database" {
   type        = string
 }
 
-variable "vpc_subnets" {
+variable "vpc_subnet" {
   type        = list(string)
 }

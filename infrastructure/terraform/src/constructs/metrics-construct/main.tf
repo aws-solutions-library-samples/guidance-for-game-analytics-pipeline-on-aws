@@ -235,6 +235,7 @@ resource "aws_cloudwatch_metric_alarm" "api_gateway_5xx_errors_alarm" {
 
 # Kinesis Firehose Failed Conversions Alarm
 resource "aws_cloudwatch_metric_alarm" "kinesis_firehose_failed_conversions" {
+  count = var.data_platform_mode == "DATA_LAKE" ? 1 : 0
   alarm_name          = "KinesisFirehoseFailedConversions (${var.stack_name})"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
@@ -255,6 +256,7 @@ resource "aws_cloudwatch_metric_alarm" "kinesis_firehose_failed_conversions" {
 
 # Kinesis Firehose S3 Data Freshness Alarm
 resource "aws_cloudwatch_metric_alarm" "kinesis_firehose_s3_data_freshness" {
+  count = var.data_platform_mode == "DATA_LAKE" ? 1 : 0
   alarm_name          = "KinesisFirehoseS3DataFreshness (${var.stack_name})"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2

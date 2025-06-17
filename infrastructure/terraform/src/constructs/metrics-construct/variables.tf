@@ -30,6 +30,10 @@ variable "kinesis_stream_name" {
   type        = string
 }
 
+variable "data_platform_mode" {
+  type        = string
+}
+
 variable "kinesis_metrics_stream_name" {
   type        = string
 }

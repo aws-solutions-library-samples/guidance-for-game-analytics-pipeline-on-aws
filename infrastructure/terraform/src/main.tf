@@ -369,12 +369,12 @@ resource "aws_kinesis_stream" "game_events_stream" {
 // ---- VPC resources (IF REDSHIFT OR REAL TIME in DEV_MODE is enabled) ---- //
 module "vpc_construct" {
   source = "./constructs/vpc-construct"
-  count = local.config.DATA_PLATFORM_MODE != "REDSHIFT" ? 1 : 0
+  count = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? 1 : 0
 }
 
 // Create flink components
 module "flink_construct" {
-  count = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" && local.config.REAL_TIME_ANALYTICS ? 1 : 0
+  count = local.config.REAL_TIME_ANALYTICS ? 1 : 0
   source = "./constructs/flink-construct"
 
   stack_name                       = local.config.WORKLOAD_NAME
@@ -389,7 +389,7 @@ module "flink_construct" {
 
 // Enable opensearch for real-time dashboards
 module "opensearch_construct" {
-  count = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? 1 : 0
+  count = local.config.REAL_TIME_ANALYTICS ? 1 : 0
   source = "./constructs/opensearch-construct"
 
   stack_name                       = local.config.WORKLOAD_NAME
@@ -403,13 +403,12 @@ module "opensearch_construct" {
 module "redshift_construct" {
   count = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? 1 : 0
   source = "./constructs/redshift-construct"
-
   stack_name = local.config.WORKLOAD_NAME
   vpc_id = module.vpc_construct[0].vpc_id
+  vpc_subnet = module.vpc_construct[0].vpc_subnet
   vpc_cidr = module.vpc_construct[0].vpc_cidr
   game_events_stream_arn = aws_kinesis_stream.game_events_stream[0].arn
   events_database = local.config.EVENTS_DATABASE
-  vpc_subnets = module.vpc_construct[0].vpc_subnets
 }
 
 // ---- Functions ---- //
@@ -575,8 +574,7 @@ module "games_api_construct" {
   lambda_authorizer_arn = module.lambda_construct.lambda_authorizer_function_arn
   game_events_stream_arn = aws_kinesis_stream.game_events_stream[0].arn
   game_events_stream_name = aws_kinesis_stream.game_events_stream[0].name
-  game_events_firehose_arn = module.streaming_ingestion_construct[0].game_events_firehose_arn
-  game_events_firehose_name = module.streaming_ingestion_construct[0].game_events_firehose_name
+  game_events_firehose_arn = local.config.INGEST_MODE == "DIRECT_BATCH" ? module.streaming_ingestion_construct[0].game_events_firehose_arn : ""
   application_admin_service_function_arn = module.lambda_construct.application_admin_service_function_arn
   stack_name = local.config.WORKLOAD_NAME
   api_stage_name = local.config.API_STAGE_NAME
@@ -627,10 +625,11 @@ module "metrics_construct" {
   ]
   cloudwatch_retention_days           = local.config.CLOUDWATCH_RETENTION_DAYS
   kinesis_stream_name                 = aws_kinesis_stream.game_events_stream[0].name
-  kinesis_metrics_stream_name         = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? module.flink_construct[0].kinesis_metrics_stream_name : null
+  kinesis_metrics_stream_name         = local.config.REAL_TIME_ANALYTICS ? module.flink_construct[0].kinesis_metrics_stream_name : null
   api_gateway_name                    = module.games_api_construct.game_analytics_api_name
   stack_name                          = local.config.WORKLOAD_NAME
-  firehose_delivery_stream_name       = module.streaming_ingestion_construct[0].game_events_firehose_name
+  data_platform_mode                  = local.config.DATA_PLATFORM_MODE
+  firehose_delivery_stream_name       = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.streaming_ingestion_construct[0].game_events_firehose_name : ""
   ingest_mode                         = local.config.INGEST_MODE
   notifications_topic_arn             = aws_sns_topic.notifications.arn
 }

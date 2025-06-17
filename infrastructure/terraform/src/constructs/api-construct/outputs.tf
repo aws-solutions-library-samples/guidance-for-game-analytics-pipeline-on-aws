@@ -1,8 +1,3 @@
-output "api_base_path" {
-  description = "The base path of the Solution API"
-  value       = aws_api_gateway_stage.game_analytics_api_stage.invoke_url
-}
-
 output "game_analytics_api_id" {
   value = aws_api_gateway_rest_api.game_analytics_api.id
 }
