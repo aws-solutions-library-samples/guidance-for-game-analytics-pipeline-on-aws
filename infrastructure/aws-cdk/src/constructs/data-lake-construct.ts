@@ -129,7 +129,7 @@ export class DataLakeConstruct extends Construct {
                 { name: "metadata", type: "string" },
               ],
               location: `s3://${props.analyticsBucket.bucketName
-                }/${props.config.RAW_EVENTS_TABLE.toLowerCase()}`,
+                }/${props.config.RAW_EVENTS_TABLE.toLowerCase()}/`,
               storedAsSubDirectories: false,
             },
             tableType: "EXTERNAL_TABLE",
@@ -146,6 +146,17 @@ export class DataLakeConstruct extends Construct {
             name: props.config.RAW_EVENTS_TABLE,
             description: `Stores raw event data from the game analytics pipeline for stack ${cdk.Aws.STACK_NAME}`,
             tableType: "EXTERNAL_TABLE",
+            partitionKeys: [
+              { name: "year", type: "string" },
+              { name: "month", type: "string" },
+              { name: "day", type: "string" },
+            ],
+            parameters: {
+              classification: "parquet",
+              compressionType: "none",
+              typeOfData: "file",
+              enablePartitionFiltering: "true",
+            },
             storageDescriptor: {
               outputFormat:
                 "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
@@ -176,12 +187,7 @@ export class DataLakeConstruct extends Construct {
                 { name: "event_data", type: "string" },
                 { name: "metadata", type: "string" },
               ],
-            },
-            partitionKeys: [
-              { name: "year", type: "string" },
-              { name: "month", type: "string" },
-              { name: "day", type: "string" },
-            ],
+            }
           },
         }),
     });
