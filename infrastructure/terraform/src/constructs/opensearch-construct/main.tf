@@ -1,11 +1,16 @@
 # dead letter queue for ingestion pipeline
 resource "aws_s3_bucket" "dead_letter_queue" {
   force_destroy = var.dev_mode ? true : false
-  
-  versioning {
-    enabled = var.dev_mode ? false : true
+}
+
+resource "aws_s3_bucket_versioning" "dead_letter_queue_versioning" {
+  bucket = aws_s3_bucket.dead_letter_queue.id
+
+  versioning_configuration {
+    status = var.dev_mode ? "Suspended" : "Enabled"
   }
 }
+
 data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
@@ -34,12 +39,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "dead_letter_queue
   }
 }
 
-# serverless time series cluster
-resource "aws_opensearchserverless_collection" "game_analytics_collection" {
-  name        = local.collection_name
-  description = "Serverless OpenSearch Collection for analyzing real-time timeseries game event data"
-  type        = "TIMESERIES"
-}
 # defines opensearch encryption to be an AWS managed key
 resource "aws_opensearchserverless_security_policy" "encryption" {
   name = local.collection_name
@@ -51,6 +50,17 @@ resource "aws_opensearchserverless_security_policy" "encryption" {
     }]
     AWSOwnedKey = true
   })
+}
+
+# serverless time series cluster
+resource "aws_opensearchserverless_collection" "game_analytics_collection" {
+  name        = local.collection_name
+  description = "Serverless OpenSearch Collection for analyzing real-time timeseries game event data"
+  type        = "TIMESERIES"
+
+    depends_on = [
+    aws_opensearchserverless_security_policy.encryption
+  ]
 }
 
 resource "aws_opensearchserverless_security_policy" "network" {
@@ -79,12 +89,14 @@ resource "aws_iam_role" "ingestion_role" {
       }
     }]
   })
+}
 
-  inline_policy {
-    name = "pipeline_access_permissions"
-    policy = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
+resource "aws_iam_role_policy" "ingestion_role_policy" {
+  name   = "pipeline_access_permissions"
+  role   = aws_iam_role.ingestion_role.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
         {
           Sid    = "allowReadFromStream"
           Effect = "Allow"
@@ -133,9 +145,8 @@ resource "aws_iam_role" "ingestion_role" {
           Action = ["s3:PutObject"]
           Resource = ["${aws_s3_bucket.dead_letter_queue.arn}/*"]
         }
-      ]
-    })
-  }
+    ]
+  })
 }
 
 resource "aws_cloudwatch_log_group" "ingestion" {
@@ -246,10 +257,12 @@ resource "aws_iam_role" "opensearch_admin" {
       }
     }]
   })
+}
 
-  inline_policy {
-    name = "opensearch_access_permissions"
-    policy = jsonencode({
+resource "aws_iam_role_policy" "opensearch_admin_policy" {
+  name   = "opensearch_admin_policy"
+  role   = aws_iam_role.opensearch_admin.name
+  policy = jsonencode({
       Version = "2012-10-17"
       Statement = [{
         Effect = "Allow"
@@ -278,8 +291,7 @@ resource "aws_iam_role" "opensearch_admin" {
         ]
         Resource = ["*"]
       }]
-    })
-  }
+  })
 }
 
 // ui application
