@@ -16,7 +16,9 @@
 			"version": "2.169.0"
 		},
 		"ghcr.io/devcontainers/features/java:1": {
-			"installMaven":true
+			"version": 17,
+			"installMaven":true,
+			"mavenVersion": "3.9.8"
 		},
 		"ghcr.io/devcontainers/features/terraform:1": {}
 	},
