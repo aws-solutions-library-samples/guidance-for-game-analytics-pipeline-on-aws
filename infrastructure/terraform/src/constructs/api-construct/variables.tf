@@ -48,6 +48,11 @@ variable "lambda_authorizer_arn" {
   description = "ARN of the Lambda function for API authorization"
 }
 
+variable "lambda_authorizer_function_name" {
+  type = string
+  description = "Name of the Lambda function for API authorization"
+}
+
 variable "api_stage_name" {
   type = string
   description = "Name of the API stage"

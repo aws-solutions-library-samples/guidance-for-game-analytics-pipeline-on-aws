@@ -605,6 +605,7 @@ module "streaming_ingestion_construct" {
 module "games_api_construct" {
   source = "./constructs/api-construct"
   lambda_authorizer_arn = module.lambda_construct.lambda_authorizer_function_arn
+  lambda_authorizer_function_name = module.lambda_construct.lambda_authorizer_function_name
   game_events_stream_arn = aws_kinesis_stream.game_events_stream[0].arn
   game_events_stream_name = aws_kinesis_stream.game_events_stream[0].name
   game_events_firehose_arn = module.streaming_ingestion_construct[0].game_events_firehose_arn

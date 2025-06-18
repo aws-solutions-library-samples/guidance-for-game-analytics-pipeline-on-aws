@@ -393,18 +393,30 @@ paths:
                     default:
                         statusCode: "200"
                         responseTemplates:
-                            application/json: |-
-                                #set($response = $input.path(\'$\')) #set($records = $input.json(\'$.Records\')) { "Total": $response.Records.size(), "FailedRecordCount": $input.json(\'$.FailedRecordCount\'), "Events": [#foreach($record in $response.Records){#if($record.ErrorCode != $null)"Result": "Error", "ErrorCode": "$record.ErrorCode"}#else"Result": "Ok"}#end#if($foreach.hasNext),#end#end] }\n
+                            application/json: >
+                                #set($response = $input.path('$')) #set($records = $input.json('$.Records')) {
+                                "Total": $response.Records.size(),
+                                "FailedRecordCount": $input.json('$.FailedRecordCount'),
+                                "Events": [#foreach($record in $response.Records){#if($record.ErrorCode != $null)"Result": "Error", "ErrorCode": "$record.ErrorCode"}#else"Result": "Ok"}#end#if($foreach.hasNext),#end#end]
+                                }
                     "4\\d{2}":
                         statusCode: "400"
                         responseTemplates:
-                            application/json: |-
-                                #set($inputRoot = $input.path(\'$\')) { "error": "BadRequest", "error_detail": $input.json(\'$.message\') }\n
+                            application/json: >
+                                #set($inputRoot = $input.path('$'))
+                                {
+                                "error": "BadRequest",
+                                "error_detail": $input.json('$.message')
+                                }
                     "5\\d{2}":
                         statusCode: "500"
                         responseTemplates:
-                            application/json: |-
-                                #set($inputRoot = $input.path('$'))  { \"error\": $input.json('$.__type'), \"error_detail\": $input.json('$.message') }\n
+                            application/json: >
+                                #set($inputRoot = $input.path('$')) 
+                                {
+                                "error": $input.json('$.__type'),
+                                "error_detail": $input.json('$.message')
+                                }
 components:
     schemas:
         ErrorException:
@@ -493,6 +505,7 @@ components:
             x-amazon-apigateway-authtype: "custom"
             x-amazon-apigateway-authorizer:
                 authorizerUri: ${lambda_authorizer}
+                authorizerCredentials: ${authorizer_credentials}
                 authorizerResultTtlInSeconds: 300
                 identitySource: "method.request.header.Authorization"
                 type: "request"
