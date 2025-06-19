@@ -104,7 +104,7 @@ EOT
       KINESIS_DATA_STREAMS = {
           value = <<EOT
 {
-                            "StreamName": "${var.game_events_stream_arn}",
+                            "StreamName": "${var.game_events_stream_name}",
                             "Records": [
                                 #set($i = 0)
                                 #foreach($event in $input.path('$.events'))
@@ -206,6 +206,15 @@ resource "aws_lambda_permission" "application_admin_service_permission" {
   statement_id  = "ApplicationAdminServiceExecutionPermission"
   action        = "lambda:InvokeFunction"
   function_name = var.application_admin_service_function_arn
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.game_analytics_api.execution_arn}/*/*/applications/*"
+}
+
+# Lambda permission for API Gateway to invoke Authorization Lambda
+resource "aws_lambda_permission" "authorization_service_permission" {
+  statement_id  = "AuthorizationServiceExecutionPermission"
+  action        = "lambda:InvokeFunction"
+  function_name = var.lambda_authorizer_arn
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.game_analytics_api.execution_arn}/*/*/applications/*"
 }
