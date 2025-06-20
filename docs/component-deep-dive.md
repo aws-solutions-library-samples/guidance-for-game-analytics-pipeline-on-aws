@@ -111,6 +111,12 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
 
     ![Architecture-Verbose-Redshift-Mode](media/architecture-verbose-redshift-mode.png)
 
+    1. An Amazon Redshift Serverless cluster is deployed. Redshift is initially not integrated with the Kinesis Data Stream until the `setup/redshift` API call - see [API Reference for POST - Setup Redshift](./references/api-reference.md#post-set-up-redshift), in which a [materialized view](https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-streaming-ingestion.html) will be created, as well as a set of other views representing pre-made queries to get you started.
+
+    2. You can query data immediately using [Amazon Redshift Query Editor](https://aws.amazon.com/redshift/query-editor-v2/) in the AWS Console, or connect up other visualization tools compatible with Amazon Redshift.
+
+    3. By default, the cluster is configured with 16 RPU Compute Capacity, and is accessible on port 5439. Both can be configured in the redshift-construct source for your chosen Infrastructure as Code language in the respective Redshift Construct files.
+
 ## Administration
 
 1. Users can administer changes to Application IDs or authorization tokens for the Application IDs through API Gateway. See the [API Reference](./references/api-reference.md) for more details.
