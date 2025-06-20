@@ -38,11 +38,6 @@ resource "aws_iam_role" "redshift_role" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "redshift_role_managed_policy" {
-  role   = aws_iam_role.redshift_role.id
-  policy_arn = "arn:aws:iam::aws:policy/AmazonRedshiftFullAccess"
-}
-
 resource "aws_iam_role_policy" "redshift_role_kinesis_policy" {
   role = aws_iam_role.redshift_role.id
 
