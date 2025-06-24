@@ -39,17 +39,7 @@ resource "aws_iam_role_policy" "firehose_delivery_policy" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "kinesis:DescribeStream",
-          "kinesis:GetShardIterator",
-          "kinesis:GetRecords",
-          "kinesis:ListShards"
-        ]
-        Effect = "Allow"
-        Resource = var.game_events_stream_arn
-      },
+    Statement = concat([
       {
         Action = [
           "s3:AbortMultipartUpload",
@@ -100,7 +90,20 @@ resource "aws_iam_role_policy" "firehose_delivery_policy" {
         Effect = "Allow"
         Resource = aws_cloudwatch_log_group.firehose_log_group.arn
       }
-    ]
+    ], 
+    (var.ingest_mode == "KINESIS_DATA_STREAMS") ? [{
+        Action = [
+          "kinesis:DescribeStream",
+          "kinesis:GetShardIterator",
+          "kinesis:GetRecords",
+          "kinesis:ListShards"
+        ]
+        Effect = "Allow"
+        Resource = var.game_events_stream_arn
+      }] : [])
+    
+    
+    
   })
 }
 

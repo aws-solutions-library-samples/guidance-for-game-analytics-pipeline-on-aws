@@ -38,7 +38,7 @@ resource "aws_iam_role_policy" "api_gateway_kinesis_policy" {
 
 // IAM Policy for API Gateway to put records to Firehose
 resource "aws_iam_role_policy" "api_gateway_firehose_policy" {
-  count = var.data_platform_mode == "DATA_LAKE" ? 1 : 0
+  count = var.ingest_mode == "DIRECT_BATCH" ? 1 : 0
   role = aws_iam_role.api_gateway_role.id
 
   policy = jsonencode({
@@ -50,7 +50,7 @@ resource "aws_iam_role_policy" "api_gateway_firehose_policy" {
           "firehose:PutRecordBatch"
         ]
         Effect = "Allow"
-        Resource = [var.game_events_stream_arn]
+        Resource = [var.game_events_firehose_arn]
       }
     ]
   })

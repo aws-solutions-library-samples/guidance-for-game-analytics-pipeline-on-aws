@@ -277,6 +277,7 @@ resource "aws_cloudwatch_metric_alarm" "kinesis_firehose_s3_data_freshness" {
 
 # Kinesis Read Provisioned Throughput Exceeded Alarm
 resource "aws_cloudwatch_metric_alarm" "kinesis_read_provisioned_throughput_exceeded" {
+  count = var.ingest_mode == "KINESIS_DATA_STREAMS" ? 1 : 0
   alarm_name          = "KinesisReadProvisionedThroughputExceeded (${var.stack_name})"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
@@ -297,6 +298,7 @@ resource "aws_cloudwatch_metric_alarm" "kinesis_read_provisioned_throughput_exce
 
 # Kinesis Write Provisioned Throughput Exceeded Alarm
 resource "aws_cloudwatch_metric_alarm" "kinesis_write_provisioned_throughput_exceeded" {
+  count = var.ingest_mode == "KINESIS_DATA_STREAMS" ? 1 : 0
   alarm_name          = "KinesisWriteProvisionedThroughputExceeded (${var.stack_name})"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1

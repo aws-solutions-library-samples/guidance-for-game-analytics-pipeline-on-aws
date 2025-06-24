@@ -63,7 +63,7 @@ export class ApiConstruct extends Construct {
     }
 
     if (
-      props.config.DATA_PLATFORM_MODE === "DATA_LAKE" &&
+      props.config.INGEST_MODE === "DIRECT_BATCH" &&
       props.gameEventsFirehose != undefined
     ) {
       apiGatewayRole.addToPolicy(

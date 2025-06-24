@@ -588,7 +588,7 @@ module "streaming_ingestion_construct" {
   count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
   source = "./constructs/streaming-ingestion-construct"
 
-  game_events_stream_arn = aws_kinesis_stream.game_events_stream[0].arn
+  game_events_stream_arn = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? aws_kinesis_stream.game_events_stream[0].arn : ""
   analytics_bucket_arn = aws_s3_bucket.analytics_bucket.arn
   raw_events_table_name = module.data_lake_construct[0].raw_events_table_name
   game_events_database_name = module.data_lake_construct[0].game_events_database_name
@@ -607,8 +607,8 @@ module "games_api_construct" {
   source = "./constructs/api-construct"
   lambda_authorizer_arn = module.lambda_construct.lambda_authorizer_function_arn
   lambda_authorizer_function_name = module.lambda_construct.lambda_authorizer_function_name
-  game_events_stream_arn = aws_kinesis_stream.game_events_stream[0].arn
-  game_events_stream_name = aws_kinesis_stream.game_events_stream[0].name
+  game_events_stream_arn = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? aws_kinesis_stream.game_events_stream[0].arn : ""
+  game_events_stream_name = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? aws_kinesis_stream.game_events_stream[0].name : ""
   game_events_firehose_arn = local.config.INGEST_MODE == "DIRECT_BATCH" ? module.streaming_ingestion_construct[0].game_events_firehose_arn : ""
   application_admin_service_function_arn = module.lambda_construct.application_admin_service_function_arn
   stack_name = local.config.WORKLOAD_NAME
@@ -659,7 +659,7 @@ module "metrics_construct" {
     module.lambda_construct.application_admin_service_function_name,
   ]
   cloudwatch_retention_days           = local.config.CLOUDWATCH_RETENTION_DAYS
-  kinesis_stream_name                 = aws_kinesis_stream.game_events_stream[0].name
+  kinesis_stream_name                 = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? aws_kinesis_stream.game_events_stream[0].name : ""
   kinesis_metrics_stream_name         = local.config.REAL_TIME_ANALYTICS ? module.flink_construct[0].kinesis_metrics_stream_name : null
   api_gateway_name                    = module.games_api_construct.game_analytics_api_name
   stack_name                          = local.config.WORKLOAD_NAME

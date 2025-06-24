@@ -6,7 +6,7 @@ output "analytics_bucket" {
 
 output "game_events_stream" {
   description = "Kinesis Stream for ingestion of raw events"
-  value       = aws_kinesis_stream.game_events_stream[0].name
+  value       = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? aws_kinesis_stream.game_events_stream[0].name : ""
 }
 
 output "applications_table" {
