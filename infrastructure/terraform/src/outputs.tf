@@ -44,3 +44,18 @@ output "game_events_etl_iceberg_job" {
   value =  local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.data_processing_construct[0].game_events_etl_iceberg_job : ""
 }
 
+/* Outputs only if REAL_TIME_ANALYTICS is enabled */
+output "flink_analytics_cloudwatch" {
+  description = "Link to the Amazon CloudWatch namespace where custom metrics are published by the solution AnalyticsProcessingFunction."
+  value       = local.config.REAL_TIME_ANALYTICS ? module.flink_construct[0].flink_analytics_cloudwatch : ""
+}
+
+output "flink_app_output" {
+  description = "Name of the Flink Application for game analytics"
+  value       = local.config.REAL_TIME_ANALYTICS ? module.flink_construct[0].flink_app_output : ""
+}
+
+output "kinesis_metric_output_stream_arn" {
+  description = "The name of the kinesis stream containing the aggregated metrics"
+  value       = local.config.REAL_TIME_ANALYTICS ? module.flink_construct[0].kinesis_metrics_stream_arn : ""
+}
