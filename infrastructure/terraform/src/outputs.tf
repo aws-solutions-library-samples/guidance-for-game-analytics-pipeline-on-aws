@@ -23,3 +23,24 @@ output "pipeline_operations_dashboard" {
   description = "CloudWatch Dashboard for viewing pipeline metrics"
   value       = "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.name}#dashboards:name=PipelineOpsDashboard_${local.config.WORKLOAD_NAME};start=PT1H"
 }
+
+/* API Gateway Reference */
+output "game_analytics_api_endpoint" {
+  value =  module.games_api_construct.game_analytics_api_endpoint
+}
+
+output "api_gateway_execution_logs" {
+  value =  module.games_api_construct.api_gateway_execution_logs
+}
+
+/* Outputs if DATA_LAKE is enabled */
+output "game_events_database" {
+  value =  local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.data_lake_construct[0].game_events_database : ""
+}
+output "game_events_etl_job" {
+  value =  local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.data_processing_construct[0].game_events_etl_job : ""
+}
+output "game_events_etl_iceberg_job" {
+  value =  local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.data_processing_construct[0].game_events_etl_iceberg_job : ""
+}
+

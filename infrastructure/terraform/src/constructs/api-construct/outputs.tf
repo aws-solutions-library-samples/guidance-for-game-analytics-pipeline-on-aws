@@ -7,6 +7,11 @@ output "game_analytics_api_name" {
   description = "The name of the Game Analytics API"
 }
 
+output "game_analytics_api_endpoint" {
+  value       = aws_api_gateway_stage.game_analytics_api_stage.invoke_url
+  description = "The name of the Game Analytics API"
+}
+
 output "game_analytics_api_stage_name" {
   value       = aws_api_gateway_stage.game_analytics_api_stage.stage_name
   description = "The name of the API Gateway stage for the Game Analytics API"
