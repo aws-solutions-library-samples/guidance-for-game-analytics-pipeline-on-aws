@@ -22,7 +22,7 @@ import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface StreamingIngestionConstructProps extends cdk.StackProps {
-  applicationsTable: cdk.aws_dynamodb.Table;
+  applicationsTable: cdk.aws_dynamodb.TableV2;
   gamesEventsStream: cdk.aws_kinesis.Stream | cdk.aws_msk.CfnServerlessCluster | undefined;
   analyticsBucket: cdk.aws_s3.Bucket;
   rawEventsTable: cdk.aws_glue.CfnTable;

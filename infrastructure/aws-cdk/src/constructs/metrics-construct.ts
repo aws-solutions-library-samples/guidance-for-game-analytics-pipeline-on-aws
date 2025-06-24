@@ -32,7 +32,7 @@ export interface MetricsConstructProps extends cdk.StackProps {
     gamesApiConstruct: ApiConstruct;
     streamingIngestionConstruct: StreamingIngestionConstruct | undefined;
     gameEventsStream: cdk.aws_kinesis.Stream | undefined;
-    tables: cdk.aws_dynamodb.Table[];
+    tables: cdk.aws_dynamodb.TableV2[];
     functions: lambda.Function[];
 }
 
@@ -366,7 +366,7 @@ export class MetricsConstruct extends Construct {
 
     // Creates simple table metric, defaults to SUM
     private createSimpleTableMetric(
-        table: cdk.aws_dynamodb.Table,
+        table: cdk.aws_dynamodb.TableV2,
         metricName: string,
         statistic: cloudwatch.Stats = cloudwatch.Stats.SUM,
         unit?: cloudwatch.Unit
@@ -427,7 +427,7 @@ export class MetricsConstruct extends Construct {
 
     // Generate Dynamo Math Expression for Errors
     private generateTableMathExpression(
-        tables: cdk.aws_dynamodb.Table[]
+        tables: cdk.aws_dynamodb.TableV2[]
     ): cloudwatch.MathExpression {
         const metricNames = Array.from(Array(tables.length * 2)).map((_, i) => `m${i + 1}`);
 

@@ -280,7 +280,8 @@ resource "aws_dynamodb_table" "applications_table" {
   }
 
   server_side_encryption {
-    enabled = true
+    // use default encryption
+    enabled = false
   }
 
   lifecycle {
@@ -315,7 +316,8 @@ resource "aws_dynamodb_table" "authorizations_table" {
   }
 
   server_side_encryption {
-    enabled = true
+    // use default encryption
+    enabled = false
   }
 
   lifecycle {

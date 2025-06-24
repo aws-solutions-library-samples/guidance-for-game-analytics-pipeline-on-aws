@@ -26,8 +26,8 @@ import { Stack } from "aws-cdk-lib";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface LambdaConstructProps extends cdk.StackProps {
-  applicationsTable: cdk.aws_dynamodb.Table;
-  authorizationsTable: cdk.aws_dynamodb.Table;
+  applicationsTable: cdk.aws_dynamodb.TableV2;
+  authorizationsTable: cdk.aws_dynamodb.TableV2;
   config: GameAnalyticsPipelineConfig;
   redshiftConstruct?: RedshiftConstruct;
   gamesEventsStream?: cdk.aws_kinesis.Stream;

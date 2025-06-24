@@ -204,25 +204,25 @@ export class InfrastructureStack extends cdk.Stack {
     // ---- DynamoDB Tables ---- //
 
     // Table organizes and manages different applications
-    const applicationsTable = new dynamodb.Table(this, "ApplicationsTable", {
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+    const applicationsTable = new dynamodb.TableV2(this, "ApplicationTable", {
+      billing: dynamodb.Billing.onDemand(),
       partitionKey: {
         name: "application_id",
         type: dynamodb.AttributeType.STRING,
       },
       pointInTimeRecovery: true,
-      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      encryption: dynamodb.TableEncryptionV2.dynamoOwnedKey(),
       removalPolicy: props.config.DEV_MODE
         ? cdk.RemovalPolicy.DESTROY
         : cdk.RemovalPolicy.RETAIN,
     });
 
     // Managed authorizations for applications (Api keys, etc.)
-    const authorizationsTable = new dynamodb.Table(
+    const authorizationsTable = new dynamodb.TableV2(
       this,
-      "AuthorizationsTable",
+      "AuthorizationTable",
       {
-        billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+        billing: dynamodb.Billing.onDemand(),
         partitionKey: {
           name: "api_key_id",
           type: dynamodb.AttributeType.STRING,
@@ -232,7 +232,7 @@ export class InfrastructureStack extends cdk.Stack {
           type: dynamodb.AttributeType.STRING,
         },
         pointInTimeRecovery: true,
-        encryption: dynamodb.TableEncryption.AWS_MANAGED,
+        encryption: dynamodb.TableEncryptionV2.dynamoOwnedKey(),
         removalPolicy: props.config.DEV_MODE
           ? cdk.RemovalPolicy.DESTROY
           : cdk.RemovalPolicy.RETAIN,
