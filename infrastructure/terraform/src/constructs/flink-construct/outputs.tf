@@ -5,7 +5,7 @@ output "flink_app_output" {
 
 output "flink_analytics_cloudwatch" {
   description = "Link to the Amazon CloudWatch namespace where custom metrics are published by the solution AnalyticsProcessingFunction."
-  value       = "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.name}#metricsV2:graph=~();query=${var.stack_name}/AWSGameAnalytics"
+  value       = "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.region}#metricsV2:graph=~();query=${var.stack_name}/AWSGameAnalytics"
 }
 
 output "kinesis_metrics_stream_name" {

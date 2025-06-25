@@ -78,11 +78,11 @@ resource "aws_iam_role_policy" "firehose_delivery_policy" {
         ]
         Effect = "Allow"
         Resource = [
-          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.game_events_database_name}/*",
-          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${var.game_events_database_name}",
-          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog",
-          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:registry/*",
-          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:schema/*"
+          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:table/${var.game_events_database_name}/*",
+          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:database/${var.game_events_database_name}",
+          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog",
+          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:registry/*",
+          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:schema/*"
         ]
       },
       {
@@ -142,7 +142,7 @@ resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
     for_each = var.enable_apache_iceberg_support ? [1] : []
     content {
       role_arn           = aws_iam_role.firehose_role.arn
-      catalog_arn        = "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog"
+      catalog_arn        = "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog"
       buffering_size     = 128
       buffering_interval   = var.dev_mode ? 60 : 900
 
@@ -280,7 +280,7 @@ resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
           role_arn      = aws_iam_role.firehose_role.arn
           database_name = var.game_events_database_name
           table_name    = var.raw_events_table_name
-          region        = data.aws_region.current.name
+          region        = data.aws_region.current.region
           version_id    = "LATEST"
         }
       }

@@ -16,12 +16,12 @@ output "applications_table" {
 
 output "glue_workflow_console_link" {
   description = "Link to the AWS Glue Workflows console page to view details of the workflow"
-  value       = "https://console.aws.amazon.com/glue/home?region=${data.aws_region.current.name}#etl:tab=workflows;workflowView=workflow-list"
+  value       = "https://console.aws.amazon.com/glue/home?region=${data.aws_region.current.region}#etl:tab=workflows;workflowView=workflow-list"
 }
 
 output "pipeline_operations_dashboard" {
   description = "CloudWatch Dashboard for viewing pipeline metrics"
-  value       = "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.name}#dashboards:name=${local.config.WORKLOAD_NAME}_PipelineOpsDashboard;start=PT1H"
+  value       = "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.region}#dashboards:name=${local.config.WORKLOAD_NAME}_PipelineOpsDashboard;start=PT1H"
 }
 
 /* API Gateway Reference */

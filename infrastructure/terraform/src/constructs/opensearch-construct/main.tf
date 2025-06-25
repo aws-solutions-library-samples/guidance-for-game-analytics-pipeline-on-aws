@@ -170,7 +170,7 @@ resource "aws_osis_pipeline" "ingestion" {
     network_policy_name = aws_opensearchserverless_collection.game_analytics_collection.name
     role                = aws_iam_role.ingestion_role.arn
     dlq_bucket_name     = aws_s3_bucket.dead_letter_queue.id
-    region              = data.aws_region.current.name
+    region              = data.aws_region.current.region
   })
 
   log_publishing_options {

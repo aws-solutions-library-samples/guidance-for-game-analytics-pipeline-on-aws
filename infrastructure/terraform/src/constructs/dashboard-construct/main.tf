@@ -30,7 +30,7 @@ locals {
         }]
       ],
       "title": "Events Ingestion and Delivery",
-      "region": "${data.aws_region.current.name}"
+      "region": "${data.aws_region.current.region}"
     }
   }
 
@@ -60,7 +60,7 @@ locals {
         }]
       ],
       "title": "Events Ingestion and Delivery",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "period": 60,
       "stat": "Sum"
     }
@@ -102,7 +102,7 @@ locals {
         }]
       ],
       "title": "Events Stream Latency",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "period": 60,
       "stat": "Average",
       "stacked": false,
@@ -133,7 +133,7 @@ locals {
         }]
       ],
       "title": "Redshift Serverless Resource Utilization",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "period": 60,
       "stat": "Sum"
     }
@@ -212,7 +212,7 @@ locals {
         }]
       ],
       "title": "Events Processing Health",
-      "region": "${data.aws_region.current.name}"
+      "region": "${data.aws_region.current.region}"
     }
   }
   
@@ -241,11 +241,11 @@ locals {
           "label": "Success rate (%)",
           "id": "availability", 
           "yAxis": "right", 
-          "region": "${data.aws_region.current.name}"
+          "region": "${data.aws_region.current.region}"
         }]
       ],
       "title": "Lambda Error count and success rate (%)",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "period": 60,
       "stat": "Sum",
       "stacked": false,
@@ -301,17 +301,17 @@ locals {
           "expression": "recInPerSec * 60 / 4", 
           "label": "Number of Records Recieved",
           "id": "numRecRecieved", 
-          "region": "${data.aws_region.current.name}"
+          "region": "${data.aws_region.current.region}"
         }],
         [{ 
           "expression": "recDroppedPerMin / 4", 
           "label": "Number of Late Records Dropped",
           "id": "recDroppedPerMin", 
-          "region": "${data.aws_region.current.name}"
+          "region": "${data.aws_region.current.region}"
         }]
       ],
       "title": "Managed Flink Records Intake",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "period": 60,
       "yAxis": {
         "left": {
@@ -359,7 +359,7 @@ locals {
             }
          ]
       },
-      "region": "${data.aws_region.current.name}"
+      "region": "${data.aws_region.current.region}"
     }
   }
   
@@ -400,7 +400,7 @@ locals {
         }]
       ],
       "title": "Real-time Analytics Health",
-      "region": "${data.aws_region.current.name}"
+      "region": "${data.aws_region.current.region}"
     }
   }
   
@@ -428,7 +428,7 @@ locals {
         }]
       ],
       "title": "Managed Flink Container Resource Utilization",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "yAxis": {
         "left": {
           "showUnits": false,
@@ -476,7 +476,7 @@ locals {
         }]
       ],
       "title": "Metrics Stream Latency",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "period": 60,
       "stat": "Average",
       "stacked": false,

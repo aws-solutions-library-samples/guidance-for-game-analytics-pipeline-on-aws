@@ -181,7 +181,7 @@ resource "aws_iam_role_policy" "application_admin_service_function_policy" {
         Action: [
           "secretsmanager:GetSecretValue"
         ],
-        Resource: "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:redshift!${var.redshift_namespace_name[0]}-admin*"
+        Resource: "arn:aws:secretsmanager:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:secret:redshift!${var.redshift_namespace_name[0]}-admin*"
       },
       {
         Effect: "Allow",
