@@ -361,6 +361,7 @@ public readonly gameEventsEtlJob: glueCfn.CfnJob;
           },
         ],
         schedule: "cron(0 * * * ? *)",
+        startOnCreation: true
       }
     );
     gameEventsETLJobTrigger.addDependency(gameEventsEtlJob);
