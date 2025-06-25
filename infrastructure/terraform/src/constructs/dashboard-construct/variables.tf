@@ -27,6 +27,10 @@ variable "events_processing_function" {
   type        = string
 }
 
+variable "events_processing_function_arn" {
+  type        = string
+}
+
 variable "analytics_processing_function" {
   type        = string
 }
