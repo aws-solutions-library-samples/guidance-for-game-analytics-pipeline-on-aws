@@ -515,6 +515,6 @@ resource "random_string" "stack_random_id_suffix" {
 }
 
 resource "aws_cloudwatch_dashboard" "pipeline_ops_dashboard" {
-  dashboard_name = "${var.workload_name}-PipelineOpsDashboard_${var.workload_name}_${random_string.stack_random_id_suffix.result}" // Need to output this and then properly propagate to the upstream stack
+  dashboard_name = "${var.workload_name}_PipelineOpsDashboard_${random_string.stack_random_id_suffix.result}" // Need to output this and then properly propagate to the upstream stack
   dashboard_body = local.widgets
 }

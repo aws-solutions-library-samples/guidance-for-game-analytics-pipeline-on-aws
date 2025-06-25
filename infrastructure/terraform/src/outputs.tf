@@ -21,7 +21,7 @@ output "glue_workflow_console_link" {
 
 output "pipeline_operations_dashboard" {
   description = "CloudWatch Dashboard for viewing pipeline metrics"
-  value       = "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.name}#dashboards:name=PipelineOpsDashboard_${local.config.WORKLOAD_NAME};start=PT1H"
+  value       = "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.name}#dashboards:name=${local.config.WORKLOAD_NAME}_PipelineOpsDashboard;start=PT1H"
 }
 
 /* API Gateway Reference */
