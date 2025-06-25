@@ -204,7 +204,7 @@ export class InfrastructureStack extends cdk.Stack {
     // ---- DynamoDB Tables ---- //
 
     // Table organizes and manages different applications
-    const applicationsTable = new dynamodb.TableV2(this, "ApplicationTable", {
+    const applicationsTable = new dynamodb.TableV2(this, "ApplicationsTable", {
       billing: dynamodb.Billing.onDemand(),
       partitionKey: {
         name: "application_id",
@@ -220,7 +220,7 @@ export class InfrastructureStack extends cdk.Stack {
     // Managed authorizations for applications (Api keys, etc.)
     const authorizationsTable = new dynamodb.TableV2(
       this,
-      "AuthorizationTable",
+      "AuthorizationsTable",
       {
         billing: dynamodb.Billing.onDemand(),
         partitionKey: {
