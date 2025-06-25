@@ -155,7 +155,7 @@ resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
         database_name = var.game_events_database_name
         table_name = var.raw_events_table_name
         s3_error_output_prefix = "firehose-errors/!{firehose:error-output-type}/"
-        unique_keys = ["event_timestamp"]
+        unique_keys = ["event_id"]
       }
 
       cloudwatch_logging_options {
