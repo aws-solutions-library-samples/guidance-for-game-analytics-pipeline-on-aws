@@ -115,7 +115,7 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
 
     2. You can query data immediately using [Amazon Redshift Query Editor](https://aws.amazon.com/redshift/query-editor-v2/) in the AWS Console, or connect up other visualization tools compatible with Amazon Redshift.
 
-    3. By default, the cluster is configured with 16 RPU Compute Capacity, and is accessible on port 5439. Both can be configured in the redshift-construct source for your chosen Infrastructure as Code language in the respective Redshift Construct files.
+    3. By default, the cluster is configured with 8 RPU Compute Capacity, and is accessible on port 5439. Both can be configured in the redshift-construct source for your chosen Infrastructure as Code language in the respective Redshift Construct files.
 
 ## Administration
 

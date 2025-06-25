@@ -13,24 +13,34 @@ locals {
 
   // API Widget
   api_ingestion_widget = {
-    "type": "singleValue",
-    "width": 8,
+    "type": "graph",
+    "width": 24,
     "height": 6,
     "properties": {
-      "metrics": [
-        ["AWS/ApiGateway", "Count", {
-          "label": "Events REST API Request Count",
-          "color": "#1f77b4",
-          "dimensions": {
-            "ApiName": "${var.api_gateway_name}",
-            "Resource": "/applications/{applicationId}/events",
-            "Stage": "${var.api_stage_name}",
-            "Method": "POST"
-          }
-        }]
-      ],
+      "view": "timeSeries",
       "title": "Events Ingestion and Delivery",
-      "region": "${data.aws_region.current.name}"
+      "region": "${data.aws_region.current.name}",
+      "metrics": [
+        [
+          "AWS/ApiGateway",
+          "Count",
+          "ApiName",
+          "${var.api_gateway_name}",
+          "Resource",
+          "/applications/{applicationId}/events",
+          "Stage",
+          "${var.api_stage_name}",
+          "Method",
+          "POST",
+          {
+            "color": "#1f77b4",
+            "label": "Events REST API Request Count"
+          }
+        ]
+      ],
+      "yAxis": {},
+      "period": 60,
+      "stat": "Sum"
     }
   }
 
@@ -40,226 +50,357 @@ locals {
     "width": 24,
     "height": 2,
     "properties": {
-      "markdown": "\n## Stream Ingestion & Processing\nThis section covers metrics related to ingestion of data into the solution's Events Stream and processing by Kinesis Data Firehose and AWS Lambda Events Processing Function. Use the metrics here to track data freshness/latency and any issues with processor throttling/errors.\n"
+      "markdown": "\n## Kinesis Data Stream Ingestion \nThis section covers metrics related to ingestion of data into the solution's Events Stream and processing by Kinesis Data Streams. Use the metrics here to track data freshness/latency.\n",
     }
   }
   
 
   event_ingestion_widget = {
-    "type": "graph",
-    "width": 8,
+    "type": "metric",
+    "width": 12,
     "height": 6,
     "properties": {
-      "metrics": [
-        ["AWS/Kinesis", "IncomingRecords", {
-          "label": "Events Stream Incoming Records (Kinesis)",
-          "color": "#2ca02c",
-          "dimensions": {
-            "StreamName": "${var.game_events_stream_name}"
-          }
-        }]
-      ],
+      "view": "timeSeries",
       "title": "Events Ingestion and Delivery",
       "region": "${data.aws_region.current.name}",
+      "metrics": [
+        [
+          "AWS/Kinesis", 
+          "IncomingRecords", 
+          "StreamName",
+          "${var.game_events_stream_name}",
+          {
+              "color": "#2ca02c",
+              "label": "Events Stream Incoming Records (Kinesis)"
+          }
+        ]
+      ],
+      "yAxis": {},
       "period": 60,
-      "stat": "Sum"
+      "stat": "Sum",
     }
   }
-  
 
   stream_latency_widget = {
-    "type": "graph",
-    "width": 8,
+    "type": "metric",
+    "width": 12,
     "height": 6,
     "properties": {
-      "metrics": [
-        ["AWS/Kinesis", "PutRecord.Latency", {
-          "label": "PutRecord Write Latency",
-          "dimensions": {
-            "FunctionName": "${var.game_events_stream_name}"
-          }
-        }],
-        ["AWS/Kinesis", "PutRecords.Latency", {
-          "label": "PutRecords Write Latency",
-          "dimensions": {
-            "FunctionName": "${var.game_events_stream_name}"
-          }
-        }],
-        ["AWS/Kinesis", "GetRecords.Latency", {
-          "label": "Read Latency",
-          "dimensions": {
-            "FunctionName": "${var.game_events_stream_name}"
-          }
-        }],
-        ["AWS/Kinesis", "GetRecords.IteratorAgeMilliseconds", {
-          "label": "Consumer Iterator Age",
-          "period": 60,
-          "stat": "Maximum",
-          "yAxis": "right",
-          "dimensions": {
-            "FunctionName": "${var.game_events_stream_name}"
-          }
-        }]
-      ],
+      "view": "timeSeries",
       "title": "Events Stream Latency",
       "region": "${data.aws_region.current.name}",
-      "period": 60,
-      "stat": "Average",
-      "stacked": false,
+      "metrics": [
+        [
+          "AWS/Kinesis", 
+          "PutRecord.Latency", 
+          "StreamName",
+          "${var.game_events_stream_name}",
+          {
+              "label": "PutRecord Write Latency"
+          }
+        ],
+        [
+          "AWS/Kinesis", 
+          "PutRecords.Latency", 
+          "StreamName",
+          "${var.game_events_stream_name}",
+          {
+              "label": "PutRecords Write Latency"
+          }
+        ],
+        [
+          "AWS/Kinesis", 
+          "GetRecords.Latency", 
+          "StreamName",
+          "${var.game_events_stream_name}",
+          {
+              "label": "Read Latency"
+          }
+        ],
+        [
+          "AWS/Kinesis", 
+          "GetRecords.IteratorAgeMilliseconds", 
+          "StreamName",
+          "${var.game_events_stream_name}",
+          {
+              "label": "Consumer Iterator Age",
+              "period": 60,
+              "stat": "Maximum",
+              "yAxis": "right"
+          }
+        ]
+      ],
       "yAxis": {
         "left": {
           "showUnits": false,
           "label": "Milliseconds"
         }
-      }
+      },
+      "period": 60,
+      "stat": "Average"
     }
   }
-  
 
   // Redshift Widgets (If Redshift Mode is enabled)
-  redshift_utilization_widget = {
-    "type": "graph",
-    "width": 8,
-    "height": 6,
+
+  redshift_title_widget = {
+    "type": "text",
+    "width": 24,
+    "height": 2,
     "properties": {
-      "metrics": [
-        ["AWS/Redshift-Serverless", "DatabaseConnections", {
-          "label": "Database Connections",
-          "color": "#1f77b4",
-          "dimensions": {
-            "DatabaseName": "${var.redshift_namespace_db_name}",
-            "Workgroup": "${var.redshift_workgroup_name}"
-          }
-        }]
-      ],
-      "title": "Redshift Serverless Resource Utilization",
-      "region": "${data.aws_region.current.name}",
-      "period": 60,
-      "stat": "Sum"
+      "markdown": "\n## Redshift Serverless\nThis section covers metrics related to Redshift Serverless. Use the metrics here to track infrastructure and query performance.\n",
     }
   }
-  
+
+  redshift_queries_per_second_widget = {
+    "type": "metric",
+    "width": 12,
+    "height": 6,
+    "properties": {
+      "view": "timeSeries",
+      "title": "Queries Completed Per Second",
+      "region": "${data.aws_region.current.name}",
+      "stacked": false,
+      "metrics": [
+        [
+          "AWS/Redshift-Serverless", 
+          "QueriesCompletedPerSecond", 
+          "DatabaseName",
+          "events",
+          "Workgroup",
+          "${var.redshift_workgroup_name}",
+          "LatencyRange",
+          "Short"
+        ]
+      ],
+      "yAxis": {}
+    }
+  }
+
+  redshift_database_connections_widget = {
+    "type": "metric",
+    "width": 12,
+    "height": 6,
+    "properties": {
+      "view": "timeSeries",
+      "title": "Database Connections",
+      "region": "${data.aws_region.current.name}",
+      "stacked": false,
+      "metrics": [
+        [
+          "AWS/Redshift-Serverless", 
+          "DatabaseConnections", 
+          "DatabaseName",
+          "events",
+          "Workgroup",
+          "${var.redshift_workgroup_name}"
+        ]
+      ],
+      "yAxis": {}
+    }
+  }
+
+  redshift_query_execution_widget = {
+    "type": "graph",
+    "width": 12,
+    "height": 6,
+    "properties": {
+      "view": "timeSeries",
+      "title": "Query Planning / Execution",
+      "region": "${data.aws_region.current.name}",
+      "stacked": false,
+      "metrics": [
+        [
+          "AWS/Redshift-Serverless", 
+          "QueryRuntimeBreakdown",
+          "stage",
+          "QueryPlanning",
+          "DatabaseName",
+          "events",
+          "Workgroup",
+          "${var.redshift_workgroup_name}"
+        ],
+        [
+          "AWS/Redshift-Serverless", 
+          "QueryRuntimeBreakdown",
+          "stage",
+          "QueryExecutingRead",
+          "DatabaseName",
+          "events",
+          "Workgroup",
+          "${var.redshift_workgroup_name}"
+        ]
+      ],
+      "yAxis": {}
+    }
+  }
+
+  redshift_data_storage_widget = {
+    "type": "metric",
+    "width": 12,
+    "height": 6,
+    "properties": {
+      "view": "singleValue",
+      "title": "Data Storage",
+      "region": "${data.aws_region.current.name}",
+      "sparkline": true,
+      "metrics": [
+        [
+          "AWS/Redshift-Serverless", 
+          "DataStorage",
+          "Namespace",
+          "${var.redshift_namespace_db_name}"
+        ]
+      ]
+    }
+  }
 
   // Data Lake Mode Widgets (If Data Lake Mode is enabled)
-  event_processing_health_widget = {
-    "type": "singleValue",
-    "width": 12,
-    "height": 3,
+
+  data_lake_title_widget = {
+    "type": "text",
+    "width": 24,
+    "height": 2,
     "properties": {
-      "metrics": [
-        ["AWS/Firehose", "DeliveryToS3.DataFreshness", {
-          "label": "Data Freshness",
-          "period": 300,
-          "stat": "Maximum",
-          "dimensions": {
-            "DeliveryStreamName": "${var.game_events_firehose_name}"
-          }
-        }],
-        ["AWS/Firehose", "DeliveryToS3.Records", {
-          "label": "Firehose Records Delivered to S3",
-          "period": 300,
-          "dimensions": {
-            "DeliveryStreamName": "${var.game_events_firehose_name}"
-          }
-        }],
-        ["AWS/Lambda", "Duration", {
-          "label": "Lambda Duration",
-          "period": 300,
-          "stat": "Average",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "ConcurrentExecutions", {
-          "label": "Lambda Concurrency",
-          "period": 300,
-          "stat": "Maximum",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "Throttles", {
-          "label": "Lambda Throttles",
-          "period": 300,
-          "stat": "Sum",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "Duration", {
-          "label": "Lambda Duration",
-          "period": 300,
-          "stat": "Average",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "ConcurrentExecutions", {
-          "label": "Lambda Concurrency",
-          "period": 300,
-          "stat": "Maximum",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "Throttles", {
-          "label": "Lambda Throttles",
-          "period": 300,
-          "stat": "Sum",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }]
-      ],
-      "title": "Events Processing Health",
-      "region": "${data.aws_region.current.name}"
+      "markdown": "\n## Stream Ingestion & Processing\nThis section covers metrics related to ingestion of data into the solution's Events Stream and processing by Kinesis Data Firehose and AWS Lambda Events Processing Function. Use the metrics here to track data freshness/latency and any issues with processor throttling/errors.\n",
     }
   }
-  
+
+  event_processing_health_widget = {
+    "type": "metric",
+    "width": 24,
+    "height": 3,
+    "properties": {
+      "view": "singleValue",
+      "title": "Events Processing Health",
+      "region": "${data.aws_region.current.name}",
+      "metrics": [
+        [
+          "AWS/Firehose", 
+          "DeliveryToS3.DataFreshness", 
+          "DeliveryStreamName",
+          "${var.game_events_stream_name}",
+          {
+              "label": "Data Freshness",
+              "stat": "Maximum"
+          }
+        ],
+        [
+          "AWS/Firehose", 
+          "DeliveryToS3.Records", 
+          "DeliveryStreamName",
+          "${var.game_events_stream_name}",
+          {
+              "color": "#17becf",
+              "label": "Firehose Records Delivered to S3"
+          }
+        ],
+        [
+          "AWS/Lambda", 
+          "Duration", 
+          "FunctionName",
+          "${var.events_processing_function}",
+          {
+              "label": "Lambda Duration"
+          }
+        ],
+        [
+          "AWS/Lambda", 
+          "ConcurrentExecutions", 
+          "FunctionName",
+          "${var.events_processing_function}",
+          {
+              "label": "Lambda Concurrency",
+              "stat": "Maximum"
+          }
+        ],
+        [
+          "AWS/Lambda", 
+          "Throttles", 
+          "FunctionName",
+          "${var.events_processing_function}",
+          {
+              "label": "Lambda Throttles",
+              "stat": "Sum"
+          }
+        ]
+      ]
+    }
+  }
 
   ingestion_lambda_widget = {
-    "type": "graph",
-    "width": 8,
+    "type": "metric",
+    "width": 24,
     "height": 6,
     "properties": {
-      "metrics": [
-        ["AWS/Lambda", "Errors", {
-          "label": "Errors",
-          "color": "#D13212",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "Invocations", {
-          "label": "Invocations",
-          "dimensions": {
-            "FunctionName": "${var.events_processing_function}"
-          }
-        }],
-        [{ 
-          "expression": "100 - 100 * errors / MAX([errors, invocations])", 
-          "label": "Success rate (%)",
-          "id": "availability", 
-          "yAxis": "right", 
-          "region": "${data.aws_region.current.name}"
-        }]
-      ],
-      "title": "Lambda Error count and success rate (%)",
+      "view": "timeSeries",
+      "title": "Event Transformation Lambda Error count and success rate (%)",
       "region": "${data.aws_region.current.name}",
-      "period": 60,
-      "stat": "Sum",
-      "stacked": false,
+      "metrics": [
+        [
+          "AWS/Lambda", 
+          "Errors", 
+          "FunctionName",
+          "${var.events_processing_function}",
+          {
+              "color": "#D13212",
+              "label": "Errors"
+          }
+        ],
+        [
+          "AWS/Lambda", 
+          "Invocations", 
+          "FunctionName",
+          "${var.events_processing_function}",
+          {
+              "label": "Invocations"
+          }
+        ],
+        [
+          {
+            "label": "Success rate (%)",
+            "expression": "100 - 100 * metricErrors / MAX([metricErrors, metricInvocations])",
+            "yAxis": "right"
+          }
+        ],
+        [
+          "AWS/Lambda", 
+          "Errors", 
+          "FunctionName",
+          "${var.events_processing_function}",
+          "Resource",
+          "${var.events_processing_function_arn}",
+          {
+              "stat": "Sum",
+              "visible": false,
+              "id": "metricErrors"
+          }
+        ],
+        [
+          "AWS/Lambda", 
+          "Invocations", 
+          "FunctionName",
+          "${var.events_processing_function}",
+          {
+              "stat": "Sum",
+              "visible": false,
+              "id": "metricErrors"
+          }
+        ]
+      ],
       "yAxis": {
+        "left": {
+          "showUnits": false,
+          "label": ""
+        },
         "right": {
           "max": 100,
           "label": "Percent",
           "showUnits": false
-        },
-        "left": {
-          "showUnits": false,
-          "label": ""
         }
-      }
+      },
+      "period": 60,
+      "stat": "Sum"
     }
   }
   
@@ -274,137 +415,146 @@ locals {
     }
   }
   
-  
   realtime_latency_widget = {
-    "type": "graph",
-    "width": 8,
+    "type": "metric",
+    "width": 12,
     "height": 6,
     "properties": {
-      "metrics": [
-        ["AWS/KinesisAnalytics", "numRecordsInPerSecond", {
-          "label": "recinpersec",
-          "period": 60,
-          "stat": "Sum",
-          "dimensions": {
-            "FunctionName": "${var.flink_app}"
-          }
-        }],
-        ["AWS/KinesisAnalytics", "numLateRecordsDropped", {
-          "label": "recdroppedpermin",
-          "period": 60,
-          "stat": "Sum",
-          "dimensions": {
-            "FunctionName": "${var.flink_app}"
-          }
-        }],
-        [{ 
-          "expression": "recInPerSec * 60 / 4", 
-          "label": "Number of Records Recieved",
-          "id": "numRecRecieved", 
-          "region": "${data.aws_region.current.name}"
-        }],
-        [{ 
-          "expression": "recDroppedPerMin / 4", 
-          "label": "Number of Late Records Dropped",
-          "id": "recDroppedPerMin", 
-          "region": "${data.aws_region.current.name}"
-        }]
-      ],
+      "view": "timeSeries",
       "title": "Managed Flink Records Intake",
       "region": "${data.aws_region.current.name}",
-      "period": 60,
+      "metrics": [
+        [
+          {
+            "label": "Number of Records Recieved",
+            "expression": "recInPerSec * 60 / 4"
+          }
+        ],
+        [
+          "AWS/KinesisAnalytics",
+          "numRecordsInPerSecond",
+          "Application",
+          "${var.flink_app}",
+          {
+            "stat": "Sum",
+            "visible": false,
+            "id": "recInPerSec"
+          }
+        ],
+        [
+          {
+            "label": "Number of Late Records Dropped",
+            "expression": "recDroppedPerMin / 4"
+          }
+        ],
+        [
+          "AWS/KinesisAnalytics",
+          "numLateRecordsDropped",
+          "Application",
+          "${var.flink_app}",
+          {
+            "stat": "Sum",
+            "visible": false,
+            "id": "recDroppedPerMin"
+          }
+        ]
+      ],
+      "yAxis": {
+          "left": {
+              "showUnits": false,
+              "label": "Count"
+          }
+        },
+        "period": 60
+    }
+  }
+
+  flink_cpu_utilization_widget = {
+    "type": "metric",
+    "width": 12,
+    "height": 6,
+    "properties": {
+      "view": "timeSeries",
+      "title": "Managed Flink Container CPU Utilization",
+      "region": "${data.aws_region.current.name}",
+      "metrics": [
+        [
+          "AWS/KinesisAnalytics",
+          "containerCPUUtilization",
+          "Application",
+          "${var.flink_app}"
+        ]
+      ],
+      "annotations": {
+        "horizontal": [
+          {
+            "value": 75,
+            "label": "Scale Up Threshold",
+            "color": "#d62728",
+            "yAxis": "left"
+          },
+          {
+            "value": 10,
+            "label": "Scale Down Threshold",
+            "color": "#2ca02c",
+            "yAxis": "left"
+          }
+        ]
+      },
       "yAxis": {
         "left": {
-          "showUnits": false,
-          "label": "Count"
+          "min": 1,
+          "max": 100,
+          "label": "Percent",
+          "showUnits": false
+        }
+      },
+      "period": 60
+    }
+  }
+  
+  realtime_health_widget = {
+    "type": "metric",
+    "width": 12,
+    "height": 6,
+    "properties": {
+      "view": "timeSeries",
+      "title": "Managed Flink Container Resource Utilization",
+      "region": "${data.aws_region.current.name}",
+      "metrics ": [
+        [
+          "AWS/KinesisAnalytics",
+          "containerMemoryUtilization",
+          "Application",
+          "${var.flink_app}"
+        ],
+        [
+          "AWS/KinesisAnalytics",
+          "containerDiskUtilization",
+          "Application",
+          "${var.flink_app}"
+        ],
+        [
+          "AWS/KinesisAnalytics",
+          "threadsCount",
+          "Application",
+          "${var.flink_app}",
+          {
+            "yAxis": "right"
+          }
+        ]
+      ],
+      "yAxis": {
+        "left": {
+          "min": 1,
+          "max": 100,
+          "label": "Percent",
+          "showUnits": false
         }
       }
     }
   }
   
-
-  flink_cpu_utilization_widget = {
-    "type": "graph",
-    "width": 8,
-    "height": 6,
-    "properties": {
-      "metrics": [
-        ["AWS/KinesisAnalytics", "containerCPUUtilization", {
-          "dimensions": {
-            "DeliveryStreamName": "${var.flink_app}"
-          }
-        }]
-      ],
-      "title": "Managed Flink Container CPU Utilization",
-      "period": 60,
-      "yAxis": {
-        "left": {
-          "showUnits": false,
-          "label": "Percent",
-          "min": 1,
-          "max": 100
-        }
-      },
-      "annotations": {
-         "left": [
-            {
-               "color": "#d62728",
-               "label": "Scale Up Threshold",
-               "value": 75
-            },
-            {
-               "color": "#2ca02c",
-               "label": "Scale Down Threshold",
-               "value": 10
-            }
-         ]
-      },
-      "region": "${data.aws_region.current.name}"
-    }
-  }
-  
-
-  realtime_health_widget = {
-    "type": "singleValue",
-    "width": 12,
-    "height": 3,
-    "properties": {
-      "metrics": [
-        ["AWS/Lambda", "ConcurrentExecutions", {
-          "label": "Metrics Processing Lambda Concurrent Executions",
-          "stat": "Maximum",
-          "dimensions": {
-            "DeliveryStreamName": "${var.analytics_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "Duration", {
-          "label": "Lambda Duration",
-          "stat": "Average",
-          "dimensions": {
-            "FunctionName": "${var.analytics_processing_function}"
-          }
-        }],
-        ["AWS/Lambda", "Throttles", {
-          "label": "Lambda Throttles",
-          "dimensions": {
-            "FunctionName": "${var.analytics_processing_function}"
-          }
-        }],
-        ["AWS/KinesisAnalytics", "KPUs", {
-          "label": "Managed Flink KPUs",
-          "stat": "Maximum",
-          "period": 7200,
-          "dimensions": {
-            "Application": "${var.flink_app}"
-          }
-        }]
-      ],
-      "title": "Real-time Analytics Health",
-      "region": "${data.aws_region.current.name}"
-    }
-  }
-  
-
   flink_resource_utilization_widget = {
     "type": "graph",
     "width": 8,
@@ -440,60 +590,70 @@ locals {
     }
   }
   
-
   metric_stream_latency_widget = {
-    "type": "graph",
-    "width": 8,
+    "type": "metric",
+    "width": 12,
     "height": 6,
     "properties": {
+      "view": "timeSeries",
+      "title": "Metrics Stream Latency",
+      "region": "${data.aws_region.current.name}",
       "metrics": [
-        ["AWS/Kinesis", "PutRecord.Latency", {
-          "label": "PutRecord Write Latency",
-          "dimensions": {
-            "FunctionName": "${var.metrics_stream_name}"
+        [
+          "AWS/Kinesis",
+          "PutRecord.Latency",
+          "StreamName",
+          "${var.metrics_stream_name}",
+          {
+            "label": "PutRecord Write Latency"
           }
-        }],
-        ["AWS/Kinesis", "PutRecords.Latency", {
-          "label": "PutRecords Write Latency",
-          "dimensions": {
-            "FunctionName": "${var.metrics_stream_name}"
+        ],
+        [
+          "AWS/Kinesis",
+          "PutRecords.Latency",
+          "StreamName",
+          "${var.metrics_stream_name}",
+          {
+            "label": "PutRecords Write Latency"
           }
-        }],
-        ["AWS/Kinesis", "GetRecords.Latency", {
-          "label": "Read Latency",
-          "dimensions": {
-            "FunctionName": "${var.metrics_stream_name}"
-          }
-        }],
-        ["AWS/Kinesis", "GetRecords.IteratorAgeMilliseconds", {
+        ],
+        [
+          "AWS/Kinesis",
+          "GetRecords.Latency",
+          "StreamName",
+          "${var.metrics_stream_name}",
+        {
+          "label": "Read Latency"
+        }
+      ],
+      [
+        "AWS/Kinesis",
+        "GetRecords.IteratorAgeMilliseconds",
+        "StreamName",
+        "${var.metrics_stream_name}",
+        {
           "label": "Consumer Iterator Age",
           "period": 60,
           "stat": "Maximum",
-          "yAxis": "right",
-          "dimensions": {
-            "FunctionName": "${var.metrics_stream_name}"
-          }
-        }]
-      ],
-      "title": "Metrics Stream Latency",
-      "region": "${data.aws_region.current.name}",
-      "period": 60,
-      "stat": "Average",
-      "stacked": false,
-      "yAxis": {
-        "left": {
+          "yAxis": "right"
+        }
+      ]
+    ],
+    "yAxis": {
+      "left": {
           "showUnits": false,
           "label": "Milliseconds"
-        }
       }
+    },
+    "period": 60,
+    "stat": "Average"
     }
   }
   
-
   widgets_list = [local.title_widget, local.api_ingestion_widget]
   kinesis_widgets = [local.stream_ingestion_title_widget, local.event_ingestion_widget, local.stream_latency_widget]
-  redshift_widgets = [local.redshift_utilization_widget]
-  datalake_widgets = [local.event_processing_health_widget, local.ingestion_lambda_widget]
+  redshift_widgets = [local.redshift_title_widget, local.redshift_queries_per_second_widget, local.redshift_database_connections_widget, local.redshift_query_execution_widget, local.redshift_data_storage_widget]
+  datalake_widgets = [local.data_lake_title_widget, local.event_processing_health_widget, local.ingestion_lambda_widget]
   realtime_widgets = [local.realtime_title_widget, local.realtime_latency_widget, local.flink_cpu_utilization_widget, local.realtime_health_widget, local.flink_resource_utilization_widget, local.metric_stream_latency_widget]
 
   combined_widgets_list = concat(
@@ -515,6 +675,6 @@ resource "random_string" "stack_random_id_suffix" {
 }
 
 resource "aws_cloudwatch_dashboard" "pipeline_ops_dashboard" {
-  dashboard_name = "${var.workload_name}-PipelineOpsDashboard_${var.workload_name}_${random_string.stack_random_id_suffix.result}" // Need to output this and then properly propagate to the upstream stack
+  dashboard_name = "${var.workload_name}-PipelineOpsDashboard_${random_string.stack_random_id_suffix.result}"
   dashboard_body = local.widgets
 }

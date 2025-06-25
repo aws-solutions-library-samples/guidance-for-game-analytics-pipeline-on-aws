@@ -674,7 +674,8 @@ module "dashboard_construct" {
   ingest_mode                         = local.config.INGEST_MODE
   game_events_stream_name             = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" || local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? aws_kinesis_stream.game_events_stream[0].name : ""
   game_events_firehose_name           = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.streaming_ingestion_construct[0].game_events_firehose_name : ""
-  events_processing_function          = module.lambda_construct.events_processing_function_arn
+  events_processing_function          = module.lambda_construct.events_processing_function_name
+  events_processing_function_arn      = module.lambda_construct.events_processing_function_arn
   analytics_processing_function       = local.config.REAL_TIME_ANALYTICS == true ? module.flink_construct[0].kinesis_metrics_stream_name : ""
   api_gateway_name                    = module.games_api_construct.game_analytics_api_name
   api_stage_name                      = module.games_api_construct.game_analytics_api_stage_name
