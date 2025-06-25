@@ -54,7 +54,7 @@ export class DataLakeConstruct extends Construct {
       {
         catalogId: cdk.Aws.ACCOUNT_ID,
         databaseInput: {
-          description: `Database for game analytics events for stack: ${cdk.Aws.STACK_NAME}`,
+          description: `Database for game analytics events for workload: ${props.config.WORKLOAD_NAME}`,
           locationUri: props.analyticsBucket.s3UrlForObject(),
           name: props.config.EVENTS_DATABASE
         },
@@ -68,7 +68,7 @@ export class DataLakeConstruct extends Construct {
       this,
       "GameAnalyticsWorkgroup",
       {
-        name: `${cdk.Aws.STACK_NAME}-Workgroup`,
+        name: `${props.config.WORKLOAD_NAME}-Workgroup`,
         description: "Default workgroup for the solution workload",
         recursiveDeleteOption: true, // delete the associated queries when stack is deleted
         state: "ENABLED",

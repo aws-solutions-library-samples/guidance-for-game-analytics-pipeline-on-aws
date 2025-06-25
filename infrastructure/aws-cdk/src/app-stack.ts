@@ -191,13 +191,13 @@ export class InfrastructureStack extends cdk.Stack {
     });
 
     const snsEncryptionKeyAlias = new kms.Alias(this, "SnsEncryptionKeyAlias", {
-      aliasName: `alias/aws_game_analytics/${cdk.Aws.STACK_NAME}/SnsEncryptionKey`,
+      aliasName: `alias/aws_game_analytics/${props.config.WORKLOAD_NAME}/SnsEncryptionKey`,
       targetKey: snsEncryptionKey,
     });
 
     // Notification topic for alarms
     const notificationsTopic = new sns.Topic(this, "Notifications", {
-      displayName: `Notifications-${cdk.Aws.STACK_NAME}`,
+      displayName: `${props.config.WORKLOAD_NAME}-Notifications`,
       masterKey: snsEncryptionKeyAlias,
     });
 
@@ -520,7 +520,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "PipelineOperationsDashboardOutput", {
       description: "CloudWatch Dashboard for viewing pipeline metrics",
-      value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#dashboards:name=PipelineOpsDashboard_${cdk.Aws.STACK_NAME};start=PT1H`,
+      value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#dashboards:name=PipelineOpsDashboard_${props.config.WORKLOAD_NAME};start=PT1H`,
     });
   }
 }

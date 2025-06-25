@@ -221,7 +221,7 @@ export class ApiConstruct extends Construct {
       this,
       "GameAnalyticsApi",
       {
-        restApiName: `GameAnalyticsApi-${cdk.Aws.STACK_NAME}`,
+        restApiName: `${props.config.WORKLOAD_NAME}-GameAnalyticsApi`,
         // defaultCorsPreflightOptions: {
         //     allowHeaders: ["authorization", "content-type"],
         //     allowMethods: apigateway.Cors.ALL_METHODS,

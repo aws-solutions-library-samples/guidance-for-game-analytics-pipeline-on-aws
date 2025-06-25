@@ -258,7 +258,7 @@ resource "aws_kms_alias" "sns_encryption_key_alias" {
 
 // Notification topic for alarms
 resource "aws_sns_topic" "notifications" {
-  name = "${local.config.WORKLOAD_NAME}-Notifications-${local.config.WORKLOAD_NAME}"
+  name = "${local.config.WORKLOAD_NAME}-Notifications"
   kms_master_key_id = aws_kms_alias.sns_encryption_key_alias.target_key_id
 }
 
