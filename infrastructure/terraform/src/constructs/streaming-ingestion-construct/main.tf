@@ -112,9 +112,22 @@ locals {
   s3_timestamp_prefix = "year=!{timestamp:YYYY}/month=!{timestamp:MM}/day=!{timestamp:dd}"
 }
 
+resource "random_string" "stack-random-id-suffix" {
+  length  = 8
+  special = false
+  upper   = false
+
+  // trigger firehose replacement when delivery policy changes (have to delete/replace for change from DIRECT_BATCH to KINESIS_DATA_STREAMS)
+  lifecycle {
+    replace_triggered_by = [
+      aws_iam_role_policy.firehose_delivery_policy.policy
+    ]
+  }
+}
+
 # Kinesis Firehose Delivery Stream
 resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
-  name        = "${var.stack_name}-game-events-firehose"
+  name        = "${var.stack_name}-game-events-firehose-${random_string.stack-random-id-suffix.result}"
   destination = var.enable_apache_iceberg_support ? "iceberg" : "extended_s3"
 
   dynamic "kinesis_source_configuration" {
@@ -272,6 +285,13 @@ resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
         }
       }
     }
+  }
+
+  // trigger firehose replacement when delivery policy changes (have to delete/replace for change from DIRECT_BATCH to KINESIS_DATA_STREAMS)
+  lifecycle {
+    replace_triggered_by = [
+      aws_iam_role_policy.firehose_delivery_policy.policy
+    ]
   }
 }
 
