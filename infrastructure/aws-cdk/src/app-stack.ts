@@ -293,7 +293,7 @@ export class InfrastructureStack extends cdk.Stack {
     var managedFlinkConstruct;
     var streamingIngestionConstruct;
     var opensearchConstruct;
-    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT" ) {
+    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT") {
       gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
         (props.config.STREAM_PROVISIONED === true) ? {
           shardCount: props.config.STREAM_SHARD_COUNT,
@@ -301,7 +301,7 @@ export class InfrastructureStack extends cdk.Stack {
         } : {
           streamMode: kinesis.StreamMode.ON_DEMAND,
         });
-      
+
       if (props.config.REAL_TIME_ANALYTICS === true && gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
         // Enables Managed Flink and all metrics surrounding it
         managedFlinkConstruct = new ManagedFlinkConstruct(
@@ -323,6 +323,17 @@ export class InfrastructureStack extends cdk.Stack {
             config: props.config
           }
         )
+
+        new cdk.CfnOutput(this, "FlinkAppOutput", {
+          description:
+            "Name of the Flink Application for game analytics",
+          value: managedFlinkConstruct.managedFlinkApp.ref,
+        });
+        new cdk.CfnOutput(this, "MetricOutputStreamARN", {
+          description:
+            "ARN of the Kinesis Stream that recieves aggregated metrics from the Flink application",
+          value: managedFlinkConstruct.metricOutputStream.streamArn,
+        });
       }
     }
 
@@ -428,6 +439,30 @@ export class InfrastructureStack extends cdk.Stack {
           config: props.config,
         }
       );
+
+      // CFN outputs for given configuration
+      new cdk.CfnOutput(this, "GameEventsDatabaseOutput", {
+        description: "Glue Catalog Database for storing game analytics events",
+        value: dataLakeConstruct.gameEventsDatabase.ref,
+      });
+
+      new cdk.CfnOutput(this, "GameEventsEtlJobOutput", {
+        description:
+          "ETL Job for processing game events into optimized format for analytics",
+        value: dataProcessingConstruct.gameEventsEtlJob.ref,
+      });
+
+      new cdk.CfnOutput(this, "GameEventsIcebergJobOutput", {
+        description:
+          "ETL Job for transform existing game events into Apache Iceberg table format using Amazon Glue",
+        value: dataProcessingConstruct.gameEventsIcebergJob.ref,
+      });
+
+      new cdk.CfnOutput(this, "GlueWorkflowConsoleLinkOutput", {
+        description:
+          "Link to the AWS Glue Workflows console page to view details of the workflow",
+        value: `https://console.aws.amazon.com/glue/home?region=${cdk.Aws.REGION}#etl:tab=workflows;workflowView=workflow-list`,
+      });
     }
 
     // ---- API ENDPOINT ---- /
@@ -499,12 +534,10 @@ export class InfrastructureStack extends cdk.Stack {
       value: analyticsBucket.bucketName,
     });
 
-    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" && gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
-      new cdk.CfnOutput(this, "EventsStreamOutput", {
-        description: "Stream for ingestion of raw events",
-        value: gamesEventsStream.streamName,
-      });
-    }
+    new cdk.CfnOutput(this, "ApiGatewayExecutionLogs", {
+      description: "CloudWatch Log Group containing the API execution logs",
+      value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#logsV2:log-groups/log-group/API-Gateway-Execution-Logs_${gamesApiConstruct.gameAnalyticsApi.restApiId}%252F${gamesApiConstruct.gameAnalyticsApi.deploymentStage.stageName}`,
+    });
 
     new cdk.CfnOutput(this, "ApplicationsTableOutput", {
       description:
@@ -512,11 +545,17 @@ export class InfrastructureStack extends cdk.Stack {
       value: applicationsTable.tableName,
     });
 
-    new cdk.CfnOutput(this, "GlueWorkflowConsoleLinkOutput", {
-      description:
-        "Link to the AWS Glue Workflows console page to view details of the workflow",
-      value: `https://console.aws.amazon.com/glue/home?region=${cdk.Aws.REGION}#etl:tab=workflows;workflowView=workflow-list`,
+    new cdk.CfnOutput(this, "GamesAnalyticsApiEndpoint", {
+      description: "Invoke path for API",
+      value: gamesApiConstruct.gameAnalyticsApi.deploymentStage.urlForPath(),
     });
+
+    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" && gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
+      new cdk.CfnOutput(this, "GameEventsStreamOutput", {
+        description: "Stream for ingestion of raw events",
+        value: gamesEventsStream.streamName,
+      });
+    }
 
     new cdk.CfnOutput(this, "PipelineOperationsDashboardOutput", {
       description: "CloudWatch Dashboard for viewing pipeline metrics",

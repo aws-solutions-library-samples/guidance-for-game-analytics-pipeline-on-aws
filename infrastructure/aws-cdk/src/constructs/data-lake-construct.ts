@@ -196,10 +196,5 @@ export class DataLakeConstruct extends Construct {
     this.gameEventsDatabase = gameEventsDatabase;
     this.rawEventsTable = rawEventsTable;
     this.gameAnalyticsWorkgroup = gameAnalyticsWorkgroup;
-
-    new cdk.CfnOutput(this, "GameEventsDatabaseOutput", {
-      description: "Glue Catalog Database for storing game analytics events",
-      value: gameEventsDatabase.ref,
-    });
   }
 }

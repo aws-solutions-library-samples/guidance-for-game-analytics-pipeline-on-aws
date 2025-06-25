@@ -40,6 +40,8 @@ const defaultProps: Partial<DataProcessingConstructProps> = {};
  * Creates Glue to turn analytics s3 bucket into Datalake. Creates Jobs that can be used to process s3 data for Athena.
  */
 export class DataProcessingConstruct extends Construct {
+public readonly gameEventsEtlJob: glueCfn.CfnJob;
+  public readonly gameEventsIcebergJob: glueCfn.CfnJob;
 
   constructor(parent: Construct, name: string, props: DataProcessingConstructProps) {
     super(parent, name);
@@ -397,17 +399,7 @@ export class DataProcessingConstruct extends Construct {
     );
     glueCrawlerStatusEventsRule.node.addDependency(eventsCrawler);
 
-
-    new cdk.CfnOutput(this, "GameEventsEtlJobOutput", {
-      description:
-        "ETL Job for processing game events into optimized format for analytics",
-      value: gameEventsEtlJob.ref,
-    });
-
-    new cdk.CfnOutput(this, "GameEventsIcebergJobOutput", {
-      description:
-        "ETL Job for transform existing game events into Apache Iceberg table format using Amazon Glue",
-      value: gameEventsIcebergJob.ref,
-    });
+    this.gameEventsEtlJob = gameEventsEtlJob;
+    this.gameEventsIcebergJob = gameEventsIcebergJob;
   }
 }
