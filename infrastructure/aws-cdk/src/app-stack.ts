@@ -324,6 +324,7 @@ export class InfrastructureStack extends cdk.Stack {
           }
         )
 
+        // cfn outputs if setting is enabled
         new cdk.CfnOutput(this, "FlinkAppOutput", {
           description:
             "Name of the Flink Application for game analytics",
@@ -334,7 +335,17 @@ export class InfrastructureStack extends cdk.Stack {
             "ARN of the Kinesis Stream that recieves aggregated metrics from the Flink application",
           value: managedFlinkConstruct.metricOutputStream.streamArn,
         });
+
+        new cdk.CfnOutput(this, "OpenSearchDashboardEndpoint", {
+          description: "OpenSearch Dashboard for viewing real-time metrics",
+          value: `https://application-${opensearchConstruct.gapInterface.name}-${opensearchConstruct.gapInterface.attrId}.${cdk.Aws.REGION}.opensearch.amazonaws.com/`
+        });
       }
+      // cfn outputs if setting is enabled
+      new cdk.CfnOutput(this, "GameEventsStreamOutput", {
+        description: "Stream for ingestion of raw events",
+        value: gamesEventsStream.streamName,
+      });
     }
 
     // ---- Redshift ---- //
@@ -549,13 +560,6 @@ export class InfrastructureStack extends cdk.Stack {
       description: "Invoke path for API",
       value: gamesApiConstruct.gameAnalyticsApi.deploymentStage.urlForPath(),
     });
-
-    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" && gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
-      new cdk.CfnOutput(this, "GameEventsStreamOutput", {
-        description: "Stream for ingestion of raw events",
-        value: gamesEventsStream.streamName,
-      });
-    }
 
     new cdk.CfnOutput(this, "PipelineOperationsDashboardOutput", {
       description: "CloudWatch Dashboard for viewing pipeline metrics",

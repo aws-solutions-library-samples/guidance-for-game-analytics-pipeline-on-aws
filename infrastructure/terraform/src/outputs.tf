@@ -55,6 +55,11 @@ output "flink_app_output" {
   value       = local.config.REAL_TIME_ANALYTICS ? module.flink_construct[0].flink_app_output : ""
 }
 
+output "opensearch_dashboard_endpoint" {
+  value       = local.config.REAL_TIME_ANALYTICS ? module.opensearch_construct[0].opensearch_dashboard_endpoint : ""
+  description = "OpenSearch Dashboard for viewing real-time metrics"
+}
+
 output "kinesis_metric_output_stream_arn" {
   description = "The name of the kinesis stream containing the aggregated metrics"
   value       = local.config.REAL_TIME_ANALYTICS ? module.flink_construct[0].kinesis_metrics_stream_arn : ""
