@@ -117,6 +117,14 @@ The Game Analytics Pipeline can be deployed using [AWS Cloud Development Kit (CD
 
 ---
 
+### AWS CLI Configuration
+
+The AWS CLI must be properly configured with credentials to your AWS account before use. The `aws configure` or `aws configure sso` commands in your development enviornment terminal are the fastest way to set up your AWS CLI depending on your credential method. Based on the credential method you prefer, the AWS CLI prompts you for the relevant information. 
+
+More information about the aws configure command can be found in the documentation for the [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html#getting-started-quickstart-new).
+
+---
+
 ## Deployment
 
 !!! Info
@@ -143,6 +151,8 @@ npm run deploy.bootstrap
 npm run deploy
 ```
 
+**After deployment is complete, a list of outputs will be posted to the terminal. These are names and references to relevant deployed assets from the stack. Please note these for further reference.**
+
 ---
 
 ## Start initial Application and API
@@ -151,9 +161,6 @@ Before sending events to the pipeline, an Application and corresponding Authoriz
 
 1. The collection file is located at `/resources/game-analytics-pipeline-postman-collection.json`
 2. 
-	- Postman: 
-	- Bruno: 
-
 === "Postman"
 
 	1. For instructions on how to import a collection, refer to the documentation for your selected API Client: [Import Postman data](https://learning.postman.com/docs/getting-started/importing-and-exporting/importing-data/#import-postman-data)
@@ -181,6 +188,22 @@ If you have Redshift Mode enabled, enable the materialized views and remaining i
 
 ---
 
+### Apache Iceberg Only - Configure Table Partition Spec
+
+If the `ENABLE_APACHE_ICEBERG_SUPPORT` configuration is set to `true`, a basic Apache Iceberg table is created in the glue catalog with the table name specified with `RAW_EVENTS_TABLE` under the database specified with `EVENTS_DATABASE`. 
+
+By default, this table does not contain a configured partition specification. To enable partitioning, a Glue job must be run before data is ingested to configure the table.
+
+1. Locate the name of the iceberg setup job from the deployment outputs. This name of the job is the value of `CentralizedGameAnalytics.IcebergSetupJob` when using CDK or `iceberg_setup_job` when using Terraform.
+2. Navigate to the [Glue AWS Console](http://console.aws.amazon.com/glue). Ensure that you are in the same region that the stack is deployed in
+3. On the left sidebar, navigate to ETL jobs
+4. Locate the deployed setup job with the name retrieved from Step 1 in the list of jobs. Use the search bar if necessary
+5. Click on the checkbox to the left of the name of the job. 
+6. Click on **Run job** at the top right of the job list to start the job. 
+7. Navigate to the job run status using the popup at the top of the page. Monitor the status until the job is complete and successful.
+
+---
+
 ### Real Time Only - Starting Flink
 
 If the `REAL_TIME_ANALYTICS` configuration is set to `true`, a Flink Application will be created. This application needs to be in the `RUNNING` state for incoming events to be processed in real time. 
@@ -198,6 +221,7 @@ If the `REAL_TIME_ANALYTICS` configuration is set to `true`, a Flink Application
 For more information and troubleshooting, refer to the documentation for [Run a Managed Service for Apache Flink application](https://docs.aws.amazon.com/managed-flink/latest/java/how-running-apps.html).
 
 ---
+
 
 ## Send Events to the Pipeline
 
