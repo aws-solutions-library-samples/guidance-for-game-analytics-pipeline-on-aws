@@ -96,12 +96,12 @@ resource "aws_iam_role_policy" "flink_app_log_access_policy" {
       {
         Action   = "logs:DescribeLogGroups"
         Effect   = "Allow"
-        Resource = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:*"
+        Resource = "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:*"
       },
       {
         Action   = "logs:DescribeLogStreams"
         Effect   = "Allow"
-        Resource = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:${aws_cloudwatch_log_group.flink_log_group.name}:log-stream:*"
+        Resource = "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:${aws_cloudwatch_log_group.flink_log_group.name}:log-stream:*"
       },
       {
         Action   = "logs:PutLogEvents"
@@ -174,7 +174,7 @@ resource "aws_kinesisanalyticsv2_application" "managed_flink_app" {
         property_map = {
           "kinesis.stream.arn"            = "${var.game_events_stream_arn}"
           "kinesis.stream.name"           = "${var.game_events_stream_name}"
-          "aws.region"                    = "${data.aws_region.current.name}"
+          "aws.region"                    = "${data.aws_region.current.region}"
           "flink.stream.initpos"          = "LATEST"
           "flink.stream.max_record_count" = "10000"
           "kinesis.stream.interval"       = "500"
@@ -186,7 +186,7 @@ resource "aws_kinesisanalyticsv2_application" "managed_flink_app" {
 
         property_map = {
           "kinesis.stream.arn" = aws_kinesis_stream.metric_output_stream.arn
-          "aws.region"         = "${data.aws_region.current.name}"
+          "aws.region"         = "${data.aws_region.current.region}"
         }
       }
     }

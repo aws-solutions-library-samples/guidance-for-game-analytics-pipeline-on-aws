@@ -615,7 +615,7 @@ export class CloudWatchDashboardConstruct extends Construct {
     }
 
     const dashboard = new cloudwatch.Dashboard(this, "PipelineOpsDashboard", {
-      dashboardName: `PipelineOpsDashboard_${cdk.Aws.STACK_NAME}`,
+      dashboardName: `${props.config.WORKLOAD_NAME}_PipelineOpsDashboard`,
       widgets: widgets,
     });
   }

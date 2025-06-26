@@ -63,7 +63,7 @@ export class ApiConstruct extends Construct {
     }
 
     if (
-      props.config.DATA_PLATFORM_MODE === "DATA_LAKE" &&
+      props.config.INGEST_MODE === "DIRECT_BATCH" &&
       props.gameEventsFirehose != undefined
     ) {
       apiGatewayRole.addToPolicy(
@@ -221,7 +221,7 @@ export class ApiConstruct extends Construct {
       this,
       "GameAnalyticsApi",
       {
-        restApiName: `GameAnalyticsApi-${cdk.Aws.STACK_NAME}`,
+        restApiName: `${props.config.WORKLOAD_NAME}-GameAnalyticsApi`,
         // defaultCorsPreflightOptions: {
         //     allowHeaders: ["authorization", "content-type"],
         //     allowMethods: apigateway.Cors.ALL_METHODS,
@@ -962,15 +962,5 @@ export class ApiConstruct extends Construct {
       );
 
     this.gameAnalyticsApi = gameAnalyticsApi;
-
-    new cdk.CfnOutput(this, "ApiBasePath", {
-      description: "The base path of the Solution API",
-      value: `${gameAnalyticsApi.domainName}/${gameAnalyticsApi.deploymentStage.stageName}`,
-    });
-
-    new cdk.CfnOutput(this, "ApiGatewayExecutionLogs", {
-      description: "CloudWatch Log Group containing the API execution logs",
-      value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#logsV2:log-groups/log-group/API-Gateway-Execution-Logs_${gameAnalyticsApi.restApiId}%252F${gameAnalyticsApi.deploymentStage.stageName}`,
-    });
   }
 }

@@ -75,9 +75,9 @@ resource "aws_iam_role_policy" "etl_glue_table_access_policy" {
           "glue:UpdateTable"
         ]
         Resource = [
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog",
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.events_database}/*",
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${var.events_database}"
+          "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog",
+          "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:table/${var.events_database}/*",
+          "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:database/${var.events_database}"
         ]
       }
     ]
@@ -100,8 +100,8 @@ resource "aws_iam_role_policy" "etl_glue_database_access_policy" {
           "glue:UpdateDatabase",
         ]
         Resource = [
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog",
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${var.events_database}"
+          "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog",
+          "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:database/${var.events_database}"
         ]
       }
     ]
@@ -124,7 +124,7 @@ resource "aws_iam_role_policy" "etl_kms_access_policy" {
           "kms:GenerateDataKey",
         ]
         Resource = [
-          "arn:aws:kms:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:alias/aws/glue",
+          "arn:aws:kms:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:alias/aws/glue",
         ]
       }
     ]
@@ -205,9 +205,9 @@ resource "aws_iam_role_policy" "crawler_glue_table_access_policy" {
           "glue:UpdateTable"
         ]
         Resource = [
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog",
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.events_database}/*",
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${var.events_database}"
+          "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog",
+          "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:table/${var.events_database}/*",
+          "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:database/${var.events_database}"
         ]
       }
     ]
@@ -230,8 +230,8 @@ resource "aws_iam_role_policy" "crawler_glue_database_access_policy" {
           "glue:UpdateDatabase",
         ]
         Resource = [
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog",
-          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${var.events_database}"
+          "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog",
+          "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:database/${var.events_database}"
         ]
       }
     ]
@@ -254,7 +254,7 @@ resource "aws_iam_role_policy" "crawler_kms_access_policy" {
           "kms:GenerateDataKey",
         ]
         Resource = [
-          "arn:aws:kms:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:alias/aws/glue",
+          "arn:aws:kms:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:alias/aws/glue",
         ]
       }
     ]

@@ -109,7 +109,7 @@ resource "aws_glue_catalog_table" "raw_events_table" {
     }
     columns {
       name = "event_timestamp"
-      type = "bigint"
+      type = "timestamp"
     }
     columns {
       name = "app_version"
@@ -132,4 +132,116 @@ resource "aws_glue_catalog_table" "raw_events_table" {
       type = "string"
     }
   }
+}
+
+/* The following sets up automatic Glue table optimization for Apache Iceberg */
+resource "aws_iam_role" "glue_optimization_service_role" {
+  count = var.enable_apache_iceberg_support ? 1 : 0
+  name = "${var.stack_name}-glue-optimization-service-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "glue.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "glue_optimization_service_role_policy" {
+  count = var.enable_apache_iceberg_support ? 1 : 0
+  name = "${var.stack_name}-glue-iceberg-table-optimization"
+  role = aws_iam_role.glue_optimization_service_role[0].name
+
+  policy = jsonencode({
+    Version: "2012-10-17",
+    Statement = [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:PutObject",
+                    "s3:GetObject",
+                    "s3:DeleteObject"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::${var.analytics_bucket_name}/*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:ListBucket"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::${var.analytics_bucket_name}"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "glue:UpdateTable",
+                    "glue:GetTable"
+                ],
+                "Resource": [
+                    aws_glue_catalog_table.raw_events_table.arn,
+                    aws_glue_catalog_database.game_events_database.arn,
+                    "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                ],
+                "Resource": [
+                    "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws-glue/iceberg-compaction/logs:*",
+                    "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws-glue/iceberg-retention/logs:*",
+                    "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws-glue/iceberg-orphan-file-deletion/logs:*"
+                ]
+            }
+        ]
+  })
+}
+
+resource "aws_glue_catalog_table_optimizer" "raw_events_compaction_optimizer" {
+  count = var.enable_apache_iceberg_support ? 1 : 0
+  catalog_id = data.aws_caller_identity.current.account_id
+  database_name = aws_glue_catalog_database.game_events_database.name
+  table_name = aws_glue_catalog_table.raw_events_table.name
+  configuration {
+    role_arn = aws_iam_role.glue_optimization_service_role[0].arn
+    enabled  = true
+  }
+  type = "compaction"
+}
+
+resource "aws_glue_catalog_table_optimizer" "raw_events_retention_optimizer" {
+  count = var.enable_apache_iceberg_support ? 1 : 0
+  catalog_id = data.aws_caller_identity.current.account_id
+  database_name = aws_glue_catalog_database.game_events_database.name
+  table_name = aws_glue_catalog_table.raw_events_table.name
+  configuration {
+    role_arn = aws_iam_role.glue_optimization_service_role[0].arn
+    enabled  = true
+  }
+  type = "retention"
+}
+
+resource "aws_glue_catalog_table_optimizer" "raw_events_orphan_file_deletion_optimizer" {
+  count = var.enable_apache_iceberg_support ? 1 : 0
+  catalog_id = data.aws_caller_identity.current.account_id
+  database_name = aws_glue_catalog_database.game_events_database.name
+  table_name = aws_glue_catalog_table.raw_events_table.name
+  configuration {
+    role_arn = aws_iam_role.glue_optimization_service_role[0].arn
+    enabled  = true
+  }
+  type = "orphan_file_deletion"
 }

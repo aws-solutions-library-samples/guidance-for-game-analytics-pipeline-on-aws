@@ -39,17 +39,7 @@ resource "aws_iam_role_policy" "firehose_delivery_policy" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "kinesis:DescribeStream",
-          "kinesis:GetShardIterator",
-          "kinesis:GetRecords",
-          "kinesis:ListShards"
-        ]
-        Effect = "Allow"
-        Resource = var.game_events_stream_arn
-      },
+    Statement = concat([
       {
         Action = [
           "s3:AbortMultipartUpload",
@@ -88,11 +78,11 @@ resource "aws_iam_role_policy" "firehose_delivery_policy" {
         ]
         Effect = "Allow"
         Resource = [
-          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.game_events_database_name}/*",
-          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${var.game_events_database_name}",
-          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog",
-          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:registry/*",
-          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:schema/*"
+          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:table/${var.game_events_database_name}/*",
+          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:database/${var.game_events_database_name}",
+          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog",
+          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:registry/*",
+          "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:schema/*"
         ]
       },
       {
@@ -100,7 +90,20 @@ resource "aws_iam_role_policy" "firehose_delivery_policy" {
         Effect = "Allow"
         Resource = aws_cloudwatch_log_group.firehose_log_group.arn
       }
-    ]
+    ], 
+    (var.ingest_mode == "KINESIS_DATA_STREAMS") ? [{
+        Action = [
+          "kinesis:DescribeStream",
+          "kinesis:GetShardIterator",
+          "kinesis:GetRecords",
+          "kinesis:ListShards"
+        ]
+        Effect = "Allow"
+        Resource = var.game_events_stream_arn
+      }] : [])
+    
+    
+    
   })
 }
 
@@ -109,9 +112,22 @@ locals {
   s3_timestamp_prefix = "year=!{timestamp:YYYY}/month=!{timestamp:MM}/day=!{timestamp:dd}"
 }
 
+resource "random_string" "stack-random-id-suffix" {
+  length  = 8
+  special = false
+  upper   = false
+
+  // trigger firehose replacement when delivery policy changes (have to delete/replace for change from DIRECT_BATCH to KINESIS_DATA_STREAMS)
+  lifecycle {
+    replace_triggered_by = [
+      aws_iam_role_policy.firehose_delivery_policy.policy
+    ]
+  }
+}
+
 # Kinesis Firehose Delivery Stream
 resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
-  name        = "${var.stack_name}-game-events-firehose"
+  name        = "${var.stack_name}-game-events-firehose-${random_string.stack-random-id-suffix.result}"
   destination = var.enable_apache_iceberg_support ? "iceberg" : "extended_s3"
 
   dynamic "kinesis_source_configuration" {
@@ -126,7 +142,7 @@ resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
     for_each = var.enable_apache_iceberg_support ? [1] : []
     content {
       role_arn           = aws_iam_role.firehose_role.arn
-      catalog_arn        = "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog"
+      catalog_arn        = "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog"
       buffering_size     = 128
       buffering_interval   = var.dev_mode ? 60 : 900
 
@@ -139,7 +155,7 @@ resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
         database_name = var.game_events_database_name
         table_name = var.raw_events_table_name
         s3_error_output_prefix = "firehose-errors/!{firehose:error-output-type}/"
-        unique_keys = ["event_timestamp"]
+        unique_keys = ["event_id"]
       }
 
       cloudwatch_logging_options {
@@ -264,11 +280,18 @@ resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
           role_arn      = aws_iam_role.firehose_role.arn
           database_name = var.game_events_database_name
           table_name    = var.raw_events_table_name
-          region        = data.aws_region.current.name
+          region        = data.aws_region.current.region
           version_id    = "LATEST"
         }
       }
     }
+  }
+
+  // trigger firehose replacement when delivery policy changes (have to delete/replace for change from DIRECT_BATCH to KINESIS_DATA_STREAMS)
+  lifecycle {
+    replace_triggered_by = [
+      aws_iam_role_policy.firehose_delivery_policy.policy
+    ]
   }
 }
 

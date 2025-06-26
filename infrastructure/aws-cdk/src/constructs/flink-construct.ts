@@ -266,21 +266,5 @@ export class ManagedFlinkConstruct extends Construct {
 
     this.managedFlinkApp = managedFlinkApp;
     this.metricOutputStream = metricOutputStream;
-
-    new cdk.CfnOutput(this, "FlinkAppOutput", {
-      description:
-        "Name of the Flink Application for game analytics",
-      value: managedFlinkApp.ref,
-    });
-    new cdk.CfnOutput(this, "MetricOutputStreamARN", {
-      description:
-        "ARN of the Kinesis Stream that recieves aggregated metrics from the Flink application",
-      value: metricOutputStream.streamArn,
-    });
-    new cdk.CfnOutput(this, "FlinkAnalyticsCloudWatch", {
-      description:
-        "Link to the Amazon CloudWatch namespace where custom metrics are published by the solution AnalyticsProcessingFunction.",
-      value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#metricsV2:graph=~();query=${cdk.Aws.STACK_NAME}/AWSGameAnalytics`,
-    });
   }
 }

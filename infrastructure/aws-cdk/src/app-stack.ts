@@ -191,38 +191,38 @@ export class InfrastructureStack extends cdk.Stack {
     });
 
     const snsEncryptionKeyAlias = new kms.Alias(this, "SnsEncryptionKeyAlias", {
-      aliasName: `alias/aws_game_analytics/${cdk.Aws.STACK_NAME}/SnsEncryptionKey`,
+      aliasName: `alias/aws_game_analytics/${props.config.WORKLOAD_NAME}/SnsEncryptionKey`,
       targetKey: snsEncryptionKey,
     });
 
     // Notification topic for alarms
     const notificationsTopic = new sns.Topic(this, "Notifications", {
-      displayName: `Notifications-${cdk.Aws.STACK_NAME}`,
+      displayName: `${props.config.WORKLOAD_NAME}-Notifications`,
       masterKey: snsEncryptionKeyAlias,
     });
 
     // ---- DynamoDB Tables ---- //
 
     // Table organizes and manages different applications
-    const applicationsTable = new dynamodb.Table(this, "ApplicationsTable", {
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+    const applicationsTable = new dynamodb.TableV2(this, "ApplicationsTable", {
+      billing: dynamodb.Billing.onDemand(),
       partitionKey: {
         name: "application_id",
         type: dynamodb.AttributeType.STRING,
       },
       pointInTimeRecovery: true,
-      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      encryption: dynamodb.TableEncryptionV2.dynamoOwnedKey(),
       removalPolicy: props.config.DEV_MODE
         ? cdk.RemovalPolicy.DESTROY
         : cdk.RemovalPolicy.RETAIN,
     });
 
     // Managed authorizations for applications (Api keys, etc.)
-    const authorizationsTable = new dynamodb.Table(
+    const authorizationsTable = new dynamodb.TableV2(
       this,
       "AuthorizationsTable",
       {
-        billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+        billing: dynamodb.Billing.onDemand(),
         partitionKey: {
           name: "api_key_id",
           type: dynamodb.AttributeType.STRING,
@@ -232,7 +232,7 @@ export class InfrastructureStack extends cdk.Stack {
           type: dynamodb.AttributeType.STRING,
         },
         pointInTimeRecovery: true,
-        encryption: dynamodb.TableEncryption.AWS_MANAGED,
+        encryption: dynamodb.TableEncryptionV2.dynamoOwnedKey(),
         removalPolicy: props.config.DEV_MODE
           ? cdk.RemovalPolicy.DESTROY
           : cdk.RemovalPolicy.RETAIN,
@@ -293,7 +293,7 @@ export class InfrastructureStack extends cdk.Stack {
     var managedFlinkConstruct;
     var streamingIngestionConstruct;
     var opensearchConstruct;
-    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT" ) {
+    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT") {
       gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
         (props.config.STREAM_PROVISIONED === true) ? {
           shardCount: props.config.STREAM_SHARD_COUNT,
@@ -301,7 +301,7 @@ export class InfrastructureStack extends cdk.Stack {
         } : {
           streamMode: kinesis.StreamMode.ON_DEMAND,
         });
-      
+
       if (props.config.REAL_TIME_ANALYTICS === true && gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
         // Enables Managed Flink and all metrics surrounding it
         managedFlinkConstruct = new ManagedFlinkConstruct(
@@ -323,7 +323,29 @@ export class InfrastructureStack extends cdk.Stack {
             config: props.config
           }
         )
+
+        // cfn outputs if setting is enabled
+        new cdk.CfnOutput(this, "FlinkAppOutput", {
+          description:
+            "Name of the Flink Application for game analytics",
+          value: managedFlinkConstruct.managedFlinkApp.ref,
+        });
+        new cdk.CfnOutput(this, "MetricOutputStreamARN", {
+          description:
+            "ARN of the Kinesis Stream that recieves aggregated metrics from the Flink application",
+          value: managedFlinkConstruct.metricOutputStream.streamArn,
+        });
+
+        new cdk.CfnOutput(this, "OpenSearchDashboardEndpoint", {
+          description: "OpenSearch Dashboard for viewing real-time metrics",
+          value: `https://application-${opensearchConstruct.gapInterface.name}-${opensearchConstruct.gapInterface.attrId}.${cdk.Aws.REGION}.opensearch.amazonaws.com/`
+        });
       }
+      // cfn outputs if setting is enabled
+      new cdk.CfnOutput(this, "GameEventsStreamOutput", {
+        description: "Stream for ingestion of raw events",
+        value: gamesEventsStream.streamName,
+      });
     }
 
     // ---- Redshift ---- //
@@ -428,6 +450,30 @@ export class InfrastructureStack extends cdk.Stack {
           config: props.config,
         }
       );
+
+      // CFN outputs for given configuration
+      new cdk.CfnOutput(this, "GameEventsDatabaseOutput", {
+        description: "Glue Catalog Database for storing game analytics events",
+        value: dataLakeConstruct.gameEventsDatabase.ref,
+      });
+
+      new cdk.CfnOutput(this, "GameEventsEtlJobOutput", {
+        description:
+          "ETL Job for processing game events into optimized format for analytics",
+        value: dataProcessingConstruct.gameEventsEtlJob.ref,
+      });
+
+      new cdk.CfnOutput(this, "GameEventsIcebergJobOutput", {
+        description:
+          "ETL Job for transform existing game events into Apache Iceberg table format using Amazon Glue",
+        value: dataProcessingConstruct.gameEventsIcebergJob.ref,
+      });
+
+      new cdk.CfnOutput(this, "GlueWorkflowConsoleLinkOutput", {
+        description:
+          "Link to the AWS Glue Workflows console page to view details of the workflow",
+        value: `https://console.aws.amazon.com/glue/home?region=${cdk.Aws.REGION}#etl:tab=workflows;workflowView=workflow-list`,
+      });
     }
 
     // ---- API ENDPOINT ---- /
@@ -499,12 +545,10 @@ export class InfrastructureStack extends cdk.Stack {
       value: analyticsBucket.bucketName,
     });
 
-    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" && gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
-      new cdk.CfnOutput(this, "EventsStreamOutput", {
-        description: "Stream for ingestion of raw events",
-        value: gamesEventsStream.streamName,
-      });
-    }
+    new cdk.CfnOutput(this, "ApiGatewayExecutionLogs", {
+      description: "CloudWatch Log Group containing the API execution logs",
+      value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#logsV2:log-groups/log-group/API-Gateway-Execution-Logs_${gamesApiConstruct.gameAnalyticsApi.restApiId}%252F${gamesApiConstruct.gameAnalyticsApi.deploymentStage.stageName}`,
+    });
 
     new cdk.CfnOutput(this, "ApplicationsTableOutput", {
       description:
@@ -512,15 +556,14 @@ export class InfrastructureStack extends cdk.Stack {
       value: applicationsTable.tableName,
     });
 
-    new cdk.CfnOutput(this, "GlueWorkflowConsoleLinkOutput", {
-      description:
-        "Link to the AWS Glue Workflows console page to view details of the workflow",
-      value: `https://console.aws.amazon.com/glue/home?region=${cdk.Aws.REGION}#etl:tab=workflows;workflowView=workflow-list`,
+    new cdk.CfnOutput(this, "GamesAnalyticsApiEndpoint", {
+      description: "Invoke path for API",
+      value: gamesApiConstruct.gameAnalyticsApi.deploymentStage.urlForPath(),
     });
 
     new cdk.CfnOutput(this, "PipelineOperationsDashboardOutput", {
       description: "CloudWatch Dashboard for viewing pipeline metrics",
-      value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#dashboards:name=PipelineOpsDashboard_${cdk.Aws.STACK_NAME};start=PT1H`,
+      value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#dashboards:name=PipelineOpsDashboard_${props.config.WORKLOAD_NAME};start=PT1H`,
     });
   }
 }

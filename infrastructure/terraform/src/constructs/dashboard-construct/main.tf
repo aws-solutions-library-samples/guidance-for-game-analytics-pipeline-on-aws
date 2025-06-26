@@ -578,7 +578,7 @@ locals {
         }]
       ],
       "title": "Managed Flink Container Resource Utilization",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "yAxis": {
         "left": {
           "showUnits": false,
