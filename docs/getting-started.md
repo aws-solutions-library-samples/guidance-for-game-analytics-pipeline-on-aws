@@ -219,7 +219,7 @@ If the `ENABLE_APACHE_ICEBERG_SUPPORT` configuration is set to `true`, a basic A
 
 By default, this table does not contain a configured partition specification. To enable partitioning, a Glue job must be run before data is ingested to configure the table.
 
-1. Locate the name of the iceberg setup job from the deployment outputs. 
+1. Locate the name of the iceberg setup job from the deployment outputs. Note this down for later.
 	- The name of the job is the value of `CentralizedGameAnalytics.IcebergSetupJob` when using CDK.
 	- The name of the job is the value of `iceberg_setup_job` when using Terraform.
 2. Navigate to the [Glue AWS Console](http://console.aws.amazon.com/glue). Ensure that you are in the same region that the stack is deployed in
@@ -235,15 +235,19 @@ By default, this table does not contain a configured partition specification. To
 
 If the `REAL_TIME_ANALYTICS` configuration is set to `true`, a Flink Application will be created. This application needs to be in the `RUNNING` state for incoming events to be processed in real time. 
 
-1. Navigate to the AWS Console. Open the console for [Managed Apache Flink](https://console.aws.amazon.com/flink)
+1. Locate the name of the iceberg setup job from the deployment outputs. Note this down for later.
+	- The name of the job is the value of `CentralizedGameAnalytics.FlinkAppOutput` when using CDK.
+	- The name of the job is the value of `flink_app_output` when using Terraform.
 
-2. Click on the **Apache Flink applications** page on the side menu. 
+2. Navigate to the AWS Console. Open the console for [Managed Apache Flink](https://console.aws.amazon.com/flink)
 
-3. Locate the Flink Application created by Game Analytics Pipeline. The name will end in `-AnalyticsApplication` or contain `ManagedFlinkConstruct`. Click on the blue link under Application name to navigate to the control page.
+3. Click on the **Apache Flink applications** page on the side menu. 
 
-4. Click on the **Run** button at the top right of the menu. Configure the Snapshots option to **Run without snapshot** when starting for the first time. Click on the **Run** button again to start the application.
+4. Navigate to the application with the name matching the one retrieved from the step 1 output.
 
-5. Wait for the Status to show as **Running**
+5. Click on the **Run** button at the top right of the menu. Configure the Snapshots option to **Run without snapshot** when starting for the first time. Click on the **Run** button again to start the application.
+
+6. Wait for the Status to show as **Running**
 
 For more information and troubleshooting, refer to the documentation for [Run a Managed Service for Apache Flink application](https://docs.aws.amazon.com/managed-flink/latest/java/how-running-apps.html).
 
@@ -301,14 +305,19 @@ The request to send events to the solution API must include a valid API key in t
 		- If deployed using Terraform, this output is identified by `opensearch_dashboard_endpoint`
 	2. Paste the URL into your browser of choice. Ensure that you are logged in to the AWS console before proceeding. 
 	3. On the main dashboard page, click on **Create workspace** under Essentials
+		![Create Workspace](media/os_home.png)
 	4. On the next page, provide a name and description to the workspace
 	5. Under Associate data sources, click **Associate OpenSearch data sources**
+		![Associate Data Source](media/os_associate.png)
 	6. Select the Game Analytics Pipeline Metric Collection and click **Associate data sources**
+		![Data Source](media/os_datasource.png)
 	7. If needed, change the visibility of the workspace in the last section
 	8. Click Create workspace
 	9. On the left side, select **Index patterns** and click **Create index pattern**
+		![Create Workspace](media/os_index_home.png)
 	10. Select the associated data source and click Next
 	11. In the field for Index pattern name, enter `game_metrics`
+		![Create Workspace](media/os_index_pattern.png)
 	12. Create the index pattern
 
 	Using the created game_metrics index pattern you can create time series visualizations of the real-time metrics.
