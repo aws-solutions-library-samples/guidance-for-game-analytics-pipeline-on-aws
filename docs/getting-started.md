@@ -263,6 +263,27 @@ The request to send events to the solution API must include a valid API key in t
 
 	7. The view event_data is the materialized view which reads directly from the Kinesis Data Stream. The other views are essentially pre-made queries against the event_data materialized view.
 
+=== "Real-Time Analytics"
+
+	If `REAL_TIME_ANALYTICS` is set to `true`, an OpenSearch Serverless collection will be created to store and index the time series metrics. 
+
+	An acccompanying [OpenSearch UI Application](https://aws.amazon.com/blogs/big-data/amazon-opensearch-service-launches-the-next-generation-opensearch-ui/) is created to query and visualize the data emitted by real time analytics.
+
+	1. Locate the URL output of the application from deployment. If deployed using CDK, this output is identified by `OpenSearchDashboardEndpoint`. If deployed using Terraform, this output is identified by `opensearch_dashboard_endpoint`
+	2. Paste the URL into your browser of choice. Ensure that you are logged in to the AWS console before proceeding. 
+	3. On the main dashboard page, click on **Create workspace** under Essentials
+	4. On the next page, provide a name and description to the workspace
+	5. Under Associate data sources, click **Associate OpenSearch data sources**
+	6. Select the Game Analytics Pipeline Metric Collection and click **Associate data sources**
+	7. If needed, change the visibility of the workspace in the last section
+	8. Click Create workspace
+	9. On the left side, select **Index patterns** and click **Create index pattern**
+	10. Select the associated data source and click Next
+	11. In the field for Index pattern name, enter `game_metrics`
+	12. Create the index pattern
+
+	Using the created game_metrics index pattern you can create time series visualizations of the real-time metrics.
+
 ---
 
 ## Next Steps
