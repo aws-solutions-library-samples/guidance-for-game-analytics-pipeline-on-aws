@@ -17,6 +17,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { aws_glue as glue } from "aws-cdk-lib";
+import * as iam from "aws-cdk-lib/aws-iam";
 
 import * as glueCfn from "aws-cdk-lib/aws-glue";
 import * as sns from "aws-cdk-lib/aws-sns";
@@ -192,6 +193,100 @@ export class DataLakeConstruct extends Construct {
         }),
     });
     rawEventsTable.addDependency(gameEventsDatabase);
+
+    /* The following sets up automatic Glue table optimization for Apache Iceberg */
+    if (props.config.ENABLE_APACHE_ICEBERG_SUPPORT) {
+      const glueOptimizationServiceRole = new iam.Role(this, "GlueOptimizationServiceRole", {
+        assumedBy: new iam.ServicePrincipal("glue.amazonaws.com"),
+        path: "/",
+        managedPolicies: [
+          iam.ManagedPolicy.fromAwsManagedPolicyName(
+            "service-role/AWSGlueServiceRole"
+          ),
+        ],
+        inlinePolicies: {
+          'glue_optimization_service_role_policy': new iam.PolicyDocument({
+            statements: [
+              new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: [
+                  "s3:PutObject",
+                  "s3:GetObject",
+                  "s3:DeleteObject"
+                ],
+                resources: [
+                  `${props.analyticsBucket.bucketArn}/*`,
+                ],
+              }),
+              new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: ["s3:ListBucket"],
+                resources: [
+                  props.analyticsBucket.bucketArn
+                ],
+              }),
+              new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: [
+                  "glue:UpdateTable",
+                  "glue:GetTable"
+                ],
+                resources: [
+                  `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/${gameEventsDatabase.ref}/${rawEventsTable.ref}`,
+                  `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/${gameEventsDatabase.ref}`,
+                  `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`
+                ],
+              }),
+              new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: [
+                  "logs:CreateLogGroup",
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents"
+                ],
+                resources: [
+                  `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:/aws-glue/iceberg-compaction/logs:*`,
+                  `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:/aws-glue/iceberg-retention/logs:*`,
+                  `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:/aws-glue/iceberg-orphan-file-deletion/logs:*`
+                ],
+              })
+            ]
+          })
+        }
+      });
+
+      const rawEventsCompactionOptimizer = new glue.CfnTableOptimizer(this, "RawEventsCompactionOptimizer", {
+        catalogId: cdk.Aws.ACCOUNT_ID,
+        databaseName: gameEventsDatabase.ref,
+        tableName: rawEventsTable.ref,
+        tableOptimizerConfiguration: {
+          enabled: true,
+          roleArn: glueOptimizationServiceRole.roleArn,
+        },
+        type: 'compaction'
+      })
+
+      const rawEventsRetentionOptimizer = new glue.CfnTableOptimizer(this, "RawEventsRetentionOptimizer", {
+        catalogId: cdk.Aws.ACCOUNT_ID,
+        databaseName: gameEventsDatabase.ref,
+        tableName: rawEventsTable.ref,
+        tableOptimizerConfiguration: {
+          enabled: true,
+          roleArn: glueOptimizationServiceRole.roleArn,
+        },
+        type: 'retention'
+      })
+      const rawEventsOrphanOptimizer = new glue.CfnTableOptimizer(this, "RawEventsOrphanOptimizer", {
+        catalogId: cdk.Aws.ACCOUNT_ID,
+        databaseName: gameEventsDatabase.ref,
+        tableName: rawEventsTable.ref,
+        tableOptimizerConfiguration: {
+          enabled: true,
+          roleArn: glueOptimizationServiceRole.roleArn
+        },
+        type: 'orphan_file_deletion'
+      })
+    }
 
     this.gameEventsDatabase = gameEventsDatabase;
     this.rawEventsTable = rawEventsTable;
