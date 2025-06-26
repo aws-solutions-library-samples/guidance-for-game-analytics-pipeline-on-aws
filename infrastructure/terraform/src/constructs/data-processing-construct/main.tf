@@ -169,7 +169,8 @@ resource "aws_iam_role_policy" "crawler_s3_access_policy" {
           "s3:ListBucket",
           "s3:GetObject",
           "s3:PutObject",
-          "s3:DeleteObject"
+          "s3:DeleteObject",
+          "s3:GetBucketLocation"
         ]
         Resource = [
           "arn:aws:s3:::${var.analytics_bucket_name}",
@@ -195,6 +196,8 @@ resource "aws_iam_role_policy" "crawler_glue_table_access_policy" {
           "glue:GetPartition",
           "glue:GetPartitions",
           "glue:BatchCreatePartition",
+          "glue:BatchDeletePartition",
+          "glue:DeletePartition",
           "glue:CreatePartition",
           "glue:CreateTable",
           "glue:GetTable",
@@ -358,6 +361,38 @@ resource "aws_glue_job" "game_events_etl_iceberg_job" {
     "--job-bookmark-option"              = "job-bookmark-enable"
     "--TempDir"                          = "s3://${var.analytics_bucket_name}/${var.glue_tmp_prefix}"
     "--conf" = "spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions --conf spark.sql.catalog.glue_catalog=org.apache.iceberg.spark.SparkCatalog --conf spark.sql.catalog.glue_catalog.catalog-impl=org.apache.iceberg.aws.glue.GlueCatalog --conf spark.sql.catalog.glue_catalog.io-impl=org.apache.iceberg.aws.s3.S3FileIO --conf spark.sql.catalog.glue_catalog.warehouse=file:///tmp/spark-warehouse"
+  }
+  
+}
+
+# glue iceberg setup job
+resource "aws_glue_job" "iceberg_setup_job" {
+  name     = "${var.stack_name}-Iceberg-Setup"
+  description = "Glue job for setting up a new Iceberg table, for stack ${var.stack_name} to Apache Iceberg table."
+  
+  glue_version = "5.0"
+  max_retries  = 0
+  max_capacity = 2
+  timeout      = 30
+
+  execution_property {
+    max_concurrent_runs = 1
+  }
+
+  command {
+    name = "glueetl"
+    python_version = "3"
+    script_location = "s3://${var.analytics_bucket_name}/glue-scripts/iceberg_configuration.py"
+  }
+
+  role_arn = aws_iam_role.game_events_etl_role.arn
+
+  default_arguments = {
+    "--DB_NAME"= var.events_database,
+    "--TABLE_NAME"= var.raw_events_table_name,
+    "--conf"= "spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions --conf spark.sql.catalog.glue_catalog=org.apache.iceberg.spark.SparkCatalog --conf spark.sql.catalog.glue_catalog.warehouse=s3://${var.analytics_bucket_name}/ --conf spark.sql.catalog.glue_catalog.catalog-impl=org.apache.iceberg.aws.glue.GlueCatalog --conf spark.sql.catalog.glue_catalog.io-impl=org.apache.iceberg.aws.s3.S3FileIO",
+    "--datalake-formats"= "iceberg",
+    "--enable-glue-datacatalog"= "true",
   }
   
 }
