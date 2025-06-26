@@ -159,30 +159,55 @@ npm run deploy
 
 Before sending events to the pipeline, an Application and corresponding Authorization key will need to be created. A Postman collection file is provided to help configure Postman or Bruno for use with the solution. 
 
-1. The collection file is located at `/resources/game-analytics-pipeline-postman-collection.json`
-2. 
+1. Locate the API endpoint from the output after deployment. Note this down for the collection
+	- If deployed using CDK, this endpoint is the value of `CentralizedGameAnalytics.GamesAnalyticsApiEndpoint`. 
+	- If deployed using Terraform, this endpoint is the value of `game_analytics_api_endpoint`
+2. The collection file is located at `/resources/game-analytics-pipeline-postman-collection.json`
+
 === "Postman"
 
 	1. For instructions on how to import a collection, refer to the documentation for your selected API Client: [Import Postman data](https://learning.postman.com/docs/getting-started/importing-and-exporting/importing-data/#import-postman-data)
 	2. Once the collection is imported into Postman, create a new environment by selecting Environments in the sidebar and select the Add icon. You can also select the environment selector at the top right of the workbench and select Add icon. Enter a name for your new environment.
-	3. Replicate the following image for your environment:
+	3. Once the collection is imported into your API client, configure the collection-wide `api_base_path` variable to be your deployed API base path. The value of the path should be the URL retrieved from step 1.
+	4. In order to perform administrator actions on your API, Authentication must be configured to utilize SigV4 authentication for an IAM identity. These credentials inherit from your `access_key` and `secret_access_key` variables configured in the collection. For more information, refer to [Authenticate with AWS Signature authentication workflow in Postman](https://learning.postman.com/docs/sending-requests/authorization/aws-signature/)
+	6. Replicate the following image for your environment:
 		![Postman Environment Sample](media/postman-environment-sample.png)
-	4. Ensure there are no trailing return/enter spaces at the end of the variables, and click "Save" on the top right.
+	7. Ensure there are no trailing return/enter spaces at the end of the variables, and click "Save" on the top right.
 
 === "Bruno"
 
 	1. For instructions on how to import a collection, refer to the documentation for your selected API Client: [Importing Enviornment into Bruno](https://docs.usebruno.com/get-started/import-export-data/postman-migration#importing-environment-into-bruno)
-	2. Once the collection is imported into your API client, configure the collection-wide `api_base_path` variable to be your deployed API base path. 
-	3. You can locate your created `api_base_path` by examining the build output for the `ApiBasePath` output.
-	4. In order to perform administrator actions on your API, Authentication must be configured to utilize SigV4 authentication for an IAM identity. These credentials must be configured for every API endpoint except [POST - Send Events](./references/api-reference.md#post---send-events).
-	5. For instructions on how to configure SigV4 Authentication, refer to the documentation for your selected API Client:
-		- Postman: [Authenticate with AWS Signature authentication workflow in Postman](https://learning.postman.com/docs/sending-requests/authorization/aws-signature/)
-		- Bruno: [Authenticate using AWS Signature](https://docs.usebruno.com/auth/aws-signature)
+	2. Once the collection is imported into your API client, navigate to the Vars tab for the collection. 
+		- Validate that five variables (`api_base_path`, `application_id`, `access_key`, `secret_access_key`, and `region`) are under Pre Request variables. If they are not, create variables with those names.
+		- Configure the collection-wide `api_base_path` variable to be your deployed API base path. The value of the path should be the URL retrieved from step 1.
+		- Configure `region` to be the region where the stack is deployed
+		- Configure `access_key` to be the access key of the identity used to deploy the stack
+		- Configure `secret_access_key` to be the secret access key of the identity used to deploy the stack
+		- Leave `application_id` blank. This will be filled in later.
+	4. Ensure the colleciton variables are created
+
+		![Bruno Environment Sample](media/bruno-enviornment-sample.png)
+
+	4. In order to perform administrator actions on your API, Authentication must be configured to utilize SigV4 authentication for an IAM identity. These credentials inherit from your `access_key` and `secret_access_key` variables configured in the collection. For more information, refer to  [Authenticate using AWS Signature](https://docs.usebruno.com/auth/aws-signature)
+		- If a session token is needed for temporary credentials, please add them manually
+	5. Ensure there are no trailing return/enter spaces at the end of the variables. Save the configuration by pressing `ctrl + s` (or `cmd + s` on mac).
 
 
-After the pipeline is deployed, a new application must be created using the Application API. Refer to the [API Reference for POST - Create Application](./references/api-reference.md#post---create-application) on how to register a new application. **Note the value of the `"ApplicationId"` in the API response.**
+After the pipeline is deployed, a new application must be created using the Application API. 
 
-After the application is created, create an API key to send events to the API. Refer to the [API Reference for POST - Create API Key for Application](./references/api-reference.md#post---create-api-key-for-application) on how to create a new authorization key. The `"ApplicationId"` from the previous step should be passed in the API path. **Note the value of the `"ApiKeyValue"` in the API response.**
+- Navigate under the **Applications** tab of the collection and select the **Create Application** API. 
+- Modify the value of Name and Description to match your game.
+- Execute the API. **Note the value of the `"ApplicationId"` in the API response.**
+- Copy the value of the ApplicationId and paste it in to the `application_id` value for the collection. This will allow the rest of your API calls to interact with the application
+- Refer to the [API Reference for POST - Create Application](./references/api-reference.md#post---create-application) for more information on how to register a new application. 
+
+After the application is created, create an API key to send events to the API. 
+
+- Navigate under the **Authorizations** tab of the collection and select the **Create Authorization** API.
+- The `"ApplicationId"` from the previous step should be passed in the API path automatically. 
+- Modify the value of Name and Description to match the information about your key.
+- Execute the API. **Note the value of the `"ApiKeyValue"` in the API response.**
+- Refer to the [API Reference for POST - Create API Key for Application](./references/api-reference.md#post---create-api-key-for-application) for more information on how to create a new authorization key. 
 
 If you have Redshift Mode enabled, enable the materialized views and remaining infrastructure through the API. Refer to the [API Reference for POST - Setup Redshift](./references/api-reference.md#post-set-up-redshift) on how to setup the final Redshift components.
 
@@ -194,7 +219,9 @@ If the `ENABLE_APACHE_ICEBERG_SUPPORT` configuration is set to `true`, a basic A
 
 By default, this table does not contain a configured partition specification. To enable partitioning, a Glue job must be run before data is ingested to configure the table.
 
-1. Locate the name of the iceberg setup job from the deployment outputs. This name of the job is the value of `CentralizedGameAnalytics.IcebergSetupJob` when using CDK or `iceberg_setup_job` when using Terraform.
+1. Locate the name of the iceberg setup job from the deployment outputs. 
+	- The name of the job is the value of `CentralizedGameAnalytics.IcebergSetupJob` when using CDK.
+	- The name of the job is the value of `iceberg_setup_job` when using Terraform.
 2. Navigate to the [Glue AWS Console](http://console.aws.amazon.com/glue). Ensure that you are in the same region that the stack is deployed in
 3. On the left sidebar, navigate to ETL jobs
 4. Locate the deployed setup job with the name retrieved from Step 1 in the list of jobs. Use the search bar if necessary
@@ -269,7 +296,9 @@ The request to send events to the solution API must include a valid API key in t
 
 	An acccompanying [OpenSearch UI Application](https://aws.amazon.com/blogs/big-data/amazon-opensearch-service-launches-the-next-generation-opensearch-ui/) is created to query and visualize the data emitted by real time analytics.
 
-	1. Locate the URL output of the application from deployment. If deployed using CDK, this output is identified by `OpenSearchDashboardEndpoint`. If deployed using Terraform, this output is identified by `opensearch_dashboard_endpoint`
+	1. Locate the URL output of the application from deployment. 
+		- If deployed using CDK, this output is identified by `CentralizedGameAnalytics.OpenSearchDashboardEndpoint`. 
+		- If deployed using Terraform, this output is identified by `opensearch_dashboard_endpoint`
 	2. Paste the URL into your browser of choice. Ensure that you are logged in to the AWS console before proceeding. 
 	3. On the main dashboard page, click on **Create workspace** under Essentials
 	4. On the next page, provide a name and description to the workspace
