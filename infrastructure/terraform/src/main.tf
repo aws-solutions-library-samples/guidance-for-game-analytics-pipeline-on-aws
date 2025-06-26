@@ -429,6 +429,7 @@ module "lambda_construct" {
   redshift_workgroup_name =  local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_workgroup_name] : []
   redshift_role_arn =  local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_role_arn] : []
   games_events_stream_name = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [aws_kinesis_stream.game_events_stream[0].name] : []
+  iceberg_enabled = local.config.ENABLE_APACHE_ICEBERG_SUPPORT
 }
 
 // Events Processing Function Policy

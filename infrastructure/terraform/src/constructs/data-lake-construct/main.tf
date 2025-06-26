@@ -109,7 +109,7 @@ resource "aws_glue_catalog_table" "raw_events_table" {
     }
     columns {
       name = "event_timestamp"
-      type = "bigint"
+      type = "timestamp"
     }
     columns {
       name = "app_version"

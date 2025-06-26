@@ -122,7 +122,7 @@ export class DataLakeConstruct extends Construct {
                 { name: "event_type", type: "string" },
                 { name: "event_name", type: "string" },
                 { name: "event_version", type: "string" },
-                { name: "event_timestamp", type: "bigint" },
+                { name: "event_timestamp", type: "timestamp" },
                 { name: "app_version", type: "string" },
                 { name: "application_id", type: "string" },
                 { name: "application_name", type: "string" },

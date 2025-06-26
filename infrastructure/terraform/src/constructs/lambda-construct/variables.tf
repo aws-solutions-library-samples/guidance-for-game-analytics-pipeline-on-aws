@@ -44,3 +44,7 @@ variable "redshift_role_arn" {
 variable "games_events_stream_name" {
   type        = list(string)
 }
+
+variable "iceberg_enabled" {
+  type        = bool
+}

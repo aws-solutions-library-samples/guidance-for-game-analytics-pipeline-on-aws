@@ -21,6 +21,7 @@ module "events_processing_function" {
   environment_variables = {
       APPLICATIONS_TABLE    = var.applications_table_name
       CACHE_TIMEOUT_SECONDS = "60"
+      CONVERT_TIMESTAMP     = var.iceberg_enabled ? "true" : "false"
   }
 }
 

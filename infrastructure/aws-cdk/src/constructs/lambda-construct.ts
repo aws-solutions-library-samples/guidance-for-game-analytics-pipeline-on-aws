@@ -70,6 +70,7 @@ function. This function to process and transform raw events before they get writ
         environment: {
           APPLICATIONS_TABLE: props.applicationsTable.tableName,
           CACHE_TIMEOUT_SECONDS: "60",
+          CONVERT_TIMESTAMP: props.config.ENABLE_APACHE_ICEBERG_SUPPORT ? "true" : "false"
         },
       }
     );
