@@ -57,7 +57,7 @@ export class CloudWatchDashboardConstruct extends Construct {
           color: "#1f77b4",
         }),
       ],
-      width: 8,
+      width: 24,
       height: 6,
       region: cdk.Stack.of(this).region,
       period: cdk.Duration.seconds(60),
@@ -74,7 +74,7 @@ export class CloudWatchDashboardConstruct extends Construct {
       kdsWidgets = [
         new cloudwatch.TextWidget({
           markdown:
-            "\n## Stream Ingestion & Processing\nThis section covers metrics related to ingestion of data into the solution's Events Stream and processing by Kinesis Data Firehose and AWS Lambda Events Processing Function. Use the metrics here to track data freshness/latency and any issues with processor throttling/errors.\n",
+            "\n## Kinesis Data Stream Ingestion \nThis section covers metrics related to ingestion of data into the solution's Events Stream and processing by Kinesis Data Streams. Use the metrics here to track data freshness/latency.\n",
           width: 24,
           height: 2,
         }),
@@ -92,7 +92,7 @@ export class CloudWatchDashboardConstruct extends Construct {
               color: "#2ca02c",
             }),
           ],
-          width: 8,
+          width: 12,
           height: 6,
           region: cdk.Stack.of(this).region,
           period: cdk.Duration.seconds(60),
@@ -148,7 +148,7 @@ export class CloudWatchDashboardConstruct extends Construct {
             showUnits: false,
             label: "Milliseconds",
           },
-          width: 8,
+          width: 12,
           height: 6,
           region: cdk.Stack.of(this).region,
           period: cdk.Duration.seconds(60),
@@ -167,9 +167,15 @@ export class CloudWatchDashboardConstruct extends Construct {
       const workgroupName = props.redshiftConstruct.workgroup.workgroupName;
       const namespaceName = props.redshiftConstruct.namespace.namespaceName;
       redshiftWidgets = [
+        new cloudwatch.TextWidget({
+          markdown:
+            "\n## Redshift Serverless\nThis section covers metrics related to Redshift Serverless. Use the metrics here to track infrastructure and query performance.\n",
+          width: 24,
+          height: 2,
+        }),
         new cloudwatch.GraphWidget({
           title: "Queries Completed Per Second",
-          width: 8,
+          width: 12,
           height: 6,
           left: [
             new cloudwatch.Metric({
@@ -188,7 +194,7 @@ export class CloudWatchDashboardConstruct extends Construct {
         }),
         new cloudwatch.GraphWidget({
           title: "Database Connections",
-          width: 8,
+          width: 12,
           height: 6,
           left: [
             new cloudwatch.Metric({
@@ -206,7 +212,7 @@ export class CloudWatchDashboardConstruct extends Construct {
         }),
         new cloudwatch.GraphWidget({
           title: "Query Planning / Execution",
-          width: 8,
+          width: 12,
           height: 6,
           left: [
             new cloudwatch.Metric({
@@ -234,8 +240,8 @@ export class CloudWatchDashboardConstruct extends Construct {
           stacked: false,
         }),
         new cloudwatch.SingleValueWidget({
-          title: "DataStorage",
-          width: 8,
+          title: "Data Storage",
+          width: 12,
           height: 6,
           metrics: [
             new cloudwatch.Metric({
@@ -259,6 +265,12 @@ export class CloudWatchDashboardConstruct extends Construct {
       props.gameEventsFirehose != undefined
     ) {
       dataLakeWidgets = [
+        new cloudwatch.TextWidget({
+          markdown:
+            "\n## Stream Ingestion & Processing\nThis section covers metrics related to ingestion of data into the solution's Events Stream and processing by Kinesis Data Firehose and AWS Lambda Events Processing Function. Use the metrics here to track data freshness/latency and any issues with processor throttling/errors.\n",
+          width: 24,
+          height: 2,
+        }),
         new cloudwatch.SingleValueWidget({
           title: "Events Processing Health",
           metrics: [
@@ -317,7 +329,7 @@ export class CloudWatchDashboardConstruct extends Construct {
               statistic: "Sum",
             }),
           ],
-          width: 12,
+          width: 24,
           height: 3,
           region: cdk.Stack.of(this).region,
         }),
@@ -370,7 +382,7 @@ export class CloudWatchDashboardConstruct extends Construct {
               },
             }),
           ],
-          width: 8,
+          width: 24,
           height: 6,
           region: cdk.Stack.of(this).region,
           period: cdk.Duration.seconds(60),
@@ -448,7 +460,7 @@ export class CloudWatchDashboardConstruct extends Construct {
               showUnits: false,
               label: "Count",
             },
-            width: 8,
+            width: 12,
             height: 6,
             period: cdk.Duration.seconds(60),
           }),
@@ -481,7 +493,7 @@ export class CloudWatchDashboardConstruct extends Construct {
               label: "Percent",
               showUnits: false,
             },
-            width: 8,
+            width: 12,
             height: 6,
             period: cdk.Duration.seconds(60),
           }),
@@ -519,7 +531,7 @@ export class CloudWatchDashboardConstruct extends Construct {
               showUnits: false,
             },
 
-            width: 8,
+            width: 12,
             height: 6,
           }),
         ],
@@ -576,7 +588,7 @@ export class CloudWatchDashboardConstruct extends Construct {
               showUnits: false,
               label: "Milliseconds",
             },
-            width: 8,
+            width: 12,
             height: 6,
             region: cdk.Stack.of(this).region,
             period: cdk.Duration.seconds(60),
