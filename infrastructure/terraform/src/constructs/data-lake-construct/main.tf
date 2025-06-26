@@ -230,13 +230,6 @@ resource "aws_glue_catalog_table_optimizer" "raw_events_retention_optimizer" {
   configuration {
     role_arn = aws_iam_role.glue_optimization_service_role[0].arn
     enabled  = true
-    retention_configuration {
-      iceberg_configuration {
-        snapshot_retention_period_in_days = 5
-        number_of_snapshots_to_retain     = 1
-        clean_expired_files               = true
-      }
-    }
   }
   type = "retention"
 }
@@ -249,12 +242,6 @@ resource "aws_glue_catalog_table_optimizer" "raw_events_orphan_file_deletion_opt
   configuration {
     role_arn = aws_iam_role.glue_optimization_service_role[0].arn
     enabled  = true
-    orphan_file_deletion_configuration {
-      iceberg_configuration {
-        orphan_file_retention_period_in_days = 3
-        location                             = "s3://${var.analytics_bucket_name}/${var.raw_events_prefix}/"
-      }
-    }
   }
   type = "orphan_file_deletion"
 }
