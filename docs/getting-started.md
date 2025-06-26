@@ -184,7 +184,7 @@ Before sending events to the pipeline, an Application and corresponding Authoriz
 		- Configure `access_key` to be the access key of the identity used to deploy the stack
 		- Configure `secret_access_key` to be the secret access key of the identity used to deploy the stack
 		- Leave `application_id` blank. This will be filled in later.
-	4. Ensure the colleciton variables are created
+	4. Ensure the collection variables are created
 
 		![Bruno Environment Sample](media/bruno-enviornment-sample.png)
 
