@@ -474,6 +474,14 @@ export class InfrastructureStack extends cdk.Stack {
           "Link to the AWS Glue Workflows console page to view details of the workflow",
         value: `https://console.aws.amazon.com/glue/home?region=${cdk.Aws.REGION}#etl:tab=workflows;workflowView=workflow-list`,
       });
+
+      if (props.config.ENABLE_APACHE_ICEBERG_SUPPORT) {
+        new cdk.CfnOutput(this, "IcebergSetupJob", {
+          description:
+            "Glue Job to set up the new Iceberg table",
+          value: dataProcessingConstruct.icebergSetupJob.name,
+        });
+      }
     }
 
     // ---- API ENDPOINT ---- /
@@ -565,5 +573,7 @@ export class InfrastructureStack extends cdk.Stack {
       description: "CloudWatch Dashboard for viewing pipeline metrics",
       value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#dashboards:name=PipelineOpsDashboard_${props.config.WORKLOAD_NAME};start=PT1H`,
     });
+
+
   }
 }
