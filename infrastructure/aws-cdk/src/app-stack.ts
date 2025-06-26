@@ -479,7 +479,7 @@ export class InfrastructureStack extends cdk.Stack {
         new cdk.CfnOutput(this, "IcebergSetupJob", {
           description:
             "Glue Job to set up the new Iceberg table",
-          value: dataProcessingConstruct.icebergSetupJob.name,
+          value: dataProcessingConstruct.icebergSetupJob.ref,
         });
       }
     }
