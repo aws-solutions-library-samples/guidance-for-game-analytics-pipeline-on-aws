@@ -129,9 +129,13 @@ export class DataLakeConstruct extends Construct {
                 { name: "event_data", type: "string" },
                 { name: "metadata", type: "string" },
               ],
-              location: `s3://${props.analyticsBucket.bucketName
-                }/${props.config.RAW_EVENTS_TABLE.toLowerCase()}/`,
+              location: props.analyticsBucket.s3UrlForObject(props.config.RAW_EVENTS_TABLE.toLowerCase()),
               storedAsSubDirectories: false,
+              parameters: {
+                classification: "parquet",
+                compressionType: "none",
+                typeOfData: "file",
+              }
             },
             tableType: "EXTERNAL_TABLE",
           },
@@ -175,7 +179,7 @@ export class DataLakeConstruct extends Construct {
               bucketColumns: [],
               sortColumns: [],
               storedAsSubDirectories: false,
-              location: `s3://${props.analyticsBucket.bucketName}/${props.config.RAW_EVENTS_PREFIX}`,
+              location: props.analyticsBucket.s3UrlForObject(props.config.RAW_EVENTS_PREFIX),
               columns: [
                 { name: "event_id", type: "string" },
                 { name: "event_type", type: "string" },
@@ -233,7 +237,7 @@ export class DataLakeConstruct extends Construct {
                 ],
                 resources: [
                   `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/${gameEventsDatabase.ref}/${rawEventsTable.ref}`,
-                  `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/${gameEventsDatabase.ref}`,
+                  `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:database/${gameEventsDatabase.ref}`,
                   `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`
                 ],
               }),
