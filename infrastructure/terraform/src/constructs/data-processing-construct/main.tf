@@ -367,6 +367,7 @@ resource "aws_glue_job" "game_events_etl_iceberg_job" {
 
 # glue iceberg setup job
 resource "aws_glue_job" "iceberg_setup_job" {
+  count = var.enable_apache_iceberg_support ? 1 : 0
   name     = "${var.stack_name}-Iceberg-Setup"
   description = "Glue job for setting up a new Iceberg table, for stack ${var.stack_name} to Apache Iceberg table."
   

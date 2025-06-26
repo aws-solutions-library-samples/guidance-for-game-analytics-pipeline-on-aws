@@ -411,6 +411,7 @@ module "redshift_construct" {
   vpc_cidr = module.vpc_construct[0].vpc_cidr
   game_events_stream_arn = aws_kinesis_stream.game_events_stream[0].arn
   events_database = local.config.EVENTS_DATABASE
+  
 }
 
 // ---- Functions ---- //
@@ -574,6 +575,7 @@ module "data_processing_construct" {
   notifications_topic_arn = aws_sns_topic.notifications.arn
   analytics_bucket_arn = aws_s3_bucket.analytics_bucket.arn
   analytics_bucket_name    = aws_s3_bucket.analytics_bucket.id
+  enable_apache_iceberg_support = local.config.ENABLE_APACHE_ICEBERG_SUPPORT
 }
 
 module "athena_construct" {
