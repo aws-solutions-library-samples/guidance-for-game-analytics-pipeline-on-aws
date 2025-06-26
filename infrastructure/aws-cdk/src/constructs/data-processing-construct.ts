@@ -40,7 +40,7 @@ const defaultProps: Partial<DataProcessingConstructProps> = {};
  * Creates Glue to turn analytics s3 bucket into Datalake. Creates Jobs that can be used to process s3 data for Athena.
  */
 export class DataProcessingConstruct extends Construct {
-public readonly gameEventsEtlJob: glueCfn.CfnJob;
+  public readonly gameEventsEtlJob: glueCfn.CfnJob;
   public readonly gameEventsIcebergJob: glueCfn.CfnJob;
 
   constructor(parent: Construct, name: string, props: DataProcessingConstructProps) {
@@ -69,6 +69,7 @@ public readonly gameEventsEtlJob: glueCfn.CfnJob;
           "s3:GetObject",
           "s3:PutObject",
           "s3:DeleteObject",
+          "s3:GetBucketLocation",
         ],
         resources: [
           props.analyticsBucket.bucketArn,
@@ -85,6 +86,8 @@ public readonly gameEventsEtlJob: glueCfn.CfnJob;
           "glue:GetPartition",
           "glue:GetPartitions",
           "glue:BatchCreatePartition",
+          "glue:BatchDeletePartition",
+          "glue:DeletePartition",
           "glue:CreatePartition",
           "glue:CreateTable",
           "glue:GetTable",
@@ -267,6 +270,32 @@ public readonly gameEventsEtlJob: glueCfn.CfnJob;
           "spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions --conf spark.sql.catalog.glue_catalog=org.apache.iceberg.spark.SparkCatalog --conf spark.sql.catalog.glue_catalog.catalog-impl=org.apache.iceberg.aws.glue.GlueCatalog --conf spark.sql.catalog.glue_catalog.io-impl=org.apache.iceberg.aws.s3.S3FileIO --conf spark.sql.catalog.glue_catalog.warehouse=file:///tmp/spark-warehouse",
       },
     });
+
+    if (props.config.ENABLE_APACHE_ICEBERG_SUPPORT) {
+      const icebergSetupJob = new glueCfn.CfnJob(this, "IcebergSetup", {
+        description: `Glue job for setting up a new Iceberg table, for stack ${cdk.Aws.STACK_NAME} to Apache Iceberg table.`,
+        glueVersion: "5.0",
+        maxRetries: 0,
+        maxCapacity: 2,
+        timeout: 30,
+        executionProperty: {
+          maxConcurrentRuns: 1,
+        },
+        command: {
+          name: "glueetl",
+          pythonVersion: "3",
+          scriptLocation: `s3://${props.analyticsBucket.bucketName}/glue-scripts/iceberg_configuration.py`,
+        },
+        role: gameEventsEtlRole.roleArn,
+        defaultArguments: {
+          "--DB_NAME": props.config.EVENTS_DATABASE,
+          "--TABLE_NAME": props.config.RAW_EVENTS_TABLE,
+          "--conf": `spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions --conf spark.sql.catalog.glue_catalog=org.apache.iceberg.spark.SparkCatalog --conf spark.sql.catalog.glue_catalog.warehouse=${props.analyticsBucket.s3UrlForObject()} --conf spark.sql.catalog.glue_catalog.catalog-impl=org.apache.iceberg.aws.glue.GlueCatalog --conf spark.sql.catalog.glue_catalog.io-impl=org.apache.iceberg.aws.s3.S3FileIO`,
+          "--datalake-formats": "iceberg",
+          "--enable-glue-datacatalog": "true",
+        },
+      });
+    }
 
     // Crawler crawls s3 partitioned data
     const eventsCrawler = new glueCfn.CfnCrawler(this, "EventsCrawler", {
