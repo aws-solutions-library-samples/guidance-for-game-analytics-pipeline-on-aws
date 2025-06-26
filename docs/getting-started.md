@@ -266,11 +266,35 @@ The request to send events to the solution API must include a valid API key in t
 
 === "Data Lake Mode"
 
-	1. TODO - Fill out Athena query instructions
+	1. Navigate to the [AWS Console for Athena](console.aws.amazon.com/athena)
+
+	2. If you are not already on the query editor, click on the **Launch query editor** button
+
+	3. At the top left of the editor, select the workgroup for your stack. The name should consist of the name specified by `WORKLOAD_NAME` in config.yaml followed by the suffix `-workgroup` and a random suffix.
+
+		![Athena 1](media/Athena-1.png)
+
+	4. Acknowledge the settings for the workgroup
+
+	5. On the left hand side, select the Database with the name specified by `EVENTS_DATABASE` in config.yaml
+
+		![Athena 2](media/Athena-2.png)
+
+	6. A list of tables should appear below the selection. Select a table, click the three buttons on the left, and select **At** to see the items in the table.
+
+		![Athena 3](media/Athena-3.png)
+
+	7. To use the pre-defined queries, select Saved queries at the top toolbar of the query editor. This will show a list of queries created for the stack. 
+
+		![Athena 4](media/Athena-4.png)
+	
+	8. To run a query, click on the highlighted ID of the query to open it in a new query editor tab and then press Run to execute the query. View the results below after the query finishes executing.
+
+		![Athena 5](media/Athena-5.png)
 
 === "Redshift Mode"
 
-	1. In the AWS Console, navigate to Redshift and you will see the Serverless Dashboard.
+	1. In the AWS Console, navigate to [Redshift](http://console.aws.amazon.com/redshift) and you will see the Serverless Dashboard.
 
 		![Redshift 1](media/Redshift-1.png)
 
