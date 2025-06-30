@@ -44,6 +44,10 @@ output "game_events_etl_iceberg_job" {
   value =  local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.data_processing_construct[0].game_events_etl_iceberg_job : ""
 }
 
+output "iceberg_setup_job" {
+  value =  local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.data_processing_construct[0].iceberg_setup_job : ""
+}
+
 /* Outputs only if REAL_TIME_ANALYTICS is enabled */
 output "flink_analytics_cloudwatch" {
   description = "Link to the Amazon CloudWatch namespace where custom metrics are published by the solution AnalyticsProcessingFunction."

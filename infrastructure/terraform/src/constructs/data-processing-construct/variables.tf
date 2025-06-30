@@ -29,3 +29,7 @@ variable "analytics_bucket_arn" {
 variable "events_database" {
   type        = string
 }
+
+variable "enable_apache_iceberg_support" {
+    type        = string
+}

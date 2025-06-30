@@ -62,7 +62,9 @@ print("Bucket Output: {}".format(analytics_bucket_output_iceberg))
 
 base_df = glueContext.create_dynamic_frame.from_options(format_options={}, connection_type="s3", format="parquet", connection_options={"paths": [analytics_bucket_input], "recurse": True}, transformation_ctx="events")
 
-new_sc_df = ApplyMapping.apply(frame=base_df, mappings=[("event_id", "string", "event_id", "string"), ("event_type", "string", "event_type", "string"), ("event_name", "string", "event_name", "string"), ("event_version", "string", "event_version", "string"), ("event_timestamp", "bigint", "event_timestamp", "long"), ("app_version", "string", "app_version", "string"), ("application_id", "string", "application_id", "string"), ("application_name", "string", "application_name", "string"), ("event_data", "string", "event_data", "string"), ("metadata", "string", "metadata", "string")], transformation_ctx="changeschema")
+convert_timestamp_df = base_df.gs_to_timestamp(colName="event_timestamp", colType="seconds")
+
+new_sc_df = ApplyMapping.apply(frame=convert_timestamp_df, mappings=[("event_id", "string", "event_id", "string"), ("event_type", "string", "event_type", "string"), ("event_name", "string", "event_name", "string"), ("event_version", "string", "event_version", "string"), ("event_timestamp", "timestamp", "event_timestamp", "timestamp"), ("app_version", "string", "app_version", "string"), ("application_id", "string", "application_id", "string"), ("application_name", "string", "application_name", "string"), ("event_data", "string", "event_data", "string"), ("metadata", "string", "metadata", "string")], transformation_ctx="changeschema")
 
 # Validate if db and table exists
 database_location = f"{args['iceberg_bucket']}/{database_name}/"
