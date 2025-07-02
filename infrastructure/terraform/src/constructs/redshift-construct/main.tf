@@ -1,5 +1,5 @@
 resource "aws_kms_key" "redshift_kms_key" {
-  description             = "KMS Key for encrypting SNS"
+  description             = "KMS Key for encrypting Redshift"
   enable_key_rotation     = true
   deletion_window_in_days = 7
 }
@@ -13,9 +13,9 @@ resource "aws_security_group" "redshift_security_group" {
 resource "aws_vpc_security_group_ingress_rule" "redshift_security_group_ingress_rule" {
   security_group_id = aws_security_group.redshift_security_group.id
   cidr_ipv4         = var.vpc_cidr
-  from_port         = 5439
+  from_port         = 5639
   ip_protocol       = "tcp"
-  to_port           = 5439
+  to_port           = 5639
 }
 
 resource "aws_iam_role" "redshift_role" {
@@ -69,18 +69,26 @@ resource "aws_iam_role_policy" "redshift_role_kinesis_policy" {
 resource "aws_redshiftserverless_namespace" "redshift_namespace" {
   namespace_name      = "${lower(var.stack_name)}-workspace"
   manage_admin_password = true
+  admin_username = "db-admin"
   admin_password_secret_kms_key_id = aws_kms_key.redshift_kms_key.id
   db_name             = var.events_database
   default_iam_role_arn = aws_iam_role.redshift_role.arn
   iam_roles            = [aws_iam_role.redshift_role.arn]
+  log_exports = ["userlog", "connectionlog", "useractivitylog"]
   kms_key_id = aws_kms_key.redshift_kms_key.arn
+}
+
+resource "aws_redshiftserverless_snapshot" "redshift_snapshot" {
+  namespace_name = aws_redshiftserverless_namespace.redshift_namespace.namespace_name
+  snapshot_name  = "${lower(var.stack_name)}-workspace-snapshot"
+  retention_period = 1
 }
 
 resource "aws_redshiftserverless_workgroup" "redshift_workgroup" {
   workgroup_name = "${lower(var.stack_name)}-workgroup"
   base_capacity = 16
   namespace_name = aws_redshiftserverless_namespace.redshift_namespace.namespace_name
-  port = 5439
+  port = 5639
   publicly_accessible = false
   subnet_ids = var.vpc_subnet
   security_group_ids = [aws_security_group.redshift_security_group.id]

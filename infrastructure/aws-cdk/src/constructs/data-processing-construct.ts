@@ -55,12 +55,102 @@ export class DataProcessingConstruct extends Construct {
     const gameEventsEtlRole = new iam.Role(this, "GameEventsEtlRole", {
       assumedBy: new iam.ServicePrincipal("glue.amazonaws.com"),
       path: "/",
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName(
-          "service-role/AWSGlueServiceRole"
-        ),
-      ],
     });
+    gameEventsEtlRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "NetworkandS3Access",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "s3:ListAllMyBuckets",
+          "s3:GetBucketAcl",
+          "ec2:DescribeVpcEndpoints",
+          "ec2:DescribeRouteTables",
+          "ec2:CreateNetworkInterface",
+          "ec2:DeleteNetworkInterface",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeVpcAttribute",
+          "iam:ListRolePolicies",
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "cloudwatch:PutMetricData"
+        ],
+        resources: ["*"],
+      })
+    );
+    gameEventsEtlRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "CreateBucketAccess",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "s3:CreateBucket"
+        ],
+        resources: ["arn:aws:s3:::aws-glue-*"],
+      })
+    );
+    gameEventsEtlRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "S3GlueAccess",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ],
+        resources : [
+          "arn:aws:s3:::aws-glue-*/*",
+          "arn:aws:s3:::*/*aws-glue-*/*"
+        ]
+      })
+    );
+    gameEventsEtlRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "S3GetObjectAccess",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "s3:GetObject"
+        ],
+        resources : [
+          "arn:aws:s3:::crawler-public*",
+          "arn:aws:s3:::aws-glue-*"
+        ]
+      })
+    );
+    gameEventsEtlRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "LogGroupAccess",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        resources : [
+          "arn:aws:logs:*:*:*:/aws-glue/*"
+        ]
+      })
+    );
+    gameEventsEtlRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "TagAccess",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "ec2:CreateTags",
+          "ec2:DeleteTags"
+        ],
+        conditions: {
+          StringEquals: {
+            "aws:TagKeys": "aws-glue-service-resource",
+          }
+        },
+        resources : [
+          "arn:aws:ec2:*:*:network-interface/*",
+          "arn:aws:ec2:*:*:security-group/*",
+          "arn:aws:ec2:*:*:instance/*"
+        ]
+      })
+    );
     gameEventsEtlRole.addToPolicy(
       new iam.PolicyStatement({
         sid: "S3Access",

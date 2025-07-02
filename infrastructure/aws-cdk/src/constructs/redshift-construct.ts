@@ -32,7 +32,7 @@ export interface RedshiftConstructProps extends cdk.StackProps {
 
 const defaultProps = {
   baseRPU: 8,
-  port: 5439,
+  port: 5639,
 };
 
 export class RedshiftConstruct extends Construct {
@@ -91,12 +91,19 @@ export class RedshiftConstruct extends Construct {
       "RedshiftNamespace",
       {
         namespaceName: `${workloadNameLower}-workspace`,
+        adminUsername: 'db-admin',
         adminPasswordSecretKmsKeyId: this.key.keyId,
         dbName: props.config.EVENTS_DATABASE,
         defaultIamRoleArn: this.redshiftRole.roleArn,
         iamRoles: [this.redshiftRole.roleArn],
         kmsKeyId: this.key.keyId,
+        logExports: ["userlog", "connectionlog", "useractivitylog"],
         manageAdminPassword: true,
+        snapshotCopyConfigurations: [{
+          destinationRegion: cdk.Stack.of(this).region,
+          destinationKmsKeyId: this.key.keyId,
+          snapshotRetentionPeriod: 1,
+        }]
       }
     );
 

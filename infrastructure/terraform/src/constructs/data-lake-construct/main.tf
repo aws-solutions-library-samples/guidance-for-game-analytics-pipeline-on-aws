@@ -156,7 +156,7 @@ resource "aws_iam_role" "glue_optimization_service_role" {
 resource "aws_iam_role_policy" "glue_optimization_service_role_policy" {
   count = var.enable_apache_iceberg_support ? 1 : 0
   name = "${var.stack_name}-glue-iceberg-table-optimization"
-  role = aws_iam_role.glue_optimization_service_role[0].name
+  role = aws_iam_role.glue_optimization_service_role.name
 
   policy = jsonencode({
     Version: "2012-10-17",
@@ -204,6 +204,85 @@ resource "aws_iam_role_policy" "glue_optimization_service_role_policy" {
                     "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws-glue/iceberg-compaction/logs:*",
                     "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws-glue/iceberg-retention/logs:*",
                     "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws-glue/iceberg-orphan-file-deletion/logs:*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:ListAllMyBuckets",
+                  "s3:GetBucketAcl",
+                  "ec2:DescribeVpcEndpoints",
+                  "ec2:DescribeRouteTables",
+                  "ec2:CreateNetworkInterface",
+                  "ec2:DeleteNetworkInterface",
+                  "ec2:DescribeNetworkInterfaces",
+                  "ec2:DescribeSecurityGroups",
+                  "ec2:DescribeSubnets",
+                  "ec2:DescribeVpcAttribute",
+                  "iam:ListRolePolicies",
+                  "iam:GetRole",
+                  "iam:GetRolePolicy",
+                  "cloudwatch:PutMetricData"
+                ],
+                "Resource": ["*"]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:CreateBucket"
+                ],
+                "Resource": ["arn:aws:s3:::aws-glue-*"]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:GetObject",
+                  "s3:PutObject",
+                  "s3:DeleteObject"
+                ],
+                "Resource": [
+                  "arn:aws:s3:::aws-glue-*/*",
+                  "arn:aws:s3:::*/*aws-glue-*/*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:GetObject"
+                ],
+                "Resource": [
+                  "arn:aws:s3:::crawler-public*",
+                  "arn:aws:s3:::aws-glue-*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                  "logs:CreateLogGroup",
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents"
+                ],
+                "Resource": [
+                  "arn:aws:logs:*:*:*:/aws-glue/*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                  "ec2:CreateTags",
+                  "ec2:DeleteTags"
+                ],
+                "Condition": {
+                  "ForAllValues:StringEquals" : {
+                    "aws:TagKeys" : [
+                      "aws-glue-service-resource"
+                    ]
+                  }
+                },
+                "Resource": [
+                  "arn:aws:ec2:*:*:network-interface/*",
+                  "arn:aws:ec2:*:*:security-group/*",
+                  "arn:aws:ec2:*:*:instance/*"
                 ]
             }
         ]

@@ -936,12 +936,24 @@ export class ApiConstruct extends Construct {
       "ApiGatewayPushToCloudWatchRole",
       {
         assumedBy: new iam.ServicePrincipal("apigateway.amazonaws.com"),
-        managedPolicies: [
-          iam.ManagedPolicy.fromAwsManagedPolicyName(
-            "service-role/AmazonAPIGatewayPushToCloudWatchLogs"
-          ),
-        ],
       }
+    );
+
+    apiGatewayPushToCloudWatchRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: "PushToCloudWatch",
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+          "logs:PutLogEvents",
+          "logs:GetLogEvents",
+          "logs:FilterLogEvents"
+        ],
+        resources: ["*"],
+      })
     );
 
     new apigateway.CfnAccount(this, "ApiAccount", {

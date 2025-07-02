@@ -125,6 +125,12 @@ resource "random_string" "stack-random-id-suffix" {
   }
 }
 
+  resource "aws_kms_key" "firehose_kms_key" {
+    description             = "KMS Key for encrypting Firehose"
+    enable_key_rotation     = true
+    deletion_window_in_days = 7
+  }
+
 # Kinesis Firehose Delivery Stream
 resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
   name        = "${var.stack_name}-game-events-firehose-${random_string.stack-random-id-suffix.result}"
@@ -148,7 +154,8 @@ resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
 
       s3_configuration {
         role_arn = aws_iam_role.firehose_role.arn
-        bucket_arn = var.analytics_bucket_arn // Replace with S3 table bucket later
+        bucket_arn = var.analytics_bucket_arn
+        kms_key_arn = aws_kms_key.firehose_kms_key.arn
       }
 
       destination_table_configuration {
