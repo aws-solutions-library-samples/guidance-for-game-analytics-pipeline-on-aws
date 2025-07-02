@@ -34,9 +34,14 @@ export class VpcConstruct extends Construct {
   public readonly vpc: ec2.Vpc;
   constructor(parent: Construct, name: string, props: VpcConstructProps) {
     super(parent, name);
-
+    props = { ...defaultProps, ...props };
     const vpc = new ec2.Vpc(this, "VPC", {});
+
+    const flowLog = new ec2.FlowLog(this, props.config.WORKLOAD_NAME + '-VPCFlowLog', {
+      resourceType: ec2.FlowLogResourceType.fromVpc(vpc)
+    })
 
     this.vpc = vpc;
   }
+  
 }

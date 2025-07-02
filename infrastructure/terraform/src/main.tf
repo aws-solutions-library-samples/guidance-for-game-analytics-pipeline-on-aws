@@ -371,6 +371,7 @@ resource "aws_kinesis_stream" "game_events_stream" {
 // ---- VPC resources (IF REDSHIFT OR REAL TIME in DEV_MODE is enabled) ---- //
 module "vpc_construct" {
   source = "./constructs/vpc-construct"
+  stack_name                       = local.config.WORKLOAD_NAME
   count = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? 1 : 0
 }
 

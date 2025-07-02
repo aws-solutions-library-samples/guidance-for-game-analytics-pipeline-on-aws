@@ -15,6 +15,7 @@
 
 import * as cdk from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as kms from "aws-cdk-lib/aws-kms";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as kinesisFirehose from "aws-cdk-lib/aws-kinesisfirehose";
 import { Construct } from "constructs";
@@ -53,6 +54,8 @@ export class StreamingIngestionConstruct extends Construct {
     const firehoseLogGroup = new logs.LogGroup(this, "firehose-log-group", {
       retention: props.config.CLOUDWATCH_RETENTION_DAYS,
     });
+
+    const kmsKey = new kms.Key(this, "RedshiftKMSKey");
 
     const firehouseS3DeliveryLogStream = new logs.LogStream(
       this,
@@ -190,6 +193,7 @@ export class StreamingIngestionConstruct extends Construct {
           s3Configuration: {
             bucketArn: props.analyticsBucket.bucketArn,
             roleArn: gamesEventsFirehoseRole.roleArn,
+            kmsKey: kmsKey.keyArn,
             bufferingHints: {
               intervalInSeconds: props.config.DEV_MODE ? 60 : 900,
               sizeInMBs: 128,
@@ -249,6 +253,7 @@ export class StreamingIngestionConstruct extends Construct {
           errorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
           compressionFormat: "UNCOMPRESSED",
           roleArn: gamesEventsFirehoseRole.roleArn,
+          kmsKey: kmsKey.keyArn,
           dynamicPartitioningConfiguration: {
             enabled: true,
           },
