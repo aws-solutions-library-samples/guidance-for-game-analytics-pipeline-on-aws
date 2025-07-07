@@ -14,6 +14,7 @@ module "events_processing_function" {
   source_path   = "${path.root}/../../../business-logic/events-processing"
   timeout       = 300
   memory_size   = 256
+  architectures = ["arm64"]
 
   create_role = false
   lambda_role = aws_iam_role.events_processing_function_role.arn
@@ -38,6 +39,7 @@ module "lambda_authorizer" {
   source_path   = "${path.root}/../../../business-logic/api/lambda-authorizer"
   timeout       = 60
   memory_size   = 128
+  architectures = ["arm64"]
 
   create_role = false
   lambda_role = aws_iam_role.lambda_authorizer_role.arn
@@ -64,6 +66,7 @@ module "application_admin_service_function" {
   source_path   = "${path.root}/../../../business-logic/api/admin"
   timeout       = 60
   memory_size   = 128
+  architectures = ["arm64"]
 
   create_role = false
   lambda_role = aws_iam_role.application_admin_service_function_role.arn
