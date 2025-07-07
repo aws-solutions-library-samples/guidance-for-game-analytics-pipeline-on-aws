@@ -156,7 +156,7 @@ resource "aws_iam_role" "glue_optimization_service_role" {
 resource "aws_iam_role_policy" "glue_optimization_service_role_policy" {
   count = var.enable_apache_iceberg_support ? 1 : 0
   name = "${var.stack_name}-glue-iceberg-table-optimization"
-  role = aws_iam_role.glue_optimization_service_role.name
+  role = aws_iam_role.glue_optimization_service_role[0].name
 
   policy = jsonencode({
     Version: "2012-10-17",
