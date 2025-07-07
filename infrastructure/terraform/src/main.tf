@@ -103,7 +103,7 @@ resource "aws_s3_bucket" "analytics_bucket" {
 resource "aws_s3_bucket_ownership_controls" "analytics_bucket" {
   bucket = aws_s3_bucket.analytics_bucket.id
   rule {
-    object_ownership = "ObjectWriter"
+    object_ownership = "BucketOwnerEnforced"
   }
 }
 
