@@ -98,7 +98,7 @@ export class DataProcessingConstruct extends Construct {
           "s3:PutObject",
           "s3:DeleteObject"
         ],
-        resources : [
+        resources: [
           "arn:aws:s3:::aws-glue-*/*",
           "arn:aws:s3:::*/*aws-glue-*/*"
         ]
@@ -111,7 +111,7 @@ export class DataProcessingConstruct extends Construct {
         actions: [
           "s3:GetObject"
         ],
-        resources : [
+        resources: [
           "arn:aws:s3:::crawler-public*",
           "arn:aws:s3:::aws-glue-*"
         ]
@@ -126,7 +126,7 @@ export class DataProcessingConstruct extends Construct {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ],
-        resources : [
+        resources: [
           "arn:aws:logs:*:*:*:/aws-glue/*"
         ]
       })
@@ -144,7 +144,7 @@ export class DataProcessingConstruct extends Construct {
             "aws:TagKeys": "aws-glue-service-resource",
           }
         },
-        resources : [
+        resources: [
           "arn:aws:ec2:*:*:network-interface/*",
           "arn:aws:ec2:*:*:security-group/*",
           "arn:aws:ec2:*:*:instance/*"
@@ -387,25 +387,25 @@ export class DataProcessingConstruct extends Construct {
         },
       });
       this.icebergSetupJob = icebergSetupJob;
-    }
+    } else {
 
-    // Crawler crawls s3 partitioned data
-    const eventsCrawler = new glueCfn.CfnCrawler(this, "EventsCrawler", {
-      role: glueCrawlerRole.roleArn,
-      description: `AWS Glue Crawler for partitioned data, for stack ${cdk.Aws.STACK_NAME}`,
-      databaseName: props.gameEventsDatabase.ref,
-      targets: {
-        s3Targets: [
-          {
-            path: `s3://${props.analyticsBucket.bucketName}/${props.config.PROCESSED_EVENTS_PREFIX}`,
-          },
-        ],
-      },
-      schemaChangePolicy: {
-        updateBehavior: "UPDATE_IN_DATABASE",
-        deleteBehavior: "LOG",
-      },
-      configuration: `{
+      // Crawler crawls s3 partitioned data
+      const eventsCrawler = new glueCfn.CfnCrawler(this, "EventsCrawler", {
+        role: glueCrawlerRole.roleArn,
+        description: `AWS Glue Crawler for partitioned data, for stack ${cdk.Aws.STACK_NAME}`,
+        databaseName: props.gameEventsDatabase.ref,
+        targets: {
+          s3Targets: [
+            {
+              path: `s3://${props.analyticsBucket.bucketName}/${props.config.PROCESSED_EVENTS_PREFIX}`,
+            },
+          ],
+        },
+        schemaChangePolicy: {
+          updateBehavior: "UPDATE_IN_DATABASE",
+          deleteBehavior: "LOG",
+        },
+        configuration: `{
               "Version":1.0,
               "CrawlerOutput":{
                 "Partitions":{
@@ -416,111 +416,112 @@ export class DataProcessingConstruct extends Construct {
                 }
               }
             }`,
-    });
+      });
 
-    // Workflow that triggers glue ETL job, processes s3 data, and updates the data catalog
-    const gameEventsWorkflow = new glueCfn.CfnWorkflow(
-      this,
-      "GameEventsWorkflow",
-      {
-        description: `Orchestrates a Glue ETL Job and Crawler to process data in S3 and update data catalog, for stack ${cdk.Aws.STACK_NAME}`,
-        defaultRunProperties: {
-          "--enable-metrics": "true",
-          "--enable-continuous-cloudwatch-log": "true",
-          "--enable-glue-datacatalog": "true",
-          "--database_name": props.gameEventsDatabase.ref,
-          "--raw_events_table_name": props.rawEventsTable.ref,
-          "--analytics_bucket": props.analyticsBucket.s3UrlForObject(),
-          "--processed_data_prefix": props.config.PROCESSED_EVENTS_PREFIX,
-          "--glue_tmp_prefix": props.config.GLUE_TMP_PREFIX,
-          "--job-bookmark-option": "job-bookmark-enable",
-          "--TempDir": `s3://${props.analyticsBucket.bucketName}/${props.config.GLUE_TMP_PREFIX}`,
-        },
-      }
-    );
-
-    // Trigger for Glue crawler
-    const gameEventsCrawlerTrigger = new glueCfn.CfnTrigger(
-      this,
-      "GameEventsCrawlerTrigger",
-      {
-        type: "CONDITIONAL",
-        description: `Starts a crawler to update the Glue Data Catalog with any changes detected in the processed_events S3 prefix after the ETL job runs, for stack ${cdk.Aws.STACK_NAME}`,
-        startOnCreation: true,
-        workflowName: gameEventsWorkflow.ref,
-        actions: [
-          {
-            crawlerName: eventsCrawler.ref,
+      // Workflow that triggers glue ETL job, processes s3 data, and updates the data catalog
+      const gameEventsWorkflow = new glueCfn.CfnWorkflow(
+        this,
+        "GameEventsWorkflow",
+        {
+          description: `Orchestrates a Glue ETL Job and Crawler to process data in S3 and update data catalog, for stack ${cdk.Aws.STACK_NAME}`,
+          defaultRunProperties: {
+            "--enable-metrics": "true",
+            "--enable-continuous-cloudwatch-log": "true",
+            "--enable-glue-datacatalog": "true",
+            "--database_name": props.gameEventsDatabase.ref,
+            "--raw_events_table_name": props.rawEventsTable.ref,
+            "--analytics_bucket": props.analyticsBucket.s3UrlForObject(),
+            "--processed_data_prefix": props.config.PROCESSED_EVENTS_PREFIX,
+            "--glue_tmp_prefix": props.config.GLUE_TMP_PREFIX,
+            "--job-bookmark-option": "job-bookmark-enable",
+            "--TempDir": `s3://${props.analyticsBucket.bucketName}/${props.config.GLUE_TMP_PREFIX}`,
           },
-        ],
-        predicate: {
-          conditions: [
+        }
+      );
+
+      // Trigger for Glue crawler
+      const gameEventsCrawlerTrigger = new glueCfn.CfnTrigger(
+        this,
+        "GameEventsCrawlerTrigger",
+        {
+          type: "CONDITIONAL",
+          description: `Starts a crawler to update the Glue Data Catalog with any changes detected in the processed_events S3 prefix after the ETL job runs, for stack ${cdk.Aws.STACK_NAME}`,
+          startOnCreation: true,
+          workflowName: gameEventsWorkflow.ref,
+          actions: [
             {
-              logicalOperator: "EQUALS",
-              jobName: gameEventsEtlJob.ref,
-              state: "SUCCEEDED",
+              crawlerName: eventsCrawler.ref,
             },
           ],
-        },
-      }
-    );
-    gameEventsCrawlerTrigger.addDependency(gameEventsEtlJob);
-    gameEventsCrawlerTrigger.addDependency(gameEventsWorkflow);
-    gameEventsCrawlerTrigger.addDependency(eventsCrawler);
-
-    // Trigger to start glue job
-    const gameEventsETLJobTrigger = new glueCfn.CfnTrigger(
-      this,
-      "GameEventsTriggerETLJob",
-      {
-        workflowName: gameEventsWorkflow.ref,
-        type: "SCHEDULED",
-        description: `Triggers the start of ETL job to process raw_events, for stack ${cdk.Aws.STACK_NAME}.`,
-        actions: [
-          {
-            jobName: gameEventsEtlJob.ref,
+          predicate: {
+            conditions: [
+              {
+                logicalOperator: "EQUALS",
+                jobName: gameEventsEtlJob.ref,
+                state: "SUCCEEDED",
+              },
+            ],
           },
-        ],
-        schedule: "cron(0 * * * ? *)",
-        startOnCreation: true
-      }
-    );
-    gameEventsETLJobTrigger.addDependency(gameEventsEtlJob);
-    gameEventsETLJobTrigger.addDependency(gameEventsWorkflow);
+        }
+      );
+      gameEventsCrawlerTrigger.addDependency(gameEventsEtlJob);
+      gameEventsCrawlerTrigger.addDependency(gameEventsWorkflow);
+      gameEventsCrawlerTrigger.addDependency(eventsCrawler);
 
-    // Event that starts ETL job
-    const etlJobStatusEventsRule = new events.Rule(this, "EtlJobStatusEvents", {
-      description: `CloudWatch Events Rule for generating status events for the Glue ETL Job for ${cdk.Aws.STACK_NAME}.`,
-      eventPattern: {
-        detailType: ["Glue Job State Change"],
-        source: ["aws.glue"],
-        detail: {
-          jobName: [gameEventsEtlJob.ref],
-        },
-      },
-      enabled: true,
-      targets: [new eventstargets.SnsTopic(props.notificationsTopic)],
-    });
-    etlJobStatusEventsRule.node.addDependency(gameEventsEtlJob);
+      // Trigger to start glue job
+      const gameEventsETLJobTrigger = new glueCfn.CfnTrigger(
+        this,
+        "GameEventsTriggerETLJob",
+        {
+          workflowName: gameEventsWorkflow.ref,
+          type: "SCHEDULED",
+          description: `Triggers the start of ETL job to process raw_events, for stack ${cdk.Aws.STACK_NAME}.`,
+          actions: [
+            {
+              jobName: gameEventsEtlJob.ref,
+            },
+          ],
+          schedule: "cron(0 * * * ? *)",
+          startOnCreation: true
+        }
+      );
+      gameEventsETLJobTrigger.addDependency(gameEventsEtlJob);
+      gameEventsETLJobTrigger.addDependency(gameEventsWorkflow);
 
-    const glueCrawlerStatusEventsRule = new events.Rule(
-      this,
-      "GlueCrawlerStatusEvents",
-      {
-        description: `CloudWatch Events Rule for generating status events for Glue ETL Job for stack ${cdk.Aws.STACK_NAME}`,
+      // Event that starts ETL job
+      const etlJobStatusEventsRule = new events.Rule(this, "EtlJobStatusEvents", {
+        description: `CloudWatch Events Rule for generating status events for the Glue ETL Job for ${cdk.Aws.STACK_NAME}.`,
         eventPattern: {
+          detailType: ["Glue Job State Change"],
           source: ["aws.glue"],
-          detailType: ["Glue Crawler State Change"],
           detail: {
-            crawlerName: [eventsCrawler.ref],
+            jobName: [gameEventsEtlJob.ref],
           },
         },
         enabled: true,
         targets: [new eventstargets.SnsTopic(props.notificationsTopic)],
-      }
-    );
-    glueCrawlerStatusEventsRule.node.addDependency(eventsCrawler);
+      });
+      etlJobStatusEventsRule.node.addDependency(gameEventsEtlJob);
 
+      const glueCrawlerStatusEventsRule = new events.Rule(
+        this,
+        "GlueCrawlerStatusEvents",
+        {
+          description: `CloudWatch Events Rule for generating status events for Glue ETL Job for stack ${cdk.Aws.STACK_NAME}`,
+          eventPattern: {
+            source: ["aws.glue"],
+            detailType: ["Glue Crawler State Change"],
+            detail: {
+              crawlerName: [eventsCrawler.ref],
+            },
+          },
+          enabled: true,
+          targets: [new eventstargets.SnsTopic(props.notificationsTopic)],
+        }
+      );
+      glueCrawlerStatusEventsRule.node.addDependency(eventsCrawler);
+
+    }
     this.gameEventsEtlJob = gameEventsEtlJob;
     this.gameEventsIcebergJob = gameEventsIcebergJob;
     this.icebergSetupJob = this.icebergSetupJob;
