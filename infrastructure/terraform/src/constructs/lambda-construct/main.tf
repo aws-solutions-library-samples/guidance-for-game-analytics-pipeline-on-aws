@@ -18,6 +18,8 @@ module "events_processing_function" {
   create_role = false
   lambda_role = aws_iam_role.events_processing_function_role.arn
 
+  tracing_mode = "PassThrough"
+
   environment_variables = {
       APPLICATIONS_TABLE    = var.applications_table_name
       CACHE_TIMEOUT_SECONDS = "60"
@@ -39,6 +41,8 @@ module "lambda_authorizer" {
 
   create_role = false
   lambda_role = aws_iam_role.lambda_authorizer_role.arn
+
+  tracing_mode = "PassThrough"
 
   environment_variables = {
       AUTHORIZATIONS_TABLE             = var.authorizations_table_name
@@ -63,6 +67,8 @@ module "application_admin_service_function" {
 
   create_role = false
   lambda_role = aws_iam_role.application_admin_service_function_role.arn
+
+  tracing_mode = "PassThrough"
 
   environment_variables = merge({
       AUTHORIZATIONS_TABLE             = var.authorizations_table_name
