@@ -68,6 +68,7 @@ function. This function to process and transform raw events before they get writ
         timeout: cdk.Duration.minutes(5),
         runtime: lambda.Runtime.NODEJS_22_X,
         tracing: lambda.Tracing.PASS_THROUGH,
+        architecture: lambda.Architecture.ARM_64,
         environment: {
           APPLICATIONS_TABLE: props.applicationsTable.tableName,
           CACHE_TIMEOUT_SECONDS: "60",
@@ -88,6 +89,7 @@ function. This function to process and transform raw events before they get writ
       timeout: cdk.Duration.seconds(60),
       runtime: lambda.Runtime.NODEJS_22_X,
       tracing: lambda.Tracing.PASS_THROUGH,
+      architecture: lambda.Architecture.ARM_64,
       environment: {
         AUTHORIZATIONS_TABLE: props.authorizationsTable.tableName,
         APPLICATION_AUTHORIZATIONS_INDEX: "ApplicationAuthorizations",
@@ -122,6 +124,7 @@ This function provides the application admin microservice. */
         timeout: cdk.Duration.seconds(60),
         runtime: lambda.Runtime.NODEJS_22_X,
         tracing: lambda.Tracing.PASS_THROUGH,
+        architecture: lambda.Architecture.ARM_64,
         environment: {
           AUTHORIZATIONS_TABLE: props.authorizationsTable.tableName,
           APPLICATION_AUTHORIZATIONS_INDEX: "ApplicationAuthorizations",
