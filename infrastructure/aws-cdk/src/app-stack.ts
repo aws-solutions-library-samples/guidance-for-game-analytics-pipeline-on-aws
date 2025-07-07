@@ -85,7 +85,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     // Core bucket for the solution, holds all pre and post processed analytics data, athena and glue are backed by this bucket as well
     const analyticsBucket = new s3.Bucket(this, "AnalyticsBucket", {
-      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
+      objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
       removalPolicy: props.config.DEV_MODE
         ? cdk.RemovalPolicy.DESTROY
         : cdk.RemovalPolicy.RETAIN,

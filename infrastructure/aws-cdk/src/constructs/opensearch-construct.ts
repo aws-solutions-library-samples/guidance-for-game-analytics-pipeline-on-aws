@@ -52,7 +52,7 @@ export class OpenSearchConstruct extends Construct {
 
     // dead letter queue for ingestion pipeline
     const dlqBucket = new s3.Bucket(this, "DeadLetterQueue", {
-      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
+      objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
       removalPolicy: props.config.DEV_MODE
         ? cdk.RemovalPolicy.DESTROY
         : cdk.RemovalPolicy.RETAIN,
