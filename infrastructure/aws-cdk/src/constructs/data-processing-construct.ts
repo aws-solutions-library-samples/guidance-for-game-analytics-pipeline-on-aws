@@ -386,6 +386,7 @@ export class DataProcessingConstruct extends Construct {
           "--enable-glue-datacatalog": "true",
         },
       });
+      this.icebergSetupJob = icebergSetupJob;
     }
 
     // Crawler crawls s3 partitioned data

@@ -103,7 +103,10 @@ export class OpenSearchConstruct extends Construct {
           "ResourceType": "collection"
         }
       ],
-      "AllowFromPublic": true
+      "SourceServices" : [
+          "application.opensearchservice.amazonaws.com"
+      ],
+      "AllowFromPublic": false
     },
     ]
 
