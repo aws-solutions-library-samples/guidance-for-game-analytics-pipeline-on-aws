@@ -6,6 +6,8 @@ data "aws_caller_identity" "current" {}
 resource "aws_kinesis_stream" "metric_output_stream" {
   name        = "${var.stack_name}-MetricOutputStream-${var.suffix}"
   shard_count = var.stream_shard_count
+  encryption_type  = "KMS"
+  kms_key_id       = "alias/aws/kinesis"
 
   stream_mode_details {
     stream_mode = "PROVISIONED"

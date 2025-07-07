@@ -350,6 +350,8 @@ resource "aws_kinesis_stream" "game_events_stream" {
   count            = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" || local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? 1 : 0
   name             = "${local.config.WORKLOAD_NAME}-GameEventStream-${random_string.stack-random-id-suffix.result}"
   shard_count      = local.config.STREAM_PROVISIONED ? local.config.STREAM_SHARD_COUNT : null
+  encryption_type  = "KMS"
+  kms_key_id       = "alias/aws/kinesis"
 
   stream_mode_details {
     stream_mode = local.config.STREAM_PROVISIONED ? "PROVISIONED" : "ON_DEMAND"
