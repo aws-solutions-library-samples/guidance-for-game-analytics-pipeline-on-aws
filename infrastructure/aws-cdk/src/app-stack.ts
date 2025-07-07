@@ -298,8 +298,10 @@ export class InfrastructureStack extends cdk.Stack {
         (props.config.STREAM_PROVISIONED === true) ? {
           shardCount: props.config.STREAM_SHARD_COUNT,
           streamMode: kinesis.StreamMode.PROVISIONED,
+          removalPolicy: cdk.RemovalPolicy.DESTROY
         } : {
           streamMode: kinesis.StreamMode.ON_DEMAND,
+          removalPolicy: cdk.RemovalPolicy.DESTROY
         });
 
       if (props.config.REAL_TIME_ANALYTICS === true && gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
