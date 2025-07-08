@@ -77,8 +77,27 @@ The following resources are required to install, configure, and deploy the game 
 	CDK_DOCKER="finch"
 	```
 
+	This can also be added to the `~/.bashrc` file to be configured for every interactive shell. If you are using mac, replace `~/.bashrc` with `~/.zshrc `
+	```bash
+	echo 'CDK_DOCKER="finch"' >> ~/.bashrc 
+	```
+
 	!!! Warning
 		The NPM commands to build and deploy the project are written to use UNIX shell commands. Because of this, **the manual install is incompatible with the Windows Powershell** without modifications to the NPM commands. Please consider using the Dev Container to have a consistent deployment environment.
+
+---
+
+### (Optional) Install esbuild
+
+By default, CDK will build node.js lambdas using a docker container. This provides a consistent build enviornment, but leads to high build times before each deployment and can have increased performance impacts on MacOS and docker-in-docker enviornments. `esbuild` is an alternative option to build node.js lambdas. If available, CDK will use `esbuild` to build the lambdas.
+
+To install esbuild, navigate to the root of the repository and enter the following command:
+
+```bash
+npm install .
+```
+
+`esbuild` is listed as a development dependency under `package.json` and will be installed.
 
 ---
 
@@ -114,6 +133,18 @@ The Game Analytics Pipeline can be deployed using [AWS Cloud Development Kit (CD
 	region = "REGION"
 	}
 	```
+
+---
+
+### CDK Only - Configuring ESBuild
+
+This repository utilizes L2 constructs for Nodejs based lambda functions. These constructs handle the bundling of lambda code for deployment. By default, the construct will utilize a Docker container to compile the function, however, this option is slow. If ESBuild is installed, the L2 construct will build the function using ESBuild instead which leads to faster build times.
+
+ESBuild is specified as a development dependency in `package.json`. At the root of the repository, install the necessary modules by running the following command:
+
+```bash
+npm install .
+```
 
 ---
 
@@ -184,7 +215,7 @@ Before sending events to the pipeline, an Application and corresponding Authoriz
 		- Configure `access_key` to be the access key of the identity used to deploy the stack
 		- Configure `secret_access_key` to be the secret access key of the identity used to deploy the stack
 		- Leave `application_id` blank. This will be filled in later.
-	4. Ensure the collection variables are created
+	4. Ensure the colleciton variables are created
 
 		![Bruno Environment Sample](media/bruno-enviornment-sample.png)
 
