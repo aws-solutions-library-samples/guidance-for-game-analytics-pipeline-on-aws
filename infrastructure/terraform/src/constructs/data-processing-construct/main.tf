@@ -490,6 +490,7 @@ resource "aws_glue_job" "iceberg_setup_job" {
 
 # Glue Crawler
 resource "aws_glue_crawler" "events_crawler" {
+  count = var.enable_apache_iceberg_support ? 0 : 1
   database_name = var.events_database
   name          = "${var.stack_name}-EventsCrawler"
   role          = aws_iam_role.glue_crawler_role.arn
@@ -521,6 +522,7 @@ resource "aws_glue_crawler" "events_crawler" {
 
 # Glue Workflow
 resource "aws_glue_workflow" "game_events_workflow" {
+  count = var.enable_apache_iceberg_support ? 0 : 1
   name = "${var.stack_name}-GameEventsWorkflow"
   description = "Orchestrates a Glue ETL Job and Crawler to process data in S3 and update data catalog, for stack ${var.stack_name}"
   default_run_properties = {
@@ -539,13 +541,14 @@ resource "aws_glue_workflow" "game_events_workflow" {
 
 # Glue Trigger for Crawler
 resource "aws_glue_trigger" "game_events_crawler_trigger" {
+  count = var.enable_apache_iceberg_support ? 0 : 1
   name          = "${var.stack_name}-GameEventsCrawlerTrigger"
   type          = "CONDITIONAL"
-  workflow_name = aws_glue_workflow.game_events_workflow.name
+  workflow_name = aws_glue_workflow.game_events_workflow[0].name
   description = "Starts a crawler to update the Glue Data Catalog with any changes detected in the processed_events S3 prefix after the ETL job runs, for stack ${var.stack_name}"
   start_on_creation = true
   actions {
-    crawler_name = aws_glue_crawler.events_crawler.name
+    crawler_name = aws_glue_crawler.events_crawler[0].name
   }
   
   predicate {
@@ -559,10 +562,11 @@ resource "aws_glue_trigger" "game_events_crawler_trigger" {
 
 # Glue Trigger for ETL Job
 resource "aws_glue_trigger" "game_events_etl_job_trigger" {
+  count = var.enable_apache_iceberg_support ? 0 : 1
   name          = "${var.stack_name}-GameEventsTriggerETLJob"
   type          = "SCHEDULED"
   description = "Triggers the start of ETL job to process raw_events, for stack ${var.stack_name}."
-  workflow_name = aws_glue_workflow.game_events_workflow.name
+  workflow_name = aws_glue_workflow.game_events_workflow[0].name
   schedule = "cron(0 * * * ? *)"
   
   actions {
@@ -592,6 +596,7 @@ resource "aws_cloudwatch_event_target" "etl_job_status_events_target" {
 
 # CloudWatch Event Rule for Glue Crawler Status
 resource "aws_cloudwatch_event_rule" "glue_crawler_status_events" {
+  count = var.enable_apache_iceberg_support ? 0 : 1
   name        = "${var.stack_name}-GlueCrawlerStatusEvents"
   description = "CloudWatch Events Rule for generating status events for Glue Crawler for stack ${var.stack_name}"
   
@@ -599,13 +604,14 @@ resource "aws_cloudwatch_event_rule" "glue_crawler_status_events" {
     source      = ["aws.glue"]
     detail-type = ["Glue Crawler State Change"]
     detail      = {
-      crawlerName = [aws_glue_crawler.events_crawler.name]
+      crawlerName = [aws_glue_crawler.events_crawler[0].name]
     }
   })
 }
 
 resource "aws_cloudwatch_event_target" "glue_crawler_status_events_target" {
-  rule      = aws_cloudwatch_event_rule.glue_crawler_status_events.name
+  count = var.enable_apache_iceberg_support ? 0 : 1
+  rule      = aws_cloudwatch_event_rule.glue_crawler_status_events[0].name
   target_id = "SendToSNS"
   arn       = var.notifications_topic_arn
 }
