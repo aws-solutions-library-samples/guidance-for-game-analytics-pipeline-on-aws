@@ -87,20 +87,6 @@ The following resources are required to install, configure, and deploy the game 
 
 ---
 
-### (Optional) Install esbuild
-
-By default, CDK will build node.js lambdas using a docker container. This provides a consistent build enviornment, but leads to high build times before each deployment and can have increased performance impacts on MacOS and docker-in-docker enviornments. `esbuild` is an alternative option to build node.js lambdas. If available, CDK will use `esbuild` to build the lambdas.
-
-To install esbuild, navigate to the root of the repository and enter the following command:
-
-```bash
-npm install .
-```
-
-`esbuild` is listed as a development dependency under `package.json` and will be installed.
-
----
-
 ## Configuration
 
 The Game Analytics Pipeline can be deployed using [AWS Cloud Development Kit (CDK)](https://aws.amazon.com/cdk/) or [Terraform](https://developer.hashicorp.com/terraform). 
@@ -138,13 +124,15 @@ The Game Analytics Pipeline can be deployed using [AWS Cloud Development Kit (CD
 
 ### CDK Only - Configuring ESBuild
 
-This repository utilizes L2 constructs for Nodejs based lambda functions. These constructs handle the bundling of lambda code for deployment. By default, the construct will utilize a Docker container to compile the function, however, this option is slow. If ESBuild is installed, the L2 construct will build the function using ESBuild instead which leads to faster build times.
+This repository utilizes L2 constructs for Nodejs based lambda functions. These constructs handle the bundling of lambda code for deployment. By default, the construct will utilize a Docker container to compile the function, however, this option leads to high build times before each deployment and can have increased performance impacts on MacOS and docker-in-docker enviornments. If `esbuild` is installed, the L2 construct will build the function using `esbuild` instead which leads to faster build times.
 
-ESBuild is specified as a development dependency in `package.json`. At the root of the repository, install the necessary modules by running the following command:
+To install `esbuild`, navigate to the root of the repository and enter the following command:
 
 ```bash
 npm install .
 ```
+
+`esbuild` is listed as a development dependency under `package.json` and will be installed.
 
 ---
 
