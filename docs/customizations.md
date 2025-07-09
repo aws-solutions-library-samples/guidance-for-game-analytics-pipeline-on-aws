@@ -32,7 +32,12 @@ IAM Access or SSO
 
 ### Creating Visualizations and Dashboards with OpenSearch
 
-TSVB
+The metric data stored in the OpenSearch index can be used to create visualizations which can be combined into dashboards. OpenSearch offers a [variety of visualizations](https://docs.opensearch.org/docs/latest/dashboards/visualize/viz-index/) as well as the [Dashboards Query Language (DQL)](https://docs.opensearch.org/docs/latest/dashboards/dql/) to filter data.
+
+A strong visualization for metrics are time-series visualizations. These can be created using the [Time-Series Visual Builder (TSVB)](https://docs.opensearch.org/docs/latest/dashboards/visualize/tsvb/) visualization tool.
+
+Since different metrics have different dimension data, it is strongly recommended to filter data for a specific metric name before proceeding with metric creation. This can be done using the DQL filter under options.
+    ![Metric Filter](media/os_filter.png)
 
 ## NOTE: operating (metrics, etc)
 
