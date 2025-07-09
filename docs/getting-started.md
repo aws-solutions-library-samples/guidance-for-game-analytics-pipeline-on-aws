@@ -351,29 +351,41 @@ The request to send events to the solution API must include a valid API key in t
 
 === "Real-Time Analytics"
 
-	If `REAL_TIME_ANALYTICS` is set to `true`, an OpenSearch Serverless collection will be created to store and index the time series metrics. 
+	If `REAL_TIME_ANALYTICS` is set to `true`, an OpenSearch Serverless collection will be created to store and index the time series metrics emitted by the Managed Service for Apache Flink application that is initiated in the [Starting Flink](#real-time-only---starting-flink) step. 
 
-	An acccompanying [OpenSearch UI Application](https://aws.amazon.com/blogs/big-data/amazon-opensearch-service-launches-the-next-generation-opensearch-ui/) is created to query and visualize the data emitted by real time analytics.
+	An acccompanying [OpenSearch UI Application](https://aws.amazon.com/blogs/big-data/amazon-opensearch-service-launches-the-next-generation-opensearch-ui/) is created to query and visualize the data emitted by real time analytics. To access this application, ensure you are logged in to the AWS console in your browser of choice with the created OpenSearch Admin IAM role.
 
-	1. Locate the URL output of the application from deployment. 
+	1. Ensure you are logged in to the AWS console with an existing administrator IAM role. This account must have the `sts:AssumeRole` permission to [switch roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_permissions-to-switch.html).
+	2. Locate the link to assume the IAM role from the output of the deployed stack. 
+		- If deployed using CDK, this output is identified by `CentralizedGameAnalytics.OpensearchAdminAssumeUrl`. 
+		- If deployed using Terraform, this output is identified by `opensearch_admin_assume_url`
+	3. Paste the link into your browser of choice, confirm the details are correct, and click **Switch Role** to assume the admin role. The assumed role should have the name of your configured `PROJECT_NAME` followed by `-OpenSearchAdmin`.
+		![Access Admin Role](media/os_assume_role.png)
+	4. Verify that you have assumed the admin IAM role by checking the role at the top right of the AWS console.
+	5. Locate the link to the OpenSearch application from the output of the deployed stack. 
 		- If deployed using CDK, this output is identified by `CentralizedGameAnalytics.OpenSearchDashboardEndpoint`. 
 		- If deployed using Terraform, this output is identified by `opensearch_dashboard_endpoint`
-	2. Paste the URL into your browser of choice. Ensure that you are logged in to the AWS console before proceeding. 
-	3. On the main dashboard page, click on **Create workspace** under Essentials
+	6. Paste the URL into your browser of choice. Ensure that you are logged in to the AWS console as the OpenSearch Admin before proceeding. 
+	7. On the main dashboard page, verify that you are logged in as the OpenSearch Admin by clicking on the "a" icon on the bottom right and viewing the associated role.
+		![Verify Assumed Identity](media/os_validate_identity.png)
+	8. On the main dashboard page, click on **Create workspace** under Essentials
 		![Create Workspace](media/os_home.png)
-	4. On the next page, provide a name and description to the workspace
+	9. On the next page, provide a name and description to the workspace
 	5. Under Associate data sources, click **Associate OpenSearch data sources**
 		![Associate Data Source](media/os_associate.png)
-	6. Select the Game Analytics Pipeline Metric Collection and click **Associate data sources**
+	10. Select the Game Analytics Pipeline Metric Collection and click **Associate data sources**
 		![Data Source](media/os_datasource.png)
-	7. If needed, change the visibility of the workspace in the last section
-	8. Click Create workspace
-	9. On the left side, select **Index patterns** and click **Create index pattern**
+	11. If needed, change the visibility of the workspace in the last section
+	12. Click Create workspace
+	13. On the left side, select **Index patterns** and click **Create index pattern**
 		![Create Workspace](media/os_index_home.png)
-	10. Select the associated data source and click Next
-	11. In the field for Index pattern name, enter `game_metrics`
+	14. Select the associated data source and click Next
+	15. In the field for Index pattern name, enter `game_metrics*`
 		![Create Workspace](media/os_index_pattern.png)
-	12. Create the index pattern
+	16. Create the index pattern and verify the fields of the index
+		![Validate Fields](media/os_fields.png)
+	17. View the raw data stored in the index by navigating to the **Discover** tab on the left. If there is no data shown, adjust the time window using the control at the top right. 
+		![View Data](media/os_data.png)
 
 	Using the created game_metrics index pattern you can create time series visualizations of the real-time metrics.
 

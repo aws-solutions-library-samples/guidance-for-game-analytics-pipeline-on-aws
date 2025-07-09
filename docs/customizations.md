@@ -6,12 +6,24 @@
 
 ## Custom ETL
 
+### (Optional) Iceberg Parameter Setup
+
+If the data lake is configured with Apache Iceberg, configuration parameters are needed to enable Apache Iceberg for Spark jobs. 
+
 ## Modifying schema
 
 ## Modifying/extending architecture
 - Allow both Redshift and non-redshift
 
 ## Modifying dashboards (ops and analytics)
+
+### Configuring Access to OpenSearch UI 
+
+IAM Access or SSO
+
+### Creating Visualizations and Dashboards with OpenSearch
+
+TSVB
 
 ## NOTE: operating (metrics, etc)
 
