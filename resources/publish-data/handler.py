@@ -430,7 +430,7 @@ def send_record_batch(api_path, api_key, raw_records):
 
     # Translate input records into the format needed by API
     payload = {"events": raw_records}
-    headers = {"content-type": "application/json", "authorization": api_key}
+    headers = {"Content-Type": "application/json", "Authorization": api_key}
 
     response = requests.post(api_path, json=payload, headers=headers)
     if response.status_code == 200:
