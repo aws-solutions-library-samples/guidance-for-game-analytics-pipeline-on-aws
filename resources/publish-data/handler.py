@@ -215,7 +215,18 @@ def getEvent(event_type):
                     random.choices(
                         countries,
                         k=1,
-                        weights=[0.3, 0.1, 0.2, 0.05, 0.05, 0.02, 0.15, 0.05, 0.03, 0.05],
+                        weights=[
+                            0.3,
+                            0.1,
+                            0.2,
+                            0.05,
+                            0.05,
+                            0.02,
+                            0.15,
+                            0.05,
+                            0.03,
+                            0.05,
+                        ],
                     )[0]
                 ),
                 "platform": str(
@@ -241,7 +252,18 @@ def getEvent(event_type):
                     random.choices(
                         items,
                         k=1,
-                        weights=[0.125, 0.11, 0.35, 0.125, 0.04, 0.01, 0.07, 0.1, 0.05, 0.02],
+                        weights=[
+                            0.125,
+                            0.11,
+                            0.35,
+                            0.125,
+                            0.04,
+                            0.01,
+                            0.07,
+                            0.1,
+                            0.05,
+                            0.02,
+                        ],
                     )[0]
                 ),
                 "item_version": random.randint(1, 2),
@@ -253,7 +275,18 @@ def getEvent(event_type):
                     random.choices(
                         items,
                         k=1,
-                        weights=[0.125, 0.11, 0.35, 0.125, 0.04, 0.01, 0.07, 0.1, 0.05, 0.02],
+                        weights=[
+                            0.125,
+                            0.11,
+                            0.35,
+                            0.125,
+                            0.04,
+                            0.01,
+                            0.07,
+                            0.1,
+                            0.05,
+                            0.02,
+                        ],
                     )[0]
                 ),
                 "item_version": random.randint(1, 2),
@@ -265,7 +298,18 @@ def getEvent(event_type):
                     random.choices(
                         countries,
                         k=1,
-                        weights=[0.3, 0.1, 0.2, 0.05, 0.05, 0.02, 0.15, 0.05, 0.03, 0.05],
+                        weights=[
+                            0.3,
+                            0.1,
+                            0.2,
+                            0.05,
+                            0.05,
+                            0.02,
+                            0.15,
+                            0.05,
+                            0.03,
+                            0.05,
+                        ],
                     )[0]
                 ),
                 "currency_amount": random.randint(1, 10),
@@ -275,7 +319,9 @@ def getEvent(event_type):
         "tutorial_progression": {
             "event_data": {
                 "tutorial_screen_id": str(
-                    random.choices(tutorial_screens,k=1, weights=[0.3, 0.3, 0.2, 0.2])[0]
+                    random.choices(tutorial_screens, k=1, weights=[0.3, 0.3, 0.2, 0.2])[
+                        0
+                    ]
                 ),
                 "tutorial_screen_version": random.randint(1, 2),
             }
@@ -314,7 +360,9 @@ def getEvent(event_type):
                 ),
                 "matched_slots": random.randrange(start=1, stop=10),
                 "matching_failed_msg": str(
-                    random.choices(matching_failed_msg, k=1, weights=[0.35, 0.2, 0.45])[0]
+                    random.choices(matching_failed_msg, k=1, weights=[0.35, 0.2, 0.45])[
+                        0
+                    ]
                 ),
             }
         },
@@ -329,9 +377,9 @@ def getEvent(event_type):
                 "match_id": str(random.choice(MATCHES)),
                 "map_id": str(random.choices(maps, k=1, weights=[0.3, 0.3, 0.4])[0]),
                 "match_result_type": str(
-                    random.choices(game_results, k=1, weights=[0.4, 0.4, 0.05, 0.05, 0.1])[
-                        0
-                    ]
+                    random.choices(
+                        game_results, k=1, weights=[0.4, 0.4, 0.05, 0.05, 0.1]
+                    )[0]
                 ),
                 "exp_gained": random.randrange(start=100, stop=200),
                 "most_used_spell": str(
@@ -358,7 +406,9 @@ def getEvent(event_type):
         "level_failed": {
             "event_data": {
                 "level_id": str(
-                    random.choices(levels, k=1, weights=[0.001, 0.049, 0.05, 0.3, 0.6])[0]
+                    random.choices(levels, k=1, weights=[0.001, 0.049, 0.05, 0.3, 0.6])[
+                        0
+                    ]
                 ),
                 "level_version": random.randint(1, 2),
             }
@@ -368,13 +418,26 @@ def getEvent(event_type):
                 "lootbox_id": str(uuid.uuid4()),
                 "lootbox_cost": random.randint(2, 5),
                 "item_rarity": str(
-                    random.choices(item_rarities, k=1, weights=[0.5, 0.3, 0.17, 0.03])[0]
+                    random.choices(item_rarities, k=1, weights=[0.5, 0.3, 0.17, 0.03])[
+                        0
+                    ]
                 ),
                 "item_id": str(
                     random.choices(
                         items,
                         k=1,
-                        weights=[0.125, 0.11, 0.35, 0.125, 0.04, 0.01, 0.07, 0.1, 0.05, 0.02],
+                        weights=[
+                            0.125,
+                            0.11,
+                            0.35,
+                            0.125,
+                            0.04,
+                            0.01,
+                            0.07,
+                            0.1,
+                            0.05,
+                            0.02,
+                        ],
                     )[0]
                 ),
                 "item_version": random.randint(1, 2),
@@ -409,7 +472,9 @@ def generate_event():
         "event_name": event_name,
         "event_timestamp": int(time.time()),
         "app_version": str(
-            random.choices(["1.0.0", "1.1.0", "1.2.0"], k=1, weights=[0.05, 0.80, 0.15])[0]
+            random.choices(
+                ["1.0.0", "1.1.0", "1.2.0"], k=1, weights=[0.05, 0.80, 0.15]
+            )[0]
         ),
     }
 
@@ -428,7 +493,9 @@ def send_record_batch(api_path, api_key, raw_records):
     if response.status_code == 200:
         print(f"Successfully sent {len(raw_records)} records to endpoint {api_path}.")
     else:
-        print(f"Failed to send events to endpoint {api_path} with status code {response.status_code}.")
+        print(
+            f"Failed to send events to endpoint {api_path} with status code {response.status_code}."
+        )
         print(response.json())
         print(response.reason)
 
@@ -451,8 +518,12 @@ def send_data(params):
     api_key = params["api_key"]
     batch_size = params["batch_size"] or DEFAULT_BATCH_SIZE
     application_id = params["application_id"]
-
-    api_full_path = f"{api_path}/applications/{application_id}/events"
+    # omit trailing slash
+    api_full_path = (
+        f"{api_path}/applications/{application_id}/events"
+        if api_path[-1] != "/"
+        else f"{api_path}applications/{application_id}/events"
+    )
 
     print("===========================================")
     print("CONFIGURATION PARAMETERS:")
