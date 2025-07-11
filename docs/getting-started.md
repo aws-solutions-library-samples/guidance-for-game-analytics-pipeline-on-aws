@@ -214,6 +214,8 @@ Before sending events to the pipeline, an Application and corresponding Authoriz
 
 After the pipeline is deployed, a new application must be created using the Application API. 
 
+### Create a new Application
+
 - Navigate under the **Applications** tab of the collection and select the **Create Application** API. 
 - Modify the value of Name and Description to match your game.
 - Execute the API. **Note the value of the `"ApplicationId"` in the API response.**
@@ -221,6 +223,8 @@ After the pipeline is deployed, a new application must be created using the Appl
 - Refer to the [API Reference for POST - Create Application](./references/api-reference.md#post---create-application) for more information on how to register a new application. 
 
 After the application is created, create an API key to send events to the API. 
+
+### Create a new API Key
 
 - Navigate under the **Authorizations** tab of the collection and select the **Create Authorization** API.
 - The `"ApplicationId"` from the previous step should be passed in the API path automatically. 
@@ -275,9 +279,18 @@ For more information and troubleshooting, refer to the documentation for [Run a 
 
 ## Send Events to the Pipeline
 
-Refer to the [API Reference for POST - Send Events](./references/api-reference.md#post---send-events) for details on how to send events to the API endpoint.
+This project contains a python script to send a simulated stream of events to the pipeline. The script is located at `resources/publish-data/handler.py`. To run the script, execute the following
+```bash
+python resources/publish-data/handler.py --api-path <API_PATH> --api-key <API_KEY> --application-id <APPLICATION_ID>
+```
 
-The request to send events to the solution API must include a valid API key in the Authorization header, which is authorized to send events for the application. **Include the `"ApplicationId"` in the API URL path and the `"ApiKeyValue"` of the API authorization in the header of the request. These were created during the [Creating a new Application step](#creating-a-new-application) in this guide.**
+
+- Replace `<API_PATH>` with the value of the API endpoint retrieved after deployment during step 1 of [Start initial Application and API](#start-initial-application-and-api)
+- Replace `<APPLICATION_ID>` with the value of `"ApplicationId"` created during the [Create a new Application step](#create-a-new-application).
+- Replace `<API_KEY>` with the value of `"ApiKeyValue"` created during the [Create a new API Key step](#create-a-new-api-key).
+
+
+For more information, refer to the [API Reference for POST - Send Events](./references/api-reference.md#post-send-events) for the REST API schema to send events to the pipeline.
 
 ---
 
