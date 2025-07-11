@@ -254,7 +254,7 @@ By default, this table does not contain a configured partition specification. To
 
 If the `REAL_TIME_ANALYTICS` configuration is set to `true`, a Flink Application will be created. This application needs to be in the `RUNNING` state for incoming events to be processed in real time. 
 
-1. Locate the name of the iceberg setup job from the deployment outputs. Note this down for later.
+1. Locate the name of the Flink App from the deployment outputs. Note this down for later.
 	- The name of the job is the value of `CentralizedGameAnalytics.FlinkAppOutput` when using CDK.
 	- The name of the job is the value of `flink_app_output` when using Terraform.
 

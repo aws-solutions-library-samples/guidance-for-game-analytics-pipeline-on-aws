@@ -21,7 +21,6 @@ import time
 from datetime import datetime
 import uuid
 import os
-import numpy
 import argparse
 import requests
 
@@ -34,7 +33,7 @@ def parse_cmd_line():
     """Parse the command line and extract the necessary values."""
 
     parser = argparse.ArgumentParser(
-        description="Send data to a Kinesis stream for analytics. By default, the script "
+        description="Send data to a the Game Analytics Pipeline. By default, the script "
         "will send events infinitely. If an input file is specified, the "
         "script will instead read and transmit all of the events contained "
         "in the file and then terminate."
@@ -71,13 +70,6 @@ def parse_cmd_line():
         dest="batch_size",
         default=DEFAULT_BATCH_SIZE,
         help="The number of events to send at once using the Kinesis PutRecords API.",
-    )
-    parser.add_argument(
-        "--input-filename",
-        type=str,
-        dest="input_filename",
-        help="Send events from a file rather than randomly generate them. The format of the file"
-        " should be one JSON-formatted event per line.",
     )
 
     return parser.parse_args()
@@ -119,10 +111,10 @@ def getEventType():
         19: "user_sentiment",
     }
     return event_types[
-        numpy.random.choice(
+        random.choices(
             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-            1,
-            p=[
+            k=1,
+            weights=[
                 0.04,
                 0.05,
                 0.18,
@@ -202,8 +194,8 @@ def getEvent(event_type):
         "login": {
             "event_data": {
                 "platform": str(
-                    numpy.random.choice(
-                        platforms, 1, p=[0.2, 0.1, 0.3, 0.15, 0.1, 0.05, 0.1]
+                    random.choices(
+                        platforms, k=1, weights=[0.2, 0.1, 0.3, 0.15, 0.1, 0.05, 0.1]
                     )[0]
                 ),
                 "last_login_time": int(time.time()) - random.randint(40000, 4000000),
@@ -212,7 +204,7 @@ def getEvent(event_type):
         "logout": {"event_data": {"last_screen_seen": "the last screen"}},
         "client_latency": {
             "event_data": {
-                "latency": numpy.random.choice((random.randint(40, 185), 1)),
+                "latency": random.randint(40, 185),
                 "connected_server_id": str(random.choice(getUUIDs("servers", 3))),
                 "region": str(random.choice(countries)),
             }
@@ -220,15 +212,15 @@ def getEvent(event_type):
         "user_registration": {
             "event_data": {
                 "country_id": str(
-                    numpy.random.choice(
+                    random.choices(
                         countries,
-                        1,
-                        p=[0.3, 0.1, 0.2, 0.05, 0.05, 0.02, 0.15, 0.05, 0.03, 0.05],
+                        k=1,
+                        weights=[0.3, 0.1, 0.2, 0.05, 0.05, 0.02, 0.15, 0.05, 0.03, 0.05],
                     )[0]
                 ),
                 "platform": str(
-                    numpy.random.choice(
-                        platforms, 1, p=[0.2, 0.1, 0.3, 0.15, 0.1, 0.05, 0.1]
+                    random.choices(
+                        platforms, k=1, weights=[0.2, 0.1, 0.3, 0.15, 0.1, 0.05, 0.1]
                     )[0]
                 ),
             }
@@ -236,9 +228,9 @@ def getEvent(event_type):
         "user_knockout": {
             "event_data": {
                 "match_id": str(random.choice(MATCHES)),
-                "map_id": str(numpy.random.choice(maps, 1, p=[0.6, 0.3, 0.1])[0]),
+                "map_id": str(random.choices(maps, k=1, weights=[0.6, 0.3, 0.1])[0]),
                 "spell_id": str(
-                    numpy.random.choice(spells, 1, p=[0.1, 0.4, 0.3, 0.2])[0]
+                    random.choices(spells, k=1, weights=[0.1, 0.4, 0.3, 0.2])[0]
                 ),
                 "exp_gained": random.randint(1, 2),
             }
@@ -246,10 +238,10 @@ def getEvent(event_type):
         "item_viewed": {
             "event_data": {
                 "item_id": str(
-                    numpy.random.choice(
+                    random.choices(
                         items,
-                        1,
-                        p=[0.125, 0.11, 0.35, 0.125, 0.04, 0.01, 0.07, 0.1, 0.05, 0.02],
+                        k=1,
+                        weights=[0.125, 0.11, 0.35, 0.125, 0.04, 0.01, 0.07, 0.1, 0.05, 0.02],
                     )[0]
                 ),
                 "item_version": random.randint(1, 2),
@@ -258,22 +250,22 @@ def getEvent(event_type):
         "iap_transaction": {
             "event_data": {
                 "item_id": str(
-                    numpy.random.choice(
+                    random.choices(
                         items,
-                        1,
-                        p=[0.125, 0.11, 0.35, 0.125, 0.04, 0.01, 0.07, 0.1, 0.05, 0.02],
+                        k=1,
+                        weights=[0.125, 0.11, 0.35, 0.125, 0.04, 0.01, 0.07, 0.1, 0.05, 0.02],
                     )[0]
                 ),
                 "item_version": random.randint(1, 2),
                 "item_amount": random.randint(1, 4),
                 "currency_type": str(
-                    numpy.random.choice(currencies, 1, p=[0.7, 0.15, 0.1, 0.05])[0]
+                    random.choices(currencies, k=1, weights=[0.7, 0.15, 0.1, 0.05])[0]
                 ),
                 "country_id": str(
-                    numpy.random.choice(
+                    random.choices(
                         countries,
-                        1,
-                        p=[0.3, 0.1, 0.2, 0.05, 0.05, 0.02, 0.15, 0.05, 0.03, 0.05],
+                        k=1,
+                        weights=[0.3, 0.1, 0.2, 0.05, 0.05, 0.02, 0.15, 0.05, 0.03, 0.05],
                     )[0]
                 ),
                 "currency_amount": random.randint(1, 10),
@@ -283,7 +275,7 @@ def getEvent(event_type):
         "tutorial_progression": {
             "event_data": {
                 "tutorial_screen_id": str(
-                    numpy.random.choice(tutorial_screens, 1, p=[0.3, 0.3, 0.2, 0.2])[0]
+                    random.choices(tutorial_screens,k=1, weights=[0.3, 0.3, 0.2, 0.2])[0]
                 ),
                 "tutorial_screen_version": random.randint(1, 2),
             }
@@ -291,8 +283,8 @@ def getEvent(event_type):
         "user_rank_up": {
             "event_data": {
                 "user_rank_reached": str(
-                    numpy.random.choice(
-                        ranks, 1, p=[0.25, 0.35, 0.2, 0.15, 0.0499, 0.0001]
+                    random.choices(
+                        ranks, k=1, weights=[0.25, 0.35, 0.2, 0.15, 0.0499, 0.0001]
                     )[0]
                 )
             }
@@ -301,7 +293,7 @@ def getEvent(event_type):
             "event_data": {
                 "match_id": str(random.choice(MATCHES)),
                 "match_type": str(
-                    numpy.random.choice(match_types, 1, p=[0.4, 0.3, 0.3])[0]
+                    random.choices(match_types, k=1, weights=[0.4, 0.3, 0.3])[0]
                 ),
             }
         },
@@ -309,7 +301,7 @@ def getEvent(event_type):
             "event_data": {
                 "match_id": str(random.choice(MATCHES)),
                 "match_type": str(
-                    numpy.random.choice(match_types, 1, p=[0.6, 0.2, 0.2])[0]
+                    random.choices(match_types, k=1, weights=[0.6, 0.2, 0.2])[0]
                 ),
                 "matched_slots": random.randrange(start=6, stop=10),
             }
@@ -318,39 +310,39 @@ def getEvent(event_type):
             "event_data": {
                 "match_id": str(random.choice(MATCHES)),
                 "match_type": str(
-                    numpy.random.choice(match_types, 1, p=[0.35, 0.2, 0.45])[0]
+                    random.choices(match_types, k=1, weights=[0.35, 0.2, 0.45])[0]
                 ),
                 "matched_slots": random.randrange(start=1, stop=10),
                 "matching_failed_msg": str(
-                    numpy.random.choice(matching_failed_msg, 1, p=[0.35, 0.2, 0.45])[0]
+                    random.choices(matching_failed_msg, k=1, weights=[0.35, 0.2, 0.45])[0]
                 ),
             }
         },
         "match_start": {
             "event_data": {
                 "match_id": str(random.choice(MATCHES)),
-                "map_id": str(numpy.random.choice(maps, 1, p=[0.3, 0.3, 0.4])[0]),
+                "map_id": str(random.choices(maps, k=1, weights=[0.3, 0.3, 0.4])[0]),
             }
         },
         "match_end": {
             "event_data": {
                 "match_id": str(random.choice(MATCHES)),
-                "map_id": str(numpy.random.choice(maps, 1, p=[0.3, 0.3, 0.4])[0]),
+                "map_id": str(random.choices(maps, k=1, weights=[0.3, 0.3, 0.4])[0]),
                 "match_result_type": str(
-                    numpy.random.choice(game_results, 1, p=[0.4, 0.4, 0.05, 0.05, 0.1])[
+                    random.choices(game_results, k=1, weights=[0.4, 0.4, 0.05, 0.05, 0.1])[
                         0
                     ]
                 ),
                 "exp_gained": random.randrange(start=100, stop=200),
                 "most_used_spell": str(
-                    numpy.random.choice(spells, 1, p=[0.1, 0.4, 0.2, 0.3])[0]
+                    random.choices(spells, k=1, weights=[0.1, 0.4, 0.2, 0.3])[0]
                 ),
             }
         },
         "level_started": {
             "event_data": {
                 "level_id": str(
-                    numpy.random.choice(levels, 1, p=[0.2, 0.2, 0.2, 0.2, 0.2])[0]
+                    random.choices(levels, k=1, weights=[0.2, 0.2, 0.2, 0.2, 0.2])[0]
                 ),
                 "level_version": random.randint(1, 2),
             }
@@ -358,7 +350,7 @@ def getEvent(event_type):
         "level_completed": {
             "event_data": {
                 "level_id": str(
-                    numpy.random.choice(levels, 1, p=[0.6, 0.2, 0.12, 0.05, 0.03])[0]
+                    random.choices(levels, k=1, weights=[0.6, 0.2, 0.12, 0.05, 0.03])[0]
                 ),
                 "level_version": random.randint(1, 2),
             }
@@ -366,7 +358,7 @@ def getEvent(event_type):
         "level_failed": {
             "event_data": {
                 "level_id": str(
-                    numpy.random.choice(levels, 1, p=[0.001, 0.049, 0.05, 0.3, 0.6])[0]
+                    random.choices(levels, k=1, weights=[0.001, 0.049, 0.05, 0.3, 0.6])[0]
                 ),
                 "level_version": random.randint(1, 2),
             }
@@ -376,13 +368,13 @@ def getEvent(event_type):
                 "lootbox_id": str(uuid.uuid4()),
                 "lootbox_cost": random.randint(2, 5),
                 "item_rarity": str(
-                    numpy.random.choice(item_rarities, 1, p=[0.5, 0.3, 0.17, 0.03])[0]
+                    random.choices(item_rarities, k=1, weights=[0.5, 0.3, 0.17, 0.03])[0]
                 ),
                 "item_id": str(
-                    numpy.random.choice(
+                    random.choices(
                         items,
-                        1,
-                        p=[0.125, 0.11, 0.35, 0.125, 0.04, 0.01, 0.07, 0.1, 0.05, 0.02],
+                        k=1,
+                        weights=[0.125, 0.11, 0.35, 0.125, 0.04, 0.01, 0.07, 0.1, 0.05, 0.02],
                     )[0]
                 ),
                 "item_version": random.randint(1, 2),
@@ -393,7 +385,7 @@ def getEvent(event_type):
             "event_data": {
                 "report_id": str(uuid.uuid4()),
                 "report_reason": str(
-                    numpy.random.choice(report_reasons, 1, p=[0.2, 0.5, 0.1, 0.2])[0]
+                    random.choices(report_reasons, k=1, weights=[0.2, 0.5, 0.1, 0.2])[0]
                 ),
             }
         },
@@ -417,7 +409,7 @@ def generate_event():
         "event_name": event_name,
         "event_timestamp": int(time.time()),
         "app_version": str(
-            numpy.random.choice(["1.0.0", "1.1.0", "1.2.0"], 1, p=[0.05, 0.80, 0.15])[0]
+            random.choices(["1.0.0", "1.1.0", "1.2.0"], k=1, weights=[0.05, 0.80, 0.15])[0]
         ),
     }
 
