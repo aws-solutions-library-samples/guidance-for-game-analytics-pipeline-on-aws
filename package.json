@@ -16,10 +16,12 @@
     "tf:destroy": "cd infrastructure/terraform/src && terraform destroy",
     "deploy.bootstrap": "npm run $npm_package_config_iac:deploy.bootstrap",
     "deploy": "npm run $npm_package_config_iac:deploy",
-    "destroy": "npm run $npm_package_config_iac:destroy"
+    "destroy": "npm run $npm_package_config_iac:destroy",
+    "validate": "node validator.js"
   },
   "devDependencies": {
-    "esbuild": "^0.24.2"
+    "esbuild": "^0.24.2",
+    "js-yaml": "^4.1.0"
   },
   "dependencies": {
     "@types/node": "^22.13.17"

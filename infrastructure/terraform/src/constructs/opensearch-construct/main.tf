@@ -18,7 +18,7 @@ data "aws_caller_identity" "current" {}
 resource "aws_s3_bucket_ownership_controls" "dead_letter_queue_ownership" {
   bucket = aws_s3_bucket.dead_letter_queue.id
   rule {
-    object_ownership = "ObjectWriter"
+    object_ownership = "BucketOwnerEnforced"
   }
 }
 
@@ -71,7 +71,10 @@ resource "aws_opensearchserverless_security_policy" "network" {
       Resource     = ["collection/${local.collection_name}"]
       ResourceType = "collection"
     }]
-    AllowFromPublic = true
+    SourceServices = [
+      "application.opensearchservice.amazonaws.com"
+    ]
+    AllowFromPublic = false
   }])
 }
 

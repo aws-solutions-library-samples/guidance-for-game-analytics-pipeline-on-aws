@@ -41,6 +41,7 @@ const defaultProps: Partial<OpenSearchConstructProps> = {};
  */
 export class OpenSearchConstruct extends Construct {
   public readonly gapInterface: opensearchservice.CfnApplication;
+  public readonly osAdmin: iam.Role;
 
   constructor(parent: Construct, name: string, props: OpenSearchConstructProps) {
     super(parent, name);
@@ -377,5 +378,6 @@ export class OpenSearchConstruct extends Construct {
     gapInterface.addDependency(osCollection);
     gapInterface.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
     this.gapInterface = gapInterface;
+    this.osAdmin = osAdmin;
   }
 }

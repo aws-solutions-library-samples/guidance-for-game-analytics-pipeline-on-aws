@@ -73,7 +73,14 @@ Why is there a Kinesis Data Stream in between Flink and Opensearch for Real-Time
 ---
 
 When should I use Data Lake mode vs Redshift mode?
-- TODO: Need answer from Satesh
+
+The choice between AWS Data Lake mode and Redshift mode primarily depends on your latency requirements, query complexity, data volume, and concurrency needs.
+
+Redshift mode is ideal for scenarios demanding true real-time access to data, complex analytical queries, high-performance requirements, and support for high volume queries and high concurrency. 
+
+On the other hand, Data Lake mode is more appropriate when near real-time access is sufficient, and is a cost-effective solution for lower data volumes per query (typically less than 10GB) and lower concurrency needs. This mode also excels in scenarios requiring ad-hoc querying capabilities. 
+
+Kinesis data streams can be enabled with either solution, however, Firehose can only be enabled with a Data Lake for near-real-time analytics. This makes data lake mode more ideal to collect data for batch processing.
 
 ---
 

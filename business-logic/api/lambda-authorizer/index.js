@@ -366,11 +366,11 @@ exports.handler = async (event, context, callback) => {
      * Use Api Key to check if authorizations exist in Authorizations Table
      * Generate Allow POST /events associated with key
      */
-    if (!headers.Authorization) {
+    if (!headers.Authorization && !headers.authorization) {
         callback('Unauthorized');
     }
     
-    const apiKeyValue = headers.Authorization;
+    const apiKeyValue = (headers.Authorization) ? headers.Authorization : headers.authorization;
     let policy = new AuthPolicy(apiKeyValue, awsAccountId, apiOptions);
     let authResponse = {};
     // Returns array of authorizations or false if no authorizations are found for key

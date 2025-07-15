@@ -6,12 +6,38 @@
 
 ## Custom ETL
 
+### (Optional) Iceberg Parameter Setup
+
+If the data lake is configured with Apache Iceberg, Glue configuration parameters need to be specified to enable Apache Iceberg for Spark jobs. These can be specified under default parameters
+
+- Create a new parameter with the key `--datalake-formats`. Set the value to be `iceberg`.
+
+- Create a new parameter with the key `--enable-glue-datacatalog`. Set the value to be `true`.
+
+- Create a new parameter with the key `--conf`. Set the value to be `spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions --conf spark.sql.catalog.glue_catalog=org.apache.iceberg.spark.SparkCatalog --conf spark.sql.catalog.glue_catalog.warehouse=s3://<ANALYTICS_S3_BUCKET_NAME>/ --conf spark.sql.catalog.glue_catalog.catalog-impl=org.apache.iceberg.aws.glue.GlueCatalog --conf spark.sql.catalog.glue_catalog.io-impl=org.apache.iceberg.aws.s3.S3FileIO`. 
+    - Replace `<ANALYTICS_S3_BUCKET_NAME>` with the name of the created S3 bucket for analytics.
+
+You can view more on setting up Iceberg with Glue jobs [here](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).
+
 ## Modifying schema
 
 ## Modifying/extending architecture
 - Allow both Redshift and non-redshift
 
 ## Modifying dashboards (ops and analytics)
+
+### Configuring Access to OpenSearch UI 
+
+IAM Access or SSO
+
+### Creating Visualizations and Dashboards with OpenSearch
+
+The metric data stored in the OpenSearch index can be used to create visualizations which can be combined into dashboards. OpenSearch offers a [variety of visualizations](https://docs.opensearch.org/docs/latest/dashboards/visualize/viz-index/) as well as the [Dashboards Query Language (DQL)](https://docs.opensearch.org/docs/latest/dashboards/dql/) to filter data.
+
+A strong visualization for metrics are time-series visualizations. These can be created using the [Time-Series Visual Builder (TSVB)](https://docs.opensearch.org/docs/latest/dashboards/visualize/tsvb/) visualization tool.
+
+Since different metrics have different dimension data, it is strongly recommended to filter data for a specific metric name before proceeding with metric creation. This can be done using the DQL filter under options.
+    ![Metric Filter](media/os_filter.png)
 
 ## NOTE: operating (metrics, etc)
 

@@ -44,9 +44,12 @@ The following table shows unsupported configurations when options in this sectio
 
 - *Description:* Controls the data platform that event data is saved to for analysis. When set to `"DATA_LAKE"`, raw events are saved to a data lake in S3 and cataloged using Glue Data Catalog. When set to `"REDSHIFT"` events are using the [streaming ingestion feature of Redshift](https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-streaming-ingestion.html).
 
+
 - *Type:* String
 
 - *Example:* `"DATA_LAKE"`, `"REDSHIFT"`
+
+- **Do not change this configuration after the stack is deployed**
 
 `ENABLE_APACHE_ICEBERG_SUPPORT`
 
@@ -55,6 +58,8 @@ The following table shows unsupported configurations when options in this sectio
 - *Type:* Boolean
 
 - *Example:* `true`
+
+- **Do not change this configuration after the stack is deployed. If you would like to enable Iceberg, we recommend deploying a new stack in parallel and migrating existing data.**
 
 ## Real-Time Analytics Options
 
@@ -89,6 +94,8 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 
 - *Limitations:* For compatibility with tools, the name should consist of lowercase letters, numbers, and underscores and start with a letter.
 
+- **Do not change this configuration after the stack is deployed**
+
 `RAW_EVENTS_TABLE`
 
 - *Description:* The name of the of the [AWS Glue table](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) within which all new/raw data is cataloged.
@@ -99,6 +106,8 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 
 - *Limitations:* For compatibility with tools, the name should consist of lowercase letters, numbers, and underscores and start with a letter.
 
+- **Do not change this configuration after the stack is deployed**
+
 `RAW_EVENTS_PREFIX`
 
 - *Description:* The prefix for new/raw data files stored in S3.
@@ -106,6 +115,8 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 - *Type:* String
 
 - *Example:* `"raw_events"`
+
+- **Do not change this configuration after the stack is deployed**
 
 
 `PROCESSED_EVENTS_PREFIX`
@@ -116,6 +127,7 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 
 - *Example:* `"processed_events"`
 
+- **Do not change this configuration after the stack is deployed**
 
 `GLUE_TMP_PREFIX`
 

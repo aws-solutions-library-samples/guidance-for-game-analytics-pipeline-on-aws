@@ -77,6 +77,11 @@ The following resources are required to install, configure, and deploy the game 
 	CDK_DOCKER="finch"
 	```
 
+	This can also be added to the `~/.bashrc` file to be configured for every interactive shell. If you are using mac, replace `~/.bashrc` with `~/.zshrc `
+	```bash
+	echo 'CDK_DOCKER="finch"' >> ~/.bashrc 
+	```
+
 	!!! Warning
 		The NPM commands to build and deploy the project are written to use UNIX shell commands. Because of this, **the manual install is incompatible with the Windows Powershell** without modifications to the NPM commands. Please consider using the Dev Container to have a consistent deployment environment.
 
@@ -114,6 +119,20 @@ The Game Analytics Pipeline can be deployed using [AWS Cloud Development Kit (CD
 	region = "REGION"
 	}
 	```
+
+---
+
+### CDK Only - Configuring ESBuild
+
+This repository utilizes L2 constructs for Nodejs based lambda functions. These constructs handle the bundling of lambda code for deployment. By default, the construct will utilize a Docker container to compile the function, however, this option leads to high build times before each deployment and can have increased performance impacts on MacOS and docker-in-docker enviornments. If `esbuild` is installed, the L2 construct will build the function using `esbuild` instead which leads to faster build times.
+
+To install `esbuild`, navigate to the root of the repository and enter the following command:
+
+```bash
+npm install .
+```
+
+`esbuild` is listed as a development dependency under `package.json` and will be installed.
 
 ---
 
@@ -184,7 +203,7 @@ Before sending events to the pipeline, an Application and corresponding Authoriz
 		- Configure `access_key` to be the access key of the identity used to deploy the stack
 		- Configure `secret_access_key` to be the secret access key of the identity used to deploy the stack
 		- Leave `application_id` blank. This will be filled in later.
-	4. Ensure the collection variables are created
+	4. Ensure the colleciton variables are created
 
 		![Bruno Environment Sample](media/bruno-enviornment-sample.png)
 
@@ -195,6 +214,8 @@ Before sending events to the pipeline, an Application and corresponding Authoriz
 
 After the pipeline is deployed, a new application must be created using the Application API. 
 
+### Create a new Application
+
 - Navigate under the **Applications** tab of the collection and select the **Create Application** API. 
 - Modify the value of Name and Description to match your game.
 - Execute the API. **Note the value of the `"ApplicationId"` in the API response.**
@@ -202,6 +223,8 @@ After the pipeline is deployed, a new application must be created using the Appl
 - Refer to the [API Reference for POST - Create Application](./references/api-reference.md#post---create-application) for more information on how to register a new application. 
 
 After the application is created, create an API key to send events to the API. 
+
+### Create a new API Key
 
 - Navigate under the **Authorizations** tab of the collection and select the **Create Authorization** API.
 - The `"ApplicationId"` from the previous step should be passed in the API path automatically. 
@@ -235,7 +258,7 @@ By default, this table does not contain a configured partition specification. To
 
 If the `REAL_TIME_ANALYTICS` configuration is set to `true`, a Flink Application will be created. This application needs to be in the `RUNNING` state for incoming events to be processed in real time. 
 
-1. Locate the name of the iceberg setup job from the deployment outputs. Note this down for later.
+1. Locate the name of the Flink App from the deployment outputs. Note this down for later.
 	- The name of the job is the value of `CentralizedGameAnalytics.FlinkAppOutput` when using CDK.
 	- The name of the job is the value of `flink_app_output` when using Terraform.
 
@@ -256,9 +279,18 @@ For more information and troubleshooting, refer to the documentation for [Run a 
 
 ## Send Events to the Pipeline
 
-Refer to the [API Reference for POST - Send Events](./references/api-reference.md#post---send-events) for details on how to send events to the API endpoint.
+This project contains a python script to send a simulated stream of events to the pipeline. The script is located at `resources/publish-data/handler.py`. To run the script, execute the following
+```bash
+python resources/publish-data/handler.py --api-path <API_PATH> --api-key <API_KEY> --application-id <APPLICATION_ID>
+```
 
-The request to send events to the solution API must include a valid API key in the Authorization header, which is authorized to send events for the application. **Include the `"ApplicationId"` in the API URL path and the `"ApiKeyValue"` of the API authorization in the header of the request. These were created during the [Creating a new Application step](#creating-a-new-application) in this guide.**
+
+- Replace `<API_PATH>` with the value of the API endpoint retrieved after deployment during step 1 of [Start initial Application and API](#start-initial-application-and-api)
+- Replace `<APPLICATION_ID>` with the value of `"ApplicationId"` created during the [Create a new Application step](#create-a-new-application).
+- Replace `<API_KEY>` with the value of `"ApiKeyValue"` created during the [Create a new API Key step](#create-a-new-api-key).
+
+
+For more information, refer to the [API Reference for POST - Send Events](./references/api-reference.md#post-send-events) for the REST API schema to send events to the pipeline.
 
 ---
 
@@ -320,29 +352,41 @@ The request to send events to the solution API must include a valid API key in t
 
 === "Real-Time Analytics"
 
-	If `REAL_TIME_ANALYTICS` is set to `true`, an OpenSearch Serverless collection will be created to store and index the time series metrics. 
+	If `REAL_TIME_ANALYTICS` is set to `true`, an OpenSearch Serverless collection will be created to store and index the time series metrics emitted by the Managed Service for Apache Flink application that is initiated in the [Starting Flink](#real-time-only---starting-flink) step. 
 
-	An acccompanying [OpenSearch UI Application](https://aws.amazon.com/blogs/big-data/amazon-opensearch-service-launches-the-next-generation-opensearch-ui/) is created to query and visualize the data emitted by real time analytics.
+	An acccompanying [OpenSearch UI Application](https://aws.amazon.com/blogs/big-data/amazon-opensearch-service-launches-the-next-generation-opensearch-ui/) is created to query and visualize the data emitted by real time analytics. To access this application, ensure you are logged in to the AWS console in your browser of choice with the created OpenSearch Admin IAM role.
 
-	1. Locate the URL output of the application from deployment. 
+	1. Ensure you are logged in to the AWS console with an existing administrator IAM role. This account must have the `sts:AssumeRole` permission to [switch roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_permissions-to-switch.html).
+	2. Locate the link to assume the IAM role from the output of the deployed stack. 
+		- If deployed using CDK, this output is identified by `CentralizedGameAnalytics.OpensearchAdminAssumeUrl`. 
+		- If deployed using Terraform, this output is identified by `opensearch_admin_assume_url`
+	3. Paste the link into your browser of choice, confirm the details are correct, and click **Switch Role** to assume the admin role. The assumed role should have the name of your configured `PROJECT_NAME` followed by `-OpenSearchAdmin`.
+		![Access Admin Role](media/os_assume_role.png)
+	4. Verify that you have assumed the admin IAM role by checking the role at the top right of the AWS console.
+	5. Locate the link to the OpenSearch application from the output of the deployed stack. 
 		- If deployed using CDK, this output is identified by `CentralizedGameAnalytics.OpenSearchDashboardEndpoint`. 
 		- If deployed using Terraform, this output is identified by `opensearch_dashboard_endpoint`
-	2. Paste the URL into your browser of choice. Ensure that you are logged in to the AWS console before proceeding. 
-	3. On the main dashboard page, click on **Create workspace** under Essentials
+	6. Paste the URL into your browser of choice. Ensure that you are logged in to the AWS console as the OpenSearch Admin before proceeding. 
+	7. On the main dashboard page, verify that you are logged in as the OpenSearch Admin by clicking on the "a" icon on the bottom right and viewing the associated role.
+		![Verify Assumed Identity](media/os_validate_identity.png)
+	8. On the main dashboard page, click on **Create workspace** under Essentials
 		![Create Workspace](media/os_home.png)
-	4. On the next page, provide a name and description to the workspace
+	9. On the next page, provide a name and description to the workspace
 	5. Under Associate data sources, click **Associate OpenSearch data sources**
 		![Associate Data Source](media/os_associate.png)
-	6. Select the Game Analytics Pipeline Metric Collection and click **Associate data sources**
+	10. Select the Game Analytics Pipeline Metric Collection and click **Associate data sources**
 		![Data Source](media/os_datasource.png)
-	7. If needed, change the visibility of the workspace in the last section
-	8. Click Create workspace
-	9. On the left side, select **Index patterns** and click **Create index pattern**
+	11. If needed, change the visibility of the workspace in the last section
+	12. Click Create workspace
+	13. On the left side, select **Index patterns** and click **Create index pattern**
 		![Create Workspace](media/os_index_home.png)
-	10. Select the associated data source and click Next
-	11. In the field for Index pattern name, enter `game_metrics`
+	14. Select the associated data source and click Next
+	15. In the field for Index pattern name, enter `game_metrics*`
 		![Create Workspace](media/os_index_pattern.png)
-	12. Create the index pattern
+	16. Create the index pattern and verify the fields of the index
+		![Validate Fields](media/os_fields.png)
+	17. View the raw data stored in the index by navigating to the **Discover** tab on the left. If there is no data shown, adjust the time window using the control at the top right. 
+		![View Data](media/os_data.png)
 
 	Using the created game_metrics index pattern you can create time series visualizations of the real-time metrics.
 
