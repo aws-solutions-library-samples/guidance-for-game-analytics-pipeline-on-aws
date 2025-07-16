@@ -49,10 +49,6 @@ output "iceberg_setup_job" {
 }
 
 /* Outputs only if REAL_TIME_ANALYTICS is enabled */
-output "flink_analytics_cloudwatch" {
-  description = "Link to the Amazon CloudWatch namespace where custom metrics are published by the solution AnalyticsProcessingFunction."
-  value       = local.config.REAL_TIME_ANALYTICS ? module.flink_construct[0].flink_analytics_cloudwatch : ""
-}
 
 output "flink_app_output" {
   description = "Name of the Flink Application for game analytics"

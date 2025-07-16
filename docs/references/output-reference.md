@@ -68,12 +68,6 @@ This page explains the outputs displayed by the stack after a successful deploym
 - Terraform Output: `iceberg_setup_job`
 - Description: The name of the Glue Job used to configure partitioning on a newly created Apache Iceberg table. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"`.
 
-## Flink Analytics Cloudwatch
-
-- CDK Output:
-- Terraform Output: `flink_analytics_cloudwatch`
-- Description: Link to the Amazon CloudWatch namespace where custom metrics are published by the solution AnalyticsProcessingFunction.
-
 ## Flink App Output
 
 - CDK Output: `CentralizedGameAnalytics.FlinkAppOutput`

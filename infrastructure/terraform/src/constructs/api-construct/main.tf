@@ -136,7 +136,7 @@ resource "aws_api_gateway_rest_api" "game_analytics_api" {
   body        = local.game_analytics_open_api_spec
 
   endpoint_configuration {
-    types = ["REGIONAL"]
+    types = ["EDGE"]
   }
 }
 
