@@ -94,6 +94,7 @@ nav:
     - API Reference: references/api-reference.md
     - Schema Reference: references/schema-reference.md
     - Config Reference: references/config-reference.md
+    - Output Reference: references/output-reference.md
     - Operational Dashboard Reference: references/ops-dashboard-reference.md
     - File/Folder Reference: references/file-reference.md
   - Upgrading:

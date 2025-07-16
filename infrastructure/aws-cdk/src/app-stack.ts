@@ -460,24 +460,24 @@ export class InfrastructureStack extends cdk.Stack {
       );
 
       // CFN outputs for given configuration
-      new cdk.CfnOutput(this, "GameEventsDatabaseOutput", {
+      new cdk.CfnOutput(this, "GameEventsDatabase", {
         description: "Glue Catalog Database for storing game analytics events",
         value: dataLakeConstruct.gameEventsDatabase.ref,
       });
 
-      new cdk.CfnOutput(this, "GameEventsEtlJobOutput", {
+      new cdk.CfnOutput(this, "GameEventsEtlJob", {
         description:
           "ETL Job for processing game events into optimized format for analytics",
         value: dataProcessingConstruct.gameEventsEtlJob.ref,
       });
 
-      new cdk.CfnOutput(this, "GameEventsIcebergJobOutput", {
+      new cdk.CfnOutput(this, "GameEventsIcebergJob", {
         description:
           "ETL Job for transform existing game events into Apache Iceberg table format using Amazon Glue",
         value: dataProcessingConstruct.gameEventsIcebergJob.ref,
       });
 
-      new cdk.CfnOutput(this, "GlueWorkflowConsoleLinkOutput", {
+      new cdk.CfnOutput(this, "GlueWorkflowConsoleLink", {
         description:
           "Link to the AWS Glue Workflows console page to view details of the workflow",
         value: `https://console.aws.amazon.com/glue/home?region=${cdk.Aws.REGION}#etl:tab=workflows;workflowView=workflow-list`,
@@ -577,7 +577,7 @@ export class InfrastructureStack extends cdk.Stack {
       value: gamesApiConstruct.gameAnalyticsApi.deploymentStage.urlForPath(),
     });
 
-    new cdk.CfnOutput(this, "PipelineOperationsDashboardOutput", {
+    new cdk.CfnOutput(this, "PipelineOperationsDashboard", {
       description: "CloudWatch Dashboard for viewing pipeline metrics",
       value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#dashboards:name=PipelineOpsDashboard_${props.config.WORKLOAD_NAME};start=PT1H`,
     });

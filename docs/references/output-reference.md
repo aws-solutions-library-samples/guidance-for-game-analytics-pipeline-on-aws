@@ -22,13 +22,13 @@ This page explains the outputs displayed by the stack after a successful deploym
 
 ## Glue Workflow Console Link
 
-- CDK Output: `CentralizedGameAnalytics.GlueWorkflowConsoleLinkOutput`
+- CDK Output: `CentralizedGameAnalytics.GlueWorkflowConsoleLink`
 - Terraform Output: `glue_workflow_console_link`
 - Description: A web link to the AWS Glue Workflows console page to view details about the deployed workflow
 
 ## Pipeline Operations Dashboard
 
-- CDK Output: `CentralizedGameAnalytics.PipelineOperationsDashboardOutput`
+- CDK Output: `CentralizedGameAnalytics.PipelineOperationsDashboard`
 - Terraform Output: `pipeline_operations_dashboard`
 - Description: A web link to the CloudWatch dashboard to monitor the health of the pipeline
 
@@ -46,19 +46,19 @@ This page explains the outputs displayed by the stack after a successful deploym
 
 ## Game Events Database
 
-- CDK Output: `CentralizedGameAnalytics.GameEventsDatabaseOutput`
+- CDK Output: `CentralizedGameAnalytics.GameEventsDatabase`
 - Terraform Output: `game_events_database`
 - Description: The name of the Glue Data Catalog database where game events are stored. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"`.
 
 ## Game Events ETL Job
 
-- CDK Output: `CentralizedGameAnalytics.GameEventsEtlJobOutput`
+- CDK Output: `CentralizedGameAnalytics.GameEventsEtlJob`
 - Terraform Output: `game_events_etl_job`
 - Description: The name of the ETL job used to move data from the raw events table to the processed events table. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"`.
 
 ## Game Events ETL Iceberg Job
 
-- CDK Output: `CentralizedGameAnalytics.GameEventsIcebergJobOutput`
+- CDK Output: `CentralizedGameAnalytics.GameEventsIcebergJob`
 - Terraform Output: `game_events_etl_iceberg_job`
 - Description: The name of the ETL job used to move data from an existing Game Analytics Pipeline Hive table to a new Apache Iceberg table. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"` and when [ENABLE_APACHE_ICEBERG_SUPPORT](config-reference.md#data-platform-options) is set to `true`.
 
