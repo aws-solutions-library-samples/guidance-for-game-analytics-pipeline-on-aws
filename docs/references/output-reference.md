@@ -40,20 +40,20 @@ This page explains the outputs displayed by the stack after a successful deploym
 
 ## Game Events Database Name
 
-- **CDK Output:** `CentralizedGameAnalytics.GameEventsDatabase`
-- **Terraform Output:** `game_events_database`
+- **CDK Output:** `CentralizedGameAnalytics.GameEventsDatabaseName`
+- **Terraform Output:** `game_events_database_name`
 - **Description:** The name of the Glue Data Catalog database where game events are stored. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"`.
 
 ## Game Events ETL Job Name
 
-- **CDK Output:** `CentralizedGameAnalytics.GameEventsEtlJob`
-- **Terraform Output:** `game_events_etl_job`
+- **CDK Output:** `CentralizedGameAnalytics.GameEventsEtlJobName`
+- **Terraform Output:** `game_events_etl_job_name`
 - **Description:** The name of the ETL job used to move data from the raw events table to the processed events table. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"`.
 
 ## Game Events ETL Iceberg Job Name
 
-- **CDK Output:** `CentralizedGameAnalytics.GameEventsIcebergJob`
-- **Terraform Output:** `game_events_etl_iceberg_job`
+- **CDK Output:** `CentralizedGameAnalytics.GameEventsIcebergJobName`
+- **Terraform Output:** `game_events_etl_iceberg_job_name`
 - **Description:** The name of the ETL job used to move data from an existing Game Analytics Pipeline Hive table to a new Apache Iceberg table. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"` and when [ENABLE_APACHE_ICEBERG_SUPPORT](config-reference.md#data-platform-options) is set to `true`.
 
 ## Game Events Stream Name
@@ -70,8 +70,8 @@ This page explains the outputs displayed by the stack after a successful deploym
 
 ## Iceberg Setup Job Name
 
-- **CDK Output:** `CentralizedGameAnalytics.IcebergSetupJob`
-- **Terraform Output:** `iceberg_setup_job`
+- **CDK Output:** `CentralizedGameAnalytics.IcebergSetupJobName`
+- **Terraform Output:** `iceberg_setup_job_name`
 - **Description:** The name of the Glue Job used to configure partitioning on a newly created Apache Iceberg table. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"`.
 
 ## Metric Output Stream Name
@@ -83,13 +83,13 @@ This page explains the outputs displayed by the stack after a successful deploym
 ## OpenSearch Admin Assume Link
 
 - **CDK Output:** `CentralizedGameAnalytics.OpenSearchAdminAssumeLink`
-- **Terraform Output:** `opensearch_admin_assume_url`
+- **Terraform Output:** `opensearch_admin_assume_link`
 - **Description:** Link to assume the role of an OpenSearch admin.  This is only enabled when [REAL_TIME_ANALYTICS](config-reference.md#data-platform-options) is set to `true`.
 
 ## OpenSearch Dashboard Link
 
 - **CDK Output:** `CentralizedGameAnalytics.OpenSearchDashboardLink`
-- **Terraform Output:** `opensearch_dashboard_url`
+- **Terraform Output:** `opensearch_dashboard_link`
 - **Description:** A link to the OpenSearch UI Application to view real-time custom metrics. This is only enabled when [REAL_TIME_ANALYTICS](config-reference.md#data-platform-options) is set to `true`.
 
 ## Pipeline Operations Dashboard Link
