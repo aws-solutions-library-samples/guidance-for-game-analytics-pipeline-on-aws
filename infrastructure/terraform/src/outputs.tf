@@ -65,7 +65,7 @@ output "opensearch_admin_assume_link" {
   description = "Link to assume the role of an opensearch admin"
 }
 
-output "kinesis_metrics_stream_name" {
+output "metric_output_stream_name" {
   description = "The name of the kinesis stream containing the aggregated metrics"
   value       = local.config.REAL_TIME_ANALYTICS ? module.flink_construct[0].kinesis_metrics_stream_name : ""
 }

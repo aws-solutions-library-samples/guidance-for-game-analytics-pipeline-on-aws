@@ -343,7 +343,7 @@ export class InfrastructureStack extends cdk.Stack {
           value: `https://application-${opensearchConstruct.gapInterface.name}-${opensearchConstruct.gapInterface.attrId}.${cdk.Aws.REGION}.opensearch.amazonaws.com/`
         });
 
-        new cdk.CfnOutput(this, "OpensearchAdminAssumeLink", {
+        new cdk.CfnOutput(this, "OpenSearchAdminAssumeLink", {
           description: "Link to assume the role of an opensearch admin",
           value: `https://signin.aws.amazon.com/switchrole?roleName=${opensearchConstruct.osAdmin.roleName}&account=${cdk.Aws.ACCOUNT_ID}`
         });

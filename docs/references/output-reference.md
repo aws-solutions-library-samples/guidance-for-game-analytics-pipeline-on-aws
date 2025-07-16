@@ -14,34 +14,10 @@ This page explains the outputs displayed by the stack after a successful deploym
 - **Terraform Output:** `analytics_bucket_name`
 - **Description:** The name of the S3 Bucket used for game analytics storage
 
-## Game Events Stream Name
+## API Endpoint
 
-- **CDK Output:** `CentralizedGameAnalytics.GameEventsStreamName`
-- **Terraform Output:** `game_events_stream_name`
-- **Description:** The name of the Kinesis Stream for ingestion of raw events. This is only enabled when [INGEST_MODE](config-reference.md#data-platform-options) is set to `"KINESIS_DATA_STREAMS"`.
-
-## Applications Table Name
-
-- **CDK Output:** `CentralizedGameAnalytics.ApplicationsTableName`
-- **Terraform Output:** `applications_table_name`
-- **Description:** The name of the DynamoDB configuration table that stores information about the registered applications allowed by the solution pipeline
-
-## Glue Workflow Console Link
-
-- **CDK Output:** `CentralizedGameAnalytics.GlueWorkflowConsoleLink`
-- **Terraform Output:** `glue_workflow_console_link`
-- **Description:** A web link to the AWS Glue Workflows console page to view details about the deployed workflow
-
-## Pipeline Operations Dashboard Link
-
-- **CDK Output:** `CentralizedGameAnalytics.PipelineOperationsDashboardLink`
-- **Terraform Output:** `pipeline_operations_dashboard_link`
-- **Description:** A web link to the CloudWatch dashboard to monitor the health of the pipeline
-
-## Game Analytics API Endpoint
-
-- **CDK Output:** `CentralizedGameAnalytics.GamesAnalyticsApiEndpoint`
-- **Terraform Output:** `game_analytics_api_endpoint`
+- **CDK Output:** `CentralizedGameAnalytics.ApiEndpoint`
+- **Terraform Output:** `api_endpoint`
 - **Description:** The base URL of the Game Analytics API used to perform administration actions and to
 
 ## API Gateway Execution Logs Link
@@ -49,6 +25,18 @@ This page explains the outputs displayed by the stack after a successful deploym
 - **CDK Output:** `CentralizedGameAnalytics.ApiGatewayExecutionLogsLink`
 - **Terraform Output:** `api_gateway_execution_logs_link`
 - **Description:** A URL to the CloudWatch logs emitted from API Gateway
+
+## Applications Table Name
+
+- **CDK Output:** `CentralizedGameAnalytics.ApplicationsTableName`
+- **Terraform Output:** `applications_table_name`
+- **Description:** The name of the DynamoDB configuration table that stores information about the registered applications allowed by the solution pipeline
+
+## Flink App Name
+
+- **CDK Output:** `CentralizedGameAnalytics.FlinkAppName`
+- **Terraform Output:** `flink_app_name`
+- **Description:** The name of the Amazon Managed Service for Apache Flink application. This is only enabled when [REAL_TIME_ANALYTICS](config-reference.md#data-platform-options) is set to `true`.
 
 ## Game Events Database Name
 
@@ -68,17 +56,35 @@ This page explains the outputs displayed by the stack after a successful deploym
 - **Terraform Output:** `game_events_etl_iceberg_job`
 - **Description:** The name of the ETL job used to move data from an existing Game Analytics Pipeline Hive table to a new Apache Iceberg table. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"` and when [ENABLE_APACHE_ICEBERG_SUPPORT](config-reference.md#data-platform-options) is set to `true`.
 
+## Game Events Stream Name
+
+- **CDK Output:** `CentralizedGameAnalytics.GameEventsStreamName`
+- **Terraform Output:** `game_events_stream_name`
+- **Description:** The name of the Kinesis Stream for ingestion of raw events. This is only enabled when [INGEST_MODE](config-reference.md#data-platform-options) is set to `"KINESIS_DATA_STREAMS"`.
+
+## Glue Workflow Console Link
+
+- **CDK Output:** `CentralizedGameAnalytics.GlueWorkflowConsoleLink`
+- **Terraform Output:** `glue_workflow_console_link`
+- **Description:** A web link to the AWS Glue Workflows console page to view details about the deployed workflow
+
 ## Iceberg Setup Job Name
 
 - **CDK Output:** `CentralizedGameAnalytics.IcebergSetupJob`
 - **Terraform Output:** `iceberg_setup_job`
 - **Description:** The name of the Glue Job used to configure partitioning on a newly created Apache Iceberg table. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"`.
 
-## Flink App Name
+## Metric Output Stream Name
 
-- **CDK Output:** `CentralizedGameAnalytics.FlinkAppName`
-- **Terraform Output:** `flink_app_name`
-- **Description:** The name of the Amazon Managed Service for Apache Flink application. This is only enabled when [REAL_TIME_ANALYTICS](config-reference.md#data-platform-options) is set to `true`.
+- **CDK Output:** `CentralizedGameAnalytics.MetricOutputStreamName`
+- **Terraform Output:** `metric_output_stream_name`
+- **Description:** The name of the intermediary Amazon Kinesis Data Stream between Managed Service for Apache Flink and OpenSearch Ingestion. This is only enabled when [REAL_TIME_ANALYTICS](config-reference.md#data-platform-options) is set to `true`.
+
+## OpenSearch Admin Assume Link
+
+- **CDK Output:** `CentralizedGameAnalytics.OpenSearchAdminAssumeLink`
+- **Terraform Output:** `opensearch_admin_assume_url`
+- **Description:** Link to assume the role of an OpenSearch admin.  This is only enabled when [REAL_TIME_ANALYTICS](config-reference.md#data-platform-options) is set to `true`.
 
 ## OpenSearch Dashboard Link
 
@@ -86,14 +92,8 @@ This page explains the outputs displayed by the stack after a successful deploym
 - **Terraform Output:** `opensearch_dashboard_url`
 - **Description:** A link to the OpenSearch UI Application to view real-time custom metrics. This is only enabled when [REAL_TIME_ANALYTICS](config-reference.md#data-platform-options) is set to `true`.
 
-## OpenSearch Admin Assume Link
+## Pipeline Operations Dashboard Link
 
-- **CDK Output:** `CentralizedGameAnalytics.OpensearchAdminAssumeLink`
-- **Terraform Output:** `opensearch_admin_assume_url`
-- **Description:** Link to assume the role of an OpenSearch admin.  This is only enabled when [REAL_TIME_ANALYTICS](config-reference.md#data-platform-options) is set to `true`.
-
-## Kinesis Metric Output Stream Name
-
-- **CDK Output:** `CentralizedGameAnalytics.MetricOutputStreamName`
-- **Terraform Output:** `kinesis_metric_output_stream_name`
-- **Description:** The name of the intermediary Amazon Kinesis Data Stream between Managed Service for Apache Flink and OpenSearch Ingestion. This is only enabled when [REAL_TIME_ANALYTICS](config-reference.md#data-platform-options) is set to `true`.
+- **CDK Output:** `CentralizedGameAnalytics.PipelineOperationsDashboardLink`
+- **Terraform Output:** `pipeline_operations_dashboard_link`
+- **Description:** A web link to the CloudWatch dashboard to monitor the health of the pipeline
