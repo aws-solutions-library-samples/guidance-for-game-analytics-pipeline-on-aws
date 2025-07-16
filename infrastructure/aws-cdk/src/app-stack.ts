@@ -332,10 +332,10 @@ export class InfrastructureStack extends cdk.Stack {
             "Name of the Flink Application for game analytics",
           value: managedFlinkConstruct.managedFlinkApp.ref,
         });
-        new cdk.CfnOutput(this, "MetricOutputStreamARN", {
+        new cdk.CfnOutput(this, "MetricOutputStreamName", {
           description:
             "ARN of the Kinesis Stream that recieves aggregated metrics from the Flink application",
-          value: managedFlinkConstruct.metricOutputStream.streamArn,
+          value: managedFlinkConstruct.metricOutputStream.streamName,
         });
 
         new cdk.CfnOutput(this, "OpenSearchDashboardEndpoint", {
