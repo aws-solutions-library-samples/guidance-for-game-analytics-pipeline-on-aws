@@ -18,13 +18,13 @@ This page explains the outputs displayed by the stack after a successful deploym
 
 - **CDK Output:** `CentralizedGameAnalytics.ApiEndpoint`
 - **Terraform Output:** `api_endpoint`
-- **Description:** The base URL of the Game Analytics API used to perform administration actions and to
+- **Description:** The base URL of the Game Analytics API. This is the endpoint used to perform administration actions and recieve events
 
 ## API Gateway Execution Logs Link
 
 - **CDK Output:** `CentralizedGameAnalytics.ApiGatewayExecutionLogsLink`
 - **Terraform Output:** `api_gateway_execution_logs_link`
-- **Description:** A URL to the CloudWatch logs emitted from API Gateway
+- **Description:** A web link to the CloudWatch logs emitted from API Gateway
 
 ## Applications Table Name
 
@@ -60,7 +60,7 @@ This page explains the outputs displayed by the stack after a successful deploym
 
 - **CDK Output:** `CentralizedGameAnalytics.GameEventsStreamName`
 - **Terraform Output:** `game_events_stream_name`
-- **Description:** The name of the Kinesis Stream for ingestion of raw events. This is only enabled when [INGEST_MODE](config-reference.md#data-platform-options) is set to `"KINESIS_DATA_STREAMS"`.
+- **Description:** The name of the Kinesis Data Stream for ingestion of raw events. This is only enabled when [INGEST_MODE](config-reference.md#data-platform-options) is set to `"KINESIS_DATA_STREAMS"`.
 
 ## Glue Workflow Console Link
 
