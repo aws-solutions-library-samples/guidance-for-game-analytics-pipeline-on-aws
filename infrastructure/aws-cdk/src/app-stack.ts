@@ -327,7 +327,7 @@ export class InfrastructureStack extends cdk.Stack {
         )
 
         // cfn outputs if setting is enabled
-        new cdk.CfnOutput(this, "FlinkAppOutput", {
+        new cdk.CfnOutput(this, "FlinkAppName", {
           description:
             "Name of the Flink Application for game analytics",
           value: managedFlinkConstruct.managedFlinkApp.ref,
@@ -338,19 +338,19 @@ export class InfrastructureStack extends cdk.Stack {
           value: managedFlinkConstruct.metricOutputStream.streamName,
         });
 
-        new cdk.CfnOutput(this, "OpenSearchDashboardEndpoint", {
+        new cdk.CfnOutput(this, "OpenSearchDashboardLink", {
           description: "OpenSearch Dashboard for viewing real-time metrics",
           value: `https://application-${opensearchConstruct.gapInterface.name}-${opensearchConstruct.gapInterface.attrId}.${cdk.Aws.REGION}.opensearch.amazonaws.com/`
         });
 
-        new cdk.CfnOutput(this, "OpensearchAdminAssumeUrl", {
+        new cdk.CfnOutput(this, "OpensearchAdminAssumeLink", {
           description: "Link to assume the role of an opensearch admin",
           value: `https://signin.aws.amazon.com/switchrole?roleName=${opensearchConstruct.osAdmin.roleName}&account=${cdk.Aws.ACCOUNT_ID}`
         });
 
       }
       // cfn outputs if setting is enabled
-      new cdk.CfnOutput(this, "GameEventsStreamOutput", {
+      new cdk.CfnOutput(this, "GameEventsStreamName", {
         description: "Stream for ingestion of raw events",
         value: gamesEventsStream.streamName,
       });
@@ -460,18 +460,18 @@ export class InfrastructureStack extends cdk.Stack {
       );
 
       // CFN outputs for given configuration
-      new cdk.CfnOutput(this, "GameEventsDatabase", {
+      new cdk.CfnOutput(this, "GameEventsDatabaseName", {
         description: "Glue Catalog Database for storing game analytics events",
         value: dataLakeConstruct.gameEventsDatabase.ref,
       });
 
-      new cdk.CfnOutput(this, "GameEventsEtlJob", {
+      new cdk.CfnOutput(this, "GameEventsEtlJobName", {
         description:
           "ETL Job for processing game events into optimized format for analytics",
         value: dataProcessingConstruct.gameEventsEtlJob.ref,
       });
 
-      new cdk.CfnOutput(this, "GameEventsIcebergJob", {
+      new cdk.CfnOutput(this, "GameEventsIcebergJobName", {
         description:
           "ETL Job for transform existing game events into Apache Iceberg table format using Amazon Glue",
         value: dataProcessingConstruct.gameEventsIcebergJob.ref,
@@ -484,7 +484,7 @@ export class InfrastructureStack extends cdk.Stack {
       });
 
       if (props.config.ENABLE_APACHE_ICEBERG_SUPPORT) {
-        new cdk.CfnOutput(this, "IcebergSetupJob", {
+        new cdk.CfnOutput(this, "IcebergSetupJobName", {
           description:
             "Glue Job to set up the new Iceberg table",
           value: dataProcessingConstruct.icebergSetupJob.ref,
@@ -556,17 +556,17 @@ export class InfrastructureStack extends cdk.Stack {
     });
 
     // Output important resource information to AWS Console
-    new cdk.CfnOutput(this, "AnalyticsBucketOutput", {
+    new cdk.CfnOutput(this, "AnalyticsBucketName", {
       description: "S3 Bucket for game analytics storage",
       value: analyticsBucket.bucketName,
     });
 
-    new cdk.CfnOutput(this, "ApiGatewayExecutionLogs", {
+    new cdk.CfnOutput(this, "ApiGatewayExecutionLogsLink", {
       description: "CloudWatch Log Group containing the API execution logs",
       value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#logsV2:log-groups/log-group/API-Gateway-Execution-Logs_${gamesApiConstruct.gameAnalyticsApi.restApiId}%252F${gamesApiConstruct.gameAnalyticsApi.deploymentStage.stageName}`,
     });
 
-    new cdk.CfnOutput(this, "ApplicationsTableOutput", {
+    new cdk.CfnOutput(this, "ApplicationsTableName", {
       description:
         "Configuration table for storing registered applications that are allowed by the solution pipeline",
       value: applicationsTable.tableName,
@@ -582,7 +582,7 @@ export class InfrastructureStack extends cdk.Stack {
       value: gamesApiConstruct.adminAPIAccessPolicy.managedPolicyName,
     });
 
-    new cdk.CfnOutput(this, "PipelineOperationsDashboard", {
+    new cdk.CfnOutput(this, "PipelineOperationsDashboardLink", {
       description: "CloudWatch Dashboard for viewing pipeline metrics",
       value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#dashboards:name=PipelineOpsDashboard_${props.config.WORKLOAD_NAME};start=PT1H`,
     });

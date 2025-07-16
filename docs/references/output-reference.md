@@ -8,22 +8,22 @@ This page explains the outputs displayed by the stack after a successful deploym
 - **Terraform Output:** `admin_api_access_policy_name`
 - **Description:** The name of the IAM Managed Policy that will allow an IAM entity to execute the Admin API
 
-## Analytics Bucket
+## Analytics Bucket Name
 
-- **CDK Output:** `CentralizedGameAnalytics.AnalyticsBucketOutput`
-- **Terraform Output:** `analytics_bucket`
+- **CDK Output:** `CentralizedGameAnalytics.AnalyticsBucketName`
+- **Terraform Output:** `analytics_bucket_name`
 - **Description:** The name of the S3 Bucket used for game analytics storage
 
-## Game Events Stream
+## Game Events Stream Name
 
-- **CDK Output:** `CentralizedGameAnalytics.GameEventsStreamOutput`
-- **Terraform Output:** `game_events_stream`
+- **CDK Output:** `CentralizedGameAnalytics.GameEventsStreamName`
+- **Terraform Output:** `game_events_stream_name`
 - **Description:** The name of the Kinesis Stream for ingestion of raw events. This is only enabled when [INGEST_MODE](config-reference.md#data-platform-options) is set to `"KINESIS_DATA_STREAMS"`.
 
-## Applications Table
+## Applications Table Name
 
-- **CDK Output:** `CentralizedGameAnalytics.ApplicationsTableOutput`
-- **Terraform Output:** `applications_table`
+- **CDK Output:** `CentralizedGameAnalytics.ApplicationsTableName`
+- **Terraform Output:** `applications_table_name`
 - **Description:** The name of the DynamoDB configuration table that stores information about the registered applications allowed by the solution pipeline
 
 ## Glue Workflow Console Link
@@ -32,10 +32,10 @@ This page explains the outputs displayed by the stack after a successful deploym
 - **Terraform Output:** `glue_workflow_console_link`
 - **Description:** A web link to the AWS Glue Workflows console page to view details about the deployed workflow
 
-## Pipeline Operations Dashboard
+## Pipeline Operations Dashboard Link
 
-- **CDK Output:** `CentralizedGameAnalytics.PipelineOperationsDashboard`
-- **Terraform Output:** `pipeline_operations_dashboard`
+- **CDK Output:** `CentralizedGameAnalytics.PipelineOperationsDashboardLink`
+- **Terraform Output:** `pipeline_operations_dashboard_link`
 - **Description:** A web link to the CloudWatch dashboard to monitor the health of the pipeline
 
 ## Game Analytics API Endpoint
@@ -44,51 +44,51 @@ This page explains the outputs displayed by the stack after a successful deploym
 - **Terraform Output:** `game_analytics_api_endpoint`
 - **Description:** The base URL of the Game Analytics API used to perform administration actions and to
 
-## API Gateway Execution Logs
+## API Gateway Execution Logs Link
 
-- **CDK Output:** `CentralizedGameAnalytics.ApiGatewayExecutionLogs`
-- **Terraform Output:** `api_gateway_execution_logs`
-- **Description:** A web link to the CloudWatch logs emitted from API Gateway
+- **CDK Output:** `CentralizedGameAnalytics.ApiGatewayExecutionLogsLink`
+- **Terraform Output:** `api_gateway_execution_logs_link`
+- **Description:** A URL to the CloudWatch logs emitted from API Gateway
 
-## Game Events Database
+## Game Events Database Name
 
 - **CDK Output:** `CentralizedGameAnalytics.GameEventsDatabase`
 - **Terraform Output:** `game_events_database`
 - **Description:** The name of the Glue Data Catalog database where game events are stored. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"`.
 
-## Game Events ETL Job
+## Game Events ETL Job Name
 
 - **CDK Output:** `CentralizedGameAnalytics.GameEventsEtlJob`
 - **Terraform Output:** `game_events_etl_job`
 - **Description:** The name of the ETL job used to move data from the raw events table to the processed events table. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"`.
 
-## Game Events ETL Iceberg Job
+## Game Events ETL Iceberg Job Name
 
 - **CDK Output:** `CentralizedGameAnalytics.GameEventsIcebergJob`
 - **Terraform Output:** `game_events_etl_iceberg_job`
 - **Description:** The name of the ETL job used to move data from an existing Game Analytics Pipeline Hive table to a new Apache Iceberg table. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"` and when [ENABLE_APACHE_ICEBERG_SUPPORT](config-reference.md#data-platform-options) is set to `true`.
 
-## Iceberg Setup Job
+## Iceberg Setup Job Name
 
 - **CDK Output:** `CentralizedGameAnalytics.IcebergSetupJob`
 - **Terraform Output:** `iceberg_setup_job`
 - **Description:** The name of the Glue Job used to configure partitioning on a newly created Apache Iceberg table. This is only enabled when [DATA_PLATFORM_MODE](config-reference.md#data-platform-options) is set to `"DATA_LAKE"`.
 
-## Flink App Output
+## Flink App Name
 
-- **CDK Output:** `CentralizedGameAnalytics.FlinkAppOutput`
-- **Terraform Output:** `flink_app_output`
+- **CDK Output:** `CentralizedGameAnalytics.FlinkAppName`
+- **Terraform Output:** `flink_app_name`
 - **Description:** The name of the Amazon Managed Service for Apache Flink application. This is only enabled when [REAL_TIME_ANALYTICS](config-reference.md#data-platform-options) is set to `true`.
 
-## OpenSearch Dashboard Endpoint
+## OpenSearch Dashboard Link
 
-- **CDK Output:** `CentralizedGameAnalytics.OpenSearchDashboardEndpoint`
-- **Terraform Output:** `opensearch_dashboard_endpoint`
+- **CDK Output:** `CentralizedGameAnalytics.OpenSearchDashboardLink`
+- **Terraform Output:** `opensearch_dashboard_url`
 - **Description:** A link to the OpenSearch UI Application to view real-time custom metrics. This is only enabled when [REAL_TIME_ANALYTICS](config-reference.md#data-platform-options) is set to `true`.
 
-## OpenSearch Admin Assume URL
+## OpenSearch Admin Assume Link
 
-- **CDK Output:** `CentralizedGameAnalytics.OpensearchAdminAssumeUrl`
+- **CDK Output:** `CentralizedGameAnalytics.OpensearchAdminAssumeLink`
 - **Terraform Output:** `opensearch_admin_assume_url`
 - **Description:** Link to assume the role of an OpenSearch admin.  This is only enabled when [REAL_TIME_ANALYTICS](config-reference.md#data-platform-options) is set to `true`.
 
