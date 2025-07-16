@@ -40,6 +40,7 @@ const defaultProps: Partial<ApiConstructProps> = {};
  */
 export class ApiConstruct extends Construct {
   public readonly gameAnalyticsApi: apigateway.IRestApi;
+  public readonly adminAPIAccessPolicy: iam.ManagedPolicy;
 
   constructor(parent: Construct, name: string, props: ApiConstructProps) {
     super(parent, name);
@@ -973,6 +974,23 @@ export class ApiConstruct extends Construct {
         }
       );
 
+    // managed policy to allow API execution
+    const adminAPIAccessPolicy = new iam.ManagedPolicy(this, "AdminAPIAccessPolicy", {
+      managedPolicyName: `${props.config.WORKLOAD_NAME}-AdminAPIAccess`,
+      statements: [
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "execute-api:Invoke"
+          ],
+          resources: [
+            gameAnalyticsApi.arnForExecuteApi('*', '/*', props.config.API_STAGE_NAME)
+          ]
+        })
+      ]
+    })
+
     this.gameAnalyticsApi = gameAnalyticsApi;
+    this.adminAPIAccessPolicy = adminAPIAccessPolicy;
   }
 }

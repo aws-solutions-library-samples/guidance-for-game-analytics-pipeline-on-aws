@@ -577,6 +577,11 @@ export class InfrastructureStack extends cdk.Stack {
       value: gamesApiConstruct.gameAnalyticsApi.deploymentStage.urlForPath(),
     });
 
+    new cdk.CfnOutput(this, "AdminApiAccessPolicyName", {
+      description: "The name of the IAM managed policy that will allow an entity to execute the Admin API",
+      value: gamesApiConstruct.adminAPIAccessPolicy.managedPolicyName,
+    });
+
     new cdk.CfnOutput(this, "PipelineOperationsDashboard", {
       description: "CloudWatch Dashboard for viewing pipeline metrics",
       value: `https://console.aws.amazon.com/cloudwatch/home?region=${cdk.Aws.REGION}#dashboards:name=PipelineOpsDashboard_${props.config.WORKLOAD_NAME};start=PT1H`,
