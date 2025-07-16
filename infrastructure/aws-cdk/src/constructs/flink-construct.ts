@@ -152,6 +152,7 @@ export class ManagedFlinkConstruct extends Construct {
     /* The following defines the flink application used to process incoming game events and output them to the stream */
     const managedFlinkApp = new kinesisanalytics.CfnApplicationV2(this, "ManagedFlinkApp",
       {
+        applicationName: `${props.config.WORKLOAD_NAME}-AnalyticsApplication`,
         applicationDescription: `Real-time game analytics application, for ${cdk.Aws.STACK_NAME}`,
         runtimeEnvironment: "FLINK-1_20",
         serviceExecutionRole: flinkAppRole.roleArn,

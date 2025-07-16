@@ -56,6 +56,7 @@ export class MetricsConstruct extends Construct {
                 this,
                 "KinesisReadProvisionedThroughputExceeded",
                 {
+                    alarmName: `KinesisReadProvisionedThroughputExceeded (${cdk.Aws.STACK_NAME})`,
                     alarmDescription: `Kinesis stream is being throttled on reads and may need to be be scaled to support more read throughput, for stack ${cdk.Aws.STACK_NAME}`,
                     metric: new cloudwatch.Metric({
                         metricName: "ReadProvisionedThroughputExceeded",
@@ -81,6 +82,7 @@ export class MetricsConstruct extends Construct {
                 this,
                 "KinesisWriteProvisionedThroughputExceeded",
                 {
+                    alarmName: `KinesisWriteProvisionedThroughputExceeded (${cdk.Aws.STACK_NAME})`,
                     alarmDescription: `Kinesis stream is being throttled on writes and may need to be be scaled to support more write throughput, for stack ${cdk.Aws.STACK_NAME}`,
                     metric: new cloudwatch.Metric({
                         namespace: "AWS/Kinesis",
@@ -121,6 +123,7 @@ export class MetricsConstruct extends Construct {
                 "KinesisAnalyticsErrorsAlarm",
                 {
                     metric,
+                    alarmName: `${cdk.Aws.STACK_NAME}-KinesisAnalyticsErrorsAlarm`,
                     comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
                     threshold: 0,
                     evaluationPeriods: 1,
@@ -139,6 +142,7 @@ export class MetricsConstruct extends Construct {
                 this,
                 "KinesisMetricStreamReadProvisionedThroughputExceeded",
                 {
+                    alarmName: `KinesisMetricStreamReadProvisionedThroughputExceeded (${cdk.Aws.STACK_NAME})`,
                     alarmDescription: `Kinesis stream for aggregate metrics is being throttled on reads and may need to be be scaled to support more read throughput, for stack ${cdk.Aws.STACK_NAME}`,
                     metric: new cloudwatch.Metric({
                         metricName: "ReadProvisionedThroughputExceeded",
@@ -164,6 +168,7 @@ export class MetricsConstruct extends Construct {
                 this,
                 "KinesisMetricStreamWriteProvisionedThroughputExceeded",
                 {
+                    alarmName: `KinesisMetricStreamWriteProvisionedThroughputExceeded (${cdk.Aws.STACK_NAME})`,
                     alarmDescription: `Kinesis stream for aggregate metrics is being throttled on writes and may need to be be scaled to support more write throughput, for stack ${cdk.Aws.STACK_NAME}`,
                     metric: new cloudwatch.Metric({
                         namespace: "AWS/Kinesis",
@@ -193,6 +198,7 @@ export class MetricsConstruct extends Construct {
                 this,
                 "KinesisFirehoseFailedConversions",
                 {
+                    alarmName: `KinesisFirehoseFailedConversions (${cdk.Aws.STACK_NAME})`,
                     alarmDescription: `Alarm to track when Firehose Format Conversion fails, for stack ${cdk.Aws.STACK_NAME}`,
                     metric: new cloudwatch.Metric({
                         metricName: "FailedConversion.Records",
@@ -219,6 +225,7 @@ export class MetricsConstruct extends Construct {
                 this,
                 "KinesisFirehoseS3DataFreshness",
                 {
+                    alarmName: `KinesisFirehoseS3DataFreshness (${cdk.Aws.STACK_NAME})`,
                     alarmDescription: `Alarm to track when age of oldest record delivered to S3 exceeds 15 minutes for two consecutive periods, for stack ${cdk.Aws.STACK_NAME}`,
                     metric: new cloudwatch.Metric({
                         metricName: "DeliveryToS3.DataFreshness",
@@ -324,6 +331,7 @@ export class MetricsConstruct extends Construct {
             period: cdk.Duration.minutes(5),
         });
         const apiGateway5XXErrorsAlarm = new cloudwatch.Alarm(this, "ApiGateway5XXErrorsAlarm", {
+            alarmName: `ApiGateway5XXErrorsAlarm-${cdk.Aws.STACK_NAME}`,
             alarmDescription: `API Gateway 5XX Errors > 1%, for stack ${cdk.Aws.STACK_NAME}`,
             threshold: 1,
             evaluationPeriods: 6,
@@ -335,10 +343,10 @@ export class MetricsConstruct extends Construct {
         apiGateway5XXErrorsAlarm.addAlarmAction(
             new cloudwatchActions.SnsAction(props.notificationsTopic)
         );
-        
+
         // Function metrics
         const lambdaErrorsAlarm = new cloudwatch.Alarm(this, "LambdaErrorsAlarm", {
-            alarmName: `Lambda Errors-${cdk.Aws.STACK_NAME}`,
+            alarmName: `Lambda Errors (${cdk.Aws.STACK_NAME})`,
             alarmDescription: `Lambda Errors > 0, for stack ${cdk.Aws.STACK_NAME}`,
             metric: this.generateLambdaMathExpression(props.functions, "Errors"),
             comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
