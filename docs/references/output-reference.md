@@ -2,6 +2,12 @@
 
 This page explains the outputs displayed by the stack after a successful deployment. Due to differences in naming convention, the format of the outputs differs between [AWS Cloud Development Kit](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/outputs-section-structure.html) and [Hashicorp Terraform](https://developer.hashicorp.com/terraform/language/style#outputs), however, the meaning of each output is consistent across both versions.
 
+## Admin API Access Policy Name
+
+- **CDK Output:** `CentralizedGameAnalytics.AdminApiAccessPolicyName`
+- **Terraform Output:** `admin_api_access_policy_name`
+- **Description:** The name of the IAM Managed Policy that will allow an IAM entity to execute the Admin API
+
 ## Analytics Bucket
 
 - **CDK Output:** `CentralizedGameAnalytics.AnalyticsBucketOutput`
