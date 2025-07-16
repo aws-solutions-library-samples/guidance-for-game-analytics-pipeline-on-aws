@@ -69,3 +69,8 @@ output "kinesis_metrics_stream_name" {
   description = "The name of the kinesis stream containing the aggregated metrics"
   value       = local.config.REAL_TIME_ANALYTICS ? module.flink_construct[0].kinesis_metrics_stream_name : ""
 }
+
+output "admin_api_access_policy_name" {
+  description = "The name of the IAM managed policy that will allow an entity to execute the Admin API"
+  value       = module.games_api_construct.admin_api_access_policy_name
+}

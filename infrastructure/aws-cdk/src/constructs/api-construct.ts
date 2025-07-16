@@ -977,6 +977,7 @@ export class ApiConstruct extends Construct {
     // managed policy to allow API execution
     const adminAPIAccessPolicy = new iam.ManagedPolicy(this, "AdminAPIAccessPolicy", {
       managedPolicyName: `${props.config.WORKLOAD_NAME}-AdminAPIAccess`,
+      description: `Allow an IAM identity to perform administrator actions on the API for ${props.config.WORKLOAD_NAME}`,
       statements: [
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
