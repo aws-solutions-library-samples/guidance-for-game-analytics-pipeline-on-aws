@@ -572,7 +572,7 @@ export class InfrastructureStack extends cdk.Stack {
       value: applicationsTable.tableName,
     });
 
-    new cdk.CfnOutput(this, "GamesAnalyticsApiEndpoint", {
+    new cdk.CfnOutput(this, "ApiEndpoint", {
       description: "Invoke path for API",
       value: gamesApiConstruct.gameAnalyticsApi.deploymentStage.urlForPath(),
     });

@@ -25,7 +25,7 @@ output "pipeline_operations_dashboard_link" {
 }
 
 /* API Gateway Reference */
-output "game_analytics_api_endpoint" {
+output "api_endpoint" {
   value =  module.games_api_construct.game_analytics_api_endpoint
 }
 
