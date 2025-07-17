@@ -5,6 +5,8 @@ import assert from "assert";
 
 // used to validate glue names
 const glue_re = new RegExp("^[a-zA-Z0-9][a-zA-Z0-9_]{0,254}$")
+// used to validate cloudformation resource name
+const cfn_re = new RegExp("^[a-zA-Z][-a-zA-Z0-9]{0,127}$")
 
 // Loads environment configuration from config.yaml
 function getConfig() {
@@ -17,7 +19,7 @@ function getConfig() {
 let config = getConfig()
 
 console.log(getConfig())
-
+assert(cfn_re.test(config.WORKLOAD_NAME), `WORKLOAD_NAME can contain only alphanumeric characters (case sensitive) and hyphens. It must start with an alphabetical character and can't be longer than 128 characters. current value is "${config.WORKLOAD_NAME}"`)
 assert(config.INGEST_MODE == "KINESIS_DATA_STREAMS" || config.INGEST_MODE == "DIRECT_BATCH", "INGEST_MODE needs to be set to KINESIS_DATA_STREAMS or DIRECT_BATCH")
 // ingest mode needs to be set to kinesis data streams for real time analytics to work
 assert(!config.REAL_TIME_ANALYTICS || (config.INGEST_MODE == "KINESIS_DATA_STREAMS" && config.REAL_TIME_ANALYTICS), "REAL_TIME_ANALYTICS can only be enabled if INGEST_MODE is set to KINESIS_DATA_STREAMS")

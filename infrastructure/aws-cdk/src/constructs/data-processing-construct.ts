@@ -300,6 +300,7 @@ export class DataProcessingConstruct extends Construct {
 
     // Glue ETL Job to process events from staging and repartition by event_type and date
     const gameEventsEtlJob = new glueCfn.CfnJob(this, "GameEventsEtlJob", {
+      name: `${props.config.WORKLOAD_NAME}-GameEventsEtlJob`,
       description: `Etl job for processing raw game event data, for stack ${cdk.Aws.STACK_NAME}.`,
       glueVersion: "5.0",
       maxRetries: 0,
@@ -329,6 +330,7 @@ export class DataProcessingConstruct extends Construct {
     });
 
     const gameEventsIcebergJob = new glueCfn.CfnJob(this, "IcebergEtl", {
+      name: `${props.config.WORKLOAD_NAME}-IcebergEtl`,
       description: `Etl job for processing existing raw game event data, for stack ${cdk.Aws.STACK_NAME} to Apache Iceberg table.`,
       glueVersion: "5.0",
       maxRetries: 0,
@@ -364,6 +366,7 @@ export class DataProcessingConstruct extends Construct {
 
     if (props.config.ENABLE_APACHE_ICEBERG_SUPPORT) {
       const icebergSetupJob = new glueCfn.CfnJob(this, "IcebergSetup", {
+        name: `${props.config.WORKLOAD_NAME}-Iceberg-Setup`,
         description: `Glue job for setting up a new Iceberg table, for stack ${cdk.Aws.STACK_NAME} to Apache Iceberg table.`,
         glueVersion: "5.0",
         maxRetries: 0,
@@ -391,6 +394,7 @@ export class DataProcessingConstruct extends Construct {
 
       // Crawler crawls s3 partitioned data
       const eventsCrawler = new glueCfn.CfnCrawler(this, "EventsCrawler", {
+        name: `${props.config.WORKLOAD_NAME}-EventsCrawler`,
         role: glueCrawlerRole.roleArn,
         description: `AWS Glue Crawler for partitioned data, for stack ${cdk.Aws.STACK_NAME}`,
         databaseName: props.gameEventsDatabase.ref,
@@ -423,6 +427,7 @@ export class DataProcessingConstruct extends Construct {
         this,
         "GameEventsWorkflow",
         {
+          name: `${props.config.WORKLOAD_NAME}-GameEventsWorkflow`,
           description: `Orchestrates a Glue ETL Job and Crawler to process data in S3 and update data catalog, for stack ${cdk.Aws.STACK_NAME}`,
           defaultRunProperties: {
             "--enable-metrics": "true",
@@ -444,6 +449,7 @@ export class DataProcessingConstruct extends Construct {
         this,
         "GameEventsCrawlerTrigger",
         {
+          name: `${props.config.WORKLOAD_NAME}-GameEventsCrawlerTrigger`,
           type: "CONDITIONAL",
           description: `Starts a crawler to update the Glue Data Catalog with any changes detected in the processed_events S3 prefix after the ETL job runs, for stack ${cdk.Aws.STACK_NAME}`,
           startOnCreation: true,
@@ -473,6 +479,7 @@ export class DataProcessingConstruct extends Construct {
         this,
         "GameEventsTriggerETLJob",
         {
+          name: `${props.config.WORKLOAD_NAME}-GameEventsTriggerETLJob`,
           workflowName: gameEventsWorkflow.ref,
           type: "SCHEDULED",
           description: `Triggers the start of ETL job to process raw_events, for stack ${cdk.Aws.STACK_NAME}.`,
@@ -490,6 +497,7 @@ export class DataProcessingConstruct extends Construct {
 
       // Event that starts ETL job
       const etlJobStatusEventsRule = new events.Rule(this, "EtlJobStatusEvents", {
+        ruleName: `${props.config.WORKLOAD_NAME}-EtlJobStatusEvents`,
         description: `CloudWatch Events Rule for generating status events for the Glue ETL Job for ${cdk.Aws.STACK_NAME}.`,
         eventPattern: {
           detailType: ["Glue Job State Change"],
@@ -507,6 +515,7 @@ export class DataProcessingConstruct extends Construct {
         this,
         "GlueCrawlerStatusEvents",
         {
+          ruleName: `${props.config.WORKLOAD_NAME}-GlueCrawlerStatusEvents`,
           description: `CloudWatch Events Rule for generating status events for Glue ETL Job for stack ${cdk.Aws.STACK_NAME}`,
           eventPattern: {
             source: ["aws.glue"],

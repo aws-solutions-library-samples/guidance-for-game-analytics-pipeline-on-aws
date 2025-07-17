@@ -6,7 +6,7 @@
 
 ## Custom ETL
 
-### (Optional) Iceberg Parameter Setup
+### (Optional) Glue Iceberg Parameter Setup
 
 If the data lake is configured with Apache Iceberg, Glue configuration parameters need to be specified to enable Apache Iceberg for Spark jobs. These can be specified under default parameters
 
@@ -19,6 +19,22 @@ If the data lake is configured with Apache Iceberg, Glue configuration parameter
 
 You can view more on setting up Iceberg with Glue jobs [here](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).
 
+### Custom Real-Time Metrics
+
+For live analytics, this solution deploys an Amazon Managed Service for Apache Flink application. This application utilizes PyFlink with the Flink Table API to build custom metrics using SQL. Please see the [Flink Table API Tutorial](https://nightlies.apache.org/flink/flink-docs-release-2.0/docs/dev/python/table_api_tutorial/) to learn more.
+
+The pre-created job defines two streams, a source and a sink. These are defined using a [CREATE TABLE command](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/sql/create/) with the [Amazon Kinesis Data Streams SQL Connector](https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/connectors/table/kinesis/).
+
+The source reads from the input Kinesis data stream and the sink writes to the output Kinesis data stream. These streams are configured using variables loaded from the application's configured [runtime properties](https://docs.aws.amazon.com/managed-flink/latest/java/how-properties.md).
+
+#### Source Stream Properties
+
+- Since data is nested in the `event` JSON attribute of the message, the Flink [`ROW` data type](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/types/#constructured-data-types) is utilized to define known attributes and make them accessible using a dot notation. 
+    - This is done for the attributes `event_version`, `event_id`, `event_type`, `event_name`, `event_timestamp`, and `event_data`.
+- `event_data` contains a nested JSON object, of which has a user-defined schema that varies depending on the event. Since the schema changes dpeending on the event type, it is extracted as a [`STRING` data type](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/types/#character-strings). 
+    - To retrieve values nested in the object, the [`JSON_VALUE` function](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/functions/systemfunctions/#json-functions) is used within aggregation queries.
+- `rowtime` is retrieved explicitly from `event.event_timestamp` object and converted into a [`TIMESTAMP_LTZ` data type](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/types/#date-and-time) attribute. This makes the event time accessible for use in windowing functions. `rowtime` is used for [watermarking](https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/time/#event-time-and-watermarks) within Flink. 
+
 ## Modifying schema
 
 ## Modifying/extending architecture
@@ -28,7 +44,19 @@ You can view more on setting up Iceberg with Glue jobs [here](https://docs.aws.a
 
 ### Configuring Access to OpenSearch UI 
 
-IAM Access or SSO
+The deployed OpenSearch Application can be configured to allow users access through SAML federation. 
+
+For this, three components are needed:
+
+1. Set up SAML Federation to connect your identity provider with the OpenSearch Interface. The federation must be set up to assume a created IAM role. The steps to do so can be found [here](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/application-enable-SAML-identity-federation.html).
+
+
+2. Update the IAM role that users will assume when accessing the dashboard. This role must have access to OpenSearch Serverless and OpenSearch UI. Example permissions for configuring OpenSearch Serverless can be found [here](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/security-iam-serverless.html#security_iam_serverless_id-based-policy-examples), permissions to allow access to OpenSearch UI can be found [here](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/application-getting-started.html#application-prerequisite-permissions).
+
+3. Update the data access policy to grant the created IAM role permission to access the OpenSearch Serverless collection. More information on OpenSearch Serverless data access policies can be found [here](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-data-access.html). 
+
+
+After these steps are complete, users can use their logins to access the dashboard and create visualizations.
 
 ### Creating Visualizations and Dashboards with OpenSearch
 

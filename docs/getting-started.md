@@ -178,9 +178,9 @@ npm run deploy
 
 Before sending events to the pipeline, an Application and corresponding Authorization key will need to be created. A Postman collection file is provided to help configure Postman or Bruno for use with the solution. 
 
-1. Locate the API endpoint from the output after deployment. Note this down for the collection
-	- If deployed using CDK, this endpoint is the value of `CentralizedGameAnalytics.GamesAnalyticsApiEndpoint`. 
-	- If deployed using Terraform, this endpoint is the value of `game_analytics_api_endpoint`
+1. Locate the [API Endpoint](./references/output-reference.md#api-endpoint) from the output after deployment. Note this down for the collection
+	- If deployed using CDK, this endpoint is the value of `CentralizedGameAnalytics.ApiEndpoint`. 
+	- If deployed using Terraform, this endpoint is the value of `api_endpoint`
 2. The collection file is located at `/resources/game-analytics-pipeline-postman-collection.json`
 
 === "Postman"
@@ -203,7 +203,7 @@ Before sending events to the pipeline, an Application and corresponding Authoriz
 		- Configure `access_key` to be the access key of the identity used to deploy the stack
 		- Configure `secret_access_key` to be the secret access key of the identity used to deploy the stack
 		- Leave `application_id` blank. This will be filled in later.
-	4. Ensure the colleciton variables are created
+	4. Ensure the collection variables are created
 
 		![Bruno Environment Sample](media/bruno-enviornment-sample.png)
 
@@ -242,9 +242,9 @@ If the `ENABLE_APACHE_ICEBERG_SUPPORT` configuration is set to `true`, a basic A
 
 By default, this table does not contain a configured partition specification. To enable partitioning, a Glue job must be run before data is ingested to configure the table.
 
-1. Locate the name of the iceberg setup job from the deployment outputs. Note this down for later.
-	- The name of the job is the value of `CentralizedGameAnalytics.IcebergSetupJob` when using CDK.
-	- The name of the job is the value of `iceberg_setup_job` when using Terraform.
+1. Locate the [Iceberg Setup Job Name](./references/output-reference.md#iceberg-setup-job-name) from the deployment outputs. Note this down for later.
+	- The name of the job is the value of `CentralizedGameAnalytics.IcebergSetupJobName` when using CDK.
+	- The name of the job is the value of `iceberg_setup_job_name` when using Terraform.
 2. Navigate to the [Glue AWS Console](http://console.aws.amazon.com/glue). Ensure that you are in the same region that the stack is deployed in
 3. On the left sidebar, navigate to ETL jobs
 4. Locate the deployed setup job with the name retrieved from Step 1 in the list of jobs. Use the search bar if necessary
@@ -258,9 +258,9 @@ By default, this table does not contain a configured partition specification. To
 
 If the `REAL_TIME_ANALYTICS` configuration is set to `true`, a Flink Application will be created. This application needs to be in the `RUNNING` state for incoming events to be processed in real time. 
 
-1. Locate the name of the Flink App from the deployment outputs. Note this down for later.
-	- The name of the job is the value of `CentralizedGameAnalytics.FlinkAppOutput` when using CDK.
-	- The name of the job is the value of `flink_app_output` when using Terraform.
+1. Locate the [Flink App Name](./references/output-reference.md#flink-app-name) from the deployment outputs. Note this down for later.
+	- The name of the job is the value of `CentralizedGameAnalytics.FlinkAppName` when using CDK.
+	- The name of the job is the value of `flink_app_name` when using Terraform.
 
 2. Navigate to the AWS Console. Open the console for [Managed Apache Flink](https://console.aws.amazon.com/flink)
 
@@ -357,18 +357,18 @@ For more information, refer to the [API Reference for POST - Send Events](./refe
 	An acccompanying [OpenSearch UI Application](https://aws.amazon.com/blogs/big-data/amazon-opensearch-service-launches-the-next-generation-opensearch-ui/) is created to query and visualize the data emitted by real time analytics. To access this application, ensure you are logged in to the AWS console in your browser of choice with the created OpenSearch Admin IAM role.
 
 	1. Ensure you are logged in to the AWS console with an existing administrator IAM role. This account must have the `sts:AssumeRole` permission to [switch roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_permissions-to-switch.html).
-	2. Locate the link to assume the IAM role from the output of the deployed stack. 
-		- If deployed using CDK, this output is identified by `CentralizedGameAnalytics.OpensearchAdminAssumeUrl`. 
-		- If deployed using Terraform, this output is identified by `opensearch_admin_assume_url`
+	2. Locate the [OpenSearch Admin Assume Link](./references/output-reference.md#opensearch-admin-assume-link) to assume the IAM role from the output of the deployed stack. 
+		- If deployed using CDK, this output is identified by `CentralizedGameAnalytics.OpenSearchAdminAssumeLink`. 
+		- If deployed using Terraform, this output is identified by `opensearch_admin_assume_link`
 	3. Paste the link into your browser of choice, confirm the details are correct, and click **Switch Role** to assume the admin role. The assumed role should have the name of your configured `PROJECT_NAME` followed by `-OpenSearchAdmin`.
 		![Access Admin Role](media/os_assume_role.png)
 	4. Verify that you have assumed the admin IAM role by checking the role at the top right of the AWS console.
-	5. Locate the link to the OpenSearch application from the output of the deployed stack. 
-		- If deployed using CDK, this output is identified by `CentralizedGameAnalytics.OpenSearchDashboardEndpoint`. 
-		- If deployed using Terraform, this output is identified by `opensearch_dashboard_endpoint`
-	6. Paste the URL into your browser of choice. Ensure that you are logged in to the AWS console as the OpenSearch Admin before proceeding. 
+	5. Locate the [OpenSearch Dashboard Link](./references/output-reference.md#opensearch-dashboard-link) to the OpenSearch application from the output of the deployed stack. 
+		- If deployed using CDK, this output is identified by `CentralizedGameAnalytics.OpenSearchDashboardLink`. 
+		- If deployed using Terraform, this output is identified by `opensearch_dashboard_link`
+	6. Paste the link into your browser of choice. Ensure that you are logged in to the AWS console as the OpenSearch Admin before proceeding. 
 	7. On the main dashboard page, verify that you are logged in as the OpenSearch Admin by clicking on the "a" icon on the bottom right and viewing the associated role.
-		![Verify Assumed Identity](media/os_validate_identity.png)
+		![Verify Assumed Identity](media/os_validate_identity.png){ width="300" }
 	8. On the main dashboard page, click on **Create workspace** under Essentials
 		![Create Workspace](media/os_home.png)
 	9. On the next page, provide a name and description to the workspace

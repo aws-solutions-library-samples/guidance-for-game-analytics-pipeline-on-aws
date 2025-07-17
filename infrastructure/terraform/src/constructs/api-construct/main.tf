@@ -136,7 +136,7 @@ resource "aws_api_gateway_rest_api" "game_analytics_api" {
   body        = local.game_analytics_open_api_spec
 
   endpoint_configuration {
-    types = ["REGIONAL"]
+    types = ["EDGE"]
   }
 }
 
@@ -217,4 +217,22 @@ resource "aws_lambda_permission" "authorization_service_permission" {
   function_name = var.lambda_authorizer_arn
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.game_analytics_api.execution_arn}/*/*/applications/*"
+}
+
+resource "aws_iam_policy" "admin_api_access_policy" {
+  name        = "${var.stack_name}-AdminAPIAccess"
+  description = "Allow an IAM identity to perform administrator actions on the API for ${var.stack_name}"
+
+  # Terraform's "jsonencode" function converts a
+  # Terraform expression result to valid JSON syntax.
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "execute-api:Invoke"
+        Effect   = "Allow"
+        Resource = "${aws_api_gateway_stage.game_analytics_api_stage.execution_arn}/*/*"
+      },
+    ]
+  })
 }
