@@ -25,7 +25,7 @@ resource "aws_iam_role" "firehose_role" {
         Action = "sts:AssumeRole"
         Effect = "Allow"
         Principal = {
-          Service = "firehose.amazonaws.com"
+          Service = ["firehose.amazonaws.com", "glue.amazonaws.com"]
         }
       }
     ]

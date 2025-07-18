@@ -58,7 +58,7 @@ resource "aws_opensearchserverless_collection" "game_analytics_collection" {
   description = "Serverless OpenSearch Collection for analyzing real-time timeseries game event data"
   type        = "TIMESERIES"
 
-    depends_on = [
+  depends_on = [
     aws_opensearchserverless_security_policy.encryption
   ]
 }
@@ -182,6 +182,8 @@ resource "aws_osis_pipeline" "ingestion" {
       log_group = aws_cloudwatch_log_group.ingestion.name
     }
   }
+
+  depends_on = [ aws_opensearchserverless_security_policy.network ]
 }
 
 resource "aws_opensearchserverless_access_policy" "metric_collection_access_policy" {
