@@ -50,7 +50,16 @@ TABLE_NAME = args["TABLE_NAME"]
 
 print(f"The configured table for this job is {DB_NAME}.{TABLE_NAME}")
 
-spark.sql("ALTER TABLE glue_catalog.{}.{} ADD PARTITION FIELD application_id".format(DB_NAME, TABLE_NAME))
-spark.sql("ALTER TABLE glue_catalog.{}.{} ADD PARTITION FIELD date(event_timestamp)".format(DB_NAME, TABLE_NAME))
+table_def = spark.sql("DESCRIBE FORMATTED glue_catalog.{}.{}".format(DB_NAME, TABLE_NAME))
+# get partition definition
+partition_definition = table_def.filter(table_def.col_name == '_partition').select('data_type').collect()[0][0]
 
-job.commit()
+if partition_definition == "struct<>":
+    # only setup partition fields if the definition is empty
+    spark.sql("ALTER TABLE glue_catalog.{}.{} ADD PARTITION FIELD application_id".format(DB_NAME, TABLE_NAME))
+    spark.sql("ALTER TABLE glue_catalog.{}.{} ADD PARTITION FIELD date(event_timestamp)".format(DB_NAME, TABLE_NAME))
+    job.commit()
+else:
+    # running script may lead to unexpected results
+    raise Exception("The current partition definition for the table is not empty. Running this script may lead to a misconfigured partition definition.")
+

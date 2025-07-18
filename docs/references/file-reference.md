@@ -22,7 +22,7 @@ root/
     - This folder holds all Infrastructure-as-Code (IaC) deployment files for the guidance. Can choose between AWS CDK and Terraform
 
 - **Package.json**
-    - Has config option for deploying in CDK or Terraform ("config": "iac": "cdk" | "tf") and all build commands. See [Getting Started](./getting-started.md) for more details
+    - Has config option for deploying in CDK or Terraform ("config": "iac": "cdk" | "tf") and all build commands. See [Getting Started](../getting-started.md) for more details
 
 ## Business Logic Folder Deep Dive
 

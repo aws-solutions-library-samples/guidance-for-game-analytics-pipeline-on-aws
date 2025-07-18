@@ -298,7 +298,7 @@ For more information, refer to the [API Reference for POST - Send Events](./refe
 
 === "Data Lake Mode"
 
-	1. Navigate to the [AWS Console for Athena](console.aws.amazon.com/athena)
+	1. Navigate to the [AWS Console for Athena](http://console.aws.amazon.com/athena)
 
 	2. If you are not already on the query editor, click on the **Launch query editor** button
 
