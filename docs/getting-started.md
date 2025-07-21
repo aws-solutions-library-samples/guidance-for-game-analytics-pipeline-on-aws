@@ -12,6 +12,12 @@ The following resources are required to install, configure, and deploy the game 
 - **[GitHub Account](https://docs.github.com/en/get-started/start-your-journey/creating-an-account-on-github)**
 - **[Visual Studio Code](https://code.visualstudio.com/Download)\***
 - **API Client: [Postman Desktop](https://www.postman.com/) or [Bruno](https://www.usebruno.com/)**
+- **IAM Users + Credentials**
+	- IAM User for deploying the guidance Infrastructure-as-Code resources
+	- IAM User with AWS Console access
+	- IAM User for administrating the API, requires [credentials (Access Key, Secret Access Key)](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)
+!!! Info
+	When using Access Keys and Secret Access Keys, a best practice is to periodically rotate them. This means your administrators and deployments will need to keep the rotation of your keys in mind as well, more information [here](https://docs.aws.amazon.com/IAM/latest/UserGuide/id-credentials-access-keys-update.html)
 
 *\*Other code editors can also be used, but tooling support may be limited*
 
@@ -169,8 +175,7 @@ npm run deploy.bootstrap
 ```bash
 npm run deploy
 ```
-
-**After deployment is complete, a list of outputs will be posted to the terminal. These are names and references to relevant deployed assets from the stack. Please note these for further reference.**
+After deployment is complete, a list of outputs will be posted to the terminal. These are names and references to relevant deployed assets from the stack. Please note these for future reference.
 
 ---
 
@@ -187,11 +192,12 @@ Before sending events to the pipeline, an Application and corresponding Authoriz
 
 	1. For instructions on how to import a collection, refer to the documentation for your selected API Client: [Import Postman data](https://learning.postman.com/docs/getting-started/importing-and-exporting/importing-data/#import-postman-data)
 	2. Once the collection is imported into Postman, create a new environment by selecting Environments in the sidebar and select the Add icon. You can also select the environment selector at the top right of the workbench and select Add icon. Enter a name for your new environment.
-	3. Once the collection is imported into your API client, configure the collection-wide `api_base_path` variable to be your deployed API base path. The value of the path should be the URL retrieved from step 1.
-	4. In order to perform administrator actions on your API, Authentication must be configured to utilize SigV4 authentication for an IAM identity. These credentials inherit from your `access_key` and `secret_access_key` variables configured in the collection. For more information, refer to [Authenticate with AWS Signature authentication workflow in Postman](https://learning.postman.com/docs/sending-requests/authorization/aws-signature/)
-	6. Replicate the following image for your environment:
+	3. In order to perform administrator actions on your API, Authentication must be configured to utilize SigV4 authentication for an IAM identity. These credentials inherit from your `access_key` and `secret_access_key` variables configured in the collection. For more information, refer to [Authenticate with AWS Signature authentication workflow in Postman](https://learning.postman.com/docs/sending-requests/authorization/aws-signature/)
+	4. Replicate the following image for your environment (Note: leave `application_id` blank. This will be filled in later):
+		- The AWS Access Key and Secret Access Key is specifically for administrating the API only, and should not be used by event sources. You should have an IAM User specifically with these credentials with sufficient permissions to run the tasks on the API, but for security best practice to use least privilege, a sample policy is created by the guidance `{WORKLOAD_NAME}-AdminAPIAccess` to attach to the user to perform only the admin tasks
 		![Postman Environment Sample](media/postman-environment-sample.png)
-	7. Ensure there are no trailing return/enter spaces at the end of the variables, and click "Save" on the top right.
+	5. Ensure there are no trailing return/enter spaces at the end of the variables, and click "Save" on the top right.
+	6. Select your newly created and saved environment by navigating to the top right drop-down menu that says `No environment`, selecting on it and selecting your new environment
 
 === "Bruno"
 
@@ -216,20 +222,23 @@ After the pipeline is deployed, a new application must be created using the Appl
 
 ### Create a new Application
 
-- Navigate under the **Applications** tab of the collection and select the **Create Application** API. 
-- Modify the value of Name and Description to match your game.
-- Execute the API. **Note the value of the `"ApplicationId"` in the API response.**
-- Copy the value of the ApplicationId and paste it in to the `application_id` value for the collection. This will allow the rest of your API calls to interact with the application
-- Refer to the [API Reference for POST - Create Application](./references/api-reference.md#post---create-application) for more information on how to register a new application. 
+The Game Analytics Pipeline Guidance is built to support multiple games, called `Applications` in the guidance, for cross-game and per-game analytics. This means usually you would only need to deploy a single pipeline per environment.
 
-After the application is created, create an API key to send events to the API. 
+- Navigate under the **Applications** tab of the collection and select the **Create Application** API. 
+- Navigate to the `Body` tab (under the address bar showing the API path) and modify the value of Name and Description in the json to match your game.
+- Send the API request. **Note the value of the `"ApplicationId"` in the API response.**
+- Copy the value of the ApplicationId and paste it in to the `application_id` value for the collection. This will allow the rest of your API calls to interact with the application
+!!! Note
+	Refer to the [API Reference for POST - Create Application](./references/api-reference.md#post---create-application) for more information on how to register a new application. 
+
+After the application is created, create an API key to send events to the API. Make sure to go back to Postman or Bruno if you are using them to update the environment variables (and save).
 
 ### Create a new API Key
 
 - Navigate under the **Authorizations** tab of the collection and select the **Create Authorization** API.
 - The `"ApplicationId"` from the previous step should be passed in the API path automatically. 
-- Modify the value of Name and Description to match the information about your key.
-- Execute the API. **Note the value of the `"ApiKeyValue"` in the API response.**
+- Navigate to the `Body` tab (under the address bar showing the API path) and modify the value of Name and Description in the json to match your game.
+- Send the API request. **Note the value of the `"ApiKeyValue"` in the API response.**
 - Refer to the [API Reference for POST - Create API Key for Application](./references/api-reference.md#post---create-api-key-for-application) for more information on how to create a new authorization key. 
 
 If you have Redshift Mode enabled, enable the materialized views and remaining infrastructure through the API. Refer to the [API Reference for POST - Setup Redshift](./references/api-reference.md#post-set-up-redshift) on how to setup the final Redshift components.
@@ -279,7 +288,7 @@ For more information and troubleshooting, refer to the documentation for [Run a 
 
 ## Send Events to the Pipeline
 
-This project contains a python script to send a simulated stream of events to the pipeline. The script is located at `resources/publish-data/handler.py`. To run the script, execute the following
+This project contains a python script to send a simulated stream of events to the pipeline. The script is located at `resources/publish-data/handler.py`. To run the script, run the following
 ```bash
 python resources/publish-data/handler.py --api-path <API_PATH> --api-key <API_KEY> --application-id <APPLICATION_ID>
 ```
@@ -320,7 +329,7 @@ For more information, refer to the [API Reference for POST - Send Events](./refe
 
 		![Athena 4](media/Athena-4.png)
 	
-	8. To run a query, click on the highlighted ID of the query to open it in a new query editor tab and then press Run to execute the query. View the results below after the query finishes executing.
+	8. To run a query, click on the highlighted ID of the query to open it in a new query editor tab and then press Run for the query. View the results below after the query finishes executing.
 
 		![Athena 5](media/Athena-5.png)
 
