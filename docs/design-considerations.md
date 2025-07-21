@@ -72,6 +72,12 @@ Why is there a Kinesis Data Stream in between Flink and Opensearch for Real-Time
 
 ---
 
+Do I deploy the Game Analytics Pipeline guidance for each game/application?
+
+- The Game Analytics Pipeline Guidance is built to support multiple games, called `Applications` in the guidance, for cross-game and per-game analytics. This means usually you would only need to deploy a single pipeline per environment.
+
+---
+
 When should I use Data Lake mode vs Redshift mode?
 
 The choice between AWS Data Lake mode and Redshift mode primarily depends on your latency requirements, query complexity, data volume, and concurrency needs.

@@ -566,6 +566,62 @@
 				}
 			],
 			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Redshift",
+			"item": [
+				{
+					"name": "Setup Redshift",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "awsv4",
+							"awsv4": [
+								{
+									"key": "region",
+									"value": "{{region}}",
+									"type": "string"
+								},
+								{
+									"key": "secretKey",
+									"value": "{{secret_access_key}}",
+									"type": "string"
+								},
+								{
+									"key": "accessKey",
+									"value": "{{access_key}}",
+									"type": "string"
+								},
+								{
+									"key": "service",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{api_base_path}}/redshift",
+							"host": [
+								"{{api_base_path}}"
+							],
+							"path": [
+								"redshift"
+							]
+						},
+						"description": "/redshift"
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
 		}
 	],
 	"protocolProfileBehavior": {}

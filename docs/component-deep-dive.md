@@ -1,5 +1,4 @@
 # Component Deep Dive
-NOTE: Include folder hierarchy for components
 
 ![Architecture-Simplified](media/architecture-simplified.png)
 
@@ -12,11 +11,13 @@ The Game Analytics Pipeline Guidance has the following modes:
 2. `REDSHIFT` - Deploys a serverless Redshift Data Warehouse cost-optimized for larger data scan volume and more frequent queries
 ![Architecture-Simplified-Redshift](media/architecture-simplified-redshift-mode.png)
 
-From there the Guidance allows several ingest options:
+From there the Guidance allows several ingest options. Some ingest options are required for certain modes, refer to [Configurations Reference Page](./references/config-reference.md) for a full list:
 
-1. `DIRECT_BATCH` - Does not deploy the real-time infrastructure components. Sends directly via batch in near-real-time, either to Firehose for `DATA_LAKE` mode, or to Redshift for `REDSHIFT` mode.
+1. `DIRECT_BATCH` - Does not deploy the real-time infrastructure components. Sends directly via batch in near-real-time to Firehose for `DATA_LAKE` mode
 
 2. `KINESIS_DATA_STREAMS` - Deploys additional real-time infrastructure components for real-time analysis
+
+Optionally, there is a real-time analytics mode for time-sensitive analytics:
 
 ![Architecture-Simplified-Real-Time](media/architecture-simplified-real-time.png)
 
@@ -24,7 +25,7 @@ For help deciding between the modes and options, or even for explanations and ju
 
 ---
 ## 1. Source
-The Game Analytics Pipeline Guidance can accept from any HTTP/HTTPS REST based sources, such as Game Clients, Game Servers, or Backend services. Refer to the [API Reference Page](./references/api-reference.md) and [Getting Started Guide](./getting-started.md) on how to send events to the endpoint.
+The Game Analytics Pipeline Guidance can accept from any HTTP/HTTPS REST supported sources, such as Game Clients, Game Servers, or Backend services. Refer to the [API Reference Page](./references/api-reference.md) and [Getting Started Guide](./getting-started.md) on how to send events to the endpoint.
 
 ![Architecture-Verbose-Source](media/architecture-verbose-source.png)
 
@@ -45,7 +46,7 @@ The Game Analytics Pipeline Guidance can accept from any HTTP/HTTPS REST based s
 4. [Based on the guidance configurations](./component-deep-dive.md#overview), API Gateway performs the following:
 
     - `KINESIS_DATA_STREAMS` - [Sends a passthrough call directly to Amazon Kinesis Data Streams](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services.html) via stream in real-time
-    - `DIRECT_BATCH` - [Sends a passthrough call directly to the Amazon services](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services.html) via batch in near-real-time, either to Firehose for `DATA_LAKE` mode, or to Redshift for `REDSHIFT` mode.
+    - `DIRECT_BATCH` - [Sends a passthrough call directly to the Amazon services](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services.html) via batch in near-real-time to Firehose for `DATA_LAKE` mode
 
 ![Architecture-Verbose-Endpoint](media/architecture-verbose-endpoint.png)
 
@@ -105,7 +106,7 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
     <br>
     5. Athena is a serverless analytics query service that can perform ad-hoc queries and connect to analytics dashboards to use the queries to power visualizations. The guidance provides sample queries for common game use cases (see [Customizations](./customizations.md) for more details) along with sample operational CTAS (Create-Table-as-Select) queries that can also perform certain ad-hoc ETL.
 
-    6. Amazon QuickSight or other dashboard technologies can connect to Athena through their plugins, connectors, or direct integration. Dashboards will call Athena to perform the queries that power visualizations and provide insights to users.
+    6. Amazon QuickSight or other dashboard technologies can connect to Athena through their plugins, connectors, or direct integration. Dashboards will call Athena to perform the queries that power visualizations and provide insights to users. Dashboard integration is planned for future releases, and does not come directly with the guidance at this time. Refer to [Customizations](./customizations.md)
 
 === "Redshift Mode"
 
@@ -113,9 +114,10 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
 
     1. An Amazon Redshift Serverless cluster is deployed. Redshift is initially not integrated with the Kinesis Data Stream until the `setup/redshift` API call - see [API Reference for POST - Setup Redshift](./references/api-reference.md#post-set-up-redshift), in which a [materialized view](https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-streaming-ingestion.html) will be created, as well as a set of other views representing pre-made queries to get you started.
 
-    2. You can query data immediately using [Amazon Redshift Query Editor](https://aws.amazon.com/redshift/query-editor-v2/) in the AWS Console, or connect up other visualization tools compatible with Amazon Redshift.
+    2. You can query data immediately using [Amazon Redshift Query Editor](https://aws.amazon.com/redshift/query-editor-v2/) in the AWS Console, or connect up other visualization tools compatible with Amazon Redshift. Dashboard integration is planned for future releases, and does not come directly with the guidance at this time. Refer to [Customizations](./customizations.md)
 
-    3. By default, the cluster is configured with 8 RPU Compute Capacity, and is accessible on port 5439. Both can be configured in the redshift-construct source for your chosen Infrastructure as Code language in the respective Redshift Construct files.
+!!! Note
+    By default, the cluster is configured with 4 RPU Compute Capacity, and is accessible on port 5439. Both can be configured in the redshift-construct source for your chosen Infrastructure as Code language in the respective Redshift Construct files.
 
 ## Administration
 
