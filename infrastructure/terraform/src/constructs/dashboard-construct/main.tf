@@ -13,7 +13,7 @@ locals {
 
   // API Widget
   api_ingestion_widget = {
-    "type": "graph",
+    "type": "metric",
     "width": 24,
     "height": 6,
     "properties": {

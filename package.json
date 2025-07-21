@@ -2,7 +2,7 @@
   "name": "project-root",
   "version": "0.0.1",
   "config": {
-    "iac": "cdk"
+    "iac": "tf"
   },
   "scripts": {
     "build": "python3 build.py",
@@ -15,7 +15,7 @@
     "tf:deploy": "cd infrastructure/terraform/src && terraform apply -auto-approve",
     "tf:destroy": "cd infrastructure/terraform/src && terraform destroy",
     "deploy.bootstrap": "npm run $npm_package_config_iac:deploy.bootstrap",
-    "deploy": "npm run $npm_package_config_iac:deploy",
+    "deploy": "node validator.js && npm run $npm_package_config_iac:deploy",
     "destroy": "npm run $npm_package_config_iac:destroy",
     "validate": "node validator.js"
   },

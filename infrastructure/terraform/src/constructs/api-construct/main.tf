@@ -138,6 +138,10 @@ resource "aws_api_gateway_rest_api" "game_analytics_api" {
   endpoint_configuration {
     types = ["EDGE"]
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # API Gateway Deployment
@@ -155,9 +159,10 @@ resource "aws_api_gateway_deployment" "game_analytics_api_deployment" {
 
 // API Gateway Stage
 resource "aws_api_gateway_stage" "game_analytics_api_stage" {
-  deployment_id = aws_api_gateway_deployment.game_analytics_api_deployment.id
-  rest_api_id   = aws_api_gateway_rest_api.game_analytics_api.id
-  stage_name    = var.api_stage_name
+  deployment_id        = aws_api_gateway_deployment.game_analytics_api_deployment.id
+  rest_api_id          = aws_api_gateway_rest_api.game_analytics_api.id
+  stage_name           = var.api_stage_name
+  xray_tracing_enabled = true
 }
 
 // Metrics gathering Deploy Options
