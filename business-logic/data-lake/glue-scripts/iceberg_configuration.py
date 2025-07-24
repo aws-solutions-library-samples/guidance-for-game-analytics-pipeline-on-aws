@@ -50,6 +50,10 @@ TABLE_NAME = args["TABLE_NAME"]
 
 print(f"The configured table for this job is {DB_NAME}.{TABLE_NAME}")
 
+# check for table existence before proceeding
+if not spark.catalog.tableExists(f"glue_catalog.{DB_NAME}.{TABLE_NAME}"):
+    raise Exception("The specified table does not exist in the catalog")
+
 table_def = spark.sql("DESCRIBE FORMATTED glue_catalog.{}.{}".format(DB_NAME, TABLE_NAME))
 # get partition definition
 partition_definition = table_def.filter(table_def.col_name == '_partition').select('data_type').collect()[0][0]
