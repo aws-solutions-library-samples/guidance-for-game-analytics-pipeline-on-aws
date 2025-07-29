@@ -31,7 +31,7 @@ export interface RedshiftConstructProps extends cdk.StackProps {
 }
 
 const defaultProps = {
-  baseRPU: 8,
+  baseRPU: 4,
   port: 5639,
 };
 

@@ -57,21 +57,21 @@ async function setupRedshift() {
 
   try {
     console.log(`Executing: ${create_schema_statement}`);
-    const cs_id = await executeStatement(client, create_schema_statement);
-    await waitForStatement(client, cs_id);
+    const client_id = await executeStatement(client, create_schema_statement);
+    await waitForStatement(client, client_id);
     console.log(`Executed: ${create_schema_statement}`);
 
     console.log(`Executing: ${create_materialized_view_statement}`);
-    const mv_id = await executeStatement(
+    const materialized_view_id = await executeStatement(
       client,
       create_materialized_view_statement
     );
-    await waitForStatement(client, mv_id, mv_ignore_errors);
+    await waitForStatement(client, materialized_view_id, mv_ignore_errors);
     console.log(`Executed: ${create_materialized_view_statement}`);
   } catch (error) {
     console.log("Error setupRedshift A");
-    console.log(JSON.stringify(err));
-    return Promise.reject(err);
+    console.log(JSON.stringify(error));
+    return Promise.reject(error);
   }
 
   try {
@@ -90,8 +90,8 @@ async function setupRedshift() {
     console.log("Redshift views created");
   } catch (error) {
     console.log("Error setupRedshift B");
-    console.log(JSON.stringify(err));
-    return Promise.reject(err);
+    console.log(JSON.stringify(error));
+    return Promise.reject(error);
   }
 
   return Promise.resolve({ Result: "OK" });
@@ -103,28 +103,25 @@ const waitForStatement = async (
   ignore_errors = [],
   retries = 0
 ) => {
-  if (retries > 20) {
-    throw new Error("Failed to get statement status, took too long.");
-  }
-
-  const describeStatement = { Id: id };
-  const result = await client.send(
-    new DescribeStatementCommand(describeStatement)
-  );
-  if (result.Status == "FAILED") {
-    if (ignore_errors.includes(result.Error)) {
-      console.log("Ignoring error: " + result.Error);
+  for (let i = 0; i < retries; i++) {
+    const describeStatement = { Id: id };
+    const result = await client.send(
+      new DescribeStatementCommand(describeStatement)
+    );
+    if (result.Status == "FAILED") {
+      if (ignore_errors.includes(result.Error)) {
+        console.log("Ignoring error: " + result.Error);
+        return;
+      }
+      console.log("Error waitForStatement");
+      console.log(JSON.stringify(result));
+      throw new Error(result.Error);
+    } else if (result.Status == "FINISHED") {
       return;
     }
-
-    console.log("Error waitForStatement");
-    console.log(JSON.stringify(result));
-    throw err;
-  } else if (result.Status == "FINISHED") {
-    return;
+    await sleep(500);
   }
-  await sleep(500);
-  await waitForStatement(client, id, ignore_errors, retries + 1);
+  throw new Error("Failed to get statement status, took too long.");
 };
 
 const executeStatement = async (client, statement) => {
@@ -142,7 +139,7 @@ const executeStatement = async (client, statement) => {
     return response.Id;
   } catch (error) {
     console.log("Error executeStatement");
-    console.log(JSON.stringify(err));
+    console.log(JSON.stringify(error));
     throw error;
   }
 };

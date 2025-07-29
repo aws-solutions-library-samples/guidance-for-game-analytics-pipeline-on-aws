@@ -65,7 +65,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     grid-gap: 3rem;
-    margin-bottom: 3rem;
+    margin-bottom: 2.5rem;
   }
   
   .mdx-features img {
@@ -91,6 +91,7 @@
     .mdx-hero__content {
       width: 50%;
       margin-top: 5rem;
+      height: 200px;
       padding-bottom: 20vh;
       text-align: left;
     }
