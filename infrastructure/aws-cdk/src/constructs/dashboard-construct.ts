@@ -8,6 +8,7 @@ import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import { ManagedFlinkConstruct } from "./flink-construct";
 import { RedshiftConstruct } from "./redshift-construct";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
+import { OpenSearchConstruct } from "./opensearch-construct";
 
 export interface CloudWatchDashboardConstructProps extends cdk.StackProps {
   gameEventsStream: kinesis.Stream | undefined;
@@ -16,6 +17,7 @@ export interface CloudWatchDashboardConstructProps extends cdk.StackProps {
   gameAnalyticsApi: apigateway.IRestApi;
   eventsProcessingFunction: lambda.Function;
   redshiftConstruct: RedshiftConstruct | undefined;
+  opensearchConstruct: OpenSearchConstruct | undefined;
   config: GameAnalyticsPipelineConfig;
 }
 const defaultProps: Partial<CloudWatchDashboardConstructProps> = {};
@@ -404,7 +406,8 @@ export class CloudWatchDashboardConstruct extends Construct {
     let realTimeWidgets: cloudwatch.IWidget[][] = [];
     if (
       props.config.REAL_TIME_ANALYTICS === true &&
-      props.managedFlinkConstruct != undefined
+      props.managedFlinkConstruct != undefined &&
+      props.opensearchConstruct != undefined
     ) {
       realTimeWidgets = [
         [
@@ -534,6 +537,57 @@ export class CloudWatchDashboardConstruct extends Construct {
             width: 12,
             height: 6,
           }),
+
+          new cloudwatch.GraphWidget({
+            title: "OpenSearch Intake",
+            left: [
+              new cloudwatch.Metric({
+                metricName: "IngestionDocumentRate",
+                namespace: "AWS/AOSS",
+                dimensionsMap: {
+                  CollectionName: props.opensearchConstruct.osCollection.name,
+                  CollectionId: props.opensearchConstruct.osCollection.attrId,
+                  ClientId: cdk.Aws.ACCOUNT_ID
+                },
+              }),
+              new cloudwatch.Metric({
+                metricName: `${props.opensearchConstruct.ingestionPipeline.pipelineName}.recordsProcessed.count`,
+                namespace: "AWS/OSIS",
+                dimensionsMap: {
+                  PipelineName: props.opensearchConstruct.ingestionPipeline.pipelineName
+                },
+              }),
+              new cloudwatch.Metric({
+                metricName: `${props.opensearchConstruct.ingestionPipeline.pipelineName}.opensearch.documentsSuccess.count`,
+                namespace: "AWS/OSIS",
+                dimensionsMap: {
+                  PipelineName: props.opensearchConstruct.ingestionPipeline.pipelineName
+                },
+              }),
+            ],
+            right: [
+              new cloudwatch.Metric({
+                metricName: "IngestionDocumentErrors",
+                namespace: "AWS/AOSS",
+                dimensionsMap: {
+                  CollectionName: props.opensearchConstruct.osCollection.name,
+                  CollectionId: props.opensearchConstruct.osCollection.attrId,
+                  ClientId: cdk.Aws.ACCOUNT_ID
+                },
+              }),
+              new cloudwatch.Metric({
+                metricName: `${props.opensearchConstruct.ingestionPipeline.pipelineName}.opensearch.documentErrors.count`,
+                namespace: "AWS/OSIS",
+                dimensionsMap: {
+                  PipelineName: props.opensearchConstruct.ingestionPipeline.pipelineName
+                },
+              }),
+            ],
+            width: 12,
+            height: 6,
+            period: cdk.Duration.seconds(60),
+            statistic: "Average",
+          })
         ],
         [
           new cloudwatch.GraphWidget({
@@ -591,6 +645,32 @@ export class CloudWatchDashboardConstruct extends Construct {
             width: 12,
             height: 6,
             region: cdk.Stack.of(this).region,
+            period: cdk.Duration.seconds(60),
+            statistic: "Average",
+          }),
+          new cloudwatch.GraphWidget({
+            title: "OpenSearch Latency",
+            left: [
+              new cloudwatch.Metric({
+                metricName: "IngestionRequestLatency",
+                namespace: "AWS/AOSS",
+                dimensionsMap: {
+                  CollectionName: props.opensearchConstruct.osCollection.name,
+                  CollectionId: props.opensearchConstruct.osCollection.attrId,
+                  ClientId: cdk.Aws.ACCOUNT_ID
+                },
+              }),
+              new cloudwatch.Metric({
+                metricName: `${props.opensearchConstruct.ingestionPipeline.pipelineName}.opensearch.EndToEndLatency.avg`,
+                namespace: "AWS/OSIS",
+                dimensionsMap: {
+                  PipelineName: props.opensearchConstruct.ingestionPipeline.pipelineName
+                },
+              }),
+            ],
+            width: 12,
+            height: 6,
+            stacked: true,
             period: cdk.Duration.seconds(60),
             statistic: "Average",
           }),

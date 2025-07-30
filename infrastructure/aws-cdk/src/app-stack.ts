@@ -552,6 +552,7 @@ export class InfrastructureStack extends cdk.Stack {
       gameAnalyticsApi: gamesApiConstruct.gameAnalyticsApi,
       eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
       redshiftConstruct: redshiftConstruct,
+      opensearchConstruct: opensearchConstruct,
       config: props.config
     });
 
