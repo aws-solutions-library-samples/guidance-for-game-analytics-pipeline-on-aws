@@ -573,19 +573,28 @@ locals {
                   "CollectionId",
                   var.collection_id,
                   "CollectionName",
-                  var.collection_name
+                  var.collection_name,
+                  {
+                    "label": "Collection Ingested"
+                  }
               ],
               [
                   "AWS/OSIS",
                   "${var.pipeline_name}.recordsProcessed.count",
                   "PipelineName",
-                  var.pipeline_name
+                  var.pipeline_name,
+                  {
+                    "label": "Pipeline Recieved"
+                  }
               ],
               [
                   "AWS/OSIS",
                   "${var.pipeline_name}.opensearch.documentsSuccess.count",
                   "PipelineName",
-                  var.pipeline_name
+                  var.pipeline_name,
+                  {
+                    "label": "Pipeline Sent"
+                  }
               ],
               [
                   "AWS/AOSS",
@@ -597,7 +606,8 @@ locals {
                   "CollectionName",
                   var.collection_name,
                   {
-                      "yAxis": "right"
+                      "yAxis": "right",
+                      "label": "Collection Errors"
                   }
               ],
               [
@@ -606,13 +616,14 @@ locals {
                   "PipelineName",
                   var.pipeline_name,
                   {
-                      "yAxis": "right"
+                      "yAxis": "right",
+                      "label": "Pipeline Errors"
                   }
               ]
           ],
           "yAxis": {},
           "period": 60,
-          "stat": "Average"
+          "stat": "Sum"
       }
   }
   
@@ -695,13 +706,19 @@ locals {
                   "CollectionId",
                   var.collection_id,
                   "CollectionName",
-                  var.collection_name
+                  var.collection_name,
+                  {
+                    "label": "Collection Ingestion Request Latency"
+                  }
               ],
               [
                   "AWS/OSIS",
                   "${var.pipeline_name}.opensearch.EndToEndLatency.avg",
                   "PipelineName",
                   var.pipeline_name,
+                  {
+                    "label": "Pipeline End-To-End Latency"
+                  }
               ]
           ],
           "yAxis": {},

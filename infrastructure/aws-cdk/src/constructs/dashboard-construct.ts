@@ -549,6 +549,8 @@ export class CloudWatchDashboardConstruct extends Construct {
                   CollectionId: props.opensearchConstruct.osCollection.attrId,
                   ClientId: cdk.Aws.ACCOUNT_ID
                 },
+              }).with({
+                label: "Collection Ingested",
               }),
               new cloudwatch.Metric({
                 metricName: `${props.opensearchConstruct.ingestionPipeline.pipelineName}.recordsProcessed.count`,
@@ -556,6 +558,8 @@ export class CloudWatchDashboardConstruct extends Construct {
                 dimensionsMap: {
                   PipelineName: props.opensearchConstruct.ingestionPipeline.pipelineName
                 },
+              }).with({
+                label: "Pipeline Recieved",
               }),
               new cloudwatch.Metric({
                 metricName: `${props.opensearchConstruct.ingestionPipeline.pipelineName}.opensearch.documentsSuccess.count`,
@@ -563,6 +567,8 @@ export class CloudWatchDashboardConstruct extends Construct {
                 dimensionsMap: {
                   PipelineName: props.opensearchConstruct.ingestionPipeline.pipelineName
                 },
+              }).with({
+                label: "Pipeline Sent",
               }),
             ],
             right: [
@@ -574,6 +580,8 @@ export class CloudWatchDashboardConstruct extends Construct {
                   CollectionId: props.opensearchConstruct.osCollection.attrId,
                   ClientId: cdk.Aws.ACCOUNT_ID
                 },
+              }).with({
+                label: "Collection Errors",
               }),
               new cloudwatch.Metric({
                 metricName: `${props.opensearchConstruct.ingestionPipeline.pipelineName}.opensearch.documentErrors.count`,
@@ -581,12 +589,14 @@ export class CloudWatchDashboardConstruct extends Construct {
                 dimensionsMap: {
                   PipelineName: props.opensearchConstruct.ingestionPipeline.pipelineName
                 },
+              }).with({
+                label: "Pipeline Errors",
               }),
             ],
             width: 12,
             height: 6,
             period: cdk.Duration.seconds(60),
-            statistic: "Average",
+            statistic: "Sum",
           })
         ],
         [
@@ -659,6 +669,8 @@ export class CloudWatchDashboardConstruct extends Construct {
                   CollectionId: props.opensearchConstruct.osCollection.attrId,
                   ClientId: cdk.Aws.ACCOUNT_ID
                 },
+              }).with({
+                label: "Collection Ingestion Request Latency"
               }),
               new cloudwatch.Metric({
                 metricName: `${props.opensearchConstruct.ingestionPipeline.pipelineName}.opensearch.EndToEndLatency.avg`,
@@ -666,7 +678,9 @@ export class CloudWatchDashboardConstruct extends Construct {
                 dimensionsMap: {
                   PipelineName: props.opensearchConstruct.ingestionPipeline.pipelineName
                 },
-              }),
+              }).with({
+                label: "Pipeline End-To-End Latency"
+              })
             ],
             width: 12,
             height: 6,
