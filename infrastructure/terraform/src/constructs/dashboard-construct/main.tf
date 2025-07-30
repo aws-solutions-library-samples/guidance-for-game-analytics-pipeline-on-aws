@@ -1,4 +1,5 @@
 data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
 
 locals {
   // Title widget
@@ -19,7 +20,7 @@ locals {
     "properties": {
       "view": "timeSeries",
       "title": "Events Ingestion and Delivery",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "metrics": [
         [
           "AWS/ApiGateway",
@@ -62,7 +63,7 @@ locals {
     "properties": {
       "view": "timeSeries",
       "title": "Events Ingestion and Delivery",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "metrics": [
         [
           "AWS/Kinesis", 
@@ -88,7 +89,7 @@ locals {
     "properties": {
       "view": "timeSeries",
       "title": "Events Stream Latency",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "metrics": [
         [
           "AWS/Kinesis", 
@@ -159,7 +160,7 @@ locals {
     "properties": {
       "view": "timeSeries",
       "title": "Queries Completed Per Second",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "stacked": false,
       "metrics": [
         [
@@ -184,7 +185,7 @@ locals {
     "properties": {
       "view": "timeSeries",
       "title": "Database Connections",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "stacked": false,
       "metrics": [
         [
@@ -207,7 +208,7 @@ locals {
     "properties": {
       "view": "timeSeries",
       "title": "Query Planning / Execution",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "stacked": false,
       "metrics": [
         [
@@ -242,7 +243,7 @@ locals {
     "properties": {
       "view": "singleValue",
       "title": "Data Storage",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "sparkline": true,
       "metrics": [
         [
@@ -273,7 +274,7 @@ locals {
     "properties": {
       "view": "singleValue",
       "title": "Events Processing Health",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "metrics": [
         [
           "AWS/Firehose", 
@@ -335,7 +336,7 @@ locals {
     "properties": {
       "view": "timeSeries",
       "title": "Event Transformation Lambda Error count and success rate (%)",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "metrics": [
         [
           "AWS/Lambda", 
@@ -422,7 +423,7 @@ locals {
     "properties": {
       "view": "timeSeries",
       "title": "Managed Flink Records Intake",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "metrics": [
         [
           {
@@ -476,7 +477,7 @@ locals {
     "properties": {
       "view": "timeSeries",
       "title": "Managed Flink Container CPU Utilization",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "metrics": [
         [
           "AWS/KinesisAnalytics",
@@ -520,8 +521,8 @@ locals {
     "properties": {
       "view": "timeSeries",
       "title": "Managed Flink Container Resource Utilization",
-      "region": "${data.aws_region.current.name}",
-      "metrics ": [
+      "region": "${data.aws_region.current.region}",
+      "metrics": [
         [
           "AWS/KinesisAnalytics",
           "containerMemoryUtilization",
@@ -532,7 +533,7 @@ locals {
           "AWS/KinesisAnalytics",
           "containerDiskUtilization",
           "Application",
-          "${var.flink_app}"
+          "${var.flink_app}",
         ],
         [
           "AWS/KinesisAnalytics",
@@ -551,43 +552,68 @@ locals {
           "label": "Percent",
           "showUnits": false
         }
-      }
+      },
     }
   }
-  
-  flink_resource_utilization_widget = {
-    "type": "graph",
-    "width": 8,
-    "height": 6,
-    "properties": {
-      "metrics": [
-        ["AWS/KinesisAnalytics", "containerMemoryUtilization", {
-          "dimensions": {
-            "FunctionName": "${var.flink_app}"
-          }
-        }],
-        ["AWS/KinesisAnalytics", "containerDiskUtilization", {
-          "dimensions": {
-            "FunctionName": "${var.flink_app}"
-          }
-        }],
-        ["AWS/KinesisAnalytics", "threadsCount", {
-          "dimensions": {
-            "FunctionName": "${var.flink_app}"
-          }
-        }]
-      ],
-      "title": "Managed Flink Container Resource Utilization",
-      "region": "${data.aws_region.current.region}",
-      "yAxis": {
-        "left": {
-          "showUnits": false,
-          "label": "Percent",
-          "min": 1,
-          "max": 100
-        }
+
+  opensearch_intake_widget = {
+      "type": "metric",
+      "width": 12,
+      "height": 6,
+      "properties": {
+          "view": "timeSeries",
+          "title": "OpenSearch Intake",
+          "region": "${data.aws_region.current.region}",
+          "metrics": [
+              [
+                  "AWS/AOSS",
+                  "IngestionDocumentRate",
+                  "ClientId",
+                  data.aws_caller_identity.current.account_id,
+                  "CollectionId",
+                  var.collection_id,
+                  "CollectionName",
+                  var.collection_name
+              ],
+              [
+                  "AWS/OSIS",
+                  "${var.pipeline_name}.recordsProcessed.count",
+                  "PipelineName",
+                  var.pipeline_name
+              ],
+              [
+                  "AWS/OSIS",
+                  "${var.pipeline_name}.opensearch.documentsSuccess.count",
+                  "PipelineName",
+                  var.pipeline_name
+              ],
+              [
+                  "AWS/AOSS",
+                  "IngestionDocumentErrors",
+                  "ClientId",
+                  data.aws_caller_identity.current.account_id,
+                  "CollectionId",
+                  var.collection_id,
+                  "CollectionName",
+                  var.collection_name,
+                  {
+                      "yAxis": "right"
+                  }
+              ],
+              [
+                  "AWS/OSIS",
+                  "${var.pipeline_name}.opensearch.documentErrors.count",
+                  "PipelineName",
+                  var.pipeline_name,
+                  {
+                      "yAxis": "right"
+                  }
+              ]
+          ],
+          "yAxis": {},
+          "period": 60,
+          "stat": "Average"
       }
-    }
   }
   
   metric_stream_latency_widget = {
@@ -597,7 +623,7 @@ locals {
     "properties": {
       "view": "timeSeries",
       "title": "Metrics Stream Latency",
-      "region": "${data.aws_region.current.name}",
+      "region": "${data.aws_region.current.region}",
       "metrics": [
         [
           "AWS/Kinesis",
@@ -649,12 +675,46 @@ locals {
     "stat": "Average"
     }
   }
+
+
+  opensearch_latency_widget = {
+      "type": "metric",
+      "width": 12,
+      "height": 6,
+      "properties": {
+          "view": "timeSeries",
+          "title": "OpenSearch Latency",
+          "region": "${data.aws_region.current.region}",
+          "stacked": true,
+          "metrics": [
+              [
+                  "AWS/AOSS",
+                  "IngestionRequestLatency",
+                  "ClientId",
+                  data.aws_caller_identity.current.account_id,
+                  "CollectionId",
+                  var.collection_id,
+                  "CollectionName",
+                  var.collection_name
+              ],
+              [
+                  "AWS/OSIS",
+                  "${var.pipeline_name}.opensearch.EndToEndLatency.avg",
+                  "PipelineName",
+                  var.pipeline_name,
+              ]
+          ],
+          "yAxis": {},
+          "period": 60,
+          "stat": "Average"
+      }
+  }
   
   widgets_list = [local.title_widget, local.api_ingestion_widget]
   kinesis_widgets = [local.stream_ingestion_title_widget, local.event_ingestion_widget, local.stream_latency_widget]
   redshift_widgets = [local.redshift_title_widget, local.redshift_queries_per_second_widget, local.redshift_database_connections_widget, local.redshift_query_execution_widget, local.redshift_data_storage_widget]
   datalake_widgets = [local.data_lake_title_widget, local.event_processing_health_widget, local.ingestion_lambda_widget]
-  realtime_widgets = [local.realtime_title_widget, local.realtime_latency_widget, local.flink_cpu_utilization_widget, local.realtime_health_widget, local.flink_resource_utilization_widget, local.metric_stream_latency_widget]
+  realtime_widgets = [local.realtime_title_widget, local.realtime_latency_widget, local.flink_cpu_utilization_widget, local.realtime_health_widget, local.opensearch_intake_widget, local.metric_stream_latency_widget,local.opensearch_latency_widget]
 
   combined_widgets_list = concat(
   local.widgets_list, 
