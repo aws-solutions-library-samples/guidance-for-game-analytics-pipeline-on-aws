@@ -26,6 +26,43 @@ This widget monitors the latency of the real-time raw event data stream. This wi
 
 You can read more about Kinesis stream-level metrics in the [Amazon Kinesis Data Streams Developer Guide](https://docs.aws.amazon.com/streams/latest/dev/monitoring-with-cloudwatch.html#kinesis-metrics-stream) and troubleshooting using the metrics in the [troubleshooting documentation](https://docs.aws.amazon.com/streams/latest/dev/troubleshooting-consumers.html).
 
+## Redshift Serverless (WIP)
+
+### Queries Completed Per Second
+
+![Event Processing Health](../media/dashboard/processing_health.png){ width="500" }
+	
+This widget tracks the number of queries completed per second.
+
+For more information about the metrics that Redshift Serverless tracks, please refer to the [Amazon Redshift Management Guide](https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-audit-logging.html).
+
+### Database Connections
+
+![Event Processing Health](../media/dashboard/processing_health.png){ width="500" }
+
+This widget tracks the number of open connections to the Redshift database at a point in time.
+
+For more information about the metrics that Redshift Serverless tracks, please refer to the [Amazon Redshift Management Guide](https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-audit-logging.html).
+
+### Query Planning / Execution
+
+![Event Processing Health](../media/dashboard/processing_health.png){ width="500" }
+
+This widget tracks the time spent planning and executing queries on the event data.
+
+- **QueryPlanning** - This metric tracks the time spent parsing and optimizing SQL statements.
+- **QueryExecutingRead** - This metric tracks the time spent executing read queries.
+
+For more information about the metrics that Redshift Serverless tracks, please refer to the [Amazon Redshift Management Guide](https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-audit-logging.html).
+
+### Data Storage
+
+![Event Processing Health](../media/dashboard/processing_health.png){ width="500" }
+
+This widget tracks the amount of data stored in the Redshift serverless data.
+
+For more information about the metrics that Redshift Serverless tracks, please refer to the [Amazon Redshift Management Guide](https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-audit-logging.html).
+
 ## Stream Ingestion & Processing
 
 ### Events Processing Health
