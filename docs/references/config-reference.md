@@ -157,7 +157,7 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 
 `S3_BACKUP_MODE`
 
-- *Description:* Wether or not to enable [Kinesis Data Firehose](https://aws.amazon.com/kinesis/data-firehose/) to send a backup of new/raw data to S3. The default value has been set to `false` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. 
+- *Description:* Whether or not to enable [Kinesis Data Firehose](https://aws.amazon.com/kinesis/data-firehose/) to send a backup of new/raw data to S3. The default value has been set to `false` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. 
 
 - *Type:* Boolean
 

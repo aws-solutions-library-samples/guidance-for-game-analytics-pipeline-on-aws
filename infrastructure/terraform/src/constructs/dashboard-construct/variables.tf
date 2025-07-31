@@ -60,5 +60,17 @@ variable "data_platform_mode" {
 }
 
 variable "real_time_analytics" {
+  type = bool
+}
+
+variable "collection_id" {
+  type = string
+}
+
+variable "collection_name" {
+  type = string
+}
+
+variable "pipeline_name" {
   type = string
 }

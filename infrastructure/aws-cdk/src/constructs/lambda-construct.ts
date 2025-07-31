@@ -100,7 +100,7 @@ function. This function to process and transform raw events before they get writ
     let redshiftEnv = {};
     if (props.redshiftConstruct) {
       redshiftEnv = {
-        SECRET_ARN: `redshift!${props.redshiftConstruct.namespace.namespaceName}-admin`,
+        SECRET_ARN: `redshift!${props.redshiftConstruct.namespace.namespaceName}-db-admin`,
         WORKGROUP_NAME: props.redshiftConstruct.workgroup.workgroupName,
         DATABASE_NAME: props.config.EVENTS_DATABASE,
         REDSHIFT_ROLE_ARN: props.redshiftConstruct.redshiftRole.roleArn,
@@ -141,7 +141,7 @@ This function provides the application admin microservice. */
         Stack.of(this).account
       }:secret:redshift!${
         props.redshiftConstruct.namespace.namespaceName
-      }-admin*`;
+      }-db-admin*`;
 
       this.applicationAdminServiceFunction.addToRolePolicy(
         new iam.PolicyStatement({

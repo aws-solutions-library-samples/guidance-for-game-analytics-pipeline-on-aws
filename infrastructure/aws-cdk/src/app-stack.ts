@@ -210,7 +210,9 @@ export class InfrastructureStack extends cdk.Stack {
         name: "application_id",
         type: dynamodb.AttributeType.STRING,
       },
-      pointInTimeRecovery: true,
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: true,
+      },
       encryption: dynamodb.TableEncryptionV2.dynamoOwnedKey(),
       removalPolicy: props.config.DEV_MODE
         ? cdk.RemovalPolicy.DESTROY
@@ -231,7 +233,9 @@ export class InfrastructureStack extends cdk.Stack {
           name: "application_id",
           type: dynamodb.AttributeType.STRING,
         },
-        pointInTimeRecovery: true,
+        pointInTimeRecoverySpecification: {
+          pointInTimeRecoveryEnabled: true,
+        },
         encryption: dynamodb.TableEncryptionV2.dynamoOwnedKey(),
         removalPolicy: props.config.DEV_MODE
           ? cdk.RemovalPolicy.DESTROY
@@ -552,6 +556,7 @@ export class InfrastructureStack extends cdk.Stack {
       gameAnalyticsApi: gamesApiConstruct.gameAnalyticsApi,
       eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
       redshiftConstruct: redshiftConstruct,
+      opensearchConstruct: opensearchConstruct,
       config: props.config
     });
 

@@ -149,13 +149,13 @@ resource "aws_kinesis_firehose_delivery_stream" "game_events_firehose" {
     content {
       role_arn           = aws_iam_role.firehose_role.arn
       catalog_arn        = "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog"
-      buffering_size     = 128
-      buffering_interval   = var.dev_mode ? 60 : 900
 
       s3_configuration {
         role_arn = aws_iam_role.firehose_role.arn
         bucket_arn = var.analytics_bucket_arn
         kms_key_arn = aws_kms_key.firehose_kms_key.arn
+        buffering_size     = 128
+        buffering_interval   = var.dev_mode ? 60 : 900
       }
 
       destination_table_configuration {

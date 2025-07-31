@@ -32,12 +32,13 @@ export interface RedshiftConstructProps extends cdk.StackProps {
 
 const defaultProps = {
   baseRPU: 4,
-  port: 5639,
+  port: 5431,
 };
 
 export class RedshiftConstruct extends Construct {
   public readonly namespace: redshiftserverless.CfnNamespace;
   public readonly workgroup: redshiftserverless.CfnWorkgroup;
+  public readonly snapshot: redshiftserverless.CfnSnapshot;
   public readonly redshiftRole: iam.Role;
   public readonly key: kms.Key;
   constructor(parent: Construct, name: string, props: RedshiftConstructProps) {
@@ -98,15 +99,16 @@ export class RedshiftConstruct extends Construct {
         iamRoles: [this.redshiftRole.roleArn],
         kmsKeyId: this.key.keyId,
         logExports: ["userlog", "connectionlog", "useractivitylog"],
-        manageAdminPassword: true,
-        snapshotCopyConfigurations: [{
-          destinationRegion: cdk.Stack.of(this).region,
-          destinationKmsKeyId: this.key.keyId,
-          snapshotRetentionPeriod: 1,
-        }]
+        manageAdminPassword: true
       }
     );
-
+    
+    this.snapshot = new redshiftserverless.CfnSnapshot(this, "RedshiftSnapshot", {
+      snapshotName: `${workloadNameLower}-workspace-snapshot`,
+      namespaceName: this.namespace.namespaceName,
+      retentionPeriod: 1,
+    })
+      
     this.workgroup = new redshiftserverless.CfnWorkgroup(
       this,
       "RedshiftWorkgroup",

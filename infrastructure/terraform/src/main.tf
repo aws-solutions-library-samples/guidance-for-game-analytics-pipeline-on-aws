@@ -693,4 +693,7 @@ module "dashboard_construct" {
   redshift_workgroup_name             = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? module.redshift_construct[0].redshift_workgroup_name : ""
   data_platform_mode                  = local.config.DATA_PLATFORM_MODE
   real_time_analytics                 = local.config.REAL_TIME_ANALYTICS
+  collection_id = local.config.REAL_TIME_ANALYTICS == true ? module.opensearch_construct[0].collection_id : ""
+  collection_name = local.config.REAL_TIME_ANALYTICS == true ? module.opensearch_construct[0].collection_name : ""
+  pipeline_name = local.config.REAL_TIME_ANALYTICS == true ? module.opensearch_construct[0].ingestion_pipeline_name : ""
 }

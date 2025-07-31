@@ -177,7 +177,7 @@ export class StreamingIngestionConstruct extends Construct {
       firehoseIngestDeliveryStreamType = "DirectPut";
       firehoseSourceConfiguration = {
         directPutSourceConfiguration: {
-          ThroughputHintInMBs: 1,
+          throughputHintInMBs: 1,
         }
       }
     }
