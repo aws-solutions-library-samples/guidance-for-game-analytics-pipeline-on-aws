@@ -1,11 +1,11 @@
 # Changes from V2 to V3
 
-## As of 3/12/2025 (Commit ID: d1f410f)
+## As of 7/31/2025
 ---
 
 ## <u>Feature Updates</u>
 - Added Iceberg table support, CTAS queries for creating Iceberg tables, and Glue scripts for converting Hive to Iceberg
-- Added additional metrics for Flink to Operational Dashboard
+- Added Opensearch as the new real-time dashboarding over CloudWatch metrics
 - Added Terraform as a deployment option
 - Added Redshift as a deployment option
 ---
@@ -18,6 +18,7 @@ Upgraded infrastructure to the following: (INSERT BEFORE AND AFTERS HERE)
 - Added deployment option for Direct Batching to Firehose
 - Removed Ops-pipeline components (Github Actions, CodeBuild, CodePipeline)
 - Added S3 Tables option for Iceberg table support
+- Lambda functions now run on Graviton
 ---
 
 ## <u>Configuration Updates</u>
@@ -28,7 +29,6 @@ Upgraded infrastructure to the following: (INSERT BEFORE AND AFTERS HERE)
 - Added default values for configuration template file
 - Added "iac" field to top-level package.json to support CDK or Terraform deployment options
 - Reorganized config variables to functional groups
-- TODO: Add deltas between before and after files
 ---
 
 ## <u>Administrative Updates</u>
@@ -36,7 +36,8 @@ Upgraded infrastructure to the following: (INSERT BEFORE AND AFTERS HERE)
 - Removed Solution Helper and custom resources dependency for CDK
 - Streamlining esbuild as primary deployment option
 - Created dashboard-construct to move CloudWatch Dashboard to a dedicated construct
-- Revamped CloudWatch Dashboard (TODO: Show before and after)
+- Revamped CloudWatch Dashboard, see [Ops Dashboard Reference](../references/ops-dashboard-reference.md) for latest state
+- Added additional metrics for Flink, Opensearch, and Redshift to Operational Dashboard and dynamically builds based on deployment
 ---
 
 ## <u>Library Updates</u>
