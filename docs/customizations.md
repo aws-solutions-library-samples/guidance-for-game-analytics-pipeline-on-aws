@@ -67,8 +67,6 @@ A strong visualization for metrics are time-series visualizations. These can be 
 Since different metrics have different dimension data, it is strongly recommended to filter data for a specific metric name before proceeding with metric creation. This can be done using the DQL filter under options.
     ![Metric Filter](media/os_filter.png)
 
-## NOTE: operating (metrics, etc)
-
 ## (TODO: Send from game engines)
 
 Utilize the integrated HTTP libraries in your game engine to form and send requests to the [Send Events API](./references/api-reference.md#post---send-events).
