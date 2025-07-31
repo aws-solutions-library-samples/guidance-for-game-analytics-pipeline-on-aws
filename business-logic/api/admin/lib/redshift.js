@@ -81,7 +81,7 @@ async function setupRedshift() {
     console.log(filenames);
 
     for (const filename of filenames) {
-      const statement = fs.readFileSync(`${directoryPath}/${filename}`, "utf8");
+      const statement = fs.readFileSync(`${directoryPath}/${filename}`, "utf8").replace("\"events\"", `\"${DATABASE_NAME}\"`);
       console.log(`Creating view: ${filename}`);
       const id = await executeStatement(client, statement);
       await waitForStatement(client, id);
