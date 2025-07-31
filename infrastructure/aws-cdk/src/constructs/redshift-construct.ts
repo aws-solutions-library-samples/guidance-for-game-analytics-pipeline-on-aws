@@ -38,6 +38,7 @@ const defaultProps = {
 export class RedshiftConstruct extends Construct {
   public readonly namespace: redshiftserverless.CfnNamespace;
   public readonly workgroup: redshiftserverless.CfnWorkgroup;
+  public readonly snapshot: redshiftserverless.CfnSnapshot;
   public readonly redshiftRole: iam.Role;
   public readonly key: kms.Key;
   constructor(parent: Construct, name: string, props: RedshiftConstructProps) {
@@ -107,13 +108,13 @@ export class RedshiftConstruct extends Construct {
         }]*/
       }
     );
-    /*
-    redshiftserverless.CfnSnapshot(this, "RedshiftSnapshot", {
+    
+    this.snapshot = new redshiftserverless.CfnSnapshot(this, "RedshiftSnapshot", {
       snapshotName: `${workloadNameLower}-workspace-snapshot`,
-      namespaceName: this.namespace,
+      namespaceName: this.namespace.namespaceName,
       retentionPeriod: 1,
     })
-      */
+      
 
     this.workgroup = new redshiftserverless.CfnWorkgroup(
       this,
