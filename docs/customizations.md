@@ -71,7 +71,7 @@ Since different metrics have different dimension data, it is strongly recommende
 
 ## (TODO: Send from game engines)
 
-Utilize the integrated HTTP libraries in your game engine to form and send requests to the [Send Events API](./references/api-reference.md#post---send-events).
+Utilize the integrated HTTP libraries in your game engine to form and send requests to the [Send Events API](./references/api-reference.md#post-send-events).
 
 - [Unreal Engine 5](https://dev.epicgames.com/community/learning/tutorials/ZdXD/call-rest-api-using-http-json-from-ue5-c)
 
