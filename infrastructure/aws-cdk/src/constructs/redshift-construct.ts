@@ -32,7 +32,7 @@ export interface RedshiftConstructProps extends cdk.StackProps {
 
 const defaultProps = {
   baseRPU: 4,
-  port: 5639,
+  port: 5431,
 };
 
 export class RedshiftConstruct extends Construct {
@@ -99,13 +99,21 @@ export class RedshiftConstruct extends Construct {
         kmsKeyId: this.key.keyId,
         logExports: ["userlog", "connectionlog", "useractivitylog"],
         manageAdminPassword: true,
+        /*
         snapshotCopyConfigurations: [{
-          destinationRegion: cdk.Stack.of(this).region,
+          destinationRegion: cdk.Aws.REGION,
           destinationKmsKeyId: this.key.keyId,
           snapshotRetentionPeriod: 1,
-        }]
+        }]*/
       }
     );
+    /*
+    redshiftserverless.CfnSnapshot(this, "RedshiftSnapshot", {
+      snapshotName: `${workloadNameLower}-workspace-snapshot`,
+      namespaceName: this.namespace,
+      retentionPeriod: 1,
+    })
+      */
 
     this.workgroup = new redshiftserverless.CfnWorkgroup(
       this,

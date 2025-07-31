@@ -13,9 +13,9 @@ resource "aws_security_group" "redshift_security_group" {
 resource "aws_vpc_security_group_ingress_rule" "redshift_security_group_ingress_rule" {
   security_group_id = aws_security_group.redshift_security_group.id
   cidr_ipv4         = var.vpc_cidr
-  from_port         = 5639
+  from_port         = 5431
   ip_protocol       = "tcp"
-  to_port           = 5639
+  to_port           = 5431
 }
 
 resource "aws_iam_role" "redshift_role" {
@@ -88,7 +88,7 @@ resource "aws_redshiftserverless_workgroup" "redshift_workgroup" {
   workgroup_name = "${lower(var.stack_name)}-workgroup"
   base_capacity = 16
   namespace_name = aws_redshiftserverless_namespace.redshift_namespace.namespace_name
-  port = 5639
+  port = 5431
   publicly_accessible = false
   subnet_ids = var.vpc_subnet
   security_group_ids = [aws_security_group.redshift_security_group.id]

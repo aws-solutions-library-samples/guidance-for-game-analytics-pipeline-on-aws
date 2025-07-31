@@ -82,7 +82,7 @@ module "application_admin_service_function" {
       DATABASE_NAME                    = var.events_database
       STREAM_NAME                      = length(var.games_events_stream_name) == 1 ? var.games_events_stream_name[0] : ""
   }, var.data_platform_mode == "REDSHIFT" ? {
-      SECRET_ARN                       = "redshift!${var.redshift_namespace_name[0]}-admin"
+      SECRET_ARN                       = "redshift!${var.redshift_namespace_name[0]}-db-admin"
       WORKGROUP_NAME                   = var.redshift_workgroup_name[0]
       REDSHIFT_ROLE_ARN                = var.redshift_role_arn[0]
   } : {})
@@ -191,7 +191,7 @@ resource "aws_iam_role_policy" "application_admin_service_function_policy" {
         Action: [
           "secretsmanager:GetSecretValue"
         ],
-        Resource: "arn:aws:secretsmanager:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:secret:redshift!${var.redshift_namespace_name[0]}-admin*"
+        Resource: "arn:aws:secretsmanager:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:secret:redshift!${var.redshift_namespace_name[0]}-db-admin*"
       },
       {
         Effect: "Allow",

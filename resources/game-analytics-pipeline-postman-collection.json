@@ -608,7 +608,7 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{api_base_path}}/redshift",
+							"raw": "{{api_base_path}}/redshift/setup",
 							"host": [
 								"{{api_base_path}}"
 							],
@@ -616,7 +616,7 @@
 								"redshift"
 							]
 						},
-						"description": "/redshift"
+						"description": "/redshift/setup"
 					},
 					"response": []
 				}
