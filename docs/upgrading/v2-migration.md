@@ -18,6 +18,19 @@ The Game Analytics Pipeline on AWS has evolved from V2 to V3, with one of the mo
 
 ## Key Differences Between V2 and V3
 
+### Managed Service for Apache Flink
+
+Amazon Kinesis Data Analytics for SQL applications, which is used in the original architecture of the Game Analytics Pipeline on AWS, is being discontinued. You can learn more about the discontinuation using the following resources.
+
+- [Amazon Kinesis Data Analytics for SQL Applications discontinuation](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/discontinuation.md)
+
+Amazon Managed Service for Apache Flink is a serverless, low-latency, highly scalable, and highly available real-time stream processing service. Amazon Managed Service for Apache Flink replaces Amazon Kinesis Data Analytics for SQL Applications in the Game Analytics Pipeline on AWS architecture.
+
+Amazon Web Services has published a guide and examples to assist with the migration to Flink. The resources are accessible using the links below.
+
+- [Migrate from Amazon Kinesis Data Analytics for SQL to Amazon Managed Service for Apache Flink and Amazon Managed Service for Apache Flink Studio](https://aws.amazon.com/blogs/big-data/migrate-from-amazon-kinesis-data-analytics-for-sql-to-amazon-managed-service-for-apache-flink-and-amazon-managed-service-for-apache-flink-studio/)
+- [Migrating to Managed Service for Apache Flink Studio Examples](https://docs.aws.amazon.com/kinesisanalytics/latest/dev/migrating-to-kda-studio-overview.html)
+
 ### What is Apache Iceberg?
 
 Apache Iceberg is an Open Table Format (OTF) for large analytic datasets that provides significant advantages over traditional file formats like Parquet when used alone. It maintains tables through metadata that tracks 

@@ -100,7 +100,6 @@ nav:
   - Upgrading:
       - Changelog: upgrading/v2-to-v3-changes.md
       - Upgrade Guide: upgrading/v2-migration.md
-      - (old-flink-remove): upgrading/flink-migration.md
   - Component Deep Dive: component-deep-dive.md
   - Customizations: customizations.md
   - Design Considerations: design-considerations.md
