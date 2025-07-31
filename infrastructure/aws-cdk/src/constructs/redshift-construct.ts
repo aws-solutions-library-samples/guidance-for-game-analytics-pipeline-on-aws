@@ -99,13 +99,7 @@ export class RedshiftConstruct extends Construct {
         iamRoles: [this.redshiftRole.roleArn],
         kmsKeyId: this.key.keyId,
         logExports: ["userlog", "connectionlog", "useractivitylog"],
-        manageAdminPassword: true,
-        /*
-        snapshotCopyConfigurations: [{
-          destinationRegion: cdk.Aws.REGION,
-          destinationKmsKeyId: this.key.keyId,
-          snapshotRetentionPeriod: 1,
-        }]*/
+        manageAdminPassword: true
       }
     );
     
@@ -115,7 +109,6 @@ export class RedshiftConstruct extends Construct {
       retentionPeriod: 1,
     })
       
-
     this.workgroup = new redshiftserverless.CfnWorkgroup(
       this,
       "RedshiftWorkgroup",
