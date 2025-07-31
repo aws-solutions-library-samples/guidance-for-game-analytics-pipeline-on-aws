@@ -103,25 +103,28 @@ const waitForStatement = async (
   ignore_errors = [],
   retries = 0
 ) => {
-  for (let i = 0; i < retries; i++) {
-    const describeStatement = { Id: id };
-    const result = await client.send(
-      new DescribeStatementCommand(describeStatement)
-    );
-    if (result.Status == "FAILED") {
-      if (ignore_errors.includes(result.Error)) {
-        console.log("Ignoring error: " + result.Error);
-        return;
-      }
-      console.log("Error waitForStatement");
-      console.log(JSON.stringify(result));
-      throw new Error(result.Error);
-    } else if (result.Status == "FINISHED") {
+  if (retries > 20) {
+    throw new Error("Failed to get statement status, took too long.");
+  }
+
+  const describeStatement = { Id: id };
+  const result = await client.send(
+    new DescribeStatementCommand(describeStatement)
+  );
+  if (result.Status == "FAILED") {
+    if (ignore_errors.includes(result.Error)) {
+      console.log("Ignoring error: " + result.Error);
       return;
     }
-    await sleep(500);
+
+    console.log("Error waitForStatement");
+    console.log(JSON.stringify(result));
+    throw err;
+  } else if (result.Status == "FINISHED") {
+    return;
   }
-  throw new Error("Failed to get statement status, took too long.");
+  await sleep(500);
+  await waitForStatement(client, id, ignore_errors, retries + 1);
 };
 
 const executeStatement = async (client, statement) => {
