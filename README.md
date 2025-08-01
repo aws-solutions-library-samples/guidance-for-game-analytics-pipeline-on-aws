@@ -1,17 +1,12 @@
 # Game Analytics Pipeline on AWS
 
->[!IMPORTANT] 
->This Guidance requires the use of AWS [CodeCommit](https://docs.aws.amazon.com/codecommit/latest/userguide/welcome.html), which is no longer available to new customers. Existing customers of AWS CodeCommit can continue using and deploying this Guidance as normal.
-
 ## Table of Contents
-
-List the top-level sections of the README template, along with a hyperlink to the specific section.
 
 1. [Overview](#overview)
     - [Cost](#cost)
 2. [Prerequisites](#prerequisites)
     - [Operating System](#operating-system)
-3. Deployment Steps, Running the Guidance, and Deployment Validation
+3. [Deployment Steps, Running the Guidance, and Deployment Validation](#deployment-steps-running-the-guidance-and-deployment-validation)
 4. [Next Steps](#next-steps)
 5. [Notices](#notices)
 6. [Authors](#authors)
@@ -24,15 +19,21 @@ The Game Analytics Pipeline guidance helps game developers to apply a flexible, 
 
 ### Cost
 
-NOTE: The cost breakdown does not include CloudWatch
-
 _You are responsible for the cost of the AWS services used while running this Guidance. As of August 2025, the cost for running this Guidance with the default settings in the US East (N. Virginia) region is approximately:_
-- $58.20 per month for Data Lake Mode w/ Firehose Batching
-- $107.16 per month for Data Lake Mode w/ Kinesis Data Streams
-- Between $200.40 (4 hour runtime) - $1115.40 (24 hour runtime) per month for Redshift Mode assuming 4 RPU
-- + $<575.93> (or $<526.97> if already using Kinesis Data Streams) per month if real-time is enabled
 
-Note: Redshift becomes more cost-effective when scanning large data volumes per query (>10GB data scanned for a single query) coupled with frequent queries
+- $87.23 per month for Data Lake (Hive Table)
+- $49.38 per month for Data Lake (Iceberg Table)
+- $260.51 for Amazon Redshift
+- \+ $771.47 per month if real-time analytics are enabled
+    - **NOTE:**  Redshift also requires the use of Kinesis data streams which is a $69.30 overlapping cost to be subtracted if both are enabled.
+
+**NOTE:** Redshift becomes more cost-effective when scanning large data volumes per query (>10GB data scanned for a single query) coupled with frequent queries
+
+_We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html) through [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) to help manage costs. Prices are subject to change. For full details, refer to the pricing webpage for each AWS service used in this Guidance._
+
+### Sample Cost Table
+
+The following table provides a sample cost breakdown for components in the guidance in the US East (N. Virginia) Region for one month.
 
 Assuming the following variables:
 - Processing 259.2 million events per month = 100 events per second
@@ -41,46 +42,59 @@ Assuming the following variables:
 - 0.01GB of entries in DynamoDB
 - 259GB data (259 million 1kb entries)
 
-_We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html) through [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) to help manage costs. Prices are subject to change. For full details, refer to the pricing webpage for each AWS service used in this Guidance._
+Cost consists of the API component, data platform (choose between hive data lake, iceberg data lake, and redshift), optional real-time kinesis data stream, and optional real-time analytics. To enable Redshift data platform or real-time analytics, the kinesis data stream must also be enabled. 
 
-### Sample Cost Table
+**NOTE:** These are rough estimates only, and even though they are calculated with a very pessimistic approach, there can always be some costs that are not fully covered here. You always need to do your own testing and estimates.
 
-The following table provides a sample cost breakdown for components in the guidance in the US East (N. Virginia) Region for one month.
-
-API Component
+#### API Component
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
 | Amazon API Gateway | 2,592,000 REST API calls per month | $ 9.07/month |
 | AWS Lambda | Authorizer Lambda 2,592,000 calls per month | $ 0.32/month |
 | Amazon DynamoDB | 0.01GB entries for admin use | $ 0.00/month |
 
-Kinesis Data Stream Ingest
+#### Kinesis Data Stream
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon Kinesis Data Streams | 259,200,000 requests | $ 48.96/month |
+| Amazon Kinesis Data Streams (On-Demand) | 259,200,000 requests, 1kb/record, 2 readers | $ 69.30/month |
+| Amazon Kinesis Data Streams (Provisioned) | 259,200,000 requests, 2 shards | $ 25.58/month |
 
-Data Lake Mode / PUT Batch
+*Choose between on-demand and provisioned based on your traffic patterns*
+
+#### Data Platform - Data Lake (Hive Table)
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon Data Firehose | 259,200,000 requests | $ 40.80/month |
+| Amazon Data Firehose | 259,200,000 records, 5kb/record, data format conversion | $ 58.90/month |
 | AWS Lambda | Events Processing Lambda 2,592,000 calls per month | $ 0.32/month |
-| Amazon Simple Storage Service (S3) | 256GB data | $ 6.09/month |
+| Amazon Simple Storage Service (S3) | 256GB data | $ 6.02/month |
+| AWS Glue Data Catalog | 1 million objects stored, 1 million requests | $ 11.00/month |
 | AWS Glue | 2DPU 2 min ETL Jobs | $ 0.15/month |
 | Amazon Athena | 100 queries per day scanning 100mb data avg | $ 1.45/month |
 
-Amazon Redshift Serverless
+#### Data Platform - Data Lake (Iceberg Table)
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon Redshift Serverless | 4 RPU 4 hour / day | $ 183.00/month |
+| Amazon Data Firehose | 259,200,000 records, 1kb/record | $ 19.44/month |
+| AWS Lambda | Events Processing Lambda 2,592,000 calls per month | $ 0.32/month |
+| Amazon Simple Storage Service (S3) | 256GB data | $ 6.02/month |
+| AWS Glue Data Catalog | 1 million objects stored, 1 million requests, 120 minutes optimization | $ 12.76/month |
+| Amazon Athena | 100 queries per day scanning 100mb data avg | $ 1.45/month |
 
-Real-Time Analytics
+*Amazon Data Firehose is billed in 5kb increments unless Iceberg is the destination*
+
+#### Data Platform - Amazon Redshift
+| AWS service  | Dimensions | Cost [USD] |
+| ----------- | ------------ | ------------ |
+| Amazon Redshift Serverless | 4 RPU 4 hour / day, 256gb managed storage | $ 181.82/month |
+
+#### Real-Time Analytics (Optional)
 
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
 | Amazon Managed Service for Apache Flink | 1 KPU | $ 165.60/month |
-| Amazon Kinesis Data Streams | 1MBps/ Metric Output Stream | $ 10.95/month |
+| Amazon Kinesis Data Streams (Provisioned) | 1 shard | $ 10.95/month |
 | Amazon OpenSearch Service (Serverless) | 1 OCU Index + Search/Query + 1GB Index | $ 350.42/month |
-
+| Amazon OpenSearch Service (Ingestion) | 1 Ingestion OCU Index | $ 175.20/month |
 ## Prerequisites
 
 Before deploying the sample code, ensure that the following required tools have been installed:
