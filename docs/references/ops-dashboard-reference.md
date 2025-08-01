@@ -26,11 +26,11 @@ This widget monitors the latency of the real-time raw event data stream. This wi
 
 You can read more about Kinesis stream-level metrics in the [Amazon Kinesis Data Streams Developer Guide](https://docs.aws.amazon.com/streams/latest/dev/monitoring-with-cloudwatch.html#kinesis-metrics-stream) and troubleshooting using the metrics in the [troubleshooting documentation](https://docs.aws.amazon.com/streams/latest/dev/troubleshooting-consumers.html).
 
-## Redshift Serverless (WIP)
+## Redshift Serverless
 
 ### Queries Completed Per Second
 
-![Event Processing Health](../media/dashboard/processing_health.png){ width="500" }
+![Redshift Query Count](../media/dashboard/redshift_query_count.png){ width="500" }
 	
 This widget tracks the number of queries completed per second.
 
@@ -38,7 +38,7 @@ For more information about the metrics that Redshift Serverless tracks, please r
 
 ### Database Connections
 
-![Event Processing Health](../media/dashboard/processing_health.png){ width="500" }
+![Redshift Connections](../media/dashboard/redshift_connections.png){ width="500" }
 
 This widget tracks the number of open connections to the Redshift database at a point in time.
 
@@ -46,7 +46,7 @@ For more information about the metrics that Redshift Serverless tracks, please r
 
 ### Query Planning / Execution
 
-![Event Processing Health](../media/dashboard/processing_health.png){ width="500" }
+![Redshift Query Planning](../media/dashboard/redshift_query.png){ width="500" }
 
 This widget tracks the time spent planning and executing queries on the event data.
 
@@ -57,7 +57,7 @@ For more information about the metrics that Redshift Serverless tracks, please r
 
 ### Data Storage
 
-![Event Processing Health](../media/dashboard/processing_health.png){ width="500" }
+![Redshift Storage](../media/dashboard/redshift_storage.png){ width="500" }
 
 This widget tracks the amount of data stored in the Redshift serverless data.
 
