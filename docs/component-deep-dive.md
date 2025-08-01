@@ -7,8 +7,11 @@
 The Game Analytics Pipeline Guidance has the following modes:
 
 1. `DATA_LAKE` - Deploys a lightweight data lake cost-optimized for lower data scan volume and ad-hoc queries
+
 ![Architecture-Simplified-Datalake](media/architecture-simplified-datalake-mode.png)
+
 2. `REDSHIFT` - Deploys a serverless Redshift Data Warehouse cost-optimized for larger data scan volume and more frequent queries
+
 ![Architecture-Simplified-Redshift](media/architecture-simplified-redshift-mode.png)
 
 From there the Guidance allows several ingest options. Some ingest options are required for certain modes, refer to [Configurations Reference Page](./references/config-reference.md) for a full list:
@@ -105,7 +108,8 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
 
     <br>
     5. Athena is a serverless analytics query service that can perform ad-hoc queries and connect to analytics dashboards to use the queries to power visualizations. The guidance provides sample queries for common game use cases (see [Customizations](./customizations.md) for more details) along with sample operational CTAS (Create-Table-as-Select) queries that can also perform certain ad-hoc ETL.
-
+    
+    <br>
     6. Amazon QuickSight or other dashboard technologies can connect to Athena through their plugins, connectors, or direct integration. Dashboards will call Athena to perform the queries that power visualizations and provide insights to users. Dashboard integration is planned for future releases, and does not come directly with the guidance at this time. Refer to [Customizations](./customizations.md)
 
 === "Redshift Mode"
