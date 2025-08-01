@@ -11,7 +11,7 @@ WITH
       ) as event_month,
       *
     FROM
-      "events"."public"."event_data"
+      "{db_name}"."public"."event_data"
   )
 SELECT
   date_trunc ('month', event_month) as month,

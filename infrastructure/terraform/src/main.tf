@@ -689,6 +689,7 @@ module "dashboard_construct" {
   api_stage_name                      = module.games_api_construct.game_analytics_api_stage_name
   metrics_stream_name                 = local.config.REAL_TIME_ANALYTICS == true ? module.flink_construct[0].kinesis_metrics_stream_name : ""
   flink_app                           = local.config.REAL_TIME_ANALYTICS == true ? module.flink_construct[0].flink_app_output : ""
+  redshift_db_name                    = local.config.EVENTS_DATABASE
   redshift_namespace_db_name          = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? module.redshift_construct[0].redshift_namespace_name : ""
   redshift_workgroup_name             = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? module.redshift_construct[0].redshift_workgroup_name : ""
   data_platform_mode                  = local.config.DATA_PLATFORM_MODE

@@ -165,7 +165,7 @@ export class CloudWatchDashboardConstruct extends Construct {
       props.config.DATA_PLATFORM_MODE === "REDSHIFT" &&
       props.redshiftConstruct != undefined
     ) {
-      const dbName = "events";
+      const dbName = props.config.EVENTS_DATABASE;
       const workgroupName = props.redshiftConstruct.workgroup.workgroupName;
       const namespaceName = props.redshiftConstruct.namespace.namespaceName;
       redshiftWidgets = [

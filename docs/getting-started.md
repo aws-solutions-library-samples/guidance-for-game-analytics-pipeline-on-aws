@@ -229,7 +229,7 @@ The Game Analytics Pipeline Guidance is built to support multiple games, called 
 - Send the API request. **Note the value of the `"ApplicationId"` in the API response.**
 - Copy the value of the ApplicationId and paste it in to the `application_id` value for the collection. This will allow the rest of your API calls to interact with the application
 !!! Note
-	Refer to the [API Reference for POST - Create Application](./references/api-reference.md#post---create-application) for more information on how to register a new application. 
+	Refer to the [API Reference for POST - Create Application](./references/api-reference.md#post-create-application) for more information on how to register a new application. 
 
 After the application is created, create an API key to send events to the API. Make sure to go back to Postman or Bruno if you are using them to update the environment variables (and save).
 
@@ -239,7 +239,7 @@ After the application is created, create an API key to send events to the API. M
 - The `"ApplicationId"` from the previous step should be passed in the API path automatically. 
 - Navigate to the `Body` tab (under the address bar showing the API path) and modify the value of Name and Description in the json to match your game.
 - Send the API request. **Note the value of the `"ApiKeyValue"` in the API response.**
-- Refer to the [API Reference for POST - Create API Key for Application](./references/api-reference.md#post---create-api-key-for-application) for more information on how to create a new authorization key. 
+- Refer to the [API Reference for POST - Create API Key for Application](./references/api-reference.md#post-create-api-key-for-application) for more information on how to create a new authorization key. 
 
 If you have Redshift Mode enabled, enable the materialized views and remaining infrastructure through the API. Refer to the [API Reference for POST - Setup Redshift](./references/api-reference.md#post-set-up-redshift) on how to setup the final Redshift components.
 
@@ -361,7 +361,7 @@ For more information, refer to the [API Reference for POST - Send Events](./refe
 
 === "Real-Time Analytics"
 
-	If `REAL_TIME_ANALYTICS` is set to `true`, an OpenSearch Serverless collection will be created to store and index the time series metrics emitted by the Managed Service for Apache Flink application that is initiated in the [Starting Flink](#real-time-only---starting-flink) step. 
+	If `REAL_TIME_ANALYTICS` is set to `true`, an OpenSearch Serverless collection will be created to store and index the time series metrics emitted by the Managed Service for Apache Flink application that is initiated in the [Starting Flink](#real-time-only-starting-flink) step. 
 
 	An acccompanying [OpenSearch UI Application](https://aws.amazon.com/blogs/big-data/amazon-opensearch-service-launches-the-next-generation-opensearch-ui/) is created to query and visualize the data emitted by real time analytics. To access this application, ensure you are logged in to the AWS console in your browser of choice with the created OpenSearch Admin IAM role.
 

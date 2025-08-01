@@ -6,7 +6,7 @@ with
       JSON_EXTRACT_PATH_TEXT (event_data, 'level_id') as level,
       count(JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')) as level_count
     FROM
-      "events"."public"."event_data"
+      "{db_name}"."public"."event_data"
     WHERE
       event_type = 'level_started'
     GROUP BY
@@ -17,7 +17,7 @@ with
       JSON_EXTRACT_PATH_TEXT (event_data, 'level_id') as level,
       count(JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')) as level_count
     FROM
-      "events"."public"."event_data"
+      "{db_name}"."public"."event_data"
     WHERE
       event_type = 'level_completed'
     GROUP BY
