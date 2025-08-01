@@ -167,7 +167,7 @@ locals {
           "AWS/Redshift-Serverless", 
           "QueriesCompletedPerSecond", 
           "DatabaseName",
-          "events",
+          var.redshift_db_name,
           "Workgroup",
           "${var.redshift_workgroup_name}",
           "LatencyRange",
@@ -192,7 +192,7 @@ locals {
           "AWS/Redshift-Serverless", 
           "DatabaseConnections", 
           "DatabaseName",
-          "events",
+          var.redshift_db_name,
           "Workgroup",
           "${var.redshift_workgroup_name}"
         ]
@@ -217,7 +217,7 @@ locals {
           "stage",
           "QueryPlanning",
           "DatabaseName",
-          "events",
+          var.redshift_db_name,
           "Workgroup",
           "${var.redshift_workgroup_name}"
         ],
@@ -227,7 +227,7 @@ locals {
           "stage",
           "QueryExecutingRead",
           "DatabaseName",
-          "events",
+          var.redshift_db_name,
           "Workgroup",
           "${var.redshift_workgroup_name}"
         ]

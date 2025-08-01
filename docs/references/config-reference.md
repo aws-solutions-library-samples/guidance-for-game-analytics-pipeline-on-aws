@@ -86,7 +86,7 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 
 `EVENTS_DATABASE`
 
-- *Description:* The name of the of the [AWS Glue database](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) that contains the glue tables.
+- *Description:* Specifies the name of the [AWS Glue database](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) that contains the glue tables when `DATA_PLATFORM_MODE` is set to `"DATA_LAKE"`. Specifies the name of the [Redshift Serverless database](https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-serverless.html) when `DATA_PLATFORM_MODE` is set to `"REDSHIFT"`.
 
 - *Type:* String (1-255 characters)
 

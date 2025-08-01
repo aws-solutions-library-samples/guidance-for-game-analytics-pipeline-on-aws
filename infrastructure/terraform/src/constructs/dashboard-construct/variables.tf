@@ -47,6 +47,10 @@ variable "flink_app" {
   type = string
 }
 
+variable "redshift_db_name" {
+  type = string
+}
+
 variable "redshift_namespace_db_name" {
   type = string
 }

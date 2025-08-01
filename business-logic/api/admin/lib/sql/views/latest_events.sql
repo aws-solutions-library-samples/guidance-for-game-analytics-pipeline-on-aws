@@ -4,7 +4,7 @@ SELECT
   *,
   timestamp 'epoch' + event_timestamp * interval '1 second' AS parsed_date
 FROM
-  "events"."public"."event_data"
+  "{db_name}"."public"."event_data"
 ORDER BY
   parsed_date DESC
 LIMIT

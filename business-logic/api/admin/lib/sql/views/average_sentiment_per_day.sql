@@ -10,7 +10,7 @@ SELECT
     timestamp 'epoch' + event_timestamp * interval '1 second'
   ) as event_date
 FROM
-  "events"."public"."event_data"
+  "{db_name}"."public"."event_data"
 WHERE
   JSON_EXTRACT_PATH_TEXT (event_data, 'user_rating') is not null
 GROUP BY

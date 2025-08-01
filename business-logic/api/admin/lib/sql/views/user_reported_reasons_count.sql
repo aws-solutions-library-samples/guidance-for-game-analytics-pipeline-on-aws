@@ -6,7 +6,7 @@ SELECT
   ) as count_of_reports,
   JSON_EXTRACT_PATH_TEXT (event_data, 'report_reason') as report_reason
 FROM
-  "events"."public"."event_data"
+  "{db_name}"."public"."event_data"
 GROUP BY
   JSON_EXTRACT_PATH_TEXT (event_data, 'report_reason')
 ORDER BY
