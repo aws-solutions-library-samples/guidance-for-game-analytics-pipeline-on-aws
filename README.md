@@ -25,12 +25,12 @@ The guidance has been codified as a modular CDK or Terraform application, enabli
 
 _You are responsible for the cost of the AWS services used while running this Guidance. As of August 2025, the cost for running this Guidance with the default settings in the US East (N. Virginia) region is approximately:_
 
-- $87.23 per month for Data Lake (Hive Table)
-- $49.38 per month for Data Lake (Iceberg Table)
-- $260.51 for Amazon Redshift
-- \+ $771.47 per month if real-time analytics are enabled
+- $92.06 per month for Data Lake (Hive Table)
+- $65.88 per month for Data Lake (Iceberg Table)
+- $252.50 for Amazon Redshift
+- \+ $770.94 per month if real-time analytics are enabled
 
-**NOTE:** The price estimates for Amazon Redshift and real-time analytics both include costs for an on-demand Amazon Kinesis data stream. If both options are enabled, the overlapping cost of the data stream will have to be subtracted.
+**NOTE:** The price estimates for Amazon Redshift and real-time analytics both include costs for an on-demand Amazon Kinesis data stream. If both options are enabled, the overlapping cost of the data stream will have to be subtracted. Pricing for Amazon Data Firehose may differ when the Amazon Kinesis data stream is enabled.
 
 _We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html) through [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) to help manage costs. Prices are subject to change. For full details, refer to the pricing webpage for each AWS service used in this Guidance._
 
@@ -53,15 +53,15 @@ The cost estimate consists of the required API component and choice of data stac
 #### API Component
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon API Gateway | 2,592,000 REST API calls per month | $ 9.07/month |
-| AWS Lambda | Authorizer Lambda, 2,592,000 calls per month, 200ms runtime per execution | $ 2.25/month |
-| Amazon DynamoDB | 0.01GB entries for admin use, 2,592,000 GET requests | $ 0.41/month |
+| Amazon API Gateway | 2,592,000 REST API calls per month | $9.07/month |
+| AWS Lambda | Authorizer Lambda, 2,592,000 calls per month, 200ms runtime per execution | $2.25/month |
+| Amazon DynamoDB | 0.01GB entries for admin use, 2,592,000 GET requests | $0.41/month |
 
 #### Kinesis Data Stream
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon Kinesis Data Streams (On-Demand) | 259,200,000 requests, 1kb/record, 1 consumer | $ 58.87/month |
-| Amazon Kinesis Data Streams (Provisioned) | 259,200,000 requests, 2 shards | $ 25.58/month |
+| Amazon Kinesis Data Streams (On-Demand) | 259,200,000 requests, 1kb/record, 1 consumer | $58.87/month |
+| Amazon Kinesis Data Streams (Provisioned) | 259,200,000 requests, 2 shards | $25.58/month |
 
 *Choose between on-demand and provisioned capacity modes [based on your traffic patterns](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html)*
 
@@ -70,7 +70,7 @@ The cost estimate consists of the required API component and choice of data stac
 | ----------- | ------------ | ------------ |
 | Amazon Data Firehose | 259,200,000 records, 5kb/record, data format conversion | $58.90/month |
 | AWS Lambda | Events Processing Lambda, 2,592,000 calls per month, 120ms runtime per execution | $1.56/month |
-| Amazon Simple Storage Service (S3) | 256GB data | $6.02/month |
+| Amazon Simple Storage Service (S3) | 259.2GB data | $7.27/month |
 | AWS Glue Data Catalog | 1 million objects stored, 1 million requests | $11.00/month |
 | AWS Glue | 2DPU 2 min ETL Jobs | $0.15/month |
 | Amazon Athena | 100 queries per day scanning 100mb data avg | $1.45/month |
@@ -90,17 +90,17 @@ The cost estimate consists of the required API component and choice of data stac
 #### Data Platform - Amazon Redshift
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon Redshift Serverless | 4 RPU 4 hour / day, 259.2gb managed storage | $ 181.90/month |
+| Amazon Redshift Serverless | 4 RPU 4 hour / day, 259.2gb managed storage | $181.90/month |
 
 #### Real-Time Analytics (Optional)
 
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon Kinesis Data Streams (On-Demand Consumer) | additional consumer | $ 9.89/month |
-| Amazon Managed Service for Apache Flink | 1 KPU | $ 165.60/month |
-| Amazon Kinesis Data Streams (Provisioned) | 1 shard | $ 10.96/month |
-| Amazon OpenSearch Service (Serverless) | 1 OCU Index + Search/Query + 1GB Index | $ 350.42/month |
-| Amazon OpenSearch Service (Ingestion) | 1 Ingestion OCU Index | $ 175.20/month |
+| Amazon Kinesis Data Streams (On-Demand Consumer) | additional consumer | $9.89/month |
+| Amazon Managed Service for Apache Flink | 1 KPU | $165.60/month |
+| Amazon Kinesis Data Streams (Provisioned) | 1 shard | $10.96/month |
+| Amazon OpenSearch Service (Serverless) | 1 OCU Index + Search/Query + 1GB Index | $350.42/month |
+| Amazon OpenSearch Service (Ingestion) | 1 Ingestion OCU Index | $175.20/month |
 
 *When real-time analytics is enabled, the Apache Flink application is registered as an additional consumer of the Amazon Kinesis data stream. Additional charges apply when on-demand capacity is used.*
 
