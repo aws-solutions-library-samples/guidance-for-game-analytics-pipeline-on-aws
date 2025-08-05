@@ -54,13 +54,13 @@ The cost estimate consists of the required API component and choice of data stac
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
 | Amazon API Gateway | 2,592,000 REST API calls per month | $ 9.07/month |
-| AWS Lambda | Authorizer Lambda 2,592,000 calls per month | $ 0.32/month |
-| Amazon DynamoDB | 0.01GB entries for admin use | $ 0.00/month |
+| AWS Lambda | Authorizer Lambda, 2,592,000 calls per month, 200ms runtime per execution | $ 2.25/month |
+| Amazon DynamoDB | 0.01GB entries for admin use, 2,592,000 GET requests | $ 0.41/month |
 
 #### Kinesis Data Stream
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon Kinesis Data Streams (On-Demand) | 259,200,000 requests, 1kb/record, 2 readers | $ 69.30/month |
+| Amazon Kinesis Data Streams (On-Demand) | 259,200,000 requests, 1kb/record, 1 consumer | $ 58.87/month |
 | Amazon Kinesis Data Streams (Provisioned) | 259,200,000 requests, 2 shards | $ 25.58/month |
 
 *Choose between on-demand and provisioned capacity modes [based on your traffic patterns](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html)*
@@ -68,37 +68,42 @@ The cost estimate consists of the required API component and choice of data stac
 #### Data Platform - Data Lake (Hive Table)
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon Data Firehose | 259,200,000 records, 5kb/record, data format conversion | $ 58.90/month |
-| AWS Lambda | Events Processing Lambda 2,592,000 calls per month | $ 0.32/month |
-| Amazon Simple Storage Service (S3) | 256GB data | $ 6.02/month |
-| AWS Glue Data Catalog | 1 million objects stored, 1 million requests | $ 11.00/month |
-| AWS Glue | 2DPU 2 min ETL Jobs | $ 0.15/month |
-| Amazon Athena | 100 queries per day scanning 100mb data avg | $ 1.45/month |
+| Amazon Data Firehose | 259,200,000 records, 5kb/record, data format conversion | $58.90/month |
+| AWS Lambda | Events Processing Lambda, 2,592,000 calls per month, 120ms runtime per execution | $1.56/month |
+| Amazon Simple Storage Service (S3) | 256GB data | $6.02/month |
+| AWS Glue Data Catalog | 1 million objects stored, 1 million requests | $11.00/month |
+| AWS Glue | 2DPU 2 min ETL Jobs | $0.15/month |
+| Amazon Athena | 100 queries per day scanning 100mb data avg | $1.45/month |
 
 #### Data Platform - Data Lake (Iceberg Table)
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon Data Firehose | 259,200,000 records, 1kb/record | $ 19.44/month |
-| AWS Lambda | Events Processing Lambda 2,592,000 calls per month | $ 0.32/month |
-| Amazon Simple Storage Service (S3) | 256GB data | $ 6.02/month |
-| AWS Glue Data Catalog | 1 million objects stored, 1 million requests, 120 minutes optimization | $ 12.76/month |
-| Amazon Athena | 100 queries per day scanning 100mb data avg | $ 1.45/month |
+| Amazon Data Firehose (Direct PUT) | 259,200,000 records, 1kb/record | $19.44/month |
+| Amazon Data Firehose (Kinesis Data Streams) | 259,200,000 records, 1kb/record | $11.67/month |
+| AWS Lambda | Events Processing Lambda 2,592,000 calls per month, 120ms runtime per execution | $1.56/month |
+| Amazon Simple Storage Service (S3) | 259.2GB data | $7.27/month |
+| AWS Glue Data Catalog | 1 million objects stored, 1 million requests, 120 minutes optimization | $12.76/month |
+| Amazon Athena | 100 queries per day scanning 100mb data avg | $1.45/month |
 
-*When Amazon Data Firehose is configured with Apache Iceberg Tables as a destination, the pricing will be billed per GB ingested with no 5KB increments.*
+*When Amazon Data Firehose is configured with Apache Iceberg Tables as a destination, the pricing will be billed per GB ingested with no 5KB increments. Pricing for Amazon Data Firehose varies depending on the source.*
 
 #### Data Platform - Amazon Redshift
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon Redshift Serverless | 4 RPU 4 hour / day, 256gb managed storage | $ 181.82/month |
+| Amazon Redshift Serverless | 4 RPU 4 hour / day, 259.2gb managed storage | $ 181.90/month |
 
 #### Real-Time Analytics (Optional)
 
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
+| Amazon Kinesis Data Streams (On-Demand Consumer) | additional consumer | $ 9.89/month |
 | Amazon Managed Service for Apache Flink | 1 KPU | $ 165.60/month |
-| Amazon Kinesis Data Streams (Provisioned) | 1 shard | $ 10.95/month |
+| Amazon Kinesis Data Streams (Provisioned) | 1 shard | $ 10.96/month |
 | Amazon OpenSearch Service (Serverless) | 1 OCU Index + Search/Query + 1GB Index | $ 350.42/month |
 | Amazon OpenSearch Service (Ingestion) | 1 Ingestion OCU Index | $ 175.20/month |
+
+*When real-time analytics is enabled, the Apache Flink application is registered as an additional consumer of the Amazon Kinesis data stream. Additional charges apply when on-demand capacity is used.*
+
 ## Prerequisites
 
 Before deploying the sample code, ensure that the following required tools have been installed:
@@ -132,8 +137,8 @@ Refer to the [customization documentation](https://aws-solutions-library-samples
 
 ## Cleanup
 
-- `npm run destroy`
-- Guidance requires manual deletion of S3 buckets, DyanmoDB tables, and if enabled, Redshift and OpenSearch.
+- To teardown the stack, run the `npm run destroy` command.
+- The teardown command will not delete data stored in S3, DynamoDB tables, and if enabled, Redshift and OpenSearch. These components will have to be manually deleted.
 
 ## Notices
 
