@@ -15,7 +15,11 @@
 
 The games industry is increasing adoption of the Games-as-a-Service operating model, where games have become more like a service than a product, and recurring revenue is frequently generated through in-app purchases, subscriptions, and other techniques. With this change, it is critical to develop a deeper understanding of how players use the features of games and related services. This understanding allows game developers to continually adapt, and make the necessary changes to keep players engaged.
 
-The Game Analytics Pipeline guidance helps game developers deploy a scalable serverless data pipeline for ingesting, storing, and analyzing telemetry data generated from games, and services. The guidance supports streaming ingestion of data, allowing users to gain critical insights from their games, and other applications in near real-time, allowing them to focus on expanding, and improving game experience almost immediately, instead of managing the underlying infrastructure operations. Since the guidance has been codified as a CDK application, game developers can determine the best modules, or components that fit their use case, allowing them to test, and QA the best architecture before deploying into production. This modular system allows for additional AWS capabilities, such as AI/ML models, to be integrated into the architecture in order to further support real-time decision making, and automated LiveOps using AIOps, to further enhance player engagement. Essentially allowing developers to focus on expanding game functionality, rather than managing the underlying infrastructure operations.
+![Architecture](./docs/media/architecture.png)
+
+The Game Analytics Pipeline guidance helps game developers deploy a scalable serverless data pipeline for ingesting, storing, and analyzing telemetry data generated from games, and services. The guidance supports streaming ingestion of data, allowing users to gain critical insights from their games, and other applications in near real-time, allowing them to focus on expanding, and improving game experience almost immediately, instead of managing the underlying infrastructure operations. 
+
+The guidance has been codified as a modular CDK or Terraform application, enabling game developers to determine the best modules that fit their use case. This modular system allows for additional AWS capabilities, such as AI/ML models, to be integrated into the architecture to further support real-time decision making and automated LiveOps using AIOps to further enhance player engagement. This system allows developers to focus on expanding game functionality instead of managing the underlying infrastructure.
 
 ### Cost
 
@@ -25,9 +29,8 @@ _You are responsible for the cost of the AWS services used while running this Gu
 - $49.38 per month for Data Lake (Iceberg Table)
 - $260.51 for Amazon Redshift
 - \+ $771.47 per month if real-time analytics are enabled
-    - **NOTE:**  Redshift also requires the use of Kinesis data streams which is a $69.30 overlapping cost to be subtracted if both are enabled.
 
-**NOTE:** Redshift becomes more cost-effective when scanning large data volumes per query (>10GB data scanned for a single query) coupled with frequent queries
+**NOTE:** The price estimates for Amazon Redshift and real-time analytics both include costs for an on-demand Amazon Kinesis data stream. If both options are enabled, the overlapping cost of the data stream will have to be subtracted.
 
 _We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html) through [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) to help manage costs. Prices are subject to change. For full details, refer to the pricing webpage for each AWS service used in this Guidance._
 
@@ -36,13 +39,14 @@ _We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/l
 The following table provides a sample cost breakdown for components in the guidance in the US East (N. Virginia) Region for one month.
 
 Assuming the following variables:
-- Processing 259.2 million events per month = 100 events per second
-- Requests batched by 100 (100kb batched) per API request = 2,592,000 requests (1 request per second)
-- 100 queries per day scanning 100mb avg each 2DPU 2 minute ETL jobs (If using Data Lake)
+- 100 1kb game events recieved and processed per second = 259.2 million events per month 
+- Requests batched by 100 (100kb batched) per API request = 2,592,000 requests per month (1 request per second)
+- 100 queries per day scanning 100mb per query on average 
+- 2 DPU Glue ETL jobs running for 2 minutes per day when using a Hive data lake as the data stack
 - 0.01GB of entries in DynamoDB
 - 259GB data (259 million 1kb entries)
 
-Cost consists of the API component, data platform (choose between hive data lake, iceberg data lake, and redshift), optional real-time kinesis data stream, and optional real-time analytics. To enable Redshift data platform or real-time analytics, the kinesis data stream must also be enabled. 
+The cost estimate consists of the required API component and choice of data stack (choose between Apache Hive data lake, Apache Iceberg data lake, and Amazon Redshift). There are optional configurations to enable a real-time Amazon Kinesis Data Stream and real-time analytics. To use Amazon Redshift as the data stack or real-time analytics, the Amazon Kinesis Data Stream must also be enabled. 
 
 **NOTE:** These are rough estimates only, and even though they are calculated with a very pessimistic approach, there can always be some costs that are not fully covered here. You always need to do your own testing and estimates.
 
@@ -59,7 +63,7 @@ Cost consists of the API component, data platform (choose between hive data lake
 | Amazon Kinesis Data Streams (On-Demand) | 259,200,000 requests, 1kb/record, 2 readers | $ 69.30/month |
 | Amazon Kinesis Data Streams (Provisioned) | 259,200,000 requests, 2 shards | $ 25.58/month |
 
-*Choose between on-demand and provisioned based on your traffic patterns*
+*Choose between on-demand and provisioned capacity modes [based on your traffic patterns](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html)*
 
 #### Data Platform - Data Lake (Hive Table)
 | AWS service  | Dimensions | Cost [USD] |
@@ -80,7 +84,7 @@ Cost consists of the API component, data platform (choose between hive data lake
 | AWS Glue Data Catalog | 1 million objects stored, 1 million requests, 120 minutes optimization | $ 12.76/month |
 | Amazon Athena | 100 queries per day scanning 100mb data avg | $ 1.45/month |
 
-*Amazon Data Firehose is billed in 5kb increments unless Iceberg is the destination*
+*When Amazon Data Firehose is configured with Apache Iceberg Tables as a destination, the pricing will be billed per GB ingested with no 5KB increments.*
 
 #### Data Platform - Amazon Redshift
 | AWS service  | Dimensions | Cost [USD] |
@@ -119,11 +123,11 @@ Python/pip, Npm/node, and (optionally) Terraform
 
 ## Deployment Steps, Running the Guidance, and Deployment Validation
 
-Refer to the full documentation through `pip install mkdocs mkdocs-material` and `mkdocs serve` or in `docs/getting-started.md` for running the guidance. The page provides full detailed walkthrough and deployment steps.
+Refer to the full documentation in our [getting started guide](https://aws-solutions-library-samples.github.io/solutions/guidance/game-analytics-pipeline-on-aws/getting-started.html). The page provides full detailed walkthrough and deployment steps.
 
 ## Next Steps
 
-Refer to the documentation through `pip install mkdocs mkdocs-material` and `mkdocs serve` or in `docs/customizations.md` for next steps and customizations
+Refer to the [customization documentation](https://aws-solutions-library-samples.github.io/solutions/guidance/game-analytics-pipeline-on-aws/customizations.html) for next steps and customizations.
 
 
 ## Cleanup
