@@ -9,7 +9,7 @@ locals {
 module "config-validator" {
   source = "./constructs/config-validator-construct"
   ingest_mode=local.config.INGEST_MODE
-  data_platform_mode=local.config.DATA_PLATFORM_MODE
+  data_platform_mode=local.config.DATA_STACK
   real_time_analytics=local.config.REAL_TIME_ANALYTICS
 }
 
@@ -347,7 +347,7 @@ resource "aws_dynamodb_table" "authorizations_table" {
 
 // Input stream for applications
 resource "aws_kinesis_stream" "game_events_stream" {
-  count            = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" || local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? 1 : 0
+  count            = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" || local.config.DATA_STACK == "REDSHIFT" ? 1 : 0
   name             = "${local.config.WORKLOAD_NAME}-GameEventStream-${random_string.stack-random-id-suffix.result}"
   shard_count      = local.config.STREAM_PROVISIONED ? local.config.STREAM_SHARD_COUNT : null
   encryption_type  = "KMS"
@@ -374,7 +374,7 @@ resource "aws_kinesis_stream" "game_events_stream" {
 module "vpc_construct" {
   source = "./constructs/vpc-construct"
   stack_name                       = local.config.WORKLOAD_NAME
-  count = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? 1 : 0
+  count = local.config.DATA_STACK == "REDSHIFT" ? 1 : 0
 }
 
 // Create flink components
@@ -406,7 +406,7 @@ module "opensearch_construct" {
 
 // ---- Redshift ---- //
 module "redshift_construct" {
-  count = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? 1 : 0
+  count = local.config.DATA_STACK == "REDSHIFT" ? 1 : 0
   source = "./constructs/redshift-construct"
   stack_name = local.config.WORKLOAD_NAME
   vpc_id = module.vpc_construct[0].vpc_id
@@ -425,14 +425,14 @@ module "lambda_construct" {
   applications_table_name  = aws_dynamodb_table.applications_table.name
   authorizations_table_name = aws_dynamodb_table.authorizations_table.name
   stack_name = local.config.WORKLOAD_NAME
-  data_platform_mode = local.config.DATA_PLATFORM_MODE
+  data_platform_mode = local.config.DATA_STACK
   events_database = local.config.EVENTS_DATABASE
   ingest_mode = local.config.INGEST_MODE
-  redshift_namespace_name = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_namespace_name] : []
-  redshift_key_arn =  local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_key_arn] : []
-  redshift_workgroup_name =  local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_workgroup_name] : []
-  redshift_role_arn =  local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [module.redshift_construct[0].redshift_role_arn] : []
-  games_events_stream_name = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? [aws_kinesis_stream.game_events_stream[0].name] : []
+  redshift_namespace_name = local.config.DATA_STACK == "REDSHIFT" ? [module.redshift_construct[0].redshift_namespace_name] : []
+  redshift_key_arn =  local.config.DATA_STACK == "REDSHIFT" ? [module.redshift_construct[0].redshift_key_arn] : []
+  redshift_workgroup_name =  local.config.DATA_STACK == "REDSHIFT" ? [module.redshift_construct[0].redshift_workgroup_name] : []
+  redshift_role_arn =  local.config.DATA_STACK == "REDSHIFT" ? [module.redshift_construct[0].redshift_role_arn] : []
+  games_events_stream_name = local.config.DATA_STACK == "REDSHIFT" ? [aws_kinesis_stream.game_events_stream[0].name] : []
   iceberg_enabled = local.config.ENABLE_APACHE_ICEBERG_SUPPORT
 }
 
@@ -555,7 +555,7 @@ resource "aws_dynamodb_table_item" "authorizations_table_permissions" {
 
 // Glue datalake and processing jobs
 module "data_lake_construct" {
-  count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
+  count = local.config.DATA_STACK == "DATA_LAKE" ? 1 : 0
   source = "./constructs/data-lake-construct"
   stack_name = local.config.WORKLOAD_NAME
   events_database_name = local.config.EVENTS_DATABASE
@@ -568,7 +568,7 @@ module "data_lake_construct" {
 }
 
 module "data_processing_construct" {
-  count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
+  count = local.config.DATA_STACK == "DATA_LAKE" ? 1 : 0
   source = "./constructs/data-processing-construct"
   stack_name = local.config.WORKLOAD_NAME
   events_database = module.data_lake_construct[0].game_events_database
@@ -582,7 +582,7 @@ module "data_processing_construct" {
 }
 
 module "athena_construct" {
-  count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
+  count = local.config.DATA_STACK == "DATA_LAKE" ? 1 : 0
   source = "./constructs/samples/athena-construct"
   events_database = module.data_lake_construct[0].game_events_database_name
   game_events_workgroup = module.data_lake_construct[0].athena_workgroup_id
@@ -591,7 +591,7 @@ module "athena_construct" {
 
 // Creates firehose and logs related to ingestion
 module "streaming_ingestion_construct" {
-  count = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? 1 : 0
+  count = local.config.DATA_STACK == "DATA_LAKE" ? 1 : 0
   source = "./constructs/streaming-ingestion-construct"
 
   game_events_stream_arn = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? aws_kinesis_stream.game_events_stream[0].arn : ""
@@ -620,7 +620,7 @@ module "games_api_construct" {
   stack_name = local.config.WORKLOAD_NAME
   api_stage_name = local.config.API_STAGE_NAME
   ingest_mode = local.config.INGEST_MODE
-  data_platform_mode = local.config.DATA_PLATFORM_MODE
+  data_platform_mode = local.config.DATA_STACK
 }
 
 // ---- METRICS & ALARMS ---- /
@@ -669,8 +669,8 @@ module "metrics_construct" {
   kinesis_metrics_stream_name         = local.config.REAL_TIME_ANALYTICS ? module.flink_construct[0].kinesis_metrics_stream_name : null
   api_gateway_name                    = module.games_api_construct.game_analytics_api_name
   stack_name                          = local.config.WORKLOAD_NAME
-  data_platform_mode                  = local.config.DATA_PLATFORM_MODE
-  firehose_delivery_stream_name       = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.streaming_ingestion_construct[0].game_events_firehose_name : ""
+  data_platform_mode                  = local.config.DATA_STACK
+  firehose_delivery_stream_name       = local.config.DATA_STACK == "DATA_LAKE" ? module.streaming_ingestion_construct[0].game_events_firehose_name : ""
   ingest_mode                         = local.config.INGEST_MODE
   notifications_topic_arn             = aws_sns_topic.notifications.arn
 }
@@ -680,8 +680,8 @@ module "dashboard_construct" {
 
   workload_name                       = local.config.WORKLOAD_NAME
   ingest_mode                         = local.config.INGEST_MODE
-  game_events_stream_name             = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" || local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? aws_kinesis_stream.game_events_stream[0].name : ""
-  game_events_firehose_name           = local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.streaming_ingestion_construct[0].game_events_firehose_name : ""
+  game_events_stream_name             = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" || local.config.DATA_STACK == "REDSHIFT" ? aws_kinesis_stream.game_events_stream[0].name : ""
+  game_events_firehose_name           = local.config.DATA_STACK == "DATA_LAKE" ? module.streaming_ingestion_construct[0].game_events_firehose_name : ""
   events_processing_function          = module.lambda_construct.events_processing_function_name
   events_processing_function_arn      = module.lambda_construct.events_processing_function_arn
   analytics_processing_function       = local.config.REAL_TIME_ANALYTICS == true ? module.flink_construct[0].kinesis_metrics_stream_name : ""
@@ -690,9 +690,9 @@ module "dashboard_construct" {
   metrics_stream_name                 = local.config.REAL_TIME_ANALYTICS == true ? module.flink_construct[0].kinesis_metrics_stream_name : ""
   flink_app                           = local.config.REAL_TIME_ANALYTICS == true ? module.flink_construct[0].flink_app_output : ""
   redshift_db_name                    = local.config.EVENTS_DATABASE
-  redshift_namespace_db_name          = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? module.redshift_construct[0].redshift_namespace_name : ""
-  redshift_workgroup_name             = local.config.DATA_PLATFORM_MODE == "REDSHIFT" ? module.redshift_construct[0].redshift_workgroup_name : ""
-  data_platform_mode                  = local.config.DATA_PLATFORM_MODE
+  redshift_namespace_db_name          = local.config.DATA_STACK == "REDSHIFT" ? module.redshift_construct[0].redshift_namespace_name : ""
+  redshift_workgroup_name             = local.config.DATA_STACK == "REDSHIFT" ? module.redshift_construct[0].redshift_workgroup_name : ""
+  data_platform_mode                  = local.config.DATA_STACK
   real_time_analytics                 = local.config.REAL_TIME_ANALYTICS
   collection_id = local.config.REAL_TIME_ANALYTICS == true ? module.opensearch_construct[0].collection_id : ""
   collection_name = local.config.REAL_TIME_ANALYTICS == true ? module.opensearch_construct[0].collection_name : ""

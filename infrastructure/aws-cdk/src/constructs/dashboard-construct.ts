@@ -162,7 +162,7 @@ export class CloudWatchDashboardConstruct extends Construct {
     // Redshift Widgets (If Redshift Mode is enabled)
     let redshiftWidgets: cloudwatch.IWidget[] = [];
     if (
-      props.config.DATA_PLATFORM_MODE === "REDSHIFT" &&
+      props.config.DATA_STACK === "REDSHIFT" &&
       props.redshiftConstruct != undefined
     ) {
       const dbName = props.config.EVENTS_DATABASE;
@@ -263,7 +263,7 @@ export class CloudWatchDashboardConstruct extends Construct {
     // Data Lake Mode Widgets (If Data Lake Mode is enabled)
     let dataLakeWidgets: cloudwatch.IWidget[] = [];
     if (
-      props.config.DATA_PLATFORM_MODE === "DATA_LAKE" &&
+      props.config.DATA_STACK === "DATA_LAKE" &&
       props.gameEventsFirehose != undefined
     ) {
       dataLakeWidgets = [

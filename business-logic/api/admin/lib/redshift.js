@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 const fs = require("fs");
 
-const DATA_PLATFORM_MODE = process.env.DATA_PLATFORM_MODE;
+const DATA_STACK = process.env.DATA_STACK;
 const SECRET_ARN = process.env.SECRET_ARN;
 const WORKGROUP_NAME = process.env.WORKGROUP_NAME;
 const DATABASE_NAME = process.env.DATABASE_NAME;
@@ -44,7 +44,7 @@ const mv_ignore_errors = [
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function setupRedshift() {
-  if (DATA_PLATFORM_MODE !== "REDSHIFT") {
+  if (DATA_STACK !== "REDSHIFT") {
     return Promise.reject({
       code: 400,
       error: "BadRequest",

@@ -19,8 +19,8 @@ The following table shows unsupported configurations when options in this sectio
 
 | Control | Setting | Exception |
 | - | - | - |
-| `INGEST_MODE` | `DIRECT_BATCH` | <ul><li>`DATA_PLATFORM_MODE` cannot be set to `REDSHIFT`</li><li>`REAL_TIME_ANALYTICS` cannot be set to `true`</li><li>Settings for `STREAM_PROVISIONED` and `STREAM_SHARD_COUNT` are ignored since no stream is deployed</li></ul> |
-| `DATA_PLATFORM_MODE` | `REDSHIFT` | <ul><li>`ENABLE_APACHE_ICEBERG_SUPPORT` cannot be set to `true`</li></ul> |
+| `INGEST_MODE` | `DIRECT_BATCH` | <ul><li>`DATA_STACK` cannot be set to `REDSHIFT`</li><li>`REAL_TIME_ANALYTICS` cannot be set to `true`</li><li>Settings for `STREAM_PROVISIONED` and `STREAM_SHARD_COUNT` are ignored since no stream is deployed</li></ul> |
+| `DATA_STACK` | `REDSHIFT` | <ul><li>`ENABLE_APACHE_ICEBERG_SUPPORT` cannot be set to `true`</li></ul> |
 | `REAL_TIME_ANALYTICS` | `true` | <ul><li>`INGEST_MODE` must be set to `KINESIS_DATA_STREAMS`</li></ul> |
 
 `INGEST_MODE`
@@ -40,9 +40,9 @@ The following table shows unsupported configurations when options in this sectio
 - *Example:* `true`
 
 
-`DATA_PLATFORM_MODE`
+`DATA_STACK`
 
-- *Description:* Controls the data platform that event data is saved to for analysis. When set to `"DATA_LAKE"`, raw events are saved to a data lake in S3 and cataloged using Glue Data Catalog. When set to `"REDSHIFT"` events are using the [streaming ingestion feature of Redshift](https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-streaming-ingestion.html).
+- *Description:* Controls the data stack that event data is saved to for analysis. When set to `"DATA_LAKE"`, raw events are saved to a data lake in S3 and cataloged using Glue Data Catalog. When set to `"REDSHIFT"` events are using the [streaming ingestion feature of Redshift](https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-streaming-ingestion.html).
 
 
 - *Type:* String
@@ -86,7 +86,7 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 
 `EVENTS_DATABASE`
 
-- *Description:* Specifies the name of the [AWS Glue database](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) that contains the glue tables when `DATA_PLATFORM_MODE` is set to `"DATA_LAKE"`. Specifies the name of the [Redshift Serverless database](https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-serverless.html) when `DATA_PLATFORM_MODE` is set to `"REDSHIFT"`.
+- *Description:* Specifies the name of the [AWS Glue database](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) that contains the glue tables when `DATA_STACK` is set to `"DATA_LAKE"`. Specifies the name of the [Redshift Serverless database](https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-serverless.html) when `DATA_STACK` is set to `"REDSHIFT"`.
 
 - *Type:* String (1-255 characters)
 

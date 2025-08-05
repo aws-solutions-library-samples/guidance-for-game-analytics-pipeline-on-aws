@@ -130,7 +130,7 @@ This function provides the application admin microservice. */
           APPLICATION_AUTHORIZATIONS_INDEX: "ApplicationAuthorizations",
           APPLICATIONS_TABLE: props.applicationsTable.tableName,
           INGEST_MODE: props.config.INGEST_MODE,
-          DATA_PLATFORM_MODE: props.config.DATA_PLATFORM_MODE,
+          DATA_STACK: props.config.DATA_STACK,
           ...redshiftEnv,
         },
       }

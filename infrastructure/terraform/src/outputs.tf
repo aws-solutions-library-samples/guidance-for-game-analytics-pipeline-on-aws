@@ -37,20 +37,20 @@ output "api_gateway_execution_logs_link" {
 
 /* Outputs if DATA_LAKE is enabled */
 output "game_events_database_name" {
-  value =  local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.data_lake_construct[0].game_events_database : ""
+  value =  local.config.DATA_STACK == "DATA_LAKE" ? module.data_lake_construct[0].game_events_database : ""
   description = "The name of the Glue Data Catalog database where game events are stored."
 }
 output "game_events_etl_job_name" {
-  value =  local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.data_processing_construct[0].game_events_etl_job : ""
+  value =  local.config.DATA_STACK == "DATA_LAKE" ? module.data_processing_construct[0].game_events_etl_job : ""
   description = "The name of the ETL job used to move data from the raw events table to the processed events table."
 }
 output "game_events_etl_iceberg_job_name" {
-  value =  local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.data_processing_construct[0].game_events_etl_iceberg_job : ""
+  value =  local.config.DATA_STACK == "DATA_LAKE" ? module.data_processing_construct[0].game_events_etl_iceberg_job : ""
   description = "The name of the ETL job used to move data from an existing Game Analytics Pipeline Hive table to a new Apache Iceberg table."
 }
 
 output "iceberg_setup_job_name" {
-  value =  local.config.DATA_PLATFORM_MODE == "DATA_LAKE" ? module.data_processing_construct[0].iceberg_setup_job : ""
+  value =  local.config.DATA_STACK == "DATA_LAKE" ? module.data_processing_construct[0].iceberg_setup_job : ""
   description = "The name of the Glue Job used to configure partitioning on a newly created Apache Iceberg table."
 }
 
