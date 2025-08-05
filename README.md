@@ -78,8 +78,8 @@ The cost estimate consists of the required API component and choice of data stac
 #### Data Platform - Data Lake (Iceberg Table)
 | AWS service  | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon Data Firehose (Direct PUT) | 259,200,000 records, 1kb/record | $19.44/month |
-| Amazon Data Firehose (Kinesis Data Streams) | 259,200,000 records, 1kb/record | $11.67/month |
+| Amazon Data Firehose | 259,200,000 records, 1kb/record, Direct PUT source | $19.44/month |
+| Amazon Data Firehose | 259,200,000 records, 1kb/record, Amazon Kinesis Data Streams source | $11.67/month |
 | AWS Lambda | Events Processing Lambda 2,592,000 calls per month, 120ms runtime per execution | $1.56/month |
 | Amazon Simple Storage Service (S3) | 259.2GB data | $7.27/month |
 | AWS Glue Data Catalog | 1 million objects stored, 1 million requests, 120 minutes optimization | $12.76/month |
