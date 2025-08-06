@@ -192,7 +192,7 @@ export class MetricsConstruct extends Construct {
 
         }
 
-        if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE" && props.streamingIngestionConstruct != undefined) {
+        if (props.config.DATA_STACK === "DATA_LAKE" && props.streamingIngestionConstruct != undefined) {
             // Firehose data metrics
             const kinesisFirehoseFailedConversions = new cloudwatch.Alarm(
                 this,

@@ -78,7 +78,7 @@ module "application_admin_service_function" {
       APPLICATION_AUTHORIZATIONS_INDEX = "ApplicationAuthorizations"
       APPLICATIONS_TABLE               = var.applications_table_name
       INGEST_MODE                      = var.ingest_mode
-      DATA_PLATFORM_MODE               = var.data_platform_mode
+      DATA_STACK               = var.data_platform_mode
       DATABASE_NAME                    = var.events_database
       STREAM_NAME                      = length(var.games_events_stream_name) == 1 ? var.games_events_stream_name[0] : ""
   }, var.data_platform_mode == "REDSHIFT" ? {

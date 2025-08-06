@@ -1,6 +1,6 @@
 variable "data_platform_mode" {
   type        = string
-  description = "The data platform mode to use (REDSHIFT or DATA_LAKE)"
+  description = "The data stack to use (REDSHIFT or DATA_LAKE)"
 
   validation {
     condition     = var.data_platform_mode == "REDSHIFT" || var.data_platform_mode == "DATA_LAKE"

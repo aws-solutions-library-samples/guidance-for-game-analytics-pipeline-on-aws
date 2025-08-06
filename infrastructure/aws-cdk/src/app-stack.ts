@@ -283,7 +283,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     // ---- VPC resources (IF REDSHIFT OR REAL TIME in DEV_MODE is enabled) ---- //
     var vpcConstruct;
-    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT") {
+    if (props.config.DATA_STACK === "REDSHIFT") {
       vpcConstruct = new VpcConstruct(this, "VpcConstruct", {
         config: props.config,
       });
@@ -297,7 +297,7 @@ export class InfrastructureStack extends cdk.Stack {
     var managedFlinkConstruct;
     var streamingIngestionConstruct;
     var opensearchConstruct;
-    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" || props.config.DATA_PLATFORM_MODE === "REDSHIFT") {
+    if (props.config.INGEST_MODE === "KINESIS_DATA_STREAMS" || props.config.DATA_STACK === "REDSHIFT") {
       gamesEventsStream = new kinesis.Stream(this, "GameEventStream",
         (props.config.STREAM_PROVISIONED === true) ? {
           shardCount: props.config.STREAM_SHARD_COUNT,
@@ -362,7 +362,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     // ---- Redshift ---- //
     var redshiftConstruct;
-    if (props.config.DATA_PLATFORM_MODE === "REDSHIFT" && vpcConstruct && gamesEventsStream) {
+    if (props.config.DATA_STACK === "REDSHIFT" && vpcConstruct && gamesEventsStream) {
       redshiftConstruct = new RedshiftConstruct(this, "RedshiftConstruct", {
         gamesEventsStream: gamesEventsStream,
         config: props.config,
@@ -424,7 +424,7 @@ export class InfrastructureStack extends cdk.Stack {
       lambdaConstruct.applicationAdminServiceFunction
     );
 
-    if (props.config.DATA_PLATFORM_MODE === "DATA_LAKE") {
+    if (props.config.DATA_STACK === "DATA_LAKE") {
       // Glue datalake and processing jobs
       const dataLakeConstruct = new DataLakeConstruct(this, "DataLakeConstruct", {
         notificationsTopic: notificationsTopic,
