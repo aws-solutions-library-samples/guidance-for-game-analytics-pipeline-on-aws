@@ -32,7 +32,7 @@ companies:
 ---
 # Made by Daniel Lee, Nathan Yee, Matthew Kwan, Christian Orellana, Rene Roldan, and Steve Parker
 
-### Special thanks to Narendra Gupta and Satesh Sonti
+### Special thanks to Andrei Muratov, Reed Froehlich, Narendra Gupta and Satesh Sonti
 
 ## Overview
 
