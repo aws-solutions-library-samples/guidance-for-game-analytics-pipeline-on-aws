@@ -1,0 +1,42 @@
+version: '2'
+${pipeline_name}:
+  source:
+    kinesis_data_streams:
+      acknowledgments: true
+      streams:
+        - stream_name: ${stream_name}
+          initial_position: LATEST
+          checkpoint_interval: PT2M
+          compression: none
+      codec:
+        newline: {}
+      records_to_accumulate: '100'
+      buffer_timeout: PT1S
+      consumer_strategy: polling
+      polling:
+        max_polling_records: '10000'
+        idle_time_between_reads: PT0.25S
+      aws:
+        region: ${region}
+        sts_role_arn: ${role}
+  processor:
+    - parse_json:
+        handle_failed_events: skip
+  sink:
+    - opensearch:
+        hosts:
+          - '${host_name}'
+        aws:
+          serverless: true
+          region: ${region}
+          sts_role_arn: ${role}
+          serverless_options:
+            network_policy_name: ${network_policy_name}
+        index_type: custom
+        index: 'game_metrics'
+        dlq:
+          s3:
+            bucket: ${dlq_bucket_name}
+            region: ${region}
+            sts_role_arn: ${role}
+        document_version_type: internal

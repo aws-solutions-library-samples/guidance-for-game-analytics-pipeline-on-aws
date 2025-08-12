@@ -1,33 +1,108 @@
 # Game Analytics Pipeline on AWS
 
->[!IMPORTANT] 
->This Guidance requires the use of AWS [CodeCommit](https://docs.aws.amazon.com/codecommit/latest/userguide/welcome.html), which is no longer available to new customers. Existing customers of AWS CodeCommit can continue using and deploying this Guidance as normal.
+## Table of Contents
 
-
-## Table of Content
-- [Game Analytics Pipeline on AWS](#game-analytics-pipeline-on-aws)
-  - [Table of Content](#table-of-content)
-  - [Overview](#overview)
-  - [Prerequisites](#prerequisites)
-  - [Sample Code Configuration and Customization](#sample-code-configuration-and-customization)
-    - [Configuration Setup](#configuration-setup)
-    - [Custom Settings](#custom-settings)
-  - [Sample Code Deployment](#sample-code-deployment)
-    - [Deployed Infrastructure](#deployed-infrastructure)
-    - [CI/CD Toolchain](#cicd-toolchain)
-  - [Next Steps](#next-steps)
-  - [Cleanup](#cleanup)
-- [Security](#security)
-- [License](#license)
-
+1. [Overview](#overview)
+    - [Cost](#cost)
+2. [Prerequisites](#prerequisites)
+    - [Operating System](#operating-system)
+3. [Deployment Steps, Running the Guidance, and Deployment Validation](#deployment-steps-running-the-guidance-and-deployment-validation)
+4. [Next Steps](#next-steps)
+5. [Notices](#notices)
+6. [Authors](#authors)
 
 ## Overview
 
 The games industry is increasing adoption of the Games-as-a-Service operating model, where games have become more like a service than a product, and recurring revenue is frequently generated through in-app purchases, subscriptions, and other techniques. With this change, it is critical to develop a deeper understanding of how players use the features of games and related services. This understanding allows game developers to continually adapt, and make the necessary changes to keep players engaged.
 
-The Game Analytics Pipeline guidance helps game developers to apply a flexible, and scalable DataOps methodology to their games. Allowing them to continuously integrate, and continuously deploy (CI/CD) a scalable serverless data pipeline for ingesting, storing, and analyzing telemetry data generated from games, and services. The guidance supports streaming ingestion of data, allowing users to gain critical insights from their games, and other applications in near real-time, allowing them to focus on expanding, and improving game experience almost immediately, instead of managing the underlying infrastructure operations. Since the guidance has been codified as a CDK application, game developers can determine the best modules, or components that fit their use case, allowing them to test, and QA the best architecture before deploying into production. This modular system allows for additional AWS capabilities, such as AI/ML models, to be integrated into the architecture in order to further support real-time decision making, and automated LiveOps using AIOps, to further enhance player engagement. Essentially allowing developers to focus on expanding game functionality, rather than managing the underlying infrastructure operations.
+![Architecture](./docs/media/architecture.png)
 
-![Architecture](./docs/architecture.png)
+The Game Analytics Pipeline guidance helps game developers deploy a scalable serverless data pipeline for ingesting, storing, and analyzing telemetry data generated from games, and services. The guidance supports streaming ingestion of data, allowing users to gain critical insights from their games, and other applications in near real-time, allowing them to focus on expanding, and improving game experience almost immediately, instead of managing the underlying infrastructure operations. 
+
+The guidance has been codified as a modular CDK or Terraform application, enabling game developers to determine the best modules that fit their use case. This modular system allows for additional AWS capabilities, such as AI/ML models, to be integrated into the architecture to further support real-time decision making and automated LiveOps using AIOps to further enhance player engagement. This system allows developers to focus on expanding game functionality instead of managing the underlying infrastructure.
+
+### Cost
+
+_You are responsible for the cost of the AWS services used while running this Guidance. As of August 2025, the cost for running this Guidance with the default settings in the US East (N. Virginia) region is approximately:_
+
+- $92.06 per month for Data Lake (Hive Table)
+- $65.88 per month for Data Lake (Iceberg Table)
+- $252.50 for Amazon Redshift
+- \+ $770.94 per month if real-time analytics are enabled
+
+**NOTE:** The price estimates for Amazon Redshift and real-time analytics both include costs for an on-demand Amazon Kinesis data stream. If both options are enabled, the overlapping cost of the data stream will have to be subtracted. Pricing for Amazon Data Firehose may differ when the Amazon Kinesis data stream is enabled.
+
+_We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html) through [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) to help manage costs. Prices are subject to change. For full details, refer to the pricing webpage for each AWS service used in this Guidance._
+
+### Sample Cost Table
+
+The following table provides a sample cost breakdown for components in the guidance in the US East (N. Virginia) Region for one month.
+
+Assuming the following variables:
+- 100 1kb game events recieved and processed per second = 259.2 million events per month 
+- Requests batched by 100 (100kb batched) per API request = 2,592,000 requests per month (1 request per second)
+- 100 queries per day scanning 100mb per query on average 
+- 2 DPU Glue ETL jobs running for 2 minutes per day when using a Hive data lake as the data stack
+- 0.01GB of entries in DynamoDB
+- 259GB data (259 million 1kb entries)
+
+The cost estimate consists of the required API component and choice of data stack (choose between Apache Hive data lake, Apache Iceberg data lake, and Amazon Redshift). There are optional configurations to enable a real-time Amazon Kinesis Data Stream and real-time analytics. To use Amazon Redshift as the data stack or real-time analytics, the Amazon Kinesis Data Stream must also be enabled. 
+
+**NOTE:** These are rough estimates only, and even though they are calculated with a very pessimistic approach, there can always be some costs that are not fully covered here. You always need to do your own testing and estimates.
+
+#### API Component
+| AWS service  | Dimensions | Cost [USD] |
+| ----------- | ------------ | ------------ |
+| Amazon API Gateway | 2,592,000 REST API calls per month | $9.07/month |
+| AWS Lambda | Authorizer Lambda, 2,592,000 calls per month, 200ms runtime per execution | $2.25/month |
+| Amazon DynamoDB | 0.01GB entries for admin use, 2,592,000 GET requests | $0.41/month |
+
+#### Kinesis Data Stream
+| AWS service  | Dimensions | Cost [USD] |
+| ----------- | ------------ | ------------ |
+| Amazon Kinesis Data Streams (On-Demand) | 259,200,000 requests, 1kb/record, 1 consumer | $58.87/month |
+| Amazon Kinesis Data Streams (Provisioned) | 259,200,000 requests, 2 shards | $25.58/month |
+
+*Choose between on-demand and provisioned capacity modes [based on your traffic patterns](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html)*
+
+#### Data Platform - Data Lake (Hive Table)
+| AWS service  | Dimensions | Cost [USD] |
+| ----------- | ------------ | ------------ |
+| Amazon Data Firehose | 259,200,000 records, 5kb/record, data format conversion | $58.90/month |
+| AWS Lambda | Events Processing Lambda, 2,592,000 calls per month, 120ms runtime per execution | $1.56/month |
+| Amazon Simple Storage Service (S3) | 259.2GB data | $7.27/month |
+| AWS Glue Data Catalog | 1 million objects stored, 1 million requests | $11.00/month |
+| AWS Glue | 2DPU 2 min ETL Jobs | $0.15/month |
+| Amazon Athena | 100 queries per day scanning 100mb data avg | $1.45/month |
+
+#### Data Platform - Data Lake (Iceberg Table)
+| AWS service  | Dimensions | Cost [USD] |
+| ----------- | ------------ | ------------ |
+| Amazon Data Firehose | 259,200,000 records, 1kb/record, Direct PUT source | $19.44/month |
+| Amazon Data Firehose | 259,200,000 records, 1kb/record, Amazon Kinesis Data Streams source | $11.67/month |
+| AWS Lambda | Events Processing Lambda 2,592,000 calls per month, 120ms runtime per execution | $1.56/month |
+| Amazon Simple Storage Service (S3) | 259.2GB data | $7.27/month |
+| AWS Glue Data Catalog | 1 million objects stored, 1 million requests, 120 minutes optimization | $12.76/month |
+| Amazon Athena | 100 queries per day scanning 100mb data avg | $1.45/month |
+
+*When Amazon Data Firehose is configured with Apache Iceberg Tables as a destination, the pricing will be billed per GB ingested with no 5KB increments. Pricing for Amazon Data Firehose varies depending on the source.*
+
+#### Data Platform - Amazon Redshift
+| AWS service  | Dimensions | Cost [USD] |
+| ----------- | ------------ | ------------ |
+| Amazon Redshift Serverless | 4 RPU 4 hour / day, 259.2gb managed storage | $181.90/month |
+
+#### Real-Time Analytics (Optional)
+
+| AWS service  | Dimensions | Cost [USD] |
+| ----------- | ------------ | ------------ |
+| Amazon Kinesis Data Streams (On-Demand Consumer) | additional consumer | $9.89/month |
+| Amazon Managed Service for Apache Flink | 1 KPU | $165.60/month |
+| Amazon Kinesis Data Streams (Provisioned) | 1 shard | $10.96/month |
+| Amazon OpenSearch Service (Serverless) | 1 OCU Index + Search/Query + 1GB Index | $350.42/month |
+| Amazon OpenSearch Service (Ingestion) | 1 Ingestion OCU Index | $175.20/month |
+
+*When real-time analytics is enabled, the Apache Flink application is registered as an additional consumer of the Amazon Kinesis data stream. Additional charges apply when on-demand capacity is used.*
 
 ## Prerequisites
 
@@ -36,189 +111,41 @@ Before deploying the sample code, ensure that the following required tools have 
 - **[GitHub Account](https://docs.github.com/en/get-started/start-your-journey/creating-an-account-on-github)**
 - **[Visual Studio Code](https://code.visualstudio.com/Download)**
 - **[Docker Desktop (local)](https://www.docker.com/products/docker-desktop/)**
+- **[Apache Maven](https://maven.apache.org/download.cgi)**
 - **AWS Cloud Development Kit (CDK) 2.92**
 - **Python >=3.8**
 - **NodeJS >= 20.0.0**
 
 >__NOTE:__ A Visual Studio Code [dev container](https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/adding-a-dev-container-configuration/introduction-to-dev-containers) configuration has been provided for you. This image container the necessary *Python*, *NodeJS*, and the *AWS CDK* versions needed to implement this guidance. It is **recommended**, that you use the pre-configured [environment](https://code.visualstudio.com/docs/devcontainers/containers) as your development environment.  
 
-## Sample Code Configuration and Customization
+### Operating System
 
-Before deploying the sample code, it needs to be customized to suite your specific usage requirements. Guidance configuration, and customization, is managed using a `config.yaml` file, located in the `infrastructure` folder of the repository. 
+These deployment instructions are optimized to best work on **Windows or MacOS**.  Deployment in another OS may require additional steps
 
-### Configuration Setup
+### Third-party tools
 
-The following steps will walk you through how to customize the sample code configuration to suite your usage requirements:
+Python/pip, Npm/node, and (optionally) Terraform
 
-1. Log into your GitHub account, and [fork this repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) into your GitHub account.
+## Deployment Steps, Running the Guidance, and Deployment Validation
 
-2. Follow the instructions on how to (Create a connection to GitHub)[https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html#connections-create-github-console], to connect AWS CodePipeline to the forked copy of this repository. Once the connection has been created, make a note of the Amazon Resource Name (ARN) for the connection.
-
-3. A configuration template file, called `config.yaml.TEMPLATE` has been provided as a reference for use case customizations. Using the provided Visual Studio Code devcontainer environment, run the following command to create a usable copy of this file:
-
-    ```bash
-    cp ./infrastructure/config.yaml.TEMPLATE ./infrastructure/config.yaml
-    ```
-
-2. Open the `./infrastructure/config.yaml` file for editing.
-
-### Custom Settings
-
-The following settings can be adjusted to suite your use case:
-
-- `WORKLOAD_NAME`
-  - *Description:* The name of the workload that will deployed. This name will be used as a prefix for for any component deployed into your AWS Account.
-  - *Type:* String 
-  - *Example:* `"GameAnalyticsPipeline"`
-- `CDK_VERSION`
-  - *Description:* The version of the CDK installed in your environment. To see the current version of the CDK, run the `cdk --version` command. The guidance has been tested using CDK version `2.92.0` of the CDK. If you are using a different version of the CDK, ensure that this version is also reflected in the `./infrastructure/package.json` file.
-  - *Type:* String
-  - *Example:* `"2.92.0"`
-- `NODE_VERSION`
-  - *Description:* The version of NodeJS being used. The default value is set to `"latest"`, and should only be changed this if you require a specific version.
-  - *Type:* String
-  - *Example:* `"latest"`
-- `PYTHON_VESION`
-  - *Description:* The version of Python being used. The default value is set to `"3.8"`, and should only be changed if you require a specific version.
-  - *Type:* String
-  - *Example:* `"3.8"`
-- `DEV_MODE`
-  - *Description:* Wether or not to enable developer mode. This mode will ensure synthetic data, and shorter retention times are enabled. It is recommended that you set the value to `true` when first deploying the sample code for testing, as this setting will enable S3 versioning, and won't delete S3 buckets on teardown. This setting can be changed at a later time, and the infrastructure re-deployed through CI/CD.
-  - *Type:* Boolean
-  - *Example:* `true`
-- `ENABLE_STREAMING_ANALYTICS`
-  - *Description:* Wether or not to enable the [Kinesis Data Analytics](https://aws.amazon.com/kinesis/data-analytics/) component/module of the guidance. It is recommended to set this value to `true` when first deploying this sample code for testing, as this setting will allow you to verify if streaming analytics is required for your use case. This setting can be changed at a later time, and the guidance re-deployed through CI/CD.
-  - *Type:* Boolean
-  - *Example:* `true`
-- `STREAM_SHARD_COUNT`
-  - *Description:* The number of Kinesis shards, or sequence of data records, to use for the data stream. The default value has been set to `1` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. For information about determining the shards required for your use case, refer to [Amazon Kinesis Data Streams Terminology and Concepts](https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html) in the *Amazon Kinesis Data Streams Developer Guide*.
-  - *Type:* Integer
-  - *Example:* `1`
-- `CODECOMMIT_REPO`
-  - *Description:* The name of the [AWS CodeCoomit](https://aws.amazon.com/codecommit/), repository used as source control for the codified infrastructure, and CI/CD pipeline.
-  - *Type:* String
-  - *Example:* `"game-analytics-pipeline"`
-- `RAW_EVENTS_PREFIX`
-  - *Description:* The prefix for new/raw data files stored in S3.
-  - *Type:* String
-  - *Example:* `"raw_events"`
-- `PROCESSED_EVENTS_PREFIX`
-  - *Description:* The prefix processed data files stored in S3.
-  - *Type:* String
-  - *Example:* `"processed_events"`
-- `RAW_EVENTS_TABLE`
-  - *Description:* The name of the of the [AWS Glue table](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) within which all new/raw data is cataloged.
-  - *Type:* String
-  - *Example:* `"raw_events"`
-- `GLUE_TMP_PREFIX`
-  - *Description:* The name of the temporary data store for AWS Glue.
-  - *Type:* String
-  - *Example:* `"glueetl-tmp"`
-- `S3_BACKUP_MODE`
-  - *Description:* Wether or not to enable [Kinesis Data Firehose](https://aws.amazon.com/kinesis/data-firehose/) to send a backup of new/raw data to S3. The default value has been set to `false` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. 
-  - *Type:* Boolean
-  - *Example:* `false`
-- `CLOUDWATCH_RETENTION_DAYS`
-  - *Description:* The default number of days in which [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) stores all the logs. The default value has been set to `30` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. 
-  - *Type:* Integer
-  - *Example:* `30`
-- `API_STAGE_NAME`
-  - *Description:* The name of the REST API [stage](https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-stages.html) for the [Amazon API Gateway](https://aws.amazon.com/api-gateway/) configuration endpoint for sending telemetry data to the pipeline. This provides an integration option for applications that cannot integrate with Amazon Kinesis directly. The API also provides configuration endpoints for admins to use for registering their game applications with the guidance, and generating API keys for developers to use when sending events to the REST API. The default value is set to `live`.
-  - *Type:* String
-  - *Example:* `"live"`
-- `EMAIL_ADDRESS`
-  - *Description:* The email address to receive operational notifications, and delivered by CloudWatch.
-  - *Type:* String
-  - *Example:* `"user@example.com"`
-- `GITHUB_USERNAME`
-  - *Description:* The user name for the Github account, into which the guidance has been forked.
-  - *Type:* String
-- `GITHUB_REPO_NAME`
-  - *Description:* The repository name of the fork in your GitHub account. 
-  - *Type:* String
-  - *Example:* `"guidance-for-game-analytics-pipeline-on-aws"`
-- `CONNECTION_ARN`
-  - *Description:* The ARN for the GitHub connection, created during the [Configuration Setup](#configuration-setup) section.
-  - *Type* String
-  - *Example:* `"arn:aws:codeconnections:us-east-1:123456789123:connection/6506b29d-429e-4bf3-8ab4-78cb2fc011b3"`
-- `accounts`
-  - *Description:* Leverages CDK Cross-account, Cross-region capabilities for deploying separate CI/CD pipeline stages to separate AWS Accounts, AWS Regions. For more information on Cross-account CI/CD pipelines, using the CDK, refer to the [Building a Cross-account CI/CD Pipeline](https://catalog.us-east-1.prod.workshops.aws/workshops/00bc829e-fd7c-4204-9da1-faea3cf8bd88/en-US/introduction) workshop. 
-  - *Example:*
-    ```yaml
-    accounts:
-      - NAME: "QA"
-        ACCOUNT: "<YOUR-ACCOUNT-NUMBER>"
-        REGION: "<QA-ACCOUNT-REGION>"
-      - NAME: "PROD"
-        ACCOUNT: "<YOUR-ACCOUNT-NUMBER>"
-        REGION: "<PROD-ACCOUNT-REGION>"
-    ```
-    >__NOTE:__ It is recommended that you use the same AWS Account, as well as the same AWS Region, for both the `QA`, and `PROD` stages, when first deploying the guidance.
-
-## Sample Code Deployment
-
-Once you will have to add your own custom configuration settings, and saved the `config.yaml` file, then following steps can be used to deploy the CI/CD pipeline:
-
-1. Build the sample code dependencies, by running the following command:
-    ```bash
-    npm run build
-    ```
-2. Bootstrap the sample code, by running the following command:
-    ```bash
-    npm run deploy.bootstrap
-    ```
-3. Deploy the sample code, by running the following command:
-    ```bash
-    npm run deploy
-    ```
-
-After the sample code has been deployed, two CloudFormation stacks are created within you AWS Account, and AWS Region:
-
-1. `PROD-<WORKLOAD NAME>`: The deployed version of the guidance infrastructure.
-2. `<WORKLOAD NAME>-Toolchain`:  The CI/CD Pipeline for the guidance.
-
-### Deployed Infrastructure
-
-The stack hosts the deployed production version of the AWS resources for you to validate, and further optimize the guidance for your use case. 
-
-### CI/CD Toolchain
-
-Once the deployed infrastructure has been validated, or further optimized for your use case, you can trigger the continuos deployment, by committing any updated source code into the newly create CodeCommit repository, using the following steps:
-
-1. Copy the URL for cloning CodeCommit repository that you specified in the `config.yanl` file. See the **View repository details (console)** section of the [AWS CodeCommit User Guid](https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-view-repository-details.html) for more information on how to vie the *Clone URL* for the repository.
-2. Create a news Git repository, by running the following command:
-   ```bash
-   rm -rf .git
-   git init --initial-branch=main
-   ```
-3. Add the CodeCommit repository as the origin, using the following command:
-   ```bash
-   git remote add origin <CodeCommit Clone URL>
-   ```
-4. Commit the code to trigger the CI/CD process, by running the following commands:
-   ```bash
-   git add -A
-   git commit -m "Initial commit"
-   git push --set-upstream origin
-   ```
+Refer to the full documentation in our [getting started guide](https://aws-solutions-library-samples.github.io/solutions/guidance/game-analytics-pipeline-on-aws/getting-started.html). The page provides full detailed walkthrough and deployment steps.
 
 ## Next Steps
 
-Make any code changes to subsequently optimize the guidance for your use case. Committing these changes will trigger a subsequent continuous integration, and deployment of the deployed production stack, `PROD-<WORKLOAD NAME>`.
+Refer to the [customization documentation](https://aws-solutions-library-samples.github.io/solutions/guidance/game-analytics-pipeline-on-aws/customizations.html) for next steps and customizations.
+
 
 ## Cleanup
 
-To clean up any of the deployed resources, you can either delete the stack through the AWS CloudFormation console, or run the `cdk destroy` command.
+- To teardown the stack, run the `npm run destroy` command.
+- The teardown command will not delete data stored in S3, DynamoDB tables, and if enabled, Redshift and OpenSearch. These components will have to be manually deleted.
 
->__NOTE:__ Deleting the deployed resources will not delete the Amazon S3 bucket, in order to protect any game data already ingested, and stored with the data lake. The Amazon S3 Bucket, and data, can be deleted from Amazon S3 using the Amazon S3 console, AWS SDKs, AWS Command Line Interface (AWS CLI), or REST API. See the [Deleting Amazon S3 objects](https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeletingObjects.html) section of the user guide for mor information.
+## Notices
 
----
-# Security
+Customers are responsible for making their own independent assessment of the information in this Guidance. This Guidance: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers or licensors. AWS products or services are provided “as is” without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this Guidance is not part of, nor does it modify, any agreement between AWS and its customers.
 
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+## Authors
 
----
-# License
+Daniel Lee, Nathan Yee, Matthew Kwan, Christian Orellana, Rene Roldan, and Steve Parker
 
-This library is licensed under the MIT-0 License. See the LICENSE file.
-
+Special thanks to Narendra Gupta and Satesh Sonti

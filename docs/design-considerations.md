@@ -1,0 +1,126 @@
+# Design Considerations
+This page explains what drives the team's core decision-making for service selection, feature support, or component design. We use customer feedback to drive our tenets and decision-making, and encourage feedback through [GitHub Issues on the guidance repository](https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws/issues)
+
+## Core Tenets
+The Game Analytics Pipeline Guidance team has the current tenets defined as the guidance's primary goals, and should ultimately allow users to quickly spin up an architecture that:
+
+1. Allows you to easily start deploying up-to-date analytics best practices for the game industry
+2. Has an AWS opinionated balance of cost, performance, least management overhead, and scalability based on aggregate user feedback
+3. Can be extensible architecturally for specific user needs
+
+<br>
+To address how we conclude our opinion on the balance of cost, performance, least management overhead, and scalability, we use feedback we have aggregated from AWS customers and users of the guidance, and continue to iterate and re-aggregate this data. Currently the data concludes the following:
+
+- We want to prioritize least management overhead over cost to a certain cutoff (which we will continue to assess and tune)
+- We want default scalability and performance options that address most use cases, but <u>need</u> documented manual scaling options, limits, and controls
+- We want to ensure integration or a path for up-to-date mainstream alternative options
+
+## Services
+---
+Why not use compute fleets (EC2, EKS, ECS, etc) for data processing?
+
+- The Game Analytics Pipeline Guidance leans on AWS Managed Services due to their ability to address the above management overhead and default scaling and performance options.
+
+---
+
+Why not Amazon EMR Serverless?
+
+- Glue and Athena provides interfaces for jobs/queries and direct console integration, and EMR requires spark code and notebook just to write scripts. This lets Glue and Athena reduce time to getting started, and management overhead. This does not mean EMR is a worse option, Glue just aligns with the specific above tenets more. The team is open to an EMR deployment option based on user feedback.
+
+---
+Why not Sagemaker Unified Studio, or Lakehouse?
+
+- This feature is in Preview as of this document, and once it is fully Globally Available, the team will re-assess.
+
+---
+Why not use Kafka or Amazon Managed Service for Kafka (MSK)?
+
+- The team has put substantial effort to integrate Kafka into the guidance, but are limited by the following factors:
+    1. Non-managed Kafka has management overhead that conflicts with the guidance tenets
+    2. Amazon Managed MSK meets all of the architectural needs of the guidance, but limitations with IaC (CDK or Terraform) in which deploying Kafka requires live compute to execute the commands needed to create the initial Kafka topic. This would require a custom resource deployment which greatly complicates the deployment process and diagnosing deployments of the guidance, conflicting with the guidance tenets.
+    
+- For the time being, the team plans to add documentation to extend the solution for Kafka in the [Customizations page](./customizations.md), and integrate Kafka support as a direct feature once in-place topic creation is supported for MSK.
+
+---
+Why Glue Workflow instead of Amazon Managed Workflows for Apache Airflow (MWAA)?
+
+- MWAA requires a VPC and all associated networking resources to be created, which adds more networking management overhead and more network-related performance considerations that are otherwise all managed under the hood by Glue Workflows. However, Glue Workflows is only constrained to Glue, whereas MWAA supports more options outside of Glue, which is a case of balancing conflicting aspects of the guidance's tenets. Currently we weigh the less management overhead option over the integration for mainstream alternative options. We are open to feedback to re-align MWAA based on user feedback through Github Issues on the repository.
+
+---
+Why use API Gateway?
+
+- Compared to direct code to the respective AWS services, or event buses like SQS/EventBridge, API Gateway provides the following benefits:
+    - An authorization workflow using an Authorizer Lambda to ensure events are sending to the correct game/application and not cross-contaminate events. (Up-to-date best practices)
+    - A universal endpoint (RESTful HTTP/HTTPS) that is more compatible and less custom code or libraries required (Less Management Overhead)
+
+- Compared to a Lambda endpoint, API Gateway also provides direct pass-through that would be cheaper, and rejected API calls are still sent to CloudWatch logs, which would be more simplified and managed than Dead-letter-queue or forwarding logic from Lambda
+
+---
+Why can't I deploy both the Data Lake and Redshift option at the same time?
+
+- The choice between Data Lake mode and Redshift mode boils down to your query performance needs and amount of data scanned. The vast majority of customers will only need one option or the other, and in the rare case that there are mixed cases, you can visit the [Customizations page](./customizations.md) to allow both options (Extensibility tenet). Allowing both as a default would create decision paralysis and perceived complexity in the deployed infrastructure, so we skim down the infrastructure to base necessities to address the above core tenets.
+- For infrastructure, the Redshift Data Warehouse option has an integration to store in S3 as a Data Lake store, and has features such as Redshift Spectrum to allow the same query experience regardless of the data store (S3 or Redshift). 
+
+---
+
+Why is there a Kinesis Data Stream in between Flink and Opensearch for Real-Time-Analytics?
+- The Flink connector for OpenSearch currently only supports authentication via username/password which does not play well with serverless and CDK (encoding password via plaintext, no CDK construct to create it, etc). Kinesis Data Streams allows us to have an intermediary stream for Flink to output to. From there, we can ingest it using a separate OpenSearch ingestion pipeline. The pipeline does not require credential passing and handles things like scaling and failed delivery streams, and leaves the door open for other integrations if needed, such as CloudWatch metrics (V1/V2 style) or firehose.
+
+---
+
+## Processes
+
+---
+
+Do I deploy the Game Analytics Pipeline guidance for each game/application?
+
+- The Game Analytics Pipeline Guidance is built to support multiple games, called `Applications` in the guidance, for cross-game and per-game analytics. This means usually you would only need to deploy a single pipeline per environment.
+
+---
+
+When should I use Data Lake mode vs Redshift mode?
+
+The choice between AWS Data Lake mode and Redshift mode primarily depends on your latency requirements, query complexity, data volume, and concurrency needs.
+
+Redshift mode is ideal for scenarios demanding true real-time access to data, complex analytical queries, high-performance requirements, and support for high volume queries and high concurrency. 
+
+On the other hand, Data Lake mode is more appropriate when near real-time access is sufficient, and is a cost-effective solution for lower data volumes per query (typically less than 10GB) and lower concurrency needs. This mode also excels in scenarios requiring ad-hoc querying capabilities. 
+
+Kinesis data streams can be enabled with either solution, however, Firehose can only be enabled with a Data Lake for near-real-time analytics. This makes data lake mode more ideal to collect data for batch processing.
+
+---
+
+When should I utilize real-time analytics?
+
+1. Live events such as initial launches, new version launches, live-stream events, in-game events in which insights are time-sensitive to gather and action on
+
+2. Live-Ops best practices for comparing on-the-ground insights vs aggregate insights. For example, sometimes checking for insights at particular (or random) points in time can provide different insights than viewing data in larger aggregated time windows. Viewing both and comparing can provide good quality insights.
+
+3. Investigating bugs or player reports as resolution in real-time, especially if they are ongoing
+
+---
+Why do we use `application_id`, and using a DynamoDB table for managing them?
+
+- This is to address customers who would like to perform analytics across multiple games, or to ensure analytics within a single game when ingesting from multiple games. The analytics pipeline can query and partition for a single `application_id`, which are stored and managed from a DynamoDB table alongside authentication secrets to prevent cross-contamination. The DynamoDB table can be interfaced via API endpoint or directly on the AWS Console.
+
+---
+Why is the Schema the way we designed it?
+
+- Sample Event Schema for reference:
+``` hcl
+{
+    "event_id": "34c74de5-69d9-4f06-86ac-4b98fef8bca9",
+    "event_name": "login",
+    "event_type": "client",
+    "event_version": "1.0.0",
+    "event_timestamp": 1737658977,
+    "app_version": "1.0.0",
+    "event_data":
+    {
+        "platform": "pc",
+        "last_login_time": 1737658477
+    }
+}
+```
+
+- The default Schema for the guidance has a high-level schema structure for events that all events should have uniformly, and a nested `event_data` structure for event-specific variables. This separation allows schema standardization enforcement while allowing flexibility. As schemas and event types change, the `event_version` can track the versioning, and `app_version` can track against game versions. 

@@ -15,11 +15,12 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
- 
-'use strict';
 
-const AWS = require('aws-sdk');
-const _ = require('underscore');
+'use strict';
+const { fromEnv } = require('@aws-sdk/credential-providers');
+const { DynamoDBDocument } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDB } = require('@aws-sdk/client-dynamodb');
+
 const moment = require('moment');
 const event_schema = require('../config/event_schema.json');
 const Ajv2020 = require('ajv/dist/2020');
@@ -27,16 +28,22 @@ const Ajv2020 = require('ajv/dist/2020');
 const ajv = new Ajv2020();
 var validate = ajv.compile(event_schema);
 
-const creds = new AWS.EnvironmentCredentials('AWS'); // Lambda provided credentials
+const creds = fromEnv('AWS'); // Lambda provided credentials
+
 const dynamoConfig = {
   credentials: creds,
   region: process.env.AWS_REGION
 };
 
+const convertTimestamp = process.env.CONVERT_TIMESTAMP && process.env.CONVERT_TIMESTAMP === "true"
+
+const dynamoClient = new DynamoDB(dynamoConfig);
+const docClient = DynamoDBDocument.from(dynamoClient);
+
 console.log(`Loaded event JSON Schema: ${JSON.stringify(event_schema)}`);
 
 class Event {
-  
+
   constructor() {
     this.dynamoConfig = dynamoConfig;
   }
@@ -52,14 +59,14 @@ class Event {
     const _self = this;
     try {
       // Extract event object and applicationId string from payload. application_id and event are required or record fails processing
-      if(!input.hasOwnProperty('application_id')){
+      if (!input.hasOwnProperty('application_id')) {
         return Promise.reject({
           recordId: recordId,
           result: 'ProcessingFailed',
           data: new Buffer.from(JSON.stringify(input) + '\n').toString('base64')
         });
       }
-      if(!input.hasOwnProperty('event')){
+      if (!input.hasOwnProperty('event')) {
         return Promise.reject({
           recordId: recordId,
           result: 'ProcessingFailed',
@@ -68,18 +75,18 @@ class Event {
       }
       const applicationId = input.application_id;
       const event = input.event;
-      
+
       // Add a processing timestamp and the Lambda Request Id to the event metadata
       let metadata = {
         ingestion_id: context.awsRequestId,
         processing_timestamp: moment().unix()
       };
-      
+
       // If event came from Solution API, it should have extra metadata
       if (input.aws_ga_api_validated_flag) {
         metadata.api = {};
-        if (input.aws_ga_api_requestId) { 
-          metadata.api.request_id = input.aws_ga_api_requestId; 
+        if (input.aws_ga_api_requestId) {
+          metadata.api.request_id = input.aws_ga_api_requestId;
           delete input.aws_ga_api_requestId;
         }
         if (input.aws_ga_api_requestTimeEpoch) {
@@ -88,7 +95,7 @@ class Event {
         }
         delete input.aws_ga_api_validated_flag;
       }
-      
+
       // Retrieve application config from Applications table
       const application = await _self.getApplication(applicationId);
       if (application !== null) {
@@ -108,32 +115,38 @@ class Event {
           };
           transformed_event.metadata = metadata;
         }
-        
-        if(event.hasOwnProperty('event_id')){
+
+        if (event.hasOwnProperty('event_id')) {
           transformed_event.event_id = String(event.event_id);
         }
-        if(event.hasOwnProperty('event_type')){
+        if (event.hasOwnProperty('event_type')) {
           transformed_event.event_type = String(event.event_type);
         }
-        if(event.hasOwnProperty('event_name')){
+        if (event.hasOwnProperty('event_name')) {
           transformed_event.event_name = String(event.event_name);
         }
-        if(event.hasOwnProperty('event_version')){
+        if (event.hasOwnProperty('event_version')) {
           transformed_event.event_version = String(event.event_version);
         }
-        if(event.hasOwnProperty('event_timestamp')){
-          transformed_event.event_timestamp = Number(event.event_timestamp);
+        if (event.hasOwnProperty('event_timestamp')) {
+          if (convertTimestamp) { 
+            let newDate = new Date(0);
+            newDate.setUTCSeconds(Number(event.event_timestamp));
+            transformed_event.event_timestamp = newDate;
+          } else {
+            transformed_event.event_timestamp = Number(event.event_timestamp);
+          }
         }
-        if(event.hasOwnProperty('app_version')){
+        if (event.hasOwnProperty('app_version')) {
           transformed_event.app_version = String(event.app_version);
         }
-        if(event.hasOwnProperty('event_data')){
+        if (event.hasOwnProperty('event_data')) {
           transformed_event.event_data = event.event_data;
         }
-        
+
         transformed_event.application_name = String(application.application_name);
         transformed_event.application_id = String(applicationId);
-        
+
         return Promise.resolve({
           recordId: recordId,
           result: 'Ok',
@@ -150,40 +163,40 @@ class Event {
         };
         let unregistered_format = {};
         unregistered_format.metadata = metadata;
-        
-        if(event.hasOwnProperty('event_id')){
+
+        if (event.hasOwnProperty('event_id')) {
           unregistered_format.event_id = String(event.event_id);
         }
-        if(event.hasOwnProperty('event_type')){
+        if (event.hasOwnProperty('event_type')) {
           unregistered_format.event_type = String(event.event_type);
         }
-        if(event.hasOwnProperty('event_name')){
+        if (event.hasOwnProperty('event_name')) {
           unregistered_format.event_name = String(event.event_name);
         }
-        if(event.hasOwnProperty('event_version')){
+        if (event.hasOwnProperty('event_version')) {
           unregistered_format.event_version = String(event.event_version);
         }
-        if(event.hasOwnProperty('event_timestamp')){
+        if (event.hasOwnProperty('event_timestamp')) {
           unregistered_format.event_timestamp = Number(event.event_timestamp);
         }
-        if(event.hasOwnProperty('app_version')){
+        if (event.hasOwnProperty('app_version')) {
           unregistered_format.app_version = String(event.app_version);
         }
-        if(event.hasOwnProperty('event_data')){
+        if (event.hasOwnProperty('event_data')) {
           unregistered_format.event_data = event.event_data;
         }
-        
+
         // Even though the application_id is not registered, let's add it to the event
         unregistered_format.application_id = String(applicationId);
-        
+
         return Promise.resolve({
           recordId: recordId,
           result: 'Ok',
           data: new Buffer.from(JSON.stringify(unregistered_format) + '\n').toString('base64')
         });
-      } 
+      }
     } catch (err) {
-      console.log(`Error processing record: ${JSON.stringify(err)}`);
+      console.error(`Error processing record: ${JSON.stringify(err)}`);
       return Promise.reject({
         recordId: recordId,
         result: 'ProcessingFailed',
@@ -191,7 +204,7 @@ class Event {
       });
     }
   }
-  
+
   /**
    * Retrieve application from DynamoDB
    * Fetches from and updates the local registered applications cache with results
@@ -203,7 +216,7 @@ class Event {
         application_id: applicationId
       }
     };
-    
+
     // first try to fetch from cache
     let applicationsCacheResult = global.applicationsCache.get(applicationId);
     if (applicationsCacheResult == 'NOT_FOUND') {
@@ -211,10 +224,10 @@ class Event {
       return Promise.resolve(null);
     } else if (applicationsCacheResult == undefined) {
       // get from DynamoDB and set in Applications cache
-      const docClient = new AWS.DynamoDB.DocumentClient(this.dynamoConfig);
+
       try {
-        let data = await docClient.get(params).promise();
-        if (!_.isEmpty(data)) {
+        let data = await docClient.get(params);
+        if (data?.Item != undefined) {
           // if found in ddb, set in cache and return it
           global.applicationsCache.set(applicationId, data.Item);
           return Promise.resolve(data.Item);
@@ -225,7 +238,8 @@ class Event {
           return Promise.resolve(null);
         }
       } catch (err) {
-        console.log(JSON.stringify(err));
+        console.error("Error encountered in getApplication");
+        console.error(JSON.stringify(err));
         return Promise.reject(err);
       }
     } else {
@@ -233,7 +247,7 @@ class Event {
       return Promise.resolve(applicationsCacheResult);
     }
   }
-  
+
   /**
    * Validate input data against JSON schema
    */
@@ -252,7 +266,7 @@ class Event {
         });
       }
     } catch (err) {
-      console.log(`There was an error validating the schema ${JSON.stringify(err)}`);
+      console.error(`There was an error validating the schema ${JSON.stringify(err)}`);
       return Promise.reject(err);
     }
   }

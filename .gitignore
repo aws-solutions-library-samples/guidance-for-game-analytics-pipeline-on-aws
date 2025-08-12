@@ -24,4 +24,20 @@ cdk.out
 .history/
 *.vsix
 
+# Terraform
+.terraform
+.terraform.lock.hcl
+plan.out
+terraform.tfstate*
+infrastructure/terraform/src/builds/
+
 node_modules/
+*package-lock.json
+infrastructure/aws-cdk/config.yaml
+infrastructure/config.yaml
+business-logic/flink-event-processing/dependency-reduced-pom.xml
+business-logic/flink-event-processing/target/deploy.zip
+business-logic/flink-event-processing/target/pyflink-dependencies.jar
+business-logic/flink-event-processing/target/classes/original-pyflink-dependencies.jar
+business-logic/flink-event-processing/target/maven-archiver/pom.properties
+infrastructure/aws-cdk/cdk.context.json
