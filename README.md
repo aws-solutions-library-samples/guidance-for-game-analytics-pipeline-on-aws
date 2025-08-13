@@ -1,5 +1,8 @@
 # Game Analytics Pipeline on AWS
 
+>[!IMPORTANT]
+>This guidance has a full official documentation page with installation instructions [here](https://aws-solutions-library-samples.github.io/guidance-for-game-analytics-pipeline-on-aws/)
+
 ## Table of Contents
 
 1. [Overview](#overview)
