@@ -80,7 +80,7 @@ locals {
       DIRECT_BATCH = {
           value = <<EOT
 {
-                            "DeliveryStreamName": "${var.game_events_firehose_arn}",
+                            "DeliveryStreamName": "${var.game_events_firehose_name}",
                             "Records": [
                                 #set($i = 0)
                                 #foreach($event in $input.path('$.events'))
