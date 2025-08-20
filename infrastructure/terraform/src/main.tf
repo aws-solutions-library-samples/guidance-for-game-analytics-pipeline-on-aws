@@ -616,6 +616,7 @@ module "games_api_construct" {
   game_events_stream_arn = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? aws_kinesis_stream.game_events_stream[0].arn : ""
   game_events_stream_name = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? aws_kinesis_stream.game_events_stream[0].name : ""
   game_events_firehose_arn = local.config.INGEST_MODE == "DIRECT_BATCH" ? module.streaming_ingestion_construct[0].game_events_firehose_arn : ""
+  game_events_firehose_name = local.config.INGEST_MODE == "DIRECT_BATCH" ? module.streaming_ingestion_construct[0].game_events_firehose_name : ""
   application_admin_service_function_arn = module.lambda_construct.application_admin_service_function_arn
   stack_name = local.config.WORKLOAD_NAME
   api_stage_name = local.config.API_STAGE_NAME

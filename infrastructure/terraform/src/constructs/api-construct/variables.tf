@@ -23,6 +23,11 @@ variable "game_events_firehose_arn" {
   description = "ARN of the Firehose stream for game events"
 }
 
+variable "game_events_firehose_name" {
+  type = string
+  description = "Name of the Firehose stream for game events"
+}
+
 variable "ingest_mode" {
   type = string
   description = "Streaming mode of the ingest"
