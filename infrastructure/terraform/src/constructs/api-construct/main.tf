@@ -100,6 +100,30 @@ locals {
                             ]
                         }
 EOT
+                                                                
+          response_200 = <<EOT
+#set($response = $input.path('$')) #set($records = $input.json('$.RequestResponses')) {
+                                "Total": $response.RequestResponses.size(),
+                                "FailedRecordCount": $input.json('$.FailedPutCount'),
+                                "Events": [#foreach($record in $response.RequestResponses){#if($record.ErrorCode != $null)"Result": "Error", "ErrorCode": "$record.ErrorCode"}#else"Result": "Ok"}#end#if($foreach.hasNext),#end#end]
+                                }
+          EOT
+
+          response_400 = <<EOT
+#set($inputRoot = $input.path('$'))
+                                {
+                                "error": "BadRequest",
+                                "error_detail": $input.json('$.message')
+                                }
+          EOT
+
+          response_500 = <<EOT
+#set($inputRoot = $input.path('$')) 
+                                {
+                                "error": $input.json('$.__type'),
+                                "error_detail": $input.json('$.message')
+                                }
+          EOT
         },
       KINESIS_DATA_STREAMS = {
           value = <<EOT
@@ -125,6 +149,30 @@ EOT
                             ]
                         }
 EOT
+
+          response_200 = <<EOT
+#set($response = $input.path('$')) #set($records = $input.json('$.Records')) {
+                                "Total": $response.Records.size(),
+                                "FailedRecordCount": $input.json('$.FailedRecordCount'),
+                                "Events": [#foreach($record in $response.Records){#if($record.ErrorCode != $null)"Result": "Error", "ErrorCode": "$record.ErrorCode"}#else"Result": "Ok"}#end#if($foreach.hasNext),#end#end]
+                                }
+          EOT
+
+          response_400 = <<EOT
+#set($inputRoot = $input.path('$'))
+                                {
+                                "error": "BadRequest",
+                                "error_detail": $input.json('$.message')
+                                }
+          EOT
+
+          response_500 = <<EOT
+#set($inputRoot = $input.path('$')) 
+                                {
+                                "error": $input.json('$.__type'),
+                                "error_detail": $input.json('$.message')
+                                }
+          EOT
       }
     }
 }
