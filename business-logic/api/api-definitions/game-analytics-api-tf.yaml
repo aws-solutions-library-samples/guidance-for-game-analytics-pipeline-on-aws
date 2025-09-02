@@ -394,29 +394,17 @@ paths:
                         statusCode: "200"
                         responseTemplates:
                             application/json: >
-                                #set($response = $input.path('$')) #set($records = $input.json('$.Records')) {
-                                "Total": $response.Records.size(),
-                                "FailedRecordCount": $input.json('$.FailedRecordCount'),
-                                "Events": [#foreach($record in $response.Records){#if($record.ErrorCode != $null)"Result": "Error", "ErrorCode": "$record.ErrorCode"}#else"Result": "Ok"}#end#if($foreach.hasNext),#end#end]
-                                }
+                                ${ingest_response_200}
                     "4\\d{2}":
                         statusCode: "400"
                         responseTemplates:
                             application/json: >
-                                #set($inputRoot = $input.path('$'))
-                                {
-                                "error": "BadRequest",
-                                "error_detail": $input.json('$.message')
-                                }
+                                ${ingest_response_400}
                     "5\\d{2}":
                         statusCode: "500"
                         responseTemplates:
                             application/json: >
-                                #set($inputRoot = $input.path('$')) 
-                                {
-                                "error": $input.json('$.__type'),
-                                "error_detail": $input.json('$.message')
-                                }
+                                ${ingest_response_400}
 components:
     schemas:
         ErrorException:
