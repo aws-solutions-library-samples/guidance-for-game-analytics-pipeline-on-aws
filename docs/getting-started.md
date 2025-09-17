@@ -163,13 +163,13 @@ More information about the aws configure command can be found in the documentati
 
 Once you have set your own custom configuration settings, and saved the config.yaml file, then following steps can be used to deploy the game analytics pipeline:
 
-1. Build the sample code dependencies, by running the following command:
-```bash
-npm run build
-```
-2. Bootstrap the sample code, by running the following command:
+1. Bootstrap the enviornment for deployment by running the following command:
 ```bash
 npm run deploy.bootstrap
+```
+2. Build the sample code dependencies, by running the following command:
+```bash
+npm run build
 ```
 3. Deploy the sample code, by running the following command:
 ```bash
