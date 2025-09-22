@@ -167,7 +167,7 @@ Once you have set your own custom configuration settings, and saved the config.y
 ```bash
 npm run build
 ```
-2. Bootstrap the sample code, by running the following command:
+2. Bootstrap the sample code by running the following command:
 ```bash
 npm run deploy.bootstrap
 ```
