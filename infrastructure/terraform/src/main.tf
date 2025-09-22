@@ -699,3 +699,19 @@ module "dashboard_construct" {
   collection_name = local.config.REAL_TIME_ANALYTICS == true ? module.opensearch_construct[0].collection_name : ""
   pipeline_name = local.config.REAL_TIME_ANALYTICS == true ? module.opensearch_construct[0].ingestion_pipeline_name : ""
 }
+
+resource "aws_cloudformation_stack" "guidance_deployment_metrics" {
+  name          = local.config.WORKLOAD_NAME
+  on_failure    = "DO_NOTHING"
+  template_body = <<STACK
+    {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "Guidance for the Game Analytics Pipeline on AWS (SO0096)",
+        "Resources": {
+            "EmptyResource": {
+                "Type": "AWS::CloudFormation::WaitConditionHandle"
+            }
+        }
+    }
+    STACK
+}
