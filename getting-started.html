@@ -1,0 +1,1820 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="This Guidance helps game developers deploy a modular, serverless analytics pipeline for ingesting, storing, processing, and visualizing telemetry data from game clients and backend services. It supports real-time and batch analytics use cases. Using AWS Cloud Development Kit, developers can continuously integrate and deploy the pipeline across multiple AWS accounts and Regions. The serverless services offer cost-efficiency and ease of setup. After deployment, teams can ingest data and make informed decisions to enhance their games faster.">
+      
+      
+        <meta name="author" content="Amazon Web Services">
+      
+      
+        <link rel="canonical" href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/getting-started.html">
+      
+      
+        <link rel="prev" href="index.html">
+      
+      
+        <link rel="next" href="references/api-reference.html">
+      
+      
+      <link rel="icon" href="media/aws.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.20">
+    
+    
+      
+        <title>Getting Started - Guidance for Game Analytics Pipeline on AWS</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.e53b48f4.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+        <script src="https://unpkg.com/iframe-worker/shim"></script>
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="stylesheets/themes.css">
+    
+      <link rel="stylesheet" href="stylesheets/hero.css">
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<!-- Determine title -->
+
+<!-- prettier-ignore -->
+
+
+
+
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#getting-started" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="Guidance for Game Analytics Pipeline on AWS" class="md-header__button md-logo" aria-label="Guidance for Game Analytics Pipeline on AWS" data-md-component="logo">
+      
+  <img src="media/aws-logo-white.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Guidance for Game Analytics Pipeline on AWS
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Getting Started
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 2C5.13 2 2 5.13 2 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7M6 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H6zm13-8h-2l-3.2 9h1.9l.7-2h3.2l.7 2h1.9zm-2.15 5.65L18 15l1.15 3.65z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="getting-started.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="references/api-reference.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="upgrading/v2-to-v3-changes.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Upgrading
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="component-deep-dive.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Component Deep Dive
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="customizations.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Customizations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="design-considerations.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Design Considerations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="troubleshooting.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="roadmap.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="security.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Security
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="contributing.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  AWS Landing Page
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="Guidance for Game Analytics Pipeline on AWS" class="md-nav__button md-logo" aria-label="Guidance for Game Analytics Pipeline on AWS" data-md-component="logo">
+      
+  <img src="media/aws-logo-white.svg" alt="logo">
+
+    </a>
+    Guidance for Game Analytics Pipeline on AWS
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="getting-started.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-up-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set up Environment
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Set up Environment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-the-dev-container-extension-for-vscode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install the Dev Container Extension for VSCode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-configure-vscode-to-use-finch" class="md-nav__link">
+    <span class="md-ellipsis">
+      (Optional) Configure VSCode to use Finch
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-dev-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using the Dev Container
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cdk-only-configuring-esbuild" class="md-nav__link">
+    <span class="md-ellipsis">
+      CDK Only - Configuring ESBuild
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-cli-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWS CLI Configuration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deployment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#start-initial-application-and-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      Start initial Application and API
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Start initial Application and API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-a-new-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create a new Application
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-new-api-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create a new API Key
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apache-iceberg-only-configure-table-partition-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      Apache Iceberg Only - Configure Table Partition Spec
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-time-only-starting-flink" class="md-nav__link">
+    <span class="md-ellipsis">
+      Real Time Only - Starting Flink
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#send-events-to-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      Send Events to the Pipeline
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify-and-query-event-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verify and Query Event Data
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next Steps
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    References
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            References
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="references/api-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="references/schema-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Schema Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="references/config-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Config Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="references/output-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Output Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="references/ops-dashboard-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Operational Dashboard Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="references/file-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    File/Folder Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Upgrading
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Upgrading
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="upgrading/v2-to-v3-changes.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="upgrading/v2-migration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Upgrade Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="component-deep-dive.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Component Deep Dive
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="customizations.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Customizations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="design-considerations.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Design Considerations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="troubleshooting.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="roadmap.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="security.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Security
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="contributing.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AWS Landing Page
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h1>
+<p>This guide is intended for users integrating game analytics pipeline for the first time. If you have an existing Game Analytics Pipeline deployment and need to upgrade to the latest version, see the <a href="upgrading/v2-to-v3-changes.html">Upgrading</a> page.</p>
+<hr />
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<p>The following resources are required to install, configure, and deploy the game analytics pipeline. </p>
+<ul>
+<li><strong>Amazon Web Services Account</strong></li>
+<li><strong><a href="https://docs.github.com/en/get-started/start-your-journey/creating-an-account-on-github">GitHub Account</a></strong></li>
+<li><strong><a href="https://code.visualstudio.com/Download">Visual Studio Code</a>*</strong></li>
+<li><strong>API Client: <a href="https://www.postman.com/">Postman Desktop</a> or <a href="https://www.usebruno.com/">Bruno</a></strong></li>
+<li><strong>IAM Users + Credentials</strong><ul>
+<li>IAM User for deploying the guidance Infrastructure-as-Code resources</li>
+<li>IAM User with AWS Console access</li>
+<li>IAM User for administrating the API, requires <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html">credentials (Access Key, Secret Access Key)</a></li>
+</ul>
+</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>When using Access Keys and Secret Access Keys, a best practice is to periodically rotate them. This means your administrators and deployments will need to keep the rotation of your keys in mind as well, more information <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id-credentials-access-keys-update.html">here</a></p>
+</div>
+<p><em>*Other code editors can also be used, but tooling support may be limited</em></p>
+<hr />
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p>Log into your GitHub account, and navigate to the the <a href="https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws">Game Analytics Pipeline repository</a></p>
+</li>
+<li>
+<p><a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo">Fork</a> into your GitHub account</p>
+</li>
+<li>
+<p>From your fork, <a href="https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository">clone your repository</a> to a local folder on your machine</p>
+</li>
+<li>
+<p>Navigate to the root of the local folder and open the project in your code editor</p>
+</li>
+</ol>
+<hr />
+<h2 id="set-up-environment">Set up Environment<a class="headerlink" href="#set-up-environment" title="Permanent link">&para;</a></h2>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Dev Container (Recommended)</label><label for="__tabbed_1_2">Manual Install</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>A <a href="https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/adding-a-dev-container-configuration/introduction-to-dev-containers">development container</a> configuration contains the necessary <em>Python</em>, <em>NodeJS</em>, and the <em>AWS CDK</em> installations and versions needed to implement this guidance, which saves time installing manually. It is <strong>recommended</strong>, that you use the pre-configured <a href="https://code.visualstudio.com/docs/devcontainers/containers">environment</a> as your development environment.</p>
+<p>To use Dev Containers, a container platform such as <a href="https://www.docker.com/products/docker-desktop/">Docker Desktop (local)</a> or <a href="https://runfinch.com/">Finch</a> must be installed and running.</p>
+<hr />
+<h4 id="install-the-dev-container-extension-for-vscode">Install the Dev Container Extension for VSCode<a class="headerlink" href="#install-the-dev-container-extension-for-vscode" title="Permanent link">&para;</a></h4>
+<ol>
+<li>
+<p>Navigate to the <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers">Dev Containers extension page</a> in the Visual Studio Marketplace</p>
+</li>
+<li>
+<p>Click <strong>Install</strong> to add the extension to VSCode</p>
+</li>
+</ol>
+<p><em>*Other code editors such as the <a href="https://plugins.jetbrains.com/plugin/21962-dev-containers">Jetbrains suite</a> also support Dev Containers.</em></p>
+<hr />
+<h4 id="optional-configure-vscode-to-use-finch">(Optional) Configure VSCode to use Finch<a class="headerlink" href="#optional-configure-vscode-to-use-finch" title="Permanent link">&para;</a></h4>
+<p>Finch is an open source client for container development. To use Finch, follow the <a href="https://runfinch.com/docs/getting-started/installation/">instructions in the Finch documentation</a> to install and initialize Finch for your chosen operating system.</p>
+<p>After Finch is installed and running, follow the <a href="https://runfinch.com/docs/integrations/devcontainers-on-finch/">instructions in the Finch documentation</a> to configure the Dev Container Extension to utilize Finch as the container platform to run the dev container for your chosen operating system.</p>
+<hr />
+<h4 id="using-the-dev-container">Using the Dev Container<a class="headerlink" href="#using-the-dev-container" title="Permanent link">&para;</a></h4>
+<p>After following the instructions in <a href="#installation">Installation</a>, when the project is opened in your code editor, a popup will appear indicating that the folder contains a dev container configuration. To utilize the Dev Container environment, click on “Reopen in Container”.</p>
+</div>
+<div class="tabbed-block">
+<p>Before deploying the sample code, ensure that the following required tools have been installed:</p>
+<ul>
+<li><strong><a href="https://www.docker.com/products/docker-desktop/">Docker Desktop (local)</a> or <a href="https://runfinch.com/">Finch</a></strong></li>
+<li><strong><a href="https://maven.apache.org/install.html">Apache Maven</a></strong></li>
+<li><strong>AWS Cloud Development Kit (CDK) 2.92 or Terraform</strong></li>
+<li><strong>Python &gt;=3.8</strong></li>
+<li><strong>NodeJS &gt;= 22.0.0</strong></li>
+</ul>
+<p>If Finch is installed, set the <code>CDK_DOCKER</code> environment variable to <code>finch</code></p>
+<div class="highlight"><pre><span></span><code><span class="nv">CDK_DOCKER</span><span class="o">=</span><span class="s2">&quot;finch&quot;</span>
+</code></pre></div>
+<p>This can also be added to the <code>~/.bashrc</code> file to be configured for every interactive shell. If you are using mac, replace <code>~/.bashrc</code> with <code>~/.zshrc</code>
+<div class="highlight"><pre><span></span><code><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;CDK_DOCKER=&quot;finch&quot;&#39;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.bashrc<span class="w"> </span>
+</code></pre></div></p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The NPM commands to build and deploy the project are written to use UNIX shell commands. Because of this, <strong>the manual install is incompatible with the Windows Powershell</strong> without modifications to the NPM commands. Please consider using the Dev Container to have a consistent deployment environment.</p>
+</div>
+</div>
+</div>
+</div>
+<hr />
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<p>The Game Analytics Pipeline can be deployed using <a href="https://aws.amazon.com/cdk/">AWS Cloud Development Kit (CDK)</a> or <a href="https://developer.hashicorp.com/terraform">Terraform</a>. </p>
+<ol>
+<li>
+<p>To select your deployment option, open the <code>package.json</code> file at the root of the repository. </p>
+</li>
+<li>
+<p>At the top of the <code>package.json</code> file there is a <code>"config"</code> block. Set the <code>"iac"</code> config option to <code>"cdk"</code> to use the CDK deployment option or <code>"tf"</code> to use the Terraform deployment option.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;iac&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cdk&quot;</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="s2">&quot;tf&quot;</span>
+<span class="p">},</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Avoid changing this option after the stack is deployed without first destroying the created resources. </p>
+</div>
+</li>
+<li>
+<p>Before deploying the sample code, deployment parameters need to be customized to suite your specific usage requirements. Guidance configuration, and customization, is managed using a <code>config.yaml</code> file, located in the infrastructure folder of the repository.</p>
+</li>
+<li>
+<p>A configuration template file, called <code>config.yaml.TEMPLATE</code> has been provided as a reference for use case customizations. Using the provided devcontainer environment, run the following command to copy the template to  <code>./infrastructure/config.yaml</code>:
+    <div class="highlight"><pre><span></span><code>cp<span class="w"> </span>./infrastructure/config.yaml.TEMPLATE<span class="w"> </span>./infrastructure/config.yaml
+</code></pre></div></p>
+</li>
+<li>
+<p>Open the <code>./infrastructure/config.yaml</code> file for editing. Configure the parameters for the pipeline according to the options available in the <a href="references/config-reference.html">Config Reference</a>.</p>
+</li>
+<li>
+<p>Terraform Only - Terraform does not use a default region like CDK does, and needs to specify the region in the providers file (<code>./infrastructure/terraform/src/providers.tf</code>). It is defaulted to <code>us-east-1</code> but please modify the below section on the file to your desired region code:</p>
+<div class="highlight"><pre><span></span><code><span class="err">provider</span><span class="w"> </span><span class="s2">&quot;aws&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="err">regio</span><span class="kc">n</span><span class="w"> </span><span class="err">=</span><span class="w"> </span><span class="s2">&quot;REGION&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+</li>
+</ol>
+<hr />
+<h3 id="cdk-only-configuring-esbuild">CDK Only - Configuring ESBuild<a class="headerlink" href="#cdk-only-configuring-esbuild" title="Permanent link">&para;</a></h3>
+<p>This repository utilizes L2 constructs for Nodejs based lambda functions. These constructs handle the bundling of lambda code for deployment. By default, the construct will utilize a Docker container to compile the function, however, this option leads to high build times before each deployment and can have increased performance impacts on MacOS and docker-in-docker enviornments. If <code>esbuild</code> is installed, the L2 construct will build the function using <code>esbuild</code> instead which leads to faster build times.</p>
+<p>To install <code>esbuild</code>, navigate to the root of the repository and enter the following command:</p>
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>install<span class="w"> </span>.
+</code></pre></div>
+<p><code>esbuild</code> is listed as a development dependency under <code>package.json</code> and will be installed.</p>
+<hr />
+<h3 id="aws-cli-configuration">AWS CLI Configuration<a class="headerlink" href="#aws-cli-configuration" title="Permanent link">&para;</a></h3>
+<p>The AWS CLI must be properly configured with credentials to your AWS account before use. The <code>aws configure</code> or <code>aws configure sso</code> commands in your development enviornment terminal are the fastest way to set up your AWS CLI depending on your credential method. Based on the credential method you prefer, the AWS CLI prompts you for the relevant information. </p>
+<p>More information about the aws configure command can be found in the documentation for the <a href="https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html#getting-started-quickstart-new">AWS Command Line Interface</a>.</p>
+<hr />
+<h2 id="deployment">Deployment<a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h2>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p><strong>Security credentials for the target AWS account must be configured</strong> on the machine before deploying the pipeline. This lets AWS know who you are and what permissions you have to deploy the pipeline. These credentials must have permissions to create new resources within the account, including new IAM Roles.</p>
+<p>There are different ways in which you can configure programmatic access to AWS resources, depending on the environment and the AWS access available to you. Please consult the following documentation based on your deployment option to configure the credentials before proceeding with this section.</p>
+<ul>
+<li>
+<p><a href="https://docs.aws.amazon.com/cdk/v2/guide/configure-access.html">AWS Cloud Development Kit (CDK)</a></p>
+</li>
+<li>
+<p><a href="https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration">HashiCorp Terraform</a></p>
+</li>
+</ul>
+</div>
+<p>Once you have set your own custom configuration settings, and saved the config.yaml file, then following steps can be used to deploy the game analytics pipeline:</p>
+<ol>
+<li>Build the sample code dependencies, by running the following command:
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>run<span class="w"> </span>build
+</code></pre></div></li>
+<li>Bootstrap the sample code by running the following command:
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>run<span class="w"> </span>deploy.bootstrap
+</code></pre></div></li>
+<li>Deploy the sample code, by running the following command:
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>run<span class="w"> </span>deploy
+</code></pre></div>
+After deployment is complete, a list of outputs will be posted to the terminal. These are names and references to relevant deployed assets from the stack. Please note these for future reference.</li>
+</ol>
+<hr />
+<h2 id="start-initial-application-and-api">Start initial Application and API<a class="headerlink" href="#start-initial-application-and-api" title="Permanent link">&para;</a></h2>
+<p>Before sending events to the pipeline, an Application and corresponding Authorization key will need to be created. A Postman collection file is provided to help configure Postman or Bruno for use with the solution. </p>
+<ol>
+<li>Locate the <a href="references/output-reference.html#api-endpoint">API Endpoint</a> from the output after deployment. Note this down for the collection<ul>
+<li>If deployed using CDK, this endpoint is the value of <code>CentralizedGameAnalytics.ApiEndpoint</code>. </li>
+<li>If deployed using Terraform, this endpoint is the value of <code>api_endpoint</code></li>
+</ul>
+</li>
+<li>The collection file is located at <code>/resources/game-analytics-pipeline-postman-collection.json</code></li>
+</ol>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Postman</label><label for="__tabbed_2_2">Bruno</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ol>
+<li>For instructions on how to import a collection, refer to the documentation for your selected API Client: <a href="https://learning.postman.com/docs/getting-started/importing-and-exporting/importing-data/#import-postman-data">Import Postman data</a></li>
+<li>Once the collection is imported into Postman, create a new environment by selecting Environments in the sidebar and select the Add icon. You can also select the environment selector at the top right of the workbench and select Add icon. Enter a name for your new environment.</li>
+<li>In order to perform administrator actions on your API, Authentication must be configured to utilize SigV4 authentication for an IAM identity. These credentials inherit from your <code>access_key</code> and <code>secret_access_key</code> variables configured in the collection. For more information, refer to <a href="https://learning.postman.com/docs/sending-requests/authorization/aws-signature/">Authenticate with AWS Signature authentication workflow in Postman</a></li>
+<li>Replicate the following image for your environment (Note: leave <code>application_id</code> blank. This will be filled in later):<ul>
+<li>The AWS Access Key and Secret Access Key is specifically for administrating the API only, and should not be used by event sources. You should have an IAM User specifically with these credentials with sufficient permissions to run the tasks on the API, but for security best practice to use least privilege, a sample policy is created by the guidance <code>{WORKLOAD_NAME}-AdminAPIAccess</code> to attach to the user to perform only the admin tasks
+<img alt="Postman Environment Sample" src="media/postman-environment-sample.png" /></li>
+</ul>
+</li>
+<li>Ensure there are no trailing return/enter spaces at the end of the variables, and click "Save" on the top right.</li>
+<li>Select your newly created and saved environment by navigating to the top right drop-down menu that says <code>No environment</code>, selecting on it and selecting your new environment</li>
+</ol>
+</div>
+<div class="tabbed-block">
+<ol>
+<li>For instructions on how to import a collection, refer to the documentation for your selected API Client: <a href="https://docs.usebruno.com/get-started/import-export-data/postman-migration#importing-environment-into-bruno">Importing Enviornment into Bruno</a></li>
+<li>Once the collection is imported into your API client, navigate to the Vars tab for the collection. <ul>
+<li>Validate that five variables (<code>api_base_path</code>, <code>application_id</code>, <code>access_key</code>, <code>secret_access_key</code>, and <code>region</code>) are under Pre Request variables. If they are not, create variables with those names.</li>
+<li>Configure the collection-wide <code>api_base_path</code> variable to be your deployed API base path. The value of the path should be the URL retrieved from step 1.</li>
+<li>Configure <code>region</code> to be the region where the stack is deployed</li>
+<li>Configure <code>access_key</code> to be the access key of the identity used to deploy the stack</li>
+<li>Configure <code>secret_access_key</code> to be the secret access key of the identity used to deploy the stack</li>
+<li>Leave <code>application_id</code> blank. This will be filled in later.</li>
+</ul>
+</li>
+<li>
+<p>Ensure the collection variables are created</p>
+<p><img alt="Bruno Environment Sample" src="media/bruno-enviornment-sample.png" /></p>
+</li>
+<li>
+<p>In order to perform administrator actions on your API, Authentication must be configured to utilize SigV4 authentication for an IAM identity. These credentials inherit from your <code>access_key</code> and <code>secret_access_key</code> variables configured in the collection. For more information, refer to  <a href="https://docs.usebruno.com/auth/aws-signature">Authenticate using AWS Signature</a></p>
+<ul>
+<li>If a session token is needed for temporary credentials, please add them manually</li>
+</ul>
+</li>
+<li>Ensure there are no trailing return/enter spaces at the end of the variables. Save the configuration by pressing <code>ctrl + s</code> (or <code>cmd + s</code> on mac).</li>
+</ol>
+</div>
+</div>
+</div>
+<p>After the pipeline is deployed, a new application must be created using the Application API. </p>
+<h3 id="create-a-new-application">Create a new Application<a class="headerlink" href="#create-a-new-application" title="Permanent link">&para;</a></h3>
+<p>The Game Analytics Pipeline Guidance is built to support multiple games, called <code>Applications</code> in the guidance, for cross-game and per-game analytics. This means usually you would only need to deploy a single pipeline per environment.</p>
+<ul>
+<li>Navigate under the <strong>Applications</strong> tab of the collection and select the <strong>Create Application</strong> API. </li>
+<li>Navigate to the <code>Body</code> tab (under the address bar showing the API path) and modify the value of Name and Description in the json to match your game.</li>
+<li>Send the API request. <strong>Note the value of the <code>"ApplicationId"</code> in the API response.</strong></li>
+<li>Copy the value of the ApplicationId and paste it in to the <code>application_id</code> value for the collection. This will allow the rest of your API calls to interact with the application</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Refer to the <a href="references/api-reference.html#post-create-application">API Reference for POST - Create Application</a> for more information on how to register a new application. </p>
+</div>
+<p>After the application is created, create an API key to send events to the API. Make sure to go back to Postman or Bruno if you are using them to update the environment variables (and save).</p>
+<h3 id="create-a-new-api-key">Create a new API Key<a class="headerlink" href="#create-a-new-api-key" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Navigate under the <strong>Authorizations</strong> tab of the collection and select the <strong>Create Authorization</strong> API.</li>
+<li>The <code>"ApplicationId"</code> from the previous step should be passed in the API path automatically. </li>
+<li>Navigate to the <code>Body</code> tab (under the address bar showing the API path) and modify the value of Name and Description in the json to match your game.</li>
+<li>Send the API request. <strong>Note the value of the <code>"ApiKeyValue"</code> in the API response.</strong></li>
+<li>Refer to the <a href="references/api-reference.html#post-create-api-key-for-application">API Reference for POST - Create API Key for Application</a> for more information on how to create a new authorization key. </li>
+</ul>
+<p>If you have Redshift Mode enabled, enable the materialized views and remaining infrastructure through the API. Refer to the <a href="references/api-reference.html#post-set-up-redshift">API Reference for POST - Setup Redshift</a> on how to setup the final Redshift components.</p>
+<hr />
+<h3 id="apache-iceberg-only-configure-table-partition-spec">Apache Iceberg Only - Configure Table Partition Spec<a class="headerlink" href="#apache-iceberg-only-configure-table-partition-spec" title="Permanent link">&para;</a></h3>
+<p>If the <code>ENABLE_APACHE_ICEBERG_SUPPORT</code> configuration is set to <code>true</code>, a basic Apache Iceberg table is created in the glue catalog with the table name specified with <code>RAW_EVENTS_TABLE</code> under the database specified with <code>EVENTS_DATABASE</code>. </p>
+<p>By default, this table does not contain a configured partition specification. To enable partitioning, a Glue job must be run before data is ingested to configure the table.</p>
+<ol>
+<li>Locate the <a href="references/output-reference.html#iceberg-setup-job-name">Iceberg Setup Job Name</a> from the deployment outputs. Note this down for later.<ul>
+<li>The name of the job is the value of <code>CentralizedGameAnalytics.IcebergSetupJobName</code> when using CDK.</li>
+<li>The name of the job is the value of <code>iceberg_setup_job_name</code> when using Terraform.</li>
+</ul>
+</li>
+<li>Navigate to the <a href="http://console.aws.amazon.com/glue">Glue AWS Console</a>. Ensure that you are in the same region that the stack is deployed in</li>
+<li>On the left sidebar, navigate to ETL jobs</li>
+<li>Locate the deployed setup job with the name retrieved from Step 1 in the list of jobs. Use the search bar if necessary</li>
+<li>Click on the checkbox to the left of the name of the job. </li>
+<li>Click on <strong>Run job</strong> at the top right of the job list to start the job. </li>
+<li>Navigate to the job run status using the popup at the top of the page. Monitor the status until the job is complete and successful.</li>
+</ol>
+<hr />
+<h3 id="real-time-only-starting-flink">Real Time Only - Starting Flink<a class="headerlink" href="#real-time-only-starting-flink" title="Permanent link">&para;</a></h3>
+<p>If the <code>REAL_TIME_ANALYTICS</code> configuration is set to <code>true</code>, a Flink Application will be created. This application needs to be in the <code>RUNNING</code> state for incoming events to be processed in real time. </p>
+<ol>
+<li>
+<p>Locate the <a href="references/output-reference.html#flink-app-name">Flink App Name</a> from the deployment outputs. Note this down for later.</p>
+<ul>
+<li>The name of the job is the value of <code>CentralizedGameAnalytics.FlinkAppName</code> when using CDK.</li>
+<li>The name of the job is the value of <code>flink_app_name</code> when using Terraform.</li>
+</ul>
+</li>
+<li>
+<p>Navigate to the AWS Console. Open the console for <a href="https://console.aws.amazon.com/flink">Managed Apache Flink</a></p>
+</li>
+<li>
+<p>Click on the <strong>Apache Flink applications</strong> page on the side menu. </p>
+</li>
+<li>
+<p>Navigate to the application with the name matching the one retrieved from the step 1 output.</p>
+</li>
+<li>
+<p>Click on the <strong>Run</strong> button at the top right of the menu. Configure the Snapshots option to <strong>Run without snapshot</strong> when starting for the first time. Click on the <strong>Run</strong> button again to start the application.</p>
+</li>
+<li>
+<p>Wait for the Status to show as <strong>Running</strong></p>
+</li>
+</ol>
+<p>For more information and troubleshooting, refer to the documentation for <a href="https://docs.aws.amazon.com/managed-flink/latest/java/how-running-apps.html">Run a Managed Service for Apache Flink application</a>.</p>
+<hr />
+<h2 id="send-events-to-the-pipeline">Send Events to the Pipeline<a class="headerlink" href="#send-events-to-the-pipeline" title="Permanent link">&para;</a></h2>
+<p>This project contains a python script to send a simulated stream of events to the pipeline. The script is located at <code>resources/publish-data/handler.py</code>. To run the script, run the following
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>resources/publish-data/handler.py<span class="w"> </span>--api-path<span class="w"> </span>&lt;API_PATH&gt;<span class="w"> </span>--api-key<span class="w"> </span>&lt;API_KEY&gt;<span class="w"> </span>--application-id<span class="w"> </span>&lt;APPLICATION_ID&gt;
+</code></pre></div></p>
+<ul>
+<li>Replace <code>&lt;API_PATH&gt;</code> with the value of the API endpoint retrieved after deployment during step 1 of <a href="#start-initial-application-and-api">Start initial Application and API</a></li>
+<li>Replace <code>&lt;APPLICATION_ID&gt;</code> with the value of <code>"ApplicationId"</code> created during the <a href="#create-a-new-application">Create a new Application step</a>.</li>
+<li>Replace <code>&lt;API_KEY&gt;</code> with the value of <code>"ApiKeyValue"</code> created during the <a href="#create-a-new-api-key">Create a new API Key step</a>.</li>
+</ul>
+<p>For more information, refer to the <a href="references/api-reference.html#post-send-events">API Reference for POST - Send Events</a> for the REST API schema to send events to the pipeline.</p>
+<hr />
+<h2 id="verify-and-query-event-data">Verify and Query Event Data<a class="headerlink" href="#verify-and-query-event-data" title="Permanent link">&para;</a></h2>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><input id="__tabbed_3_3" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Data Lake Mode</label><label for="__tabbed_3_2">Redshift Mode</label><label for="__tabbed_3_3">Real-Time Analytics</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ol>
+<li>
+<p>Navigate to the <a href="http://console.aws.amazon.com/athena">AWS Console for Athena</a></p>
+</li>
+<li>
+<p>If you are not already on the query editor, click on the <strong>Launch query editor</strong> button</p>
+</li>
+<li>
+<p>At the top left of the editor, select the workgroup for your stack. The name should consist of the name specified by <code>WORKLOAD_NAME</code> in config.yaml followed by the suffix <code>-workgroup</code> and a random suffix.</p>
+<p><img alt="Athena 1" src="media/Athena-1.png" /></p>
+</li>
+<li>
+<p>Acknowledge the settings for the workgroup</p>
+</li>
+<li>
+<p>On the left hand side, select the Database with the name specified by <code>EVENTS_DATABASE</code> in config.yaml</p>
+<p><img alt="Athena 2" src="media/Athena-2.png" /></p>
+</li>
+<li>
+<p>A list of tables should appear below the selection. Select a table, click the three buttons on the left, and select <strong>At</strong> to see the items in the table.</p>
+<p><img alt="Athena 3" src="media/Athena-3.png" /></p>
+</li>
+<li>
+<p>To use the pre-defined queries, select Saved queries at the top toolbar of the query editor. This will show a list of queries created for the stack. </p>
+<p><img alt="Athena 4" src="media/Athena-4.png" /></p>
+</li>
+<li>
+<p>To run a query, click on the highlighted ID of the query to open it in a new query editor tab and then press Run for the query. View the results below after the query finishes executing.</p>
+<p><img alt="Athena 5" src="media/Athena-5.png" /></p>
+</li>
+</ol>
+</div>
+<div class="tabbed-block">
+<ol>
+<li>
+<p>In the AWS Console, navigate to <a href="http://console.aws.amazon.com/redshift">Redshift</a> and you will see the Serverless Dashboard.</p>
+<p><img alt="Redshift 1" src="media/Redshift-1.png" /></p>
+</li>
+<li>
+<p>Select your namespace and then press the Query Editor button in the top right.</p>
+<p><img alt="Redshift 2" src="media/Redshift-2.png" /></p>
+</li>
+<li>
+<p>In the Query Editor, you will see your namespace in the top left.</p>
+<p><img alt="Redshift 3" src="media/Redshift-3.png" /></p>
+</li>
+<li>
+<p>Select the ... to the right of the name to create a connection. Choose Secrets Manager and the relevant secret.</p>
+<p><img alt="Redshift 4" src="media/Redshift-4.png" /></p>
+</li>
+<li>
+<p>Navigate to <code>native databases / events / Views</code></p>
+<p><img alt="Redshift 5" src="media/Redshift-5.png" /></p>
+</li>
+<li>
+<p>Double click one of the views to automatically open a query in the editor on the right side. Edit the query and press Run when ready.</p>
+</li>
+<li>
+<p>The view event_data is the materialized view which reads directly from the Kinesis Data Stream. The other views are essentially pre-made queries against the event_data materialized view.</p>
+</li>
+</ol>
+</div>
+<div class="tabbed-block">
+<p>If <code>REAL_TIME_ANALYTICS</code> is set to <code>true</code>, an OpenSearch Serverless collection will be created to store and index the time series metrics emitted by the Managed Service for Apache Flink application that is initiated in the <a href="#real-time-only-starting-flink">Starting Flink</a> step. </p>
+<p>An acccompanying <a href="https://aws.amazon.com/blogs/big-data/amazon-opensearch-service-launches-the-next-generation-opensearch-ui/">OpenSearch UI Application</a> is created to query and visualize the data emitted by real time analytics. To access this application, ensure you are logged in to the AWS console in your browser of choice with the created OpenSearch Admin IAM role.</p>
+<ol>
+<li>Ensure you are logged in to the AWS console with an existing administrator IAM role. This account must have the <code>sts:AssumeRole</code> permission to <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_permissions-to-switch.html">switch roles</a>.</li>
+<li>Locate the <a href="references/output-reference.html#opensearch-admin-assume-link">OpenSearch Admin Assume Link</a> to assume the IAM role from the output of the deployed stack. <ul>
+<li>If deployed using CDK, this output is identified by <code>CentralizedGameAnalytics.OpenSearchAdminAssumeLink</code>. </li>
+<li>If deployed using Terraform, this output is identified by <code>opensearch_admin_assume_link</code></li>
+</ul>
+</li>
+<li>Paste the link into your browser of choice, confirm the details are correct, and click <strong>Switch Role</strong> to assume the admin role. The assumed role should have the name of your configured <code>PROJECT_NAME</code> followed by <code>-OpenSearchAdmin</code>.
+    <img alt="Access Admin Role" src="media/os_assume_role.png" /></li>
+<li>Verify that you have assumed the admin IAM role by checking the role at the top right of the AWS console.</li>
+<li>Locate the <a href="references/output-reference.html#opensearch-dashboard-link">OpenSearch Dashboard Link</a> to the OpenSearch application from the output of the deployed stack. <ul>
+<li>If deployed using CDK, this output is identified by <code>CentralizedGameAnalytics.OpenSearchDashboardLink</code>. </li>
+<li>If deployed using Terraform, this output is identified by <code>opensearch_dashboard_link</code></li>
+</ul>
+</li>
+<li>Paste the link into your browser of choice. Ensure that you are logged in to the AWS console as the OpenSearch Admin before proceeding. </li>
+<li>On the main dashboard page, verify that you are logged in as the OpenSearch Admin by clicking on the "a" icon on the bottom right and viewing the associated role.
+    <img alt="Verify Assumed Identity" src="media/os_validate_identity.png" width="300" /></li>
+<li>On the main dashboard page, click on <strong>Create workspace</strong> under Essentials
+    <img alt="Create Workspace" src="media/os_home.png" /></li>
+<li>On the next page, provide a name and description to the workspace</li>
+<li>Under Associate data sources, click <strong>Associate OpenSearch data sources</strong>
+    <img alt="Associate Data Source" src="media/os_associate.png" /></li>
+<li>Select the Game Analytics Pipeline Metric Collection and click <strong>Associate data sources</strong>
+    <img alt="Data Source" src="media/os_datasource.png" /></li>
+<li>If needed, change the visibility of the workspace in the last section</li>
+<li>Click Create workspace</li>
+<li>On the left side, select <strong>Index patterns</strong> and click <strong>Create index pattern</strong>
+    <img alt="Create Workspace" src="media/os_index_home.png" /></li>
+<li>Select the associated data source and click Next</li>
+<li>In the field for Index pattern name, enter <code>game_metrics*</code>
+    <img alt="Create Workspace" src="media/os_index_pattern.png" /></li>
+<li>Create the index pattern and verify the fields of the index
+    <img alt="Validate Fields" src="media/os_fields.png" /></li>
+<li>View the raw data stored in the index by navigating to the <strong>Discover</strong> tab on the left. If there is no data shown, adjust the time window using the control at the top right. 
+    <img alt="View Data" src="media/os_data.png" /></li>
+</ol>
+<p>Using the created game_metrics index pattern you can create time series visualizations of the real-time metrics.</p>
+</div>
+</div>
+</div>
+<hr />
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="customizations.html">Customizations</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="references/api-reference.html">References</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="index.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Home">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Home
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="references/api-reference.html" class="md-footer__link md-footer__link--next" aria-label="Next: API Reference">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                API Reference
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 Amazon Web Services
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": ".", "features": [{"toc": {"integrate": true, "permalink": true, "sticky": true}}, "content.code.annotate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight", "search.share", "navigation.sections", "navigation.indexes", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.expand", "navigation.instant", "navigation.footer", "toc.integrate", {"emoji_index": "twemoji"}], "search": "assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1550 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="This Guidance helps game developers deploy a modular, serverless analytics pipeline for ingesting, storing, processing, and visualizing telemetry data from game clients and backend services. It supports real-time and batch analytics use cases. Using AWS Cloud Development Kit, developers can continuously integrate and deploy the pipeline across multiple AWS accounts and Regions. The serverless services offer cost-efficiency and ease of setup. After deployment, teams can ingest data and make informed decisions to enhance their games faster.">
+      
+      
+        <meta name="author" content="Amazon Web Services">
+      
+      
+        <link rel="canonical" href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/references/ops-dashboard-reference.html">
+      
+      
+        <link rel="prev" href="output-reference.html">
+      
+      
+        <link rel="next" href="file-reference.html">
+      
+      
+      <link rel="icon" href="../media/aws.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.20">
+    
+    
+      
+        <title>Operational Dashboard Reference - Guidance for Game Analytics Pipeline on AWS</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.e53b48f4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+        <script src="https://unpkg.com/iframe-worker/shim"></script>
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/themes.css">
+    
+      <link rel="stylesheet" href="../stylesheets/hero.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<!-- Determine title -->
+
+<!-- prettier-ignore -->
+
+
+
+
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#operational-health" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../index.html" title="Guidance for Game Analytics Pipeline on AWS" class="md-header__button md-logo" aria-label="Guidance for Game Analytics Pipeline on AWS" data-md-component="logo">
+      
+  <img src="../media/aws-logo-white.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Guidance for Game Analytics Pipeline on AWS
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Operational Dashboard Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 2C5.13 2 2 5.13 2 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7M6 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H6zm13-8h-2l-3.2 9h1.9l.7-2h3.2l.7 2h1.9zm-2.15 5.65L18 15l1.15 3.65z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="api-reference.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../upgrading/v2-to-v3-changes.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Upgrading
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../component-deep-dive.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Component Deep Dive
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../customizations.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Customizations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../design-considerations.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Design Considerations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../troubleshooting.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../roadmap.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../security.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Security
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  AWS Landing Page
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="Guidance for Game Analytics Pipeline on AWS" class="md-nav__button md-logo" aria-label="Guidance for Game Analytics Pipeline on AWS" data-md-component="logo">
+      
+  <img src="../media/aws-logo-white.svg" alt="logo">
+
+    </a>
+    Guidance for Game Analytics Pipeline on AWS
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    References
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            References
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="schema-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Schema Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="config-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Config Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="output-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Output Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Operational Dashboard Reference
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="ops-dashboard-reference.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Operational Dashboard Reference
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#operational-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      Operational Health
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Operational Health">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events-ingestion-and-delivery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Events Ingestion and Delivery
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kinesis-data-stream-ingestion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Kinesis Data Stream Ingestion
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kinesis Data Stream Ingestion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events-ingestion-and-delivery_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Events Ingestion and Delivery
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#events-stream-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      Events Stream Latency
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#redshift-serverless" class="md-nav__link">
+    <span class="md-ellipsis">
+      Redshift Serverless
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Redshift Serverless">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#queries-completed-per-second" class="md-nav__link">
+    <span class="md-ellipsis">
+      Queries Completed Per Second
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Connections
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-planning-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query Planning / Execution
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Storage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stream-ingestion-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stream Ingestion &amp; Processing
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stream Ingestion &amp; Processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events-processing-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      Events Processing Health
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#event-transformation-lambda-error-count-and-success-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      Event Transformation Lambda Error count and success rate (%)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-time-streaming-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Real-time Streaming Analytics
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Real-time Streaming Analytics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#managed-flink-records-intake" class="md-nav__link">
+    <span class="md-ellipsis">
+      Managed Flink Records Intake
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managed-flink-container-cpu-utilization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Managed Flink Container CPU Utilization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managed-flink-container-resource-utilization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Managed Flink Container Resource Utilization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#opensearch-intake" class="md-nav__link">
+    <span class="md-ellipsis">
+      OpenSearch Intake
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metrics-stream-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metrics Stream Latency
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#opensearch-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      OpenSearch Latency
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="file-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    File/Folder Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Upgrading
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Upgrading
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upgrading/v2-to-v3-changes.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upgrading/v2-migration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Upgrade Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../component-deep-dive.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Component Deep Dive
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../customizations.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Customizations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-considerations.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Design Considerations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Security
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AWS Landing Page
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Operational Dashboard Reference</h1>
+
+<p>The Operational Dashboard is a CloudWatch dashboard used to monitor the health of the deployed game analytics pipeline. The contents of the dashboard can change based on the configurations of the deployed pipeline specified in the <a href="config-reference.html">config.yaml file</a>. For more information about CloudWatch dashboards, please refer to the <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Dashboards.html">Amazon CloudWatch User Guide</a>.</p>
+<h2 id="operational-health">Operational Health<a class="headerlink" href="#operational-health" title="Permanent link">&para;</a></h2>
+<h3 id="events-ingestion-and-delivery">Events Ingestion and Delivery<a class="headerlink" href="#events-ingestion-and-delivery" title="Permanent link">&para;</a></h3>
+<p><img alt="REST Ingestion" src="../media/dashboard/rest_ingestion.png" width="500" /></p>
+<p>This widget monitors the total number of REST API Calls to ingest events into the game analytics pipeline within the time period. Each REST API call may contain multiple events per payload. The time period for this metric is set to automatic based on the period configured for the entire dashboard.</p>
+<h2 id="kinesis-data-stream-ingestion">Kinesis Data Stream Ingestion<a class="headerlink" href="#kinesis-data-stream-ingestion" title="Permanent link">&para;</a></h2>
+<h3 id="events-ingestion-and-delivery_1">Events Ingestion and Delivery<a class="headerlink" href="#events-ingestion-and-delivery_1" title="Permanent link">&para;</a></h3>
+<p><img alt="Stream Ingestion" src="../media/dashboard/stream_ingestion.png" width="500" /></p>
+<p>This widget monitors the total number of individual events sent to the real-time kinesis data stream within the time period. The time period for this metric is set to automatic based on the period configured for the entire dashboard. This widget is enabled only if <a href="config-reference.html#data-platform-options"><code>INGEST_MODE</code> is set to <code>KINESIS_DATA_STREAMS</code></a>.</p>
+<h3 id="events-stream-latency">Events Stream Latency<a class="headerlink" href="#events-stream-latency" title="Permanent link">&para;</a></h3>
+<p><img alt="Stream Latency" src="../media/dashboard/stream_latency.png" width="500" /></p>
+<p>This widget monitors the latency of the real-time raw event data stream. This widget is enabled only if <a href="config-reference.html#data-platform-options"><code>INGEST_MODE</code> is set to <code>KINESIS_DATA_STREAMS</code></a>.</p>
+<ul>
+<li><strong>PutRecords Write Latency</strong> - this measures the average latency in milliseconds of the PutRecords operation (multi record insert) within the time period. This metric is used to monitor the latency of inserts into the pipeline. The time period for this metric is set to automatic based on the period configured for the entire dashboard.</li>
+<li><strong>Read Latency</strong> - this measures the average latency of a read operation in milliseconds from the Kinesis Data Stream within the time period. This metric is used to monitor the latency of a read request by the consumers of raw events (Amazon Data Firehose, Amazon Managed Service for Apache Flink, Amazon Redshift). The time period for this metric is set to automatic based on the period configured for the entire dashboard.</li>
+<li><strong>Consumer Iterator Age</strong> - this tracks the average read position of the data being processed by a downstream consumer (Amazon Data Firehose, Managed Service for Apache Flink app). If the iterator age passes 50% of the configured stream retention period, there is a risk for data loss. This metric can occasionally spike if the pipeline is idle. The time period for this metric is set to automatic based on the period configured for the entire dashboard.</li>
+<li><strong>PutRecord Write Latency</strong> - this measures the average latency of the PutRecord operation (single record insert) within the time period. This metric is often not published as the API Gateway batches events using the PutRecords API by default. The time period for this metric is set to automatic based on the period configured for the entire dashboard.</li>
+</ul>
+<p>You can read more about Kinesis stream-level metrics in the <a href="https://docs.aws.amazon.com/streams/latest/dev/monitoring-with-cloudwatch.html#kinesis-metrics-stream">Amazon Kinesis Data Streams Developer Guide</a> and troubleshooting using the metrics in the <a href="https://docs.aws.amazon.com/streams/latest/dev/troubleshooting-consumers.html">troubleshooting documentation</a>.</p>
+<h2 id="redshift-serverless">Redshift Serverless<a class="headerlink" href="#redshift-serverless" title="Permanent link">&para;</a></h2>
+<h3 id="queries-completed-per-second">Queries Completed Per Second<a class="headerlink" href="#queries-completed-per-second" title="Permanent link">&para;</a></h3>
+<p><img alt="Redshift Query Count" src="../media/dashboard/redshift_query_count.png" width="500" /></p>
+<p>This widget tracks the number of queries completed per second.</p>
+<p>For more information about the metrics that Redshift Serverless tracks, please refer to the <a href="https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-audit-logging.html">Amazon Redshift Management Guide</a>.</p>
+<h3 id="database-connections">Database Connections<a class="headerlink" href="#database-connections" title="Permanent link">&para;</a></h3>
+<p><img alt="Redshift Connections" src="../media/dashboard/redshift_connections.png" width="500" /></p>
+<p>This widget tracks the number of open connections to the Redshift database at a point in time.</p>
+<p>For more information about the metrics that Redshift Serverless tracks, please refer to the <a href="https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-audit-logging.html">Amazon Redshift Management Guide</a>.</p>
+<h3 id="query-planning-execution">Query Planning / Execution<a class="headerlink" href="#query-planning-execution" title="Permanent link">&para;</a></h3>
+<p><img alt="Redshift Query Planning" src="../media/dashboard/redshift_query.png" width="500" /></p>
+<p>This widget tracks the time spent planning and executing queries on the event data.</p>
+<ul>
+<li><strong>QueryPlanning</strong> - This metric tracks the time spent parsing and optimizing SQL statements.</li>
+<li><strong>QueryExecutingRead</strong> - This metric tracks the time spent executing read queries.</li>
+</ul>
+<p>For more information about the metrics that Redshift Serverless tracks, please refer to the <a href="https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-audit-logging.html">Amazon Redshift Management Guide</a>.</p>
+<h3 id="data-storage">Data Storage<a class="headerlink" href="#data-storage" title="Permanent link">&para;</a></h3>
+<p><img alt="Redshift Storage" src="../media/dashboard/redshift_storage.png" width="500" /></p>
+<p>This widget tracks the amount of data stored in the Redshift serverless data.</p>
+<p>For more information about the metrics that Redshift Serverless tracks, please refer to the <a href="https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-audit-logging.html">Amazon Redshift Management Guide</a>.</p>
+<h2 id="stream-ingestion-processing">Stream Ingestion &amp; Processing<a class="headerlink" href="#stream-ingestion-processing" title="Permanent link">&para;</a></h2>
+<h3 id="events-processing-health">Events Processing Health<a class="headerlink" href="#events-processing-health" title="Permanent link">&para;</a></h3>
+<p><img alt="Event Processing Health" src="../media/dashboard/processing_health.png" width="500" /></p>
+<p>This widget monitors the firehose delivery stream used to deliver raw events to the data lake.</p>
+<ul>
+<li><strong>Data Freshness</strong> - This metric monitors the average age of the oldest record in Amazon Data Firehose that has not been delivered into Amazon S3 within the time period. The age is defined as the time difference from ingestion until current time. Any records with an age higher than this metric have been delivered into S3. The time period for this metric is set to automatic based on the period configured for the entire dashboard.</li>
+<li><strong>Firehose Records Delivered to S3</strong> - This measures the average number of game events that have been delivered into Amazon S3 within the time period. The time period for this metric is set to automatic based on the period configured for the entire dashboard.</li>
+<li><strong>Lambda Duration</strong> - This measures the average amount of time that the lambda spends processing an event for data transformation using Amazon Data Firehose within the time period. The time period for this metric is set to automatic based on the period configured for the entire dashboard.</li>
+<li><strong>Lambda Concurrency</strong> - This measures the highest number of concurrent lambdas executing for data transformation using Amazon Data Firehose within the time period. The time period for this metric is set to automatic based on the period configured for the entire dashboard. If this metric exceeds the quota for the region or the reserved concurrency limit for the function, requests will become throttled.</li>
+<li><strong>Lambda Throttles</strong> - This measures the total number of throttled requests to the data transformation lambda within the time period. The time period for this metric is set to automatic based on the period configured for the entire dashboard.</li>
+</ul>
+<p>You can view more about the metrics emitted by Amazon Data Firehose in the <a href="https://docs.aws.amazon.com/firehose/latest/dev/monitoring-with-cloudwatch-metrics.html">Amazon Data Firehose Developer Guide</a>.</p>
+<h3 id="event-transformation-lambda-error-count-and-success-rate">Event Transformation Lambda Error count and success rate (%)<a class="headerlink" href="#event-transformation-lambda-error-count-and-success-rate" title="Permanent link">&para;</a></h3>
+<p><img alt="Event Transformation Lambda" src="../media/dashboard/transformation_lambda_success.png" width="500" /></p>
+<p>This widget monitors the activity on the transformation lambda function used in Amazon Data Firehose.</p>
+<ul>
+<li><strong>Errors</strong> - This metric tracks the total number of invocations resulting in function errors within the time period.</li>
+<li><strong>Invocations</strong> - This metric tracks the total number of function invocations within the time period.</li>
+<li><strong>Success Rate (%)</strong> - This metric tracks the percentage of lambda invocations that were successful within the time period. This metric is tracked on the right axis of the graph as it measures percentage instead of count.</li>
+</ul>
+<p>You can view more about Lambda function metrics in the <a href="https://docs.aws.amazon.com/lambda/latest/dg/monitoring-metrics-types.html">AWS Lambda Developer Guide</a>.</p>
+<h2 id="real-time-streaming-analytics">Real-time Streaming Analytics<a class="headerlink" href="#real-time-streaming-analytics" title="Permanent link">&para;</a></h2>
+<h3 id="managed-flink-records-intake">Managed Flink Records Intake<a class="headerlink" href="#managed-flink-records-intake" title="Permanent link">&para;</a></h3>
+<p><img alt="Flink Intake" src="../media/dashboard/flink_intake.png" width="500" /></p>
+<p>This widget monitors the number of records that the Managed Service for Apache Flink application is recieving from the input stream. This metric is only enabled when <a href="config-reference.html#data-platform-options"><code>REAL_TIME_ANALYTICS</code> is set to <code>true</code></a>.</p>
+<ul>
+<li><strong>Number of Records Recieved</strong> - This metric tracks total number of records that the Managed Service for Apache Flink application has recieved within the time window.</li>
+<li><strong>Number of Late Records Dropped</strong> - This metric tracks total number of records that the  Managed Service for Apache Flink application has dropped due to arriving late.</li>
+</ul>
+<p>For more information about the metrics the Managed Service For Apache Flink tracks, please refer to the <a href="https://docs.aws.amazon.com/managed-flink/latest/java/metrics-dimensions.html">developer guide</a>.</p>
+<h3 id="managed-flink-container-cpu-utilization">Managed Flink Container CPU Utilization<a class="headerlink" href="#managed-flink-container-cpu-utilization" title="Permanent link">&para;</a></h3>
+<p><img alt="Flink Scaling" src="../media/dashboard/flink_scaling.png" width="500" /></p>
+<p>This widget monitors the container CPU utilization of the Managed Service for Apache Flink application. Container CPU utilization is the metric used to determine auto-scaling actions for the Managed Service for Apache Flink application which are annotated on the graph. This metric is only enabled when <a href="config-reference.html#data-platform-options"><code>REAL_TIME_ANALYTICS</code> is set to <code>true</code></a>.</p>
+<p>If this metric is above the Scale Up Threshold for 15 minutes or more, an auto-scaling action will be triggered to double the parallelism of the application. If this metric is below the Scale Down Threshold for six hours or more, an auto-scaling action will be triggered to halve the parallelism of the application. You can read more about Flink autoscaling in the <a href="https://docs.aws.amazon.com/managed-flink/latest/java/how-scaling-auto.html">Developer Guide for Managed Service for Apache Flink</a>. </p>
+<h3 id="managed-flink-container-resource-utilization">Managed Flink Container Resource Utilization<a class="headerlink" href="#managed-flink-container-resource-utilization" title="Permanent link">&para;</a></h3>
+<p><img alt="Flink Resource Utilization" src="../media/dashboard/flink_resource.png" width="500" /></p>
+<p>This widget monitors resource utilization of the Managed Service for Apache Flink application. These resources are not used for auto-scaling, but are important to monitor for performance regressions. This metric is only enabled when <a href="config-reference.html#data-platform-options"><code>REAL_TIME_ANALYTICS</code> is set to <code>true</code></a>.</p>
+<ul>
+<li><strong>threadsCount</strong> - The total number of live threads used by the application.  </li>
+<li><strong>containerMemoryUtilization</strong> - Overall percentage of memory utilization across task manager containers in Flink application cluster.</li>
+<li><strong>containerDiskUtilization</strong> - Overall percentage of disk utilization across task manager containers in Flink application cluster.</li>
+</ul>
+<p>For more information about the metrics the Managed Service For Apache Flink tracks, please refer to the <a href="https://docs.aws.amazon.com/managed-flink/latest/java/metrics-dimensions.html">developer guide</a>.</p>
+<h3 id="opensearch-intake">OpenSearch Intake<a class="headerlink" href="#opensearch-intake" title="Permanent link">&para;</a></h3>
+<p><img alt="OpenSearch Ingestion" src="../media/dashboard/opensearch_intake.png" width="500" /></p>
+<p>This widget monitors the flow of custom metric documents that are ingested into OpenSearch Serverless. The left side of the widget monitors successful records ingested, while the right side of the widget monitors documents that errored out during ingestion. This metric is only enabled when <a href="config-reference.html#data-platform-options"><code>REAL_TIME_ANALYTICS</code> is set to <code>true</code></a>.</p>
+<ul>
+<li><strong>Collection Ingested</strong> - The number of records at which documents are being ingested to the OpenSearch Serverless Collection.</li>
+<li><strong>Pipeline Recieved</strong> - The number of records at which documents are being ingested into the OpenSearch Ingestion pipeline.</li>
+<li><strong>Pipeline Sent</strong> - The number of documents successfully sent from the OpenSearch Ingestion pipeline to the OpenSearch Collection.</li>
+<li><strong>Pipeline Errors</strong> - The number of documents that failed to be sent from the OpenSearch Ingestion pipeline.</li>
+<li><strong>Collection Errors</strong> - The total number of document errors during ingestion into the OpenSearch Serverless Collection. After a successful bulk indexing request, writers process the request and emit errors for all failed documents within the request.</li>
+</ul>
+<p>For more information about the metrics emitted by Amazon OpenSearch Serverless, refer to the <a href="https://docs.aws.amazon.com/opensearch-service/latest/developerguide/monitoring-cloudwatch.html">developer guide</a>. For more information about the metrics emitted by Amazon OpenSearch Ingestion, refer to the <a href="https://docs.aws.amazon.com/opensearch-service/latest/developerguide/monitoring-pipeline-metrics.html">developer guide on pipeline metrics</a>.</p>
+<h3 id="metrics-stream-latency">Metrics Stream Latency<a class="headerlink" href="#metrics-stream-latency" title="Permanent link">&para;</a></h3>
+<p><img alt="Metric Latency" src="../media/dashboard/metric_latency.png" width="500" /></p>
+<p>This widget monitors the latency of the custom metrics stream. The custom metrics stream contains metrics created by the Managed Service for Apache Flink Application in flight to OpenSearch. This metric is only enabled when <a href="config-reference.html#data-platform-options"><code>REAL_TIME_ANALYTICS</code> is set to <code>true</code></a>.</p>
+<ul>
+<li><strong>PutRecords Write Latency</strong> - this measures the average latency in milliseconds of the PutRecords operation (multi record insert) within the time period. This metric is used to monitor the latency of inserts into the pipeline. The time period for this metric is set to automatic based on the period configured for the entire dashboard.</li>
+<li><strong>Read Latency</strong> - this measures the average latency of a read operation in milliseconds from the Kinesis Data Stream within the time period. This metric is used to monitor the latency of a read request by the consumers of raw events (Amazon Data Firehose, Amazon Managed Service for Apache Flink, Amazon Redshift). The time period for this metric is set to automatic based on the period configured for the entire dashboard.</li>
+<li><strong>Consumer Iterator Age</strong> - this tracks the average read position of the data being processed by a downstream consumer (Amazon Data Firehose, Managed Service for Apache Flink app). If the iterator age passes 50% of the configured stream retention period, there is a risk for data loss. This metric can occasionally spike if the pipeline is idle. The time period for this metric is set to automatic based on the period configured for the entire dashboard.</li>
+<li><strong>PutRecord Write Latency</strong> - this measures the average latency of the PutRecord operation (single record insert) within the time period. This metric is often not published as the Flink connector batches events using the PutRecords API by default. The time period for this metric is set to automatic based on the period configured for the entire dashboard.</li>
+</ul>
+<p>You can read more about Kinesis stream-level metrics in the <a href="https://docs.aws.amazon.com/streams/latest/dev/monitoring-with-cloudwatch.html#kinesis-metrics-stream">Amazon Kinesis Data Streams Developer Guide</a> and troubleshooting using the metrics in the <a href="https://docs.aws.amazon.com/streams/latest/dev/troubleshooting-consumers.html">troubleshooting documentation</a>.</p>
+<h3 id="opensearch-latency">OpenSearch Latency<a class="headerlink" href="#opensearch-latency" title="Permanent link">&para;</a></h3>
+<p><img alt="OpenSearch Latency" src="../media/dashboard/opensearch_latency.png" width="500" /></p>
+<p>This widget monitors the end-to-end latency of the system used to ingest custom metrics from the custom metrics stream into OpenSearch. This metric is only enabled when <a href="config-reference.html#data-platform-options"><code>REAL_TIME_ANALYTICS</code> is set to <code>true</code></a>.</p>
+<ul>
+<li><strong>Collection Ingestion Request Latency</strong> - The average latency for bulk write operations to the Amazon OpenSearch Serverless collection within the time period.</li>
+<li><strong>Pipeline End-To-End Latency</strong> - The average end-to-end latency of the Amazon OpenSearch Ingestion pipeline. This measures the total latency of the ingestion pipeline as it recieves and buffers events before delivering them to the collection. If this metric is high, consider increasing the OCU limit of the pipeline to increase parallelism.</li>
+</ul>
+<p>For more information about the metrics emitted by Amazon OpenSearch Serverless, refer to the <a href="https://docs.aws.amazon.com/opensearch-service/latest/developerguide/monitoring-cloudwatch.html">developer guide</a>. For more information about the metrics emitted by Amazon OpenSearch Ingestion, refer to the <a href="https://docs.aws.amazon.com/opensearch-service/latest/developerguide/monitoring-pipeline-metrics.html">developer guide on pipeline metrics</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="output-reference.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Output Reference">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Output Reference
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="file-reference.html" class="md-footer__link md-footer__link--next" aria-label="Next: File/Folder Reference">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                File/Folder Reference
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 Amazon Web Services
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [{"toc": {"integrate": true, "permalink": true, "sticky": true}}, "content.code.annotate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight", "search.share", "navigation.sections", "navigation.indexes", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.expand", "navigation.instant", "navigation.footer", "toc.integrate", {"emoji_index": "twemoji"}], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

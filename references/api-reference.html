@@ -1,0 +1,1943 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="This Guidance helps game developers deploy a modular, serverless analytics pipeline for ingesting, storing, processing, and visualizing telemetry data from game clients and backend services. It supports real-time and batch analytics use cases. Using AWS Cloud Development Kit, developers can continuously integrate and deploy the pipeline across multiple AWS accounts and Regions. The serverless services offer cost-efficiency and ease of setup. After deployment, teams can ingest data and make informed decisions to enhance their games faster.">
+      
+      
+        <meta name="author" content="Amazon Web Services">
+      
+      
+        <link rel="canonical" href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/references/api-reference.html">
+      
+      
+        <link rel="prev" href="../getting-started.html">
+      
+      
+        <link rel="next" href="schema-reference.html">
+      
+      
+      <link rel="icon" href="../media/aws.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.20">
+    
+    
+      
+        <title>API Reference - Guidance for Game Analytics Pipeline on AWS</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.e53b48f4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+        <script src="https://unpkg.com/iframe-worker/shim"></script>
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/themes.css">
+    
+      <link rel="stylesheet" href="../stylesheets/hero.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<!-- Determine title -->
+
+<!-- prettier-ignore -->
+
+
+
+
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../index.html" title="Guidance for Game Analytics Pipeline on AWS" class="md-header__button md-logo" aria-label="Guidance for Game Analytics Pipeline on AWS" data-md-component="logo">
+      
+  <img src="../media/aws-logo-white.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Guidance for Game Analytics Pipeline on AWS
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 2C5.13 2 2 5.13 2 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7M6 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H6zm13-8h-2l-3.2 9h1.9l.7-2h3.2l.7 2h1.9zm-2.15 5.65L18 15l1.15 3.65z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="api-reference.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../upgrading/v2-to-v3-changes.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Upgrading
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../component-deep-dive.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Component Deep Dive
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../customizations.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Customizations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../design-considerations.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Design Considerations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../troubleshooting.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../roadmap.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../security.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Security
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  AWS Landing Page
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="Guidance for Game Analytics Pipeline on AWS" class="md-nav__button md-logo" aria-label="Guidance for Game Analytics Pipeline on AWS" data-md-component="logo">
+      
+  <img src="../media/aws-logo-white.svg" alt="logo">
+
+    </a>
+    Guidance for Game Analytics Pipeline on AWS
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    References
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            References
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="api-reference.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#applications" class="md-nav__link">
+    <span class="md-ellipsis">
+      Applications
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Applications">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-create-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      POST - Create Application
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-list-applications" class="md-nav__link">
+    <span class="md-ellipsis">
+      GET - List Applications
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      Per-Application
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Per-Application">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-get-an-applications-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      GET - Get an Application's Detail
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-delete-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      DELETE - Delete Application
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sending-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sending Events
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sending Events">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-send-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      POST - Send Events
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authorizations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Authorizations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Authorizations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-create-api-key-for-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      POST - Create API Key for Application
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-list-authorizations-for-an-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      GET - List Authorizations for an Application
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      API Keys
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API Keys">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-get-an-authorizations-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      GET - Get an Authorization's Details
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-delete-an-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      DELETE - Delete an Authorization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#put-enabledisable-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      PUT - Enable/Disable Authorization
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#redshift" class="md-nav__link">
+    <span class="md-ellipsis">
+      Redshift
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Redshift">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-set-up-redshift" class="md-nav__link">
+    <span class="md-ellipsis">
+      POST - Set up Redshift
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="schema-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Schema Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="config-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Config Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="output-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Output Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ops-dashboard-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Operational Dashboard Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="file-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    File/Folder Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Upgrading
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Upgrading
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upgrading/v2-to-v3-changes.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upgrading/v2-migration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Upgrade Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../component-deep-dive.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Component Deep Dive
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../customizations.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Customizations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-considerations.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Design Considerations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Security
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AWS Landing Page
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h1>
+<p>The Game Analytics Pipeline API is the entry point for applications to send data, and it provides functionality for administrators to programmatically configure registered applications. The solution supports HTTPS only, using a certificate managed by AWS. For information about configuring a custom domain for your REST API, refer to <a href="https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.md">Setting up custom domain names for REST APIs</a> in the Amazon API Gateway Developer Guide.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<ul>
+<li>The base path to the API is: <code>https://{YOUR_API_URL}/live</code> unless you set a different API stage name under the config file.<ul>
+<li>For example, the full path to one of the API calls could be <code>https://{YOUR_API_URL}/live/applications/{APPLICATION_ID}/authorizations/{API_KEY_ID}</code>.</li>
+<li>Refer to the <a href="../getting-started.html">Getting Started</a> section to get your API URL, API stage name, and for steps on interacting with the API. Refer to the <a href="../component-deep-dive.html">Component Deep Dive</a> section to understand how the API's authentication and underlying processes work.</li>
+</ul>
+</li>
+<li><a href="api-reference.html#sending-events">Quick link to sending events</a>. Sending events requires an application and it's corresponding authorization token, for explanations see the other API calls first. All other API calls are administrative.</li>
+</ul>
+</div>
+<hr />
+<h3 id="applications">Applications<a class="headerlink" href="#applications" title="Permanent link">&para;</a></h3>
+<p><code>/applications</code></p>
+<h4 id="post-create-application">POST - Create Application<a class="headerlink" href="#post-create-application" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><strong>Description</strong></p>
+<ul>
+<li>This operation enables you to register a new application with the solution. Applications represent a specific game/application to perform per-application analytics on.</li>
+</ul>
+</li>
+<li>
+<p><strong>Request</strong></p>
+<ul>
+<li><strong>Body</strong><ul>
+<li><strong>Name</strong> (<em>String</em>) [Required] - Name of the application to register.</li>
+<li><strong>Description</strong> (<em>String</em>) [Optional] - Description of the application.
+<div class="highlight"><pre><span></span><code><span class="err">POST</span>
+<span class="err">https</span><span class="p">:</span><span class="c1">//{YOUR_API_ENDPOINT_URL}/live/applications</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;Name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;TestGame&quot;</span>
+<span class="w">    </span><span class="s2">&quot;Description&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;This is a test game&quot;</span>
+<span class="p">}</span>
+</code></pre></div></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Response</strong></p>
+<ul>
+<li>
+<p><code>200</code> - Application information is stored in a DynamoDB Table deployed by the solution. See <a href="../component-deep-dive.html">Component Deep Dive</a> for details on the process.
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;ApplicationId&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;d76d064f-ca8b-41ff-839f-4735e9a4b69d&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;ApplicationName&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;TestGame&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Description&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;This is a test game&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;UpdatedAt&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2025-01-26T21:45:50Z&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;CreatedAt&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2025-01-26T21:45:50Z&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<ul>
+<li><strong>ApplicationId</strong> (<em>String</em>) - A unique UUID representing the Application. Keep this value for performing actions on this specific Application. See the below <code>GET - List Applications</code> documentation to view all Applications.</li>
+<li><strong>ApplicationName</strong> (<em>String</em>) - The name of the created Application, same as the one sent in the request.</li>
+<li><strong>Description</strong> (<em>String</em>) - The description of the created Application, same as the one sent in the request.</li>
+<li><strong>UpdatedAt</strong> (<em>DateTime</em>) - The date and time the application was last updated.</li>
+<li><strong>ErrorCode</strong> (<em>DateTime</em>) - The date and time the application was created.</li>
+</ul>
+</li>
+<li>
+<p><code>4XX/5XX</code> - See the <a href="../troubleshooting.html">Troubleshooting</a> section for errors.</p>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="get-list-applications">GET - List Applications<a class="headerlink" href="#get-list-applications" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><strong>Description</strong></p>
+<ul>
+<li>This operation enables you to list the applications that are registered with the solution. Applications represent a specific game/application to perform per-application analytics on.</li>
+</ul>
+</li>
+<li>
+<p><strong>Request</strong>
+    <div class="highlight"><pre><span></span><code><span class="err">GET</span>
+<span class="err">https</span><span class="p">:</span><span class="c1">//{YOUR_API_ENDPOINT_URL}/live/applications</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Response</strong></p>
+<ul>
+<li>
+<p><code>200</code> - Application information is stored in a DynamoDB Table deployed by the solution. See <a href="../component-deep-dive.html">Component Deep Dive</a> for details on the process.
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;Applications&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="s2">&quot;ApplicationId&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;d76d064f-ca8b-41ff-839f-4735e9a4b69d&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ApplicationName&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;TestGame&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;Description&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;This is a test game&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;UpdatedAt&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2025-01-26T21:45:50Z&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CreatedAt&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2025-01-26T21:45:50Z&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="s2">&quot;Count&quot;</span><span class="o">:</span><span class="w"> </span><span class="m">1</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<ul>
+<li><strong>Count</strong> (<em>Number</em>) - The number of registered applications.</li>
+<li><strong>Applications</strong> (<em>Array</em>) - Array of <code>Application</code> objects representing details on each registered Application:<ul>
+<li><strong>ApplicationId</strong> (<em>String</em>) - A unique UUID representing the Application. Keep this value for performing actions on this specific Application. See the below <code>GET - List Applications</code> documentation to view all Applications.</li>
+<li><strong>ApplicationName</strong> (<em>String</em>) - The name of the created Application, same as the one sent in the request.</li>
+<li><strong>Description</strong> (<em>String</em>) - The description of the created Application, same as the one sent in the request.</li>
+<li><strong>UpdatedAt</strong> (<em>DateTime</em>) - The date and time the application was last updated.</li>
+<li><strong>ErrorCode</strong> (<em>DateTime</em>) - The date and time the application was created.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><code>4XX/5XX</code> - See the <a href="../troubleshooting.html">Troubleshooting</a> section for errors.</p>
+</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3 id="per-application">Per-Application<a class="headerlink" href="#per-application" title="Permanent link">&para;</a></h3>
+<p><code>/applications/{APPLICATION_ID}</code></p>
+<h4 id="get-get-an-applications-detail">GET - Get an Application's Detail<a class="headerlink" href="#get-get-an-applications-detail" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><strong>Description</strong></p>
+<ul>
+<li>This operation enables you to describe the details of a registered application. Applications represent a specific game/application to perform per-application analytics on.</li>
+</ul>
+</li>
+<li>
+<p><strong>Request</strong>
+    <div class="highlight"><pre><span></span><code><span class="err">GET</span>
+<span class="err">https</span><span class="p">:</span><span class="c1">//{YOUR_API_ENDPOINT_URL}/live/applications/{APPLICATION_ID}</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Response</strong></p>
+<ul>
+<li>
+<p><code>200</code> - Application information is stored in a DynamoDB Table deployed by the solution. See <a href="../component-deep-dive.html">Component Deep Dive</a> for details on the process.
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;ApplicationId&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;d76d064f-ca8b-41ff-839f-4735e9a4b69d&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;ApplicationName&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;TestGame&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Description&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;This is a test game&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;UpdatedAt&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2025-01-26T21:45:50Z&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;CreatedAt&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2025-01-26T21:45:50Z&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<ul>
+<li><strong>ApplicationId</strong> (<em>String</em>) - A unique UUID representing the Application. Keep this value for performing actions on this specific Application. See the below <code>GET - List Applications</code> documentation to view all Applications.</li>
+<li><strong>ApplicationName</strong> (<em>String</em>) - The name of the created Application, same as the one sent in the request.</li>
+<li><strong>Description</strong> (<em>String</em>) - The description of the created Application, same as the one sent in the request.</li>
+<li><strong>UpdatedAt</strong> (<em>DateTime</em>) - The date and time the application was last updated.</li>
+<li><strong>ErrorCode</strong> (<em>DateTime</em>) - The date and time the application was created.</li>
+</ul>
+</li>
+<li>
+<p><code>4XX/5XX</code> - See the <a href="../troubleshooting.html">Troubleshooting</a> section for errors.</p>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="delete-delete-application">DELETE - Delete Application<a class="headerlink" href="#delete-delete-application" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Description</strong><ul>
+<li>This operation enables you to delete a registered application. Applications represent a specific game/application to perform per-application analytics on.</li>
+</ul>
+</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Data that was ingested by deleted applications remains in Amazon
+Simple Storage Service (Amazon S3) after deletion, but new data cannot be submitted
+to the solution API after an application is deleted. When an application is deleted, all
+associated API key authorizations are also deleted.</p>
+</div>
+<ul>
+<li>
+<p><strong>Request</strong>
+    <div class="highlight"><pre><span></span><code><span class="err">DELETE</span>
+<span class="err">https</span><span class="p">:</span><span class="c1">//{YOUR_API_ENDPOINT_URL}/live/applications/{APPLICATION_ID}</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Response</strong></p>
+<ul>
+<li><code>200</code>
+<div class="highlight"><pre><span></span><code><span class="s2">&quot;Delete Successful&quot;</span>
+</code></pre></div></li>
+<li><code>4XX/5XX</code> - See the <a href="../troubleshooting.html">Troubleshooting</a> section for errors.</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3 id="sending-events">Sending Events<a class="headerlink" href="#sending-events" title="Permanent link">&para;</a></h3>
+<p><code>/applications/{APPLICATION_ID}/events</code></p>
+<h4 id="post-send-events">POST - Send Events<a class="headerlink" href="#post-send-events" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><strong>Description</strong></p>
+<ul>
+<li>This operation enables you to send a batch game events in a single API request to the Game Analytics Pipeline solution. Please review the <a href="../component-deep-dive.html">Component Deep Dive</a> section for batching/size/service limits.</li>
+</ul>
+</li>
+<li>
+<p><strong>Request</strong></p>
+<ul>
+<li><strong>Header</strong><ul>
+<li><strong>Authorization</strong> (<em>String</em>) [Required] - The API Key's Value/code for the application. See either <a href="../getting-started.html">Getting Started</a> or the below Authorizations/API Key references for high level steps / details on creating or obtaining an API Key. See <a href="../component-deep-dive.html">Component Deep Dive</a> for more details on the process and <a href="../design-considerations.html">Design Considerations</a> for reasoning.</li>
+</ul>
+</li>
+<li><strong>Body</strong><ul>
+<li><strong>Events</strong> (<em>Array</em>) [Required] - Array/List of game event JSON objects to send to the pipeline **INSERT NOTE ABOUT SCRIPT/SAMPLE OF GAME EVENTS HERE.
+<div class="highlight"><pre><span></span><code><span class="err">POST</span>
+<span class="err">https</span><span class="p">:</span><span class="c1">//{YOUR_API_ENDPOINT_URL}/live/applications/{APPLICATION_ID}/events</span>
+<span class="err">Authorization</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;KKNL09jc1Ub7WQzmZZ+9BNfxLCOhhJGKGkpHyWy+uk6J6WrIj3x8tbJLkIkZUSxzBgT4RyUOOy7ZBKSaj0y2Zg==&quot;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;events&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="err">Array/List</span><span class="w"> </span><span class="err">of</span><span class="w"> </span><span class="err">Game</span><span class="w"> </span><span class="err">Event</span><span class="w"> </span><span class="err">Objects</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Response</strong></p>
+<ul>
+<li>
+<p><code>200</code> - Sent even if there are some unsuccessful events. This includes successful and failed records.
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;Total&quot;</span><span class="o">:</span><span class="w"> </span><span class="m">2</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;FailedRecordCount&quot;</span><span class="o">:</span><span class="w"> </span><span class="m">1</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Events&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="s2">&quot;Result&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Ok&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="s2">&quot;Result&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Error&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;ErrorCode&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;InvalidAction&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<ul>
+<li><strong>Total</strong> (<em>Number</em>) - Number of received events</li>
+<li><strong>FailedRecordCount</strong> (<em>Integer</em>) - Number of failed events in the batch</li>
+<li><strong>Events</strong> (<em>List</em>) - List of each event's result</li>
+<li><strong>Result</strong> (<em>String</em>) - Response message for an event</li>
+<li><strong>ErrorCode</strong> (<em>String</em>) - Response code for an error event. </li>
+</ul>
+</li>
+<li>
+<p><code>4XX/5XX</code> - See the <a href="../troubleshooting.html">Troubleshooting</a> section for errors.</p>
+</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3 id="authorizations">Authorizations<a class="headerlink" href="#authorizations" title="Permanent link">&para;</a></h3>
+<p><code>/applications/{APPLICATION_ID}/authorizations</code></p>
+<h4 id="post-create-api-key-for-application">POST - Create API Key for Application<a class="headerlink" href="#post-create-api-key-for-application" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><strong>Description</strong></p>
+<ul>
+<li>This operation generates a new API key that is authorized to send events to a specific Application. When sending events to an Application with the above <code>Sending Events</code> API call, the API Key's value/code is included in the <code>Authorization</code> header for security. See <a href="../component-deep-dive.html">Component Deep Dive</a> for more details on the process and <a href="../design-considerations.html">Design Considerations</a> for reasoning.</li>
+</ul>
+</li>
+<li>
+<p><strong>Request</strong></p>
+<ul>
+<li><strong>Body</strong><ul>
+<li><strong>Name</strong> (<em>String</em>) [Required] - Name of the API key to create.</li>
+<li><strong>Description</strong> (<em>String</em>) [Optional] - Description of the API Key being created.
+<div class="highlight"><pre><span></span><code><span class="err">POST</span>
+<span class="err">https</span><span class="p">:</span><span class="c1">//{YOUR_API_ENDPOINT_URL}/live/applications/{APPLICATION_ID}/authorizations</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;Name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;TestKey&quot;</span>
+<span class="w">    </span><span class="s2">&quot;Description&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;This is a test key for my game&quot;</span>
+<span class="p">}</span>
+</code></pre></div></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Response</strong></p>
+<ul>
+<li>
+<p><code>200</code> - Key/authorization information is stored in a DynamoDB Table deployed by the solution. See <a href="../component-deep-dive.html">Component Deep Dive</a> for details on the process.
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;ApiKeyId&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;01af2cb3-8b1f-4bc0-801a-884a30fcb8cd&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;ApiKeyValue&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;KKNL09jc1Ub7WQzmZZ+9BNfxLCOhhJGKGkpHyWy+uk6J6WrIj3x8tbJLkIkZUSxzBgT4RyUOOy7ZBKSaj0y2Zg==&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;ApiKeyName&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;TestKey&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;ApplicationId&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;d76d064f-ca8b-41ff-839f-4735e9a4b69d&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;ApiKeyDescription&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;This is a test key for my game&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;CreatedAt&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2025-01-26T21:46:25Z&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;UpdatedAt&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2025-01-26T21:46:25Z&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Enabled&quot;</span><span class="o">:</span><span class="w"> </span><span class="no">true</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<ul>
+<li><strong>ApiKeyId</strong> (<em>String</em>) - A unique UUID representing the key being created.</li>
+<li><strong>ApiKeyValue</strong> (<em>String</em>) - The value of the key. This value is used for the <code>Authorization</code> header when sending events to an Application with the above <code>Sending Events</code> API call</li>
+<li><strong>ApiKeyName</strong> (<em>String</em>) - The name of the created key, same as the one sent in the request.</li>
+<li><strong>ApplicationId</strong> (<em>String</em>) - A unique UUID representing the Application that this key is made for.</li>
+<li><strong>ApiKeyDescription</strong> (<em>String</em>) - The description of the created key, same as the one sent in the request.</li>
+<li><strong>CreatedAt</strong> (<em>DateTime</em>) - The date and time the key was created.</li>
+<li><strong>UpdatedAt</strong> (<em>DateTime</em>) - The date and time the key was last updated.</li>
+<li><strong>Enabled</strong> (<em>Boolean</em>) - Whether the key is enabled or disabled.</li>
+</ul>
+</li>
+<li>
+<p><code>4XX/5XX</code> - See the <a href="../troubleshooting.html">Troubleshooting</a> section for errors.</p>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="get-list-authorizations-for-an-application">GET - List Authorizations for an Application<a class="headerlink" href="#get-list-authorizations-for-an-application" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><strong>Description</strong></p>
+<ul>
+<li>This operation enables you to list the API key authorizations associated with an application.</li>
+</ul>
+</li>
+<li>
+<p><strong>Request</strong>
+    <div class="highlight"><pre><span></span><code><span class="err">GET</span>
+<span class="err">https</span><span class="p">:</span><span class="c1">//{YOUR_API_ENDPOINT_URL}/live/applications/{APPLICATION_ID}/authorizations</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Response</strong></p>
+<ul>
+<li>
+<p><code>200</code> - Key/authorization information is stored in a DynamoDB Table deployed by the solution. See <a href="../component-deep-dive.html">Component Deep Dive</a> for details on the process.
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;Authorizations&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="s2">&quot;ApiKeyId&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;01af2cb3-8b1f-4bc0-801a-884a30fcb8cd&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ApiKeyValue&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;KKNL09jc1Ub7WQzmZZ+9BNfxLCOhhJGKGkpHyWy+uk6J6WrIj3x8tbJLkIkZUSxzBgT4RyUOOy7ZBKSaj0y2Zg==&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ApiKeyName&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;TestKey&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ApplicationId&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;d76d064f-ca8b-41ff-839f-4735e9a4b69d&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;ApiKeyDescription&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;This is a test key for my game&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;CreatedAt&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2025-01-26T21:46:25Z&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;UpdatedAt&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2025-01-26T21:46:25Z&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;Enabled&quot;</span><span class="o">:</span><span class="w"> </span><span class="no">true</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="s2">&quot;Count&quot;</span><span class="o">:</span><span class="w"> </span><span class="m">1</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<ul>
+<li><strong>Count</strong> (<em>Number</em>) - The number of registered authorizations.</li>
+<li><strong>Authorizations</strong> (<em>Array</em>) - Array of <code>Authorization</code> objects representing details on each registered Authorization for the Application:<ul>
+<li><strong>ApiKeyId</strong> (<em>String</em>) - A unique UUID representing the key being created.</li>
+<li><strong>ApiKeyValue</strong> (<em>String</em>) - The value of the key. This value is used for the <code>Authorization</code> header when sending events to an Application with the above <code>Sending Events</code> API call</li>
+<li><strong>ApiKeyName</strong> (<em>String</em>) - The name of the created key, same as the one sent in the request.</li>
+<li><strong>ApplicationId</strong> (<em>String</em>) - A unique UUID representing the Application that this key is made for.</li>
+<li><strong>ApiKeyDescription</strong> (<em>String</em>) - The description of the created key, same as the one sent in the request.</li>
+<li><strong>CreatedAt</strong> (<em>DateTime</em>) - The date and time the key was created.</li>
+<li><strong>UpdatedAt</strong> (<em>DateTime</em>) - The date and time the key was last updated.</li>
+<li><strong>Enabled</strong> (<em>Boolean</em>) - Whether the key is enabled or disabled.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><code>4XX/5XX</code> - See the <a href="../troubleshooting.html">Troubleshooting</a> section for errors.</p>
+</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3 id="api-keys">API Keys<a class="headerlink" href="#api-keys" title="Permanent link">&para;</a></h3>
+<p><code>/applications/{APPLICATION_ID}/authorizations/{API_KEY_ID}</code></p>
+<h4 id="get-get-an-authorizations-details">GET - Get an Authorization's Details<a class="headerlink" href="#get-get-an-authorizations-details" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><strong>Description</strong></p>
+<ul>
+<li>This operation enables you to describe the details of an application's API Key Authorization.</li>
+</ul>
+</li>
+<li>
+<p><strong>Request</strong>
+    <div class="highlight"><pre><span></span><code><span class="err">GET</span>
+<span class="err">https</span><span class="p">:</span><span class="c1">//{YOUR_API_ENDPOINT_URL}/live/applications/{APPLICATION_ID}/authorizations/{API_KEY_ID}</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Response</strong></p>
+<ul>
+<li>
+<p><code>200</code> - Key/authorization information is stored in a DynamoDB Table deployed by the solution. See <a href="../component-deep-dive.html">Component Deep Dive</a> for details on the process.
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;ApiKeyId&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;01af2cb3-8b1f-4bc0-801a-884a30fcb8cd&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;ApiKeyValue&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;KKNL09jc1Ub7WQzmZZ+9BNfxLCOhhJGKGkpHyWy+uk6J6WrIj3x8tbJLkIkZUSxzBgT4RyUOOy7ZBKSaj0y2Zg==&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;ApiKeyName&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;TestKey&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;ApplicationId&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;d76d064f-ca8b-41ff-839f-4735e9a4b69d&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;ApiKeyDescription&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;This is a test key for my game&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;CreatedAt&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2025-01-26T21:46:25Z&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;UpdatedAt&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2025-01-26T21:46:25Z&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Enabled&quot;</span><span class="o">:</span><span class="w"> </span><span class="no">true</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<ul>
+<li><strong>ApiKeyId</strong> (<em>String</em>) - A unique UUID representing the key being created.</li>
+<li><strong>ApiKeyValue</strong> (<em>String</em>) - The value of the key. This value is used for the <code>Authorization</code> header when sending events to an Application with the above <code>Sending Events</code> API call</li>
+<li><strong>ApiKeyName</strong> (<em>String</em>) - The name of the created key, same as the one sent in the request.</li>
+<li><strong>ApplicationId</strong> (<em>String</em>) - A unique UUID representing the Application that this key is made for.</li>
+<li><strong>ApiKeyDescription</strong> (<em>String</em>) - The description of the created key, same as the one sent in the request.</li>
+<li><strong>CreatedAt</strong> (<em>DateTime</em>) - The date and time the key was created.</li>
+<li><strong>UpdatedAt</strong> (<em>DateTime</em>) - The date and time the key was last updated.</li>
+<li><strong>Enabled</strong> (<em>Boolean</em>) - Whether the key is enabled or disabled.</li>
+</ul>
+</li>
+<li>
+<p><code>4XX/5XX</code> - See the <a href="../troubleshooting.html">Troubleshooting</a> section for errors.</p>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="delete-delete-an-authorization">DELETE - Delete an Authorization<a class="headerlink" href="#delete-delete-an-authorization" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><strong>Description</strong></p>
+<ul>
+<li>This operation enables you to delete an API key associated with an application.</li>
+</ul>
+</li>
+<li>
+<p><strong>Request</strong>
+    <div class="highlight"><pre><span></span><code><span class="err">DELETE</span>
+<span class="err">https</span><span class="p">:</span><span class="c1">//{YOUR_API_ENDPOINT_URL}/live/applications/{APPLICATION_ID}/authorizations/{API_KEY_ID}</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Response</strong></p>
+<ul>
+<li><code>200</code>
+<div class="highlight"><pre><span></span><code><span class="s2">&quot;Delete Successful&quot;</span>
+</code></pre></div></li>
+<li><code>4XX/5XX</code> - See the <a href="../troubleshooting.html">Troubleshooting</a> section for errors.</li>
+</ul>
+</li>
+</ul>
+<h4 id="put-enabledisable-authorization">PUT - Enable/Disable Authorization<a class="headerlink" href="#put-enabledisable-authorization" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Description</strong><ul>
+<li>This operation enables you to enable or disable an API key without deleting it from the database.</li>
+</ul>
+</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>API Gateway authorization caching is enabled in the solution API. It may
+take up to 300 seconds (5 minutes) before a change to the Enabled status of an API
+key is detected by the LambdaAuthorizer Lambda function. To reduce this time,
+you can <a href="https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-caching.md">modify or disable the Authorization Cache</a>. Reducing or removing this cache
+TTL (time-to-live) results in additional queries to the Authorizations DynamoDB
+table and increases costs.</p>
+</div>
+<ul>
+<li>
+<p><strong>Request</strong></p>
+<ul>
+<li><strong>Body</strong><ul>
+<li><strong>Enabled</strong> (<em>Boolean</em>) [Required] - Enabling or Disabling the key.
+<div class="highlight"><pre><span></span><code><span class="err">PUT</span>
+<span class="err">https</span><span class="p">:</span><span class="c1">//{YOUR_API_ENDPOINT_URL}/live/applications/{APPLICATION_ID}/authorizations/{API_KEY_ID}</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;Enabled&quot;</span><span class="o">:</span><span class="w"> </span><span class="no">false</span>
+<span class="p">}</span>
+</code></pre></div></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Response</strong></p>
+<ul>
+<li><code>200</code>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;Enabled&quot;</span><span class="o">:</span><span class="w"> </span><span class="no">false</span>
+<span class="p">}</span>
+</code></pre></div></li>
+<li><code>4XX/5XX</code> - See the <a href="../troubleshooting.html">Troubleshooting</a> section for errors.</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3 id="redshift">Redshift<a class="headerlink" href="#redshift" title="Permanent link">&para;</a></h3>
+<p><code>/redshift/setup</code></p>
+<h4 id="post-set-up-redshift">POST - Set up Redshift<a class="headerlink" href="#post-set-up-redshift" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><strong>Description</strong></p>
+<ul>
+<li>This operation sets up Redshift materialized views from Kinesis during setup process</li>
+</ul>
+</li>
+<li>
+<p><strong>Request</strong>
+    <div class="highlight"><pre><span></span><code><span class="err">POST</span>
+<span class="err">https</span><span class="p">:</span><span class="c1">//{YOUR_API_ENDPOINT_URL}/live/applications/redshift/setup</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Response</strong></p>
+<ul>
+<li>
+<p><code>200</code> - Completes process and returns OK. Can be called multiple times without issues. See <a href="../getting-started.html">Getting Started</a> for details on the process.
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="p">}</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><code>4XX/5XX</code> - See the <a href="../troubleshooting.html">Troubleshooting</a> section for errors.</p>
+</li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../getting-started.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Getting Started">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Getting Started
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="schema-reference.html" class="md-footer__link md-footer__link--next" aria-label="Next: Schema Reference">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Schema Reference
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 Amazon Web Services
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [{"toc": {"integrate": true, "permalink": true, "sticky": true}}, "content.code.annotate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight", "search.share", "navigation.sections", "navigation.indexes", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.expand", "navigation.instant", "navigation.footer", "toc.integrate", {"emoji_index": "twemoji"}], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1691 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="This Guidance helps game developers deploy a modular, serverless analytics pipeline for ingesting, storing, processing, and visualizing telemetry data from game clients and backend services. It supports real-time and batch analytics use cases. Using AWS Cloud Development Kit, developers can continuously integrate and deploy the pipeline across multiple AWS accounts and Regions. The serverless services offer cost-efficiency and ease of setup. After deployment, teams can ingest data and make informed decisions to enhance their games faster.">
+      
+      
+        <meta name="author" content="Amazon Web Services">
+      
+      
+        <link rel="canonical" href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/upgrading/v2-migration.html">
+      
+      
+        <link rel="prev" href="v2-to-v3-changes.html">
+      
+      
+        <link rel="next" href="../component-deep-dive.html">
+      
+      
+      <link rel="icon" href="../media/aws.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.20">
+    
+    
+      
+        <title>Upgrade Guide - Guidance for Game Analytics Pipeline on AWS</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.e53b48f4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+        <script src="https://unpkg.com/iframe-worker/shim"></script>
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/themes.css">
+    
+      <link rel="stylesheet" href="../stylesheets/hero.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<!-- Determine title -->
+
+<!-- prettier-ignore -->
+
+
+
+
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#upgrading-guidance-for-game-analytics-pipeline-to-version-3" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../index.html" title="Guidance for Game Analytics Pipeline on AWS" class="md-header__button md-logo" aria-label="Guidance for Game Analytics Pipeline on AWS" data-md-component="logo">
+      
+  <img src="../media/aws-logo-white.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Guidance for Game Analytics Pipeline on AWS
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Upgrade Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 2C5.13 2 2 5.13 2 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7M6 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H6zm13-8h-2l-3.2 9h1.9l.7-2h3.2l.7 2h1.9zm-2.15 5.65L18 15l1.15 3.65z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../references/api-reference.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="v2-to-v3-changes.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Upgrading
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../component-deep-dive.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Component Deep Dive
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../customizations.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Customizations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../design-considerations.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Design Considerations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../troubleshooting.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../roadmap.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../security.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Security
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  AWS Landing Page
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="Guidance for Game Analytics Pipeline on AWS" class="md-nav__button md-logo" aria-label="Guidance for Game Analytics Pipeline on AWS" data-md-component="logo">
+      
+  <img src="../media/aws-logo-white.svg" alt="logo">
+
+    </a>
+    Guidance for Game Analytics Pipeline on AWS
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    References
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            References
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/api-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/schema-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Schema Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/config-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Config Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/output-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Output Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/ops-dashboard-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Operational Dashboard Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/file-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    File/Folder Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Upgrading
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Upgrading
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="v2-to-v3-changes.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Upgrade Guide
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="v2-migration.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Upgrade Guide
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table of Contents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-differences-between-v2-and-v3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Differences Between V2 and V3
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Differences Between V2 and V3">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#managed-service-for-apache-flink" class="md-nav__link">
+    <span class="md-ellipsis">
+      Managed Service for Apache Flink
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-apache-iceberg" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is Apache Iceberg?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Features
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#knowledge-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Knowledge Requirements
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backup
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Migration Steps
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Migration Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#amazon-athena" class="md-nav__link">
+    <span class="md-ellipsis">
+      Amazon Athena
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-glue" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWS Glue
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-migration-data-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Post-Migration Data Validation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-Migration Data Validation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#record-count-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Record Count Validation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-integrity-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Integrity Checks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-consistency-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Consistency Validation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sample-record-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sample Record Comparison
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-distribution-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Distribution Check
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Schema Validation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../component-deep-dive.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Component Deep Dive
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../customizations.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Customizations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-considerations.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Design Considerations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Security
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AWS Landing Page
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="upgrading-guidance-for-game-analytics-pipeline-to-version-3">Upgrading Guidance for Game Analytics Pipeline to Version 3<a class="headerlink" href="#upgrading-guidance-for-game-analytics-pipeline-to-version-3" title="Permanent link">&para;</a></h1>
+<p>This implementation guide outlines the steps required to migrate from V2 to V3 of the Game Analytics Pipeline on AWS, with a specific focus on the data migration from Parquet to Apache Iceberg format.</p>
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Overview</li>
+<li>Key Differences Between V2 and V3</li>
+<li>Prerequisites</li>
+<li>Data Migration Considerations: Parquet to Iceberg</li>
+<li>Migration Steps</li>
+<li>Post-Migration Validation</li>
+<li>Troubleshooting </li>
+</ol>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The Game Analytics Pipeline on AWS has evolved from V2 to V3, with one of the most significant changes being the migration from Parquet to Apache Iceberg as the data storage format. This guide provides a comprehensive approach to implementing this migration while ensuring data integrity and minimal disruption to analytics workflows.</p>
+<h2 id="key-differences-between-v2-and-v3">Key Differences Between V2 and V3<a class="headerlink" href="#key-differences-between-v2-and-v3" title="Permanent link">&para;</a></h2>
+<h3 id="managed-service-for-apache-flink">Managed Service for Apache Flink<a class="headerlink" href="#managed-service-for-apache-flink" title="Permanent link">&para;</a></h3>
+<p>Amazon Kinesis Data Analytics for SQL applications, which is used in the original architecture of the Game Analytics Pipeline on AWS, is being discontinued. You can learn more about the discontinuation using the following resources.</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/kinesisanalytics/latest/dev/discontinuation.md">Amazon Kinesis Data Analytics for SQL Applications discontinuation</a></li>
+</ul>
+<p>Amazon Managed Service for Apache Flink is a serverless, low-latency, highly scalable, and highly available real-time stream processing service. Amazon Managed Service for Apache Flink replaces Amazon Kinesis Data Analytics for SQL Applications in the Game Analytics Pipeline on AWS architecture.</p>
+<p>Amazon Web Services has published a guide and examples to assist with the migration to Flink. The resources are accessible using the links below.</p>
+<ul>
+<li><a href="https://aws.amazon.com/blogs/big-data/migrate-from-amazon-kinesis-data-analytics-for-sql-to-amazon-managed-service-for-apache-flink-and-amazon-managed-service-for-apache-flink-studio/">Migrate from Amazon Kinesis Data Analytics for SQL to Amazon Managed Service for Apache Flink and Amazon Managed Service for Apache Flink Studio</a></li>
+<li><a href="https://docs.aws.amazon.com/kinesisanalytics/latest/dev/migrating-to-kda-studio-overview.html">Migrating to Managed Service for Apache Flink Studio Examples</a></li>
+</ul>
+<h3 id="what-is-apache-iceberg">What is Apache Iceberg?<a class="headerlink" href="#what-is-apache-iceberg" title="Permanent link">&para;</a></h3>
+<p>Apache Iceberg is an Open Table Format (OTF) for large analytic datasets that provides significant advantages over traditional file formats like Parquet when used alone. It maintains tables through metadata that tracks 
+all data files within a table, enabling schema evolution, hidden partitioning, time travel capabilities, and ACID transactions. Unlike traditional Hive-style partitioning, Iceberg uses a high-performance format that handles partition evolution and complex types while supporting full SQL queries. It was designed to solve performance and reliability issues in large tables, offering improved query planning, reliable writes with atomic commits, and concurrent reads during writes. Iceberg works with various processing engines including Spark, Trino, PrestoDB, Flink, and Hive, making it a versatile choice for modern data lake architectures. Its ability to provide snapshot isolation, schema evolution without table rewrites, and partition evolution without data migration makes it particularly valuable for organizations managing large-scale analytics workloads that require both flexibility and performance.</p>
+<h3 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Schema evolution</li>
+<li>Hidden partitioning</li>
+<li>Time travel capabilities</li>
+<li>ACID transactions</li>
+<li>Improved query performance</li>
+<li>Compatibility with various processing engines</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>V2 (Parquet)</th>
+<th>V3 (Iceberg)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data Format</td>
+<td>Parquet files</td>
+<td>Apache Iceberg (Iceberg managed parquet using Amazon S3 as underlying storage)</td>
+</tr>
+<tr>
+<td>Schema Evolution</td>
+<td>Limited, requires table recreation and schema validations</td>
+<td>Seamless schema evolution</td>
+</tr>
+<tr>
+<td>Time Travel</td>
+<td>Not supported</td>
+<td>Supported (query data at specific points in time)</td>
+</tr>
+<tr>
+<td>Transactions</td>
+<td>Not supported</td>
+<td>Supported</td>
+</tr>
+<tr>
+<td>Partitioning</td>
+<td>Explicit partitioning</td>
+<td>Hidden partitioning</td>
+</tr>
+<tr>
+<td>Query Performance</td>
+<td>Good</td>
+<td>Improved with metadata and partitioning pruning</td>
+</tr>
+<tr>
+<td>Configuration</td>
+<td>Simple</td>
+<td>Requires iceberg-specific settings</td>
+</tr>
+<tr>
+<td>AWS Glue Integration</td>
+<td>Native</td>
+<td>Requires Glue 3.0+</td>
+</tr>
+<tr>
+<td>Amazon Data Firehose</td>
+<td>Native</td>
+<td>Native</td>
+</tr>
+</tbody>
+</table>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<p>Before beginning the migration, ensure you have:</p>
+<h3 id="knowledge-requirements">Knowledge Requirements<a class="headerlink" href="#knowledge-requirements" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Familiarity with AWS services and GAP v2</li>
+<li>Basic understanding of data lake concepts</li>
+<li>Understanding of Apache Iceberg principles</li>
+</ul>
+<h3 id="backup">Backup<a class="headerlink" href="#backup" title="Permanent link">&para;</a></h3>
+<p>Full backup of existing Parquet data: You can replicate your data or fully copy the Amazon S3 bucket in order to assure that your existing data is secure and can be recovered for roll-back purposes.</p>
+<h2 id="migration-steps">Migration Steps<a class="headerlink" href="#migration-steps" title="Permanent link">&para;</a></h2>
+<p>Data Backup for existing events from V2 using AWS CLI for Amazon S3 to Amazon S3 Copy</p>
+<p>This is the most straightforward approach for a one-time backup but feel free to use any back strategy you have implemented:</p>
+<div class="highlight"><pre><span></span><code># Sync all Parquet files from source to backup mantaining the entire data structure 
+aws s3 sync s3://source-analytics-bucket/ s3://backup-bucket/parquet-backup/
+</code></pre></div>
+<p>Prepare the Environment and Update Configuration. </p>
+<p>For migration purposes is required to have both versions installed during the migration from parquet to iceberg. Follow the deployment instructions in the manual (link). You have to enable Iceberg support in the configuration by setting <code>ENABLE_APACHE_ICEBERG_SUPPORT: true</code> in your configuration file.</p>
+<div class="highlight"><pre><span></span><code>ENABLE_APACHE_ICEBERG_SUPPORT: true,
+</code></pre></div>
+<p>Data Migration: Parquet to Iceberg</p>
+<p>There are two easy ways to migrate your data depending on the current AWS Analytics services stack you are using:</p>
+<h3 id="amazon-athena">Amazon Athena<a class="headerlink" href="#amazon-athena" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>INSERT INTO &quot;database&quot;.&quot;raw_events_table_v3&quot; SELECT * FROM &quot;database&quot;.&quot;raw_events_table_v2&quot;
+</code></pre></div>
+<p>You can use the same for Apache Iceberg table:</p>
+<div class="highlight"><pre><span></span><code>INSERT INTO &quot;database&quot;.&quot;iceberg_table&quot;
+SELECT event_id, event_type, event_name, event_version, event_timestamp, app_version, application_id, application_name, event_data, metadata 
+FROM &quot;database&quot;.&quot;raw_events_table&quot;
+</code></pre></div>
+<h3 id="aws-glue">AWS Glue<a class="headerlink" href="#aws-glue" title="Permanent link">&para;</a></h3>
+<p>The migration from Parquet to Iceberg involves converting existing data and updating table definitions. The V2 pipeline includes a Glue job (<code>convert_game_events_to_iceberg.py</code>) specifically for this purpose.</p>
+<ol>
+<li>
+<p>Data Migration Process:</p>
+<ol>
+<li>Create Iceberg Tables**: The CDK deployment will create new Iceberg tables in the AWS Glue Data Catalog.</li>
+<li>Run the Conversion Job**: Execute the Glue job to convert existing Parquet data to Iceberg format pointing to recently created tables.</li>
+</ol>
+</li>
+<li>
+<p>Key Considerations During Migration:</p>
+<ol>
+<li>Partitioning: Apache Iceberg uses hidden partitioning and represents a significant shift from traditional Hive-style partitioning that you might be familiar with in Parquet-based data lakes. When you migrate to Iceberg, one of the most noticeable changes is that you will no longer see the explicit partition folders in your amazon S3 bucket structure. Read more <a href="https://iceberg.apache.org/docs/1.4.0/partitioning/">here</a><ol>
+<li>V2 (Parquet)**: Explicit partitioning by, <code>year</code>, <code>month</code>, <code>day</code></li>
+<li>V3 (Iceberg)**: Hidden partitioning managed by Iceberg, for improved query performance</li>
+</ol>
+</li>
+<li>Schema Handling: Apache Iceberg handles schema evolution differently than Parquet. The migration process preserves the schema but the date column is not required for partitioning anymore. Read more <a href="https://iceberg.apache.org/docs/latest/evolution/#partition-evolution">here</a></li>
+</ol>
+</li>
+<li>Rollback Plan:<ol>
+<li>If issues arise during migration, follow these rollback steps:<ol>
+<li>Revert to Parquet Tables**:</li>
+<li>Update application configurations to use original Parquet tables</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>Validate data access and integrity</li>
+</ol>
+<h2 id="post-migration-data-validation">Post-Migration Data Validation<a class="headerlink" href="#post-migration-data-validation" title="Permanent link">&para;</a></h2>
+<p>You can create a post-migration validation framework that includes the following key verification methods but not limited to include your own validations: </p>
+<ul>
+<li>Record Count Validation: Compares the total number of records between source and target systems to ensure completeness.</li>
+<li>Data Integrity Checks: Examine critical columns for null values and identify duplicate records that might indicate migration issues.</li>
+<li>Data Consistency Validation: Compares aggregate values like sums, minimums, maximums, and averages to verify computational accuracy.</li>
+<li>Sample Record Comparison: Inspects specific records by their identifiers to confirm detailed data fidelity.</li>
+<li>Data Distribution Check: Analyzes the frequency distribution of categorical data to ensure proportional representation was maintained.</li>
+<li>Schema Validation: Confirms that column names, data types, and structural elements were correctly transferred.</li>
+<li>Reconciliation Reports: summarize the validation results including success rates, failed records, data quality, metrics, and performance statistics to provide stakeholders with a comprehensive view of migration success.</li>
+</ul>
+<h3 id="record-count-validation">Record Count Validation<a class="headerlink" href="#record-count-validation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>sql
+-- Parquet table count
+SELECT COUNT(*) AS parquet_count FROM &quot;database&quot;.&quot;parquet_table&quot;;
+
+-- Iceberg table count
+SELECT COUNT(*) AS iceberg_count FROM &quot;database&quot;.&quot;iceberg_table&quot;;
+</code></pre></div>
+<h3 id="data-integrity-checks">Data Integrity Checks<a class="headerlink" href="#data-integrity-checks" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>sql
+-- Check nulls in Parquet table
+SELECT 
+  SUM(CASE WHEN id IS NULL THEN 1 ELSE 0 END) AS null_id,
+  SUM(CASE WHEN customer_id IS NULL THEN 1 ELSE 0 END) AS null_customer_id,
+  SUM(CASE WHEN transaction_date IS NULL THEN 1 ELSE 0 END) AS null_transaction_date
+FROM &quot;database&quot;.&quot;parquet_table&quot;;
+
+-- Check nulls in Iceberg table
+SELECT 
+  SUM(CASE WHEN id IS NULL THEN 1 ELSE 0 END) AS null_id,
+  SUM(CASE WHEN customer_id IS NULL THEN 1 ELSE 0 END) AS null_customer_id,
+  SUM(CASE WHEN transaction_date IS NULL THEN 1 ELSE 0 END) AS null_transaction_date
+FROM &quot;database&quot;.&quot;iceberg_table&quot;;
+</code></pre></div>
+<h3 id="data-consistency-validation">Data Consistency Validation<a class="headerlink" href="#data-consistency-validation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>sql
+-- Parquet metrics
+SELECT 
+  SUM(amount) AS sum_amount,
+  MIN(amount) AS min_amount,
+  MAX(amount) AS max_amount,
+  AVG(amount) AS avg_amount,
+  COUNT(DISTINCT customer_id) AS distinct_customers
+FROM &quot;database&quot;.&quot;parquet_table&quot;;
+
+-- Iceberg metrics
+SELECT 
+  SUM(amount) AS sum_amount,
+  MIN(amount) AS min_amount,
+  MAX(amount) AS max_amount,
+  AVG(amount) AS avg_amount,
+  COUNT(DISTINCT customer_id) AS distinct_customers
+FROM &quot;database&quot;.&quot;iceberg_table&quot;;
+</code></pre></div>
+<h3 id="sample-record-comparison">Sample Record Comparison<a class="headerlink" href="#sample-record-comparison" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>sql
+-- Sample from Parquet
+SELECT * 
+FROM &quot;database&quot;.&quot;parquet_table&quot;
+WHERE id IN (&#39;12345&#39;, &#39;67890&#39;, &#39;24680&#39;, &#39;13579&#39;, &#39;97531&#39;)
+ORDER BY id;
+
+-- Sample from Iceberg
+SELECT * 
+FROM &quot;database&quot;.&quot;iceberg_table&quot;
+WHERE id IN (&#39;12345&#39;, &#39;67890&#39;, &#39;24680&#39;, &#39;13579&#39;, &#39;97531&#39;)
+ORDER BY id;
+</code></pre></div>
+<h3 id="data-distribution-check">Data Distribution Check<a class="headerlink" href="#data-distribution-check" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>sql
+-- Parquet distribution
+SELECT 
+  status,
+  COUNT(*) AS record_count,
+  ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM &quot;database&quot;.&quot;parquet_table&quot;), 2) AS percentage
+FROM &quot;database&quot;.&quot;parquet_table&quot;
+GROUP BY status
+ORDER BY COUNT(*) DESC;
+
+-- Iceberg distribution
+SELECT 
+  status,
+  COUNT(*) AS record_count,
+  ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM &quot;database&quot;.&quot;iceberg_table&quot;), 2) AS percentage
+FROM &quot;database&quot;.&quot;iceberg_table&quot;
+GROUP BY status
+ORDER BY COUNT(*) DESC;
+</code></pre></div>
+<h3 id="schema-validation">Schema Validation<a class="headerlink" href="#schema-validation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>sql
+-- Parquet schema
+SELECT 
+  column_name,
+  data_type,
+  ordinal_position
+FROM information_schema.columns
+WHERE table_schema = &#39;database&#39; 
+AND table_name = &#39;parquet_table&#39;
+ORDER BY ordinal_position;
+
+-- Iceberg schema
+SELECT 
+  column_name,
+  data_type,
+  ordinal_position
+FROM information_schema.columns
+WHERE table_schema = &#39;database&#39; 
+AND table_name = &#39;iceberg_table&#39;
+ORDER BY ordinal_position;
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="v2-to-v3-changes.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Changelog">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Changelog
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../component-deep-dive.html" class="md-footer__link md-footer__link--next" aria-label="Next: Component Deep Dive">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Component Deep Dive
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 Amazon Web Services
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [{"toc": {"integrate": true, "permalink": true, "sticky": true}}, "content.code.annotate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight", "search.share", "navigation.sections", "navigation.indexes", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.expand", "navigation.instant", "navigation.footer", "toc.integrate", {"emoji_index": "twemoji"}], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

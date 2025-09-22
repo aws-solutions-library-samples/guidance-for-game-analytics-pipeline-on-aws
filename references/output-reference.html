@@ -1,0 +1,1472 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="This Guidance helps game developers deploy a modular, serverless analytics pipeline for ingesting, storing, processing, and visualizing telemetry data from game clients and backend services. It supports real-time and batch analytics use cases. Using AWS Cloud Development Kit, developers can continuously integrate and deploy the pipeline across multiple AWS accounts and Regions. The serverless services offer cost-efficiency and ease of setup. After deployment, teams can ingest data and make informed decisions to enhance their games faster.">
+      
+      
+        <meta name="author" content="Amazon Web Services">
+      
+      
+        <link rel="canonical" href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/references/output-reference.html">
+      
+      
+        <link rel="prev" href="config-reference.html">
+      
+      
+        <link rel="next" href="ops-dashboard-reference.html">
+      
+      
+      <link rel="icon" href="../media/aws.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.20">
+    
+    
+      
+        <title>Output Reference - Guidance for Game Analytics Pipeline on AWS</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.e53b48f4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+        <script src="https://unpkg.com/iframe-worker/shim"></script>
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/themes.css">
+    
+      <link rel="stylesheet" href="../stylesheets/hero.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<!-- Determine title -->
+
+<!-- prettier-ignore -->
+
+
+
+
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#output-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../index.html" title="Guidance for Game Analytics Pipeline on AWS" class="md-header__button md-logo" aria-label="Guidance for Game Analytics Pipeline on AWS" data-md-component="logo">
+      
+  <img src="../media/aws-logo-white.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Guidance for Game Analytics Pipeline on AWS
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Output Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 2C5.13 2 2 5.13 2 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7M6 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H6zm13-8h-2l-3.2 9h1.9l.7-2h3.2l.7 2h1.9zm-2.15 5.65L18 15l1.15 3.65z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="api-reference.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../upgrading/v2-to-v3-changes.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Upgrading
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../component-deep-dive.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Component Deep Dive
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../customizations.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Customizations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../design-considerations.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Design Considerations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../troubleshooting.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../roadmap.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../security.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Security
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  AWS Landing Page
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="Guidance for Game Analytics Pipeline on AWS" class="md-nav__button md-logo" aria-label="Guidance for Game Analytics Pipeline on AWS" data-md-component="logo">
+      
+  <img src="../media/aws-logo-white.svg" alt="logo">
+
+    </a>
+    Guidance for Game Analytics Pipeline on AWS
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aws-solutions-library-samples/guidance-for-game-analytics-pipeline-on-aws
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    References
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            References
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="schema-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Schema Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="config-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Config Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Output Reference
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="output-reference.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Output Reference
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#admin-api-access-policy-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Admin API Access Policy Name
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analytics-bucket-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Analytics Bucket Name
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      API Endpoint
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-gateway-execution-logs-link" class="md-nav__link">
+    <span class="md-ellipsis">
+      API Gateway Execution Logs Link
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#applications-table-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Applications Table Name
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flink-app-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Flink App Name
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#game-events-database-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Game Events Database Name
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#game-events-etl-job-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Game Events ETL Job Name
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#game-events-etl-iceberg-job-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Game Events ETL Iceberg Job Name
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#game-events-stream-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Game Events Stream Name
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#glue-workflow-console-link" class="md-nav__link">
+    <span class="md-ellipsis">
+      Glue Workflow Console Link
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#iceberg-setup-job-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Iceberg Setup Job Name
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metric-output-stream-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metric Output Stream Name
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#opensearch-admin-assume-link" class="md-nav__link">
+    <span class="md-ellipsis">
+      OpenSearch Admin Assume Link
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#opensearch-dashboard-link" class="md-nav__link">
+    <span class="md-ellipsis">
+      OpenSearch Dashboard Link
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipeline-operations-dashboard-link" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pipeline Operations Dashboard Link
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ops-dashboard-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Operational Dashboard Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="file-reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    File/Folder Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Upgrading
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Upgrading
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upgrading/v2-to-v3-changes.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upgrading/v2-migration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Upgrade Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../component-deep-dive.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Component Deep Dive
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../customizations.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Customizations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-considerations.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Design Considerations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Security
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://aws.amazon.com/solutions/guidance/game-analytics-pipeline-on-aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AWS Landing Page
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="output-reference">Output Reference<a class="headerlink" href="#output-reference" title="Permanent link">&para;</a></h1>
+<p>This page explains the outputs displayed by the stack after a successful deployment. Due to differences in naming convention, the format of the outputs differs between <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/outputs-section-structure.html">AWS Cloud Development Kit</a> and <a href="https://developer.hashicorp.com/terraform/language/style#outputs">Hashicorp Terraform</a>, however, the meaning of each output is consistent across both versions.</p>
+<h2 id="admin-api-access-policy-name">Admin API Access Policy Name<a class="headerlink" href="#admin-api-access-policy-name" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.AdminApiAccessPolicyName</code></li>
+<li><strong>Terraform Output:</strong> <code>admin_api_access_policy_name</code></li>
+<li><strong>Description:</strong> The name of the IAM Managed Policy that will allow an IAM entity to execute the Admin API</li>
+</ul>
+<h2 id="analytics-bucket-name">Analytics Bucket Name<a class="headerlink" href="#analytics-bucket-name" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.AnalyticsBucketName</code></li>
+<li><strong>Terraform Output:</strong> <code>analytics_bucket_name</code></li>
+<li><strong>Description:</strong> The name of the S3 Bucket used for game analytics storage</li>
+</ul>
+<h2 id="api-endpoint">API Endpoint<a class="headerlink" href="#api-endpoint" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.ApiEndpoint</code></li>
+<li><strong>Terraform Output:</strong> <code>api_endpoint</code></li>
+<li><strong>Description:</strong> The base URL of the Game Analytics API. This is the endpoint used to perform administration actions and recieve events</li>
+</ul>
+<h2 id="api-gateway-execution-logs-link">API Gateway Execution Logs Link<a class="headerlink" href="#api-gateway-execution-logs-link" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.ApiGatewayExecutionLogsLink</code></li>
+<li><strong>Terraform Output:</strong> <code>api_gateway_execution_logs_link</code></li>
+<li><strong>Description:</strong> A web link to the CloudWatch logs emitted from API Gateway</li>
+</ul>
+<h2 id="applications-table-name">Applications Table Name<a class="headerlink" href="#applications-table-name" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.ApplicationsTableName</code></li>
+<li><strong>Terraform Output:</strong> <code>applications_table_name</code></li>
+<li><strong>Description:</strong> The name of the DynamoDB configuration table that stores information about the registered applications allowed by the solution pipeline</li>
+</ul>
+<h2 id="flink-app-name">Flink App Name<a class="headerlink" href="#flink-app-name" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.FlinkAppName</code></li>
+<li><strong>Terraform Output:</strong> <code>flink_app_name</code></li>
+<li><strong>Description:</strong> The name of the Amazon Managed Service for Apache Flink application. This is only enabled when <a href="config-reference.html#data-platform-options">REAL_TIME_ANALYTICS</a> is set to <code>true</code>.</li>
+</ul>
+<h2 id="game-events-database-name">Game Events Database Name<a class="headerlink" href="#game-events-database-name" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.GameEventsDatabaseName</code></li>
+<li><strong>Terraform Output:</strong> <code>game_events_database_name</code></li>
+<li><strong>Description:</strong> The name of the Glue Data Catalog database where game events are stored. This is only enabled when <a href="config-reference.html#data-platform-options">DATA_STACK</a> is set to <code>"DATA_LAKE"</code>.</li>
+</ul>
+<h2 id="game-events-etl-job-name">Game Events ETL Job Name<a class="headerlink" href="#game-events-etl-job-name" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.GameEventsEtlJobName</code></li>
+<li><strong>Terraform Output:</strong> <code>game_events_etl_job_name</code></li>
+<li><strong>Description:</strong> The name of the ETL job used to move data from the raw events table to the processed events table. This is only enabled when <a href="config-reference.html#data-platform-options">DATA_STACK</a> is set to <code>"DATA_LAKE"</code>.</li>
+</ul>
+<h2 id="game-events-etl-iceberg-job-name">Game Events ETL Iceberg Job Name<a class="headerlink" href="#game-events-etl-iceberg-job-name" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.GameEventsIcebergJobName</code></li>
+<li><strong>Terraform Output:</strong> <code>game_events_etl_iceberg_job_name</code></li>
+<li><strong>Description:</strong> The name of the ETL job used to move data from an existing Game Analytics Pipeline Hive table to a new Apache Iceberg table. This is only enabled when <a href="config-reference.html#data-platform-options">DATA_STACK</a> is set to <code>"DATA_LAKE"</code> and when <a href="config-reference.html#data-platform-options">ENABLE_APACHE_ICEBERG_SUPPORT</a> is set to <code>true</code>.</li>
+</ul>
+<h2 id="game-events-stream-name">Game Events Stream Name<a class="headerlink" href="#game-events-stream-name" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.GameEventsStreamName</code></li>
+<li><strong>Terraform Output:</strong> <code>game_events_stream_name</code></li>
+<li><strong>Description:</strong> The name of the Kinesis Data Stream for ingestion of raw events. This is only enabled when <a href="config-reference.html#data-platform-options">INGEST_MODE</a> is set to <code>"KINESIS_DATA_STREAMS"</code>.</li>
+</ul>
+<h2 id="glue-workflow-console-link">Glue Workflow Console Link<a class="headerlink" href="#glue-workflow-console-link" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.GlueWorkflowConsoleLink</code></li>
+<li><strong>Terraform Output:</strong> <code>glue_workflow_console_link</code></li>
+<li><strong>Description:</strong> A web link to the AWS Glue Workflows console page to view details about the deployed workflow</li>
+</ul>
+<h2 id="iceberg-setup-job-name">Iceberg Setup Job Name<a class="headerlink" href="#iceberg-setup-job-name" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.IcebergSetupJobName</code></li>
+<li><strong>Terraform Output:</strong> <code>iceberg_setup_job_name</code></li>
+<li><strong>Description:</strong> The name of the Glue Job used to configure partitioning on a newly created Apache Iceberg table. This is only enabled when <a href="config-reference.html#data-platform-options">DATA_STACK</a> is set to <code>"DATA_LAKE"</code>.</li>
+</ul>
+<h2 id="metric-output-stream-name">Metric Output Stream Name<a class="headerlink" href="#metric-output-stream-name" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.MetricOutputStreamName</code></li>
+<li><strong>Terraform Output:</strong> <code>metric_output_stream_name</code></li>
+<li><strong>Description:</strong> The name of the intermediary Amazon Kinesis Data Stream between Managed Service for Apache Flink and OpenSearch Ingestion. This is only enabled when <a href="config-reference.html#data-platform-options">REAL_TIME_ANALYTICS</a> is set to <code>true</code>.</li>
+</ul>
+<h2 id="opensearch-admin-assume-link">OpenSearch Admin Assume Link<a class="headerlink" href="#opensearch-admin-assume-link" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.OpenSearchAdminAssumeLink</code></li>
+<li><strong>Terraform Output:</strong> <code>opensearch_admin_assume_link</code></li>
+<li><strong>Description:</strong> Link to assume the role of an OpenSearch admin.  This is only enabled when <a href="config-reference.html#data-platform-options">REAL_TIME_ANALYTICS</a> is set to <code>true</code>.</li>
+</ul>
+<h2 id="opensearch-dashboard-link">OpenSearch Dashboard Link<a class="headerlink" href="#opensearch-dashboard-link" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.OpenSearchDashboardLink</code></li>
+<li><strong>Terraform Output:</strong> <code>opensearch_dashboard_link</code></li>
+<li><strong>Description:</strong> A link to the OpenSearch UI Application to view real-time custom metrics. This is only enabled when <a href="config-reference.html#data-platform-options">REAL_TIME_ANALYTICS</a> is set to <code>true</code>.</li>
+</ul>
+<h2 id="pipeline-operations-dashboard-link">Pipeline Operations Dashboard Link<a class="headerlink" href="#pipeline-operations-dashboard-link" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CDK Output:</strong> <code>CentralizedGameAnalytics.PipelineOperationsDashboardLink</code></li>
+<li><strong>Terraform Output:</strong> <code>pipeline_operations_dashboard_link</code></li>
+<li><strong>Description:</strong> A web link to the CloudWatch dashboard to monitor the health of the pipeline</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="config-reference.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Config Reference">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Config Reference
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="ops-dashboard-reference.html" class="md-footer__link md-footer__link--next" aria-label="Next: Operational Dashboard Reference">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Operational Dashboard Reference
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 Amazon Web Services
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [{"toc": {"integrate": true, "permalink": true, "sticky": true}}, "content.code.annotate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight", "search.share", "navigation.sections", "navigation.indexes", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.expand", "navigation.instant", "navigation.footer", "toc.integrate", {"emoji_index": "twemoji"}], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>
