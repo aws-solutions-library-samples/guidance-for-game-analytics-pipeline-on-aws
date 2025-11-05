@@ -7,6 +7,7 @@ export interface GameAnalyticsPipelineConfig {
   DATA_STACK: "DATA_LAKE" | "REDSHIFT";
   REAL_TIME_ANALYTICS: boolean;
   ENABLE_APACHE_ICEBERG_SUPPORT: boolean;
+  ENABLE_QUICKSIGHT: boolean;
 
   EVENTS_DATABASE: string;
   RAW_EVENTS_TABLE: string;
