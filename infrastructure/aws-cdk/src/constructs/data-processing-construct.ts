@@ -43,6 +43,7 @@ export class DataProcessingConstruct extends Construct {
   public readonly gameEventsEtlJob: glueCfn.CfnJob;
   public readonly gameEventsIcebergJob: glueCfn.CfnJob;
   public readonly icebergSetupJob: glueCfn.CfnJob;
+  public readonly gameEventsEtlRole: iam.Role;
 
   constructor(parent: Construct, name: string, props: DataProcessingConstructProps) {
     super(parent, name);
@@ -534,5 +535,6 @@ export class DataProcessingConstruct extends Construct {
     this.gameEventsEtlJob = gameEventsEtlJob;
     this.gameEventsIcebergJob = gameEventsIcebergJob;
     this.icebergSetupJob = this.icebergSetupJob;
+    this.gameEventsEtlRole = gameEventsEtlRole;
   }
 }

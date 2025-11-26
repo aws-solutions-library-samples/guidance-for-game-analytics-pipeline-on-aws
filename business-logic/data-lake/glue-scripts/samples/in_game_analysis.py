@@ -57,10 +57,7 @@ OUTPUT_TRADE_TABLE_NAME = args["OUTPUT_TRADE_TABLE_NAME"]
 print(f"The configured table for this job is {INPUT_DB_NAME}.{INPUT_TABLE_NAME}")
 
 spark.sql(f"""
-    CREATE TABLE glue_catalog.{OUTPUT_DB_NAME}.{OUTPUT_ACTION_TABLE_NAME}
-    USING iceberg
-    PARTITIONED BY (DAY(event_date))
-    AS 
+    INSERT INTO glue_catalog.{OUTPUT_DB_NAME}.{OUTPUT_ACTION_TABLE_NAME}
     SELECT
         get_json_object(event_data, "$.item") AS item_id,
         get_json_object(event_data, "$.action") AS item_action,
@@ -74,16 +71,14 @@ spark.sql(f"""
 print(f"Created in-game event analysis table {OUTPUT_DB_NAME}.{OUTPUT_ACTION_TABLE_NAME}")
 
 spark.sql(f"""
-    CREATE TABLE glue_catalog.{OUTPUT_DB_NAME}.{OUTPUT_TRADE_TABLE_NAME}
-    USING iceberg
-    PARTITIONED BY (DAY(event_date))
+    INSERT INTO glue_catalog.{OUTPUT_DB_NAME}.{OUTPUT_TRADE_TABLE_NAME}
     SELECT
         get_json_object(event_data, "$.item") AS traded_item,
         get_json_object(event_data, "$.recieved_item") AS received_item,
         CAST(event_timestamp AS DATE) AS event_date,
         app_version,
         COUNT(*) AS occurrences
-    FROM glue_catalog.{INPUT_DB_NAME}.{INPUT_DB_NAME}
+    FROM glue_catalog.{INPUT_DB_NAME}.{INPUT_TABLE_NAME}
     WHERE event_name='item_action'
     AND get_json_object(event_data, "$.action") = 'traded'
     GROUP BY traded_item, received_item, event_date, app_version
