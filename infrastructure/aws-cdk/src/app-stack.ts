@@ -38,6 +38,8 @@ import { RedshiftConstruct } from "./constructs/redshift-construct";
 import { OpenSearchConstruct } from "./constructs/opensearch-construct";
 import { AthenaQueryConstruct } from "./constructs/samples/athena-construct";
 import { DataProcessingConstruct } from "./constructs/data-processing-construct";
+import { GameEventSampleConstruct } from "./constructs/samples/in-game-analysis-construct";
+import { QuickSuiteConstruct } from "./constructs/quicksuite-construct";
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
@@ -462,6 +464,22 @@ export class InfrastructureStack extends cdk.Stack {
           config: props.config,
         }
       );
+
+      // create demo
+      const quicksuite = new QuickSuiteConstruct(this, "QuickSuite", {
+        analyticsBucket: analyticsBucket,
+        config: props.config,
+        gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
+        gameAnalyticsWorkgroup: dataLakeConstruct.gameAnalyticsWorkgroup
+      })
+      const insightsDemo = new GameEventSampleConstruct(this, "Insights", {
+        analyticsBucket: analyticsBucket,
+        config: props.config,
+        gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
+        gameEventsEtlRole: dataProcessingConstruct.gameEventsEtlRole,
+        rawEventsTable: dataLakeConstruct.rawEventsTable,
+        gapDataSource: quicksuite.gapDataSource
+      })
 
       // CFN outputs for given configuration
       new cdk.CfnOutput(this, "GameEventsDatabaseName", {
