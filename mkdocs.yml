@@ -106,7 +106,10 @@ nav:
       - Changelog: upgrading/v2-to-v3-changes.md
       - Upgrade Guide: upgrading/v2-migration.md
   - Component Deep Dive: component-deep-dive.md
-  - Customizations: customizations.md
+  - Customizations:
+    - Customizations: customizations.md
+    - Insights:
+      - Insights: insights/insights.md
   - Design Considerations: design-considerations.md
   - Troubleshooting: troubleshooting.md
   - Roadmap: roadmap.md
