@@ -367,6 +367,8 @@ export class StreamingIngestionConstruct extends Construct {
       firehoseSettings
     );
 
+    gameEventsFirehose.node.addDependency(gamesEventsFirehoseRole);
+
     this.gameEventsFirehose = gameEventsFirehose;
   }
 }
