@@ -75,18 +75,6 @@ export class StreamingIngestionConstruct extends Construct {
 
     var streamAccessPolicy = new iam.PolicyStatement({});
 
-    if (props.gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
-      streamAccessPolicy = new iam.PolicyStatement({
-        actions: [
-          "kinesis:DescribeStream",
-          "kinesis:GetShardIterator",
-          "kinesis:GetRecords",
-          "kinesis:ListShards",
-        ],
-        effect: iam.Effect.ALLOW,
-        resources: [props.gamesEventsStream.streamArn],
-      })
-    }
 
     // Role for firehose
     const gamesEventsFirehoseRole = new iam.Role(
@@ -123,7 +111,6 @@ export class StreamingIngestionConstruct extends Construct {
                 effect: iam.Effect.ALLOW,
                 resources: [props.eventsProcessingFunction.functionArn],
               }),
-              streamAccessPolicy,
               new iam.PolicyStatement({
                 actions: [
                   "glue:GetTable",
@@ -157,6 +144,20 @@ export class StreamingIngestionConstruct extends Construct {
       }
     );
 
+    if (props.gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
+      streamAccessPolicy = new iam.PolicyStatement({
+        actions: [
+          "kinesis:DescribeStream",
+          "kinesis:GetShardIterator",
+          "kinesis:GetRecords",
+          "kinesis:ListShards",
+        ],
+        effect: iam.Effect.ALLOW,
+        resources: [props.gamesEventsStream.streamArn],
+      })
+      gamesEventsFirehoseRole.addToPolicy(streamAccessPolicy);
+    }
+    
     // Prefix to send files to in s3
     const s3TimestampPrefix =
       "year=!{timestamp:YYYY}/month=!{timestamp:MM}/day=!{timestamp:dd}";
