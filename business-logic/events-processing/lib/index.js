@@ -41,7 +41,8 @@ const respond = async (event, context) => {
   for (const record of event.records) {
     try {
       // Kinesis data is base64 encoded so decode here
-      const payload = JSON.parse(Buffer.from(record.data, 'base64'));
+      const eventBase64 = process.env.KAFKA_ENABLED == 1 ? record.kafkaRecordValue : record.data
+      const payload = JSON.parse(Buffer.from(eventBase64, 'base64'));
       const processEvent = await _event.processEvent(payload, record.recordId, context);
       if (processEvent.result === 'Ok') {
         validEvents++;
@@ -55,7 +56,7 @@ const respond = async (event, context) => {
       results.push({
         recordId: record.recordId,
         result: 'ProcessingFailed',
-        data: record.data
+        data: eventBase64
       });
     }
   }

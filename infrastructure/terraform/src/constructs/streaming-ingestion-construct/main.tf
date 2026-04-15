@@ -147,6 +147,18 @@ resource "aws_iam_role_policy" "firehose_delivery_policy" {
           ]
         }
       ] : [],
+      # KMS permissions for Firehose S3 encryption
+      [
+        {
+          Sid    = "KMSPermission"
+          Action = [
+            "kms:GenerateDataKey",
+            "kms:Decrypt"
+          ]
+          Effect   = "Allow"
+          Resource = aws_kms_key.firehose_kms_key.arn
+        }
+      ],
       # Kinesis Data Streams source permissions
       (var.ingest_mode == "KINESIS_DATA_STREAMS") ? [
         {
