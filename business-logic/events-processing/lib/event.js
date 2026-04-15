@@ -60,18 +60,34 @@ class Event {
     try {
       // Extract event object and applicationId string from payload. application_id and event are required or record fails processing
       if (!input.hasOwnProperty('application_id')) {
-        return Promise.reject({
-          recordId: recordId,
-          result: 'ProcessingFailed',
-          data: new Buffer.from(JSON.stringify(input) + '\n').toString('base64')
-        });
+        if (process.env.KAFKA_ENABLED == 1) {
+          return Promise.reject({
+            recordId: recordId,
+            result: 'ProcessingFailed',
+            kafkaRecordValue: new Buffer.from(JSON.stringify(input) + '\n').toString('base64')
+          });
+        } else {
+          return Promise.reject({
+            recordId: recordId,
+            result: 'ProcessingFailed',
+            data: new Buffer.from(JSON.stringify(input) + '\n').toString('base64')
+          });
+        }
       }
       if (!input.hasOwnProperty('event')) {
-        return Promise.reject({
-          recordId: recordId,
-          result: 'ProcessingFailed',
-          data: new Buffer.from(JSON.stringify(input) + '\n').toString('base64')
-        });
+        if (process.env.KAFKA_ENABLED == 1) {
+          return Promise.reject({
+            recordId: recordId,
+            result: 'ProcessingFailed',
+            kafkaRecordValue: new Buffer.from(JSON.stringify(input) + '\n').toString('base64')
+          });
+        } else {
+          return Promise.reject({
+            recordId: recordId,
+            result: 'ProcessingFailed',
+            data: new Buffer.from(JSON.stringify(input) + '\n').toString('base64')
+          });
+        }
       }
       const applicationId = input.application_id;
       const event = input.event;
@@ -147,11 +163,21 @@ class Event {
         transformed_event.application_name = String(application.application_name);
         transformed_event.application_id = String(applicationId);
 
-        return Promise.resolve({
-          recordId: recordId,
-          result: 'Ok',
-          data: new Buffer.from(JSON.stringify(transformed_event) + '\n').toString('base64')
-        });
+        if (process.env.KAFKA_ENABLED == 1) {
+          return Promise.resolve({
+            recordId: recordId,
+            result: 'Ok',
+            kafkaRecordValue: new Buffer.from(JSON.stringify(transformed_event) + '\n').toString('base64')
+          });
+        } else {
+          return Promise.resolve({
+            recordId: recordId,
+            result: 'Ok',
+            data: new Buffer.from(JSON.stringify(transformed_event) + '\n').toString('base64')
+          });
+        }
+
+
       } else {
         /**
          * Handle events from unregistered ("NOT_FOUND") applications
