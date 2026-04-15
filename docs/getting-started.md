@@ -73,7 +73,7 @@ The following resources are required to install, configure, and deploy the game 
 
 	- **[Docker Desktop (local)](https://www.docker.com/products/docker-desktop/) or [Finch](https://runfinch.com/)**
 	- **[Apache Maven](https://maven.apache.org/install.html)**
-	- **AWS Cloud Development Kit (CDK) 2.92 or Terraform**
+	- **AWS Cloud Development Kit (CDK) 2.169.0 and up or Terraform**
 	- **Python >=3.8**
 	- **NodeJS >= 22.0.0**
 
