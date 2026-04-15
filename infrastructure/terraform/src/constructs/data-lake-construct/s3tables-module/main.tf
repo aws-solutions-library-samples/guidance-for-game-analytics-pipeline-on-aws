@@ -43,7 +43,7 @@ resource "awscc_s3tables_table" "event_data_table" {
           id       = 2
           name     = "event_name"
           type     = "string"
-          required = true
+          required = false
         },
         {
           id       = 3
@@ -73,13 +73,13 @@ resource "awscc_s3tables_table" "event_data_table" {
           id       = 7
           name     = "application_name"
           type     = "string"
-          required = true
+          required = false
         },
         {
           id       = 8
           name     = "event_data"
           type     = "string"
-          required = true
+          required = false
         },
         {
           id       = 9
