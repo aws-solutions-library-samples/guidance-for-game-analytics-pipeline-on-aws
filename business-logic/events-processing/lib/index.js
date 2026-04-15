@@ -23,21 +23,21 @@
 
 
 
-const NodeCache = require( 'node-cache');
+const NodeCache = require('node-cache');
 const Event = require('./event.js');
 
 /**
  * Applications table results cache
  * Maintains a local cache of registered Applications in DynamoDB. 
  */
-global.applicationsCache = new NodeCache({stdTTL: process.env.CACHE_TIMEOUT_SECONDS, checkPeriod: 60, maxKeys: 1000, useClones: false});
+global.applicationsCache = new NodeCache({ stdTTL: process.env.CACHE_TIMEOUT_SECONDS, checkPeriod: 60, maxKeys: 1000, useClones: false });
 
 const respond = async (event, context) => {
   let validEvents = 0;
   let invalidEvents = 0;
   let results = [];
   let _event = new Event();
-  
+
   for (const record of event.records) {
     try {
       // Kinesis data is base64 encoded so decode here
@@ -53,11 +53,19 @@ const respond = async (event, context) => {
     } catch (err) {
       console.log(JSON.stringify(err));
       invalidEvents++;
-      results.push({
-        recordId: record.recordId,
-        result: 'ProcessingFailed',
-        data: eventBase64
-      });
+      if (process.env.KAFKA_ENABLED == 1) {
+        return Promise.reject({
+          recordId: recordId,
+          result: 'ProcessingFailed',
+          kafkaRecordValue: eventBase64
+        });
+      } else {
+        return Promise.reject({
+          recordId: recordId,
+          result: 'ProcessingFailed',
+          data: eventBase64
+        });
+      }
     }
   }
   console.log(JSON.stringify({

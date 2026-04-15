@@ -129,7 +129,7 @@ class Event {
           transformed_event.event_version = String(event.event_version);
         }
         if (event.hasOwnProperty('event_timestamp')) {
-          if (convertTimestamp) { 
+          if (convertTimestamp) {
             let newDate = new Date(0);
             newDate.setUTCSeconds(Number(event.event_timestamp));
             transformed_event.event_timestamp = newDate;
@@ -188,20 +188,35 @@ class Event {
 
         // Even though the application_id is not registered, let's add it to the event
         unregistered_format.application_id = String(applicationId);
-
-        return Promise.resolve({
-          recordId: recordId,
-          result: 'Ok',
-          data: new Buffer.from(JSON.stringify(unregistered_format) + '\n').toString('base64')
-        });
+        if (process.env.KAFKA_ENABLED == 1) {
+          return Promise.resolve({
+            recordId: recordId,
+            result: 'Ok',
+            kafkaRecordValue: new Buffer.from(JSON.stringify(unregistered_format) + '\n').toString('base64')
+          });
+        } else {
+          return Promise.resolve({
+            recordId: recordId,
+            result: 'Ok',
+            data: new Buffer.from(JSON.stringify(unregistered_format) + '\n').toString('base64')
+          });
+        }
       }
     } catch (err) {
       console.error(`Error processing record: ${JSON.stringify(err)}`);
-      return Promise.reject({
-        recordId: recordId,
-        result: 'ProcessingFailed',
-        data: new Buffer.from(JSON.stringify(input) + '\n').toString('base64')
-      });
+      if (process.env.KAFKA_ENABLED == 1) {
+        return Promise.reject({
+          recordId: recordId,
+          result: 'ProcessingFailed',
+          kafkaRecordValue: new Buffer.from(JSON.stringify(unregistered_format) + '\n').toString('base64')
+        });
+      } else {
+        return Promise.reject({
+          recordId: recordId,
+          result: 'ProcessingFailed',
+          data: new Buffer.from(JSON.stringify(input) + '\n').toString('base64')
+        });
+      }
     }
   }
 
