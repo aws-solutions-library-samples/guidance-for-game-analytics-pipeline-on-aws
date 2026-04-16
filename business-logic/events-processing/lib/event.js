@@ -234,7 +234,7 @@ class Event {
         return Promise.reject({
           recordId: recordId,
           result: 'ProcessingFailed',
-          kafkaRecordValue: new Buffer.from(JSON.stringify(unregistered_format) + '\n').toString('base64')
+          kafkaRecordValue: new Buffer.from(JSON.stringify(input) + '\n').toString('base64')
         });
       } else {
         return Promise.reject({
