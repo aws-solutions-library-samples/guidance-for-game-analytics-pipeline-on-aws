@@ -1,6 +1,6 @@
 {
 	"name": "AWS CDK",
-	"image": "mcr.microsoft.com/devcontainers/python:1-3.11-bullseye",
+	"image": "mcr.microsoft.com/devcontainers/python:3-3.13-bookworm",
 	"remoteUser": "vscode",
 	"features": {
 		"ghcr.io/devcontainers/features/aws-cli:1": {
@@ -10,7 +10,7 @@
 			"moby": true,
 			"installDockerBuildx": true,
 			"version": "latest",
-			"dockerDashComposeVersion": "v1"
+			"dockerDashComposeVersion": "v2"
 		},
 		"ghcr.io/devcontainers-extra/features/aws-cdk:2": {
 			"version": "2.169.0"

@@ -25,9 +25,9 @@ def exit_on_failure(exit_code, msg):
         exit(exit_code)
 
 
-npm_cmd = shutil.which("npm")
-npx_cmd = shutil.which("npx")
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
-cmd = [npm_cmd, "install"]
+npm_cmd = shutil.which("npm")
+cmd = [npm_cmd, "install", "--prefix", dir_path]
 proc = subprocess.run(cmd, stderr=subprocess.STDOUT, shell=False)
-exit_on_failure(proc.returncode, "Cdk npm install failed")
+exit_on_failure(proc.returncode, "Web app npm install failed")
