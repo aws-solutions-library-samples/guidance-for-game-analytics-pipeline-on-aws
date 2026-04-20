@@ -22,9 +22,10 @@ module "events_processing_function" {
   tracing_mode = "PassThrough"
 
   environment_variables = {
-      APPLICATIONS_TABLE    = var.applications_table_name
-      CACHE_TIMEOUT_SECONDS = "60"
-      CONVERT_TIMESTAMP     = var.iceberg_enabled ? "true" : "false"
+    APPLICATIONS_TABLE    = var.applications_table_name
+    CACHE_TIMEOUT_SECONDS = "60"
+    CONVERT_TIMESTAMP     = var.iceberg_enabled ? "true" : "false"
+    KAFKA_ENABLED         = ingest_mode == "KAFKA" ? "1" : "0"
   }
 }
 
@@ -47,9 +48,9 @@ module "lambda_authorizer" {
   tracing_mode = "PassThrough"
 
   environment_variables = {
-      AUTHORIZATIONS_TABLE             = var.authorizations_table_name
-      APPLICATION_AUTHORIZATIONS_INDEX = "ApplicationAuthorizations"
-      APPLICATIONS_TABLE               = var.applications_table_name
+    AUTHORIZATIONS_TABLE             = var.authorizations_table_name
+    APPLICATION_AUTHORIZATIONS_INDEX = "ApplicationAuthorizations"
+    APPLICATIONS_TABLE               = var.applications_table_name
   }
 }
 
@@ -74,17 +75,17 @@ module "application_admin_service_function" {
   tracing_mode = "PassThrough"
 
   environment_variables = merge({
-      AUTHORIZATIONS_TABLE             = var.authorizations_table_name
-      APPLICATION_AUTHORIZATIONS_INDEX = "ApplicationAuthorizations"
-      APPLICATIONS_TABLE               = var.applications_table_name
-      INGEST_MODE                      = var.ingest_mode
-      DATA_STACK               = var.data_platform_mode
-      DATABASE_NAME                    = var.events_database
-      STREAM_NAME                      = length(var.games_events_stream_name) == 1 ? var.games_events_stream_name[0] : ""
-  }, var.data_platform_mode == "REDSHIFT" ? {
-      SECRET_ARN                       = "redshift!${var.redshift_namespace_name[0]}-db-admin"
-      WORKGROUP_NAME                   = var.redshift_workgroup_name[0]
-      REDSHIFT_ROLE_ARN                = var.redshift_role_arn[0]
+    AUTHORIZATIONS_TABLE             = var.authorizations_table_name
+    APPLICATION_AUTHORIZATIONS_INDEX = "ApplicationAuthorizations"
+    APPLICATIONS_TABLE               = var.applications_table_name
+    INGEST_MODE                      = var.ingest_mode
+    DATA_STACK                       = var.data_platform_mode
+    DATABASE_NAME                    = var.events_database
+    STREAM_NAME                      = length(var.games_events_stream_name) == 1 ? var.games_events_stream_name[0] : ""
+    }, var.data_platform_mode == "REDSHIFT" ? {
+    SECRET_ARN        = "redshift!${var.redshift_namespace_name[0]}-db-admin"
+    WORKGROUP_NAME    = var.redshift_workgroup_name[0]
+    REDSHIFT_ROLE_ARN = var.redshift_role_arn[0]
   } : {})
 }
 
@@ -162,43 +163,43 @@ resource "aws_iam_role_policy_attachment" "application_admin_role_basic_executio
 
 resource "aws_iam_role_policy" "application_admin_service_function_policy" {
   count = var.data_platform_mode == "REDSHIFT" ? 1 : 0
-  name = "${var.stack_name}-application-admin-service-function-policy"
-  role = aws_iam_role.application_admin_service_function_role.name
+  name  = "${var.stack_name}-application-admin-service-function-policy"
+  role  = aws_iam_role.application_admin_service_function_role.name
 
   policy = jsonencode({
-    Version: "2012-10-17",
+    Version : "2012-10-17",
     Statement = [
       {
-        Effect: "Allow",
-        Action: [
+        Effect : "Allow",
+        Action : [
           "redshift-data:GetStatementResult",
           "redshift-data:ListStatements",
           "redshift-data:ExecuteStatement",
           "redshift-data:BatchExecuteStatement"
         ],
-        Resource: "*"
+        Resource : "*"
       },
       {
-        Effect: "Allow",
-        Action: [
+        Effect : "Allow",
+        Action : [
           "redshift-data:CancelStatement",
           "redshift-data:DescribeStatement"
         ],
-        Resource: "*"
+        Resource : "*"
       },
       {
-        Effect: "Allow",
-        Action: [
+        Effect : "Allow",
+        Action : [
           "secretsmanager:GetSecretValue"
         ],
-        Resource: "arn:aws:secretsmanager:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:secret:redshift!${var.redshift_namespace_name[0]}-db-admin*"
+        Resource : "arn:aws:secretsmanager:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:secret:redshift!${var.redshift_namespace_name[0]}-db-admin*"
       },
       {
-        Effect: "Allow",
-        Action: [
+        Effect : "Allow",
+        Action : [
           "kms:Decrypt*"
         ],
-        Resource: "${var.redshift_key_arn[0]}"
+        Resource : "${var.redshift_key_arn[0]}"
       }
     ]
   })

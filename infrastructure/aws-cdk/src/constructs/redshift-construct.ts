@@ -129,6 +129,9 @@ export class RedshiftConstruct extends Construct {
       }
     );
 
+    this.snapshot.addDependency(this.namespace);
+    this.snapshot.addDependency(this.workgroup);
+
     new cdk.CfnOutput(this, "RedshiftRoleArn", {
       description: "ARN of the Redshift Serverless Role",
       value: this.redshiftRole.roleArn,

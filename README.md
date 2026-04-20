@@ -1,7 +1,7 @@
 # Game Analytics Pipeline on AWS
 
 >[!IMPORTANT]
->This guidance has a full official documentation page with installation instructions [here](https://aws-solutions-library-samples.github.io/guidance-for-game-analytics-pipeline-on-aws/)
+>This guidance has a full official documentation page with installation instructions [here](https://aws-solutions-library-samples.github.io/guidance-for-game-analytics-pipeline-on-aws/index.html)
 
 ## Table of Contents
 
@@ -115,7 +115,7 @@ Before deploying the sample code, ensure that the following required tools have 
 - **[Visual Studio Code](https://code.visualstudio.com/Download)**
 - **[Docker Desktop (local)](https://www.docker.com/products/docker-desktop/)**
 - **[Apache Maven](https://maven.apache.org/download.cgi)**
-- **AWS Cloud Development Kit (CDK) 2.92**
+- **AWS Cloud Development Kit (CDK) 2.169.0**
 - **Python >=3.8**
 - **NodeJS >= 20.0.0**
 
@@ -131,11 +131,11 @@ Python/pip, Npm/node, and (optionally) Terraform
 
 ## Deployment Steps, Running the Guidance, and Deployment Validation
 
-Refer to the full documentation in our [getting started guide](https://aws-solutions-library-samples.github.io/solutions/guidance/game-analytics-pipeline-on-aws/getting-started.html). The page provides full detailed walkthrough and deployment steps.
+Refer to the full documentation in our [getting started guide](https://aws-solutions-library-samples.github.io/guidance-for-game-analytics-pipeline-on-aws/getting-started.html). The page provides full detailed walkthrough and deployment steps.
 
 ## Next Steps
 
-Refer to the [customization documentation](https://aws-solutions-library-samples.github.io/solutions/guidance/game-analytics-pipeline-on-aws/customizations.html) for next steps and customizations.
+Refer to the [customization documentation](https://aws-solutions-library-samples.github.io/guidance-for-game-analytics-pipeline-on-aws/customizations.html) for next steps and customizations.
 
 
 ## Cleanup

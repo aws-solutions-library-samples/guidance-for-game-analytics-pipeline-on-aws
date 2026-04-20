@@ -4,6 +4,8 @@ data "aws_partition" "current" {}
 
 locals {
   config = yamldecode(file("${path.module}/../../config.yaml"))
+  enable_apache_iceberg_support = local.config.ENABLE_APACHE_ICEBERG_SUPPORT == "true"
+  enable_s3_tables_support = local.config.ENABLE_S3_TABLES == "true"
 }
 
 module "config-validator" {
@@ -374,7 +376,7 @@ resource "aws_kinesis_stream" "game_events_stream" {
 module "vpc_construct" {
   source = "./constructs/vpc-construct"
   stack_name                       = local.config.WORKLOAD_NAME
-  count = local.config.DATA_STACK == "REDSHIFT" ? 1 : 0
+  count = local.config.DATA_STACK == "REDSHIFT" || local.config.INGEST_MODE == "KAFKA" ? 1 : 0
 }
 
 // Create flink components
@@ -556,17 +558,18 @@ resource "aws_dynamodb_table_item" "authorizations_table_permissions" {
 // Glue datalake and processing jobs
 module "data_lake_construct" {
   count = local.config.DATA_STACK == "DATA_LAKE" ? 1 : 0
+  enable_s3_tables_support = local.enable_s3_tables_support
   source = "./constructs/data-lake-construct"
   stack_name = local.config.WORKLOAD_NAME
   events_database_name = local.config.EVENTS_DATABASE
   raw_events_table_name = local.config.RAW_EVENTS_TABLE
   raw_events_prefix = local.config.RAW_EVENTS_PREFIX
   enable_apache_iceberg_support = local.config.ENABLE_APACHE_ICEBERG_SUPPORT
-  notifications_topic_arn = aws_sns_topic.notifications.arn
   analytics_bucket_name    = aws_s3_bucket.analytics_bucket.id
   stack_suffix = random_string.stack-random-id-suffix.result
 }
 
+// TODO: update iceberg jobs to support different catalog arns
 module "data_processing_construct" {
   count = local.config.DATA_STACK == "DATA_LAKE" ? 1 : 0
   source = "./constructs/data-processing-construct"
@@ -589,6 +592,17 @@ module "athena_construct" {
   raw_events_table = local.config.RAW_EVENTS_TABLE
 }
 
+module "msk_construct" {
+  count = local.config.INGEST_MODE == "KAFKA" ? 1 : 0
+  source     = "./constructs/msk-construct"
+  vpc_id     = module.vpc_construct[0].vpc_id
+  vpc_cidr   = module.vpc_construct[0].vpc_cidr
+  vpc_subnet = module.vpc_construct[0].vpc_subnet
+  stack_name = local.config.WORKLOAD_NAME
+  cluster_instance_type = local.config.MSK_CLUSTER_INSTANCE_TYPE
+}
+
+
 // Creates firehose and logs related to ingestion
 module "streaming_ingestion_construct" {
   count = local.config.DATA_STACK == "DATA_LAKE" ? 1 : 0
@@ -606,6 +620,12 @@ module "streaming_ingestion_construct" {
   dev_mode = local.config.DEV_MODE
   ingest_mode = local.config.INGEST_MODE
   stack_name = local.config.WORKLOAD_NAME
+  // configs for S3 Tables
+  enable_s3_tables_support = local.enable_s3_tables_support
+  catalog_arn = module.data_lake_construct[0].catalog_arn
+  // configs for MSK
+  msk_cluster_arn = local.config.INGEST_MODE == "KAFKA" ? module.msk_construct[0].cluster_arn : ""
+  msk_topic_name  = local.config.INGEST_MODE == "KAFKA" ? module.msk_construct[0].topic_name : ""
 }
 
 // ---- API ENDPOINT ---- /
@@ -616,6 +636,7 @@ module "games_api_construct" {
   game_events_stream_arn = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? aws_kinesis_stream.game_events_stream[0].arn : ""
   game_events_stream_name = local.config.INGEST_MODE == "KINESIS_DATA_STREAMS" ? aws_kinesis_stream.game_events_stream[0].name : ""
   game_events_firehose_arn = local.config.INGEST_MODE == "DIRECT_BATCH" ? module.streaming_ingestion_construct[0].game_events_firehose_arn : ""
+  game_events_firehose_name = local.config.INGEST_MODE == "DIRECT_BATCH" ? module.streaming_ingestion_construct[0].game_events_firehose_name : ""
   application_admin_service_function_arn = module.lambda_construct.application_admin_service_function_arn
   stack_name = local.config.WORKLOAD_NAME
   api_stage_name = local.config.API_STAGE_NAME
@@ -697,4 +718,20 @@ module "dashboard_construct" {
   collection_id = local.config.REAL_TIME_ANALYTICS == true ? module.opensearch_construct[0].collection_id : ""
   collection_name = local.config.REAL_TIME_ANALYTICS == true ? module.opensearch_construct[0].collection_name : ""
   pipeline_name = local.config.REAL_TIME_ANALYTICS == true ? module.opensearch_construct[0].ingestion_pipeline_name : ""
+}
+
+resource "aws_cloudformation_stack" "guidance_deployment_metrics" {
+  name          = local.config.WORKLOAD_NAME
+  on_failure    = "DO_NOTHING"
+  template_body = <<STACK
+    {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "Guidance for the Game Analytics Pipeline on AWS (SO0096)",
+        "Resources": {
+            "EmptyResource": {
+                "Type": "AWS::CloudFormation::WaitConditionHandle"
+            }
+        }
+    }
+    STACK
 }

@@ -42,16 +42,6 @@ def build_infrastructure():
     return_dir()
 
 
-def build_web_app():
-
-    return_dir = change_dir_with_return("./web-app")
-    cmd = [sys.executable, "build.py"]
-    proc = subprocess.run(cmd, stderr=subprocess.STDOUT, shell=False)
-    exit_on_failure(proc.returncode, "Web app build failed")
-
-    return_dir()
-
-
 def build_logic():
 
     return_dir = change_dir_with_return("./business-logic")

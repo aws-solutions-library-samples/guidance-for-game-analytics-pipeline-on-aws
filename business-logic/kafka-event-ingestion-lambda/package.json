@@ -1,0 +1,21 @@
+{
+    "name": "kafka-event-ingestion-lambda",
+    "description": "Kafka producer lambda used to send events into a deployed game analytics pipeline MSK topic",
+    "main": "index.js",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "@aws-sdk/credential-providers": "^3.1030.0",
+        "aws-msk-iam-sasl-signer-js": "^1.0.3",
+        "kafkajs": "^2.2.4"
+    },
+    "devDependencies": {
+        "@aws-sdk/credential-providers": "^3.1030.0"
+    },
+    "scripts": {
+        "build:init": "rm -rf package-lock.json && rm -rf dist && rm -rf node_modules",
+        "build:zip": "zip -rq admin.zip .",
+        "build:dist": "mkdir dist && mv admin.zip dist/",
+        "build": "npm run build:init && npm install --production && npm run build:zip && npm run build:dist"
+    }
+}

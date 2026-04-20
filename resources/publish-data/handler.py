@@ -503,7 +503,7 @@ def send_record_batch(api_path, api_key, raw_records):
 def send_events_bulk(api_path, api_key, batch_size):
     """Send a batches of randomly generated events to Amazon Kinesis."""
 
-    while range(0, 100):
+    while True:#range(0, 100):
         records = []
         # Create a batch of random events to send
         for i in range(0, batch_size):

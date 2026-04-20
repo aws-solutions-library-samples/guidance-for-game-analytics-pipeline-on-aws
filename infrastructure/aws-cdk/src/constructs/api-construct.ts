@@ -134,7 +134,7 @@ export class ApiConstruct extends Construct {
             statusCode: "200",
             responseTemplates: {
               "application/json":
-                '#set($response = $input.path(\'$\')) #set($records = $input.json(\'$.Records\')) { "Total": $response.RequestResponses.size(), "FailedRecordCount": $input.json(\'$.FailedRecordCount\'), "Events": [#foreach($record in $response.RequestResponses){#if($record.ErrorCode != $null)"Result": "Error", "ErrorCode": "$record.ErrorCode"}#else"Result": "Ok"}#end#if($foreach.hasNext),#end#end] }\n',
+                '#set($response = $input.path(\'$\')) #set($records = $input.json(\'$.RequestResponses\')) { "Total": $response.RequestResponses.size(), "FailedRecordCount": $input.json(\'$.FailedRecordCount\'), "Events": [#foreach($record in $response.RequestResponses){#if($record.ErrorCode != $null)"Result": "Error", "ErrorCode": "$record.ErrorCode"}#else"Result": "Ok"}#end#if($foreach.hasNext),#end#end] }\n',
             },
           },
           "4\\d{2}": {

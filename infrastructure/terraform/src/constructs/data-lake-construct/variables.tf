@@ -14,8 +14,8 @@ variable "enable_apache_iceberg_support" {
     type        = string
 }
 
-variable "notifications_topic_arn" {
-  type = string
+variable "enable_s3_tables_support" {
+    type        = bool
 }
 
 variable "analytics_bucket_name" {

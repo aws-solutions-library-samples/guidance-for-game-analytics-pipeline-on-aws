@@ -3,10 +3,11 @@ export interface GameAnalyticsPipelineConfig {
   WORKLOAD_NAME: string;
   DEV_MODE: boolean;
 
-  INGEST_MODE: "DIRECT_BATCH" | "KINESIS_DATA_STREAMS";
+  INGEST_MODE: "DIRECT_BATCH" | "KINESIS_DATA_STREAMS" | "KAFKA";
   DATA_STACK: "DATA_LAKE" | "REDSHIFT";
   REAL_TIME_ANALYTICS: boolean;
   ENABLE_APACHE_ICEBERG_SUPPORT: boolean;
+  ENABLE_S3_TABLES: boolean;
 
   EVENTS_DATABASE: string;
   RAW_EVENTS_TABLE: string;
@@ -15,6 +16,9 @@ export interface GameAnalyticsPipelineConfig {
 
   STREAM_PROVISIONED: boolean;
   STREAM_SHARD_COUNT: number;
+
+  MSK_CLUSTER_INSTANCE_TYPE: string;
+
   CLOUDWATCH_RETENTION_DAYS: number;
   API_STAGE_NAME: string;
   EMAIL_ADDRESS: string;

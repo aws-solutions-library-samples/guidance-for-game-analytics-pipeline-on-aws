@@ -25,11 +25,11 @@ The following table shows unsupported configurations when options in this sectio
 
 `INGEST_MODE`
 
-- *Description:* Controls the ingestion method for events recieved from the API. When set to `"KINESIS_DATA_STREAMS"` events are ingested into a real-time Kinesis Data Stream for live analytics. When set to `"DIRECT_BATCH"` events are ingested into an Amazon Data Firehose for near-real-time batch ingestion to a data lake.
+- *Description:* Controls the ingestion method for events recieved from the API. When set to `"KINESIS_DATA_STREAMS"` events are ingested into a real-time Kinesis Data Stream for live analytics. When set to `"DIRECT_BATCH"` events are ingested into an Amazon Data Firehose for near-real-time batch ingestion to a data lake. When set to "KAFKA" events are ingested into a real-time MSK Topic for live analytics.
 
 - *Type:* String
 
-- *Example:* `"KINESIS_DATA_STREAMS"`, `"DIRECT_BATCH"`
+- *Example:* `"KINESIS_DATA_STREAMS"`, `"DIRECT_BATCH"`, `"KAFKA"`
 
 `REAL_TIME_ANALYTICS`
 
@@ -61,6 +61,18 @@ The following table shows unsupported configurations when options in this sectio
 
 - **Do not change this configuration after the stack is deployed. If you would like to enable Iceberg, we recommend deploying a new stack in parallel and migrating existing data.**
 
+`ENABLE_S3_TABLES`
+
+- *Description:* Whether or not to deploy Apache Iceberg tables in S3 Tables or S3 General Purpose buckets. When set to `true`, the raw events table will be created as a table in an [S3 Tables table bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-tables-buckets.html) with intelligent tiering enabled. The `WORKLOAD_NAME must follow [S3 Tables naming rules](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-tables-buckets-naming.html) when this setting is enabled. The `ENABLE_APACHE_ICEBERG_SUPPORT` parameter will be set to true when this setting is enabled as S3 Tables only supports the Apache Iceberg table format. When set to `false`, the data lake will be deployed in S3 General Purpose.
+
+- *Type:* Boolean
+
+- *Example:* `true`
+
+- **Please refer to [Configuring S3 Tables](./setup-s3-tables.md) to make sure the AWS Services integration is enabled before setting this parameter to true**
+
+- **Do not change this configuration after the stack is deployed. If you would like to enable Iceberg, we recommend deploying a new stack in parallel and migrating existing data.**
+
 ## Real-Time Analytics Options
 
 These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
@@ -81,6 +93,15 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 - *Type:* Boolean
 
 - *Example:* `true`
+
+`MSK_CLUSTER_INSTANCE_TYPE`
+
+- *Description:* Controls the instance type of the provisioned MSK Cluster when `INGEST_MODE` is set to `KAFKA`. By default, we deploy three broker nodes for high availability. The Game Analytics Pipeline supports only [Express broker](https://docs.aws.amazon.com/msk/latest/developerguide/msk-broker-types-express.html) types for reduced management and improved throughput. Please refer to the [Express broker sizes documentation](https://docs.aws.amazon.com/msk/latest/developerguide/broker-instance-sizes.html) for valid parameter types.
+
+
+- *Type:* String
+
+- *Example:* `"express.m7g.large"`
 
 ## Data Storage Controls
 
@@ -183,15 +204,6 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 
 ## Version Options
 
-`CDK_VERSION`
-
-- *Description:* The version of the CDK installed in your environment. To see the current version of the CDK, run the `cdk --version` command. The guidance has been tested using CDK version `2.92.0` of the CDK. If you are using a different version of the CDK, ensure that this version is also reflected in the `./infrastructure/package.json` file.
-
-- *Type:* String
-
-- *Example:* `"2.92.0"`
-
-
 `NODE_VERSION`
 
 - *Description:* The version of NodeJS being used. The default value is set to `"latest"`, and should only be changed this if you require a specific version.
@@ -199,12 +211,3 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 - *Type:* String
 
 - *Example:* `"latest"`
-
-
-`PYTHON_VESION`
-
-- *Description:* The version of Python being used. The default value is set to `"3.8"`, and should only be changed if you require a specific version.
-
-- *Type:* String
-
-- *Example:* `"3.8"`
