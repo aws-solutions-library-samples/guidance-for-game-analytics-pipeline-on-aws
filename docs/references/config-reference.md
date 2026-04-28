@@ -53,7 +53,13 @@ The following table shows unsupported configurations when options in this sectio
 
 `ENABLE_APACHE_ICEBERG_SUPPORT`
 
-- *Description:* Whether or not to enable Apache Iceberg support in place of Apache Hive tables. When set to `true`, the raw events table will be configured as an Apache Iceberg table and the Firehose will be reconfigured to send data as Iceberg transactions. Enabling this option comes with [considerations for Firehose](https://docs.aws.amazon.com/firehose/latest/dev/apache-iceberg-considerations.html).
+- *Description:* Whether or not to enable Apache Iceberg support in place of Apache Hive tables. When set to `true`, the raw events table will be configured as an Apache Iceberg table and the Firehose will be reconfigured to send data as Iceberg transactions. 
+
+- For a general overview on Hive vs Iceberg:
+
+    - Iceberg = Less management overhead, supports atomic transactions, potentially lower cost, but must consider potential throttling when there is high throughput
+    - Hive = Faster data ingestion and less metadata management on top of data, but potential for unclean data and compatibility issues. Generally worse query performance and more management overhead (manual partitions required). Potentially more expensive when using Amazon Data Firehose.
+    - We generally recommend Iceberg tables for most workloads at this time, along with using Iceberg with Amazon Data Firehose. Details here: [considerations for Firehose](https://docs.aws.amazon.com/firehose/latest/dev/apache-iceberg-considerations.html).
 
 - *Type:* Boolean
 
@@ -183,15 +189,6 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 
 ## Version Options
 
-`CDK_VERSION`
-
-- *Description:* The version of the CDK installed in your environment. To see the current version of the CDK, run the `cdk --version` command. The guidance has been tested using CDK version `2.92.0` of the CDK. If you are using a different version of the CDK, ensure that this version is also reflected in the `./infrastructure/package.json` file.
-
-- *Type:* String
-
-- *Example:* `"2.92.0"`
-
-
 `NODE_VERSION`
 
 - *Description:* The version of NodeJS being used. The default value is set to `"latest"`, and should only be changed this if you require a specific version.
@@ -199,12 +196,3 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 - *Type:* String
 
 - *Example:* `"latest"`
-
-
-`PYTHON_VESION`
-
-- *Description:* The version of Python being used. The default value is set to `"3.8"`, and should only be changed if you require a specific version.
-
-- *Type:* String
-
-- *Example:* `"3.8"`
