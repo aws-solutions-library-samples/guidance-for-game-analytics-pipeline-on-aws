@@ -5,7 +5,7 @@ resource "aws_athena_named_query" "latest_events_query" {
   description = "Get latest events by event_timestamp"
   workgroup = var.game_events_workgroup
   query    = <<-EOT
-    SELECT *, from_unixtime(event_timestamp, 'America/New_York') as event_timestamp_america_new_york
+    SELECT *, event_timestamp AT TIME ZONE 'America/New_York' as event_timestamp_america_new_york
     FROM "${var.events_database}"."${var.raw_events_table}"
     ORDER BY event_timestamp_america_new_york DESC
     LIMIT 10;
@@ -31,11 +31,11 @@ resource "aws_athena_named_query" "total_events_month_query" {
   workgroup = var.game_events_workgroup
   query     = <<-EOT
     WITH detail AS
-    (SELECT date_trunc('month', date(date_parse(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'))) as event_month, * 
+    (SELECT date_trunc('month', event_timestamp) as event_month, * 
     FROM "${var.events_database}"."${var.raw_events_table}") 
-    SELECT date_trunc('month', event_month) as month, application_id, count(DISTINCT event_id) as event_count 
+    SELECT event_month as month, application_id, count(DISTINCT event_id) as event_count 
     FROM detail 
-    GROUP BY date_trunc('month', event_month), application_id;
+    GROUP BY event_month, application_id
   EOT
 }
 
@@ -46,12 +46,12 @@ resource "aws_athena_named_query" "total_iap_transactions_last_month_query" {
   workgroup = var.game_events_workgroup
   query     = <<-EOT
     WITH detail AS 
-    (SELECT date_trunc('month', date(date_parse(CONCAT(year, '-', month, '-', day),'%Y-%m-%d'))) as event_month,* 
+    (SELECT date_trunc('month', event_timestamp) as event_month, * 
     FROM "${var.events_database}"."${var.raw_events_table}") 
-    SELECT date_trunc('month', event_month) as month, application_id, count(DISTINCT json_extract_scalar(event_data, '$.transaction_id')) as transaction_count 
+    SELECT event_month as month, application_id, count(DISTINCT json_extract_scalar(event_data, '$.transaction_id')) as transaction_count 
     FROM detail WHERE json_extract_scalar(event_data, '$.transaction_id') is NOT null 
     AND event_type = 'iap_transaction'
-    GROUP BY date_trunc('month', event_month), application_id;
+    GROUP BY event_month, application_id
   EOT
 }
 
@@ -62,14 +62,14 @@ resource "aws_athena_named_query" "new_users_last_month_query" {
   workgroup = var.game_events_workgroup
   query     = <<-EOT
     WITH detail AS (
-    SELECT date_trunc('month', date(date_parse(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'))) as event_month, *
+    SELECT date_trunc('month', event_timestamp) as event_month, *
     FROM "${var.events_database}"."${var.raw_events_table}")
     SELECT
-    date_trunc('month', event_month) as month,
+    event_month as month,
     count(*) as new_accounts
     FROM detail
     WHERE event_type = 'user_registration'
-    GROUP BY date_trunc('month', event_month);
+    GROUP BY event_month;
   EOT
 }
 
@@ -146,11 +146,12 @@ resource "aws_athena_named_query" "average_user_sentiments_per_day_query" {
   description = "User sentiment score by day"
   workgroup = var.game_events_workgroup
   query     = <<-EOT
-    SELECT avg(CAST(json_extract_scalar(event_data, '$.user_rating') AS real)) AS average_user_rating, 
-    date(date_parse(CONCAT(year, '-', month, '-', day), '%Y-%m-%d')) as event_date
+    SELECT
+    avg(CAST(json_extract_scalar(event_data, '$.user_rating') AS real)) AS average_user_rating, 
+    date(event_timestamp) as event_date
     FROM "${var.events_database}"."${var.raw_events_table}"
     WHERE json_extract_scalar(event_data, '$.user_rating') is not null
-    GROUP BY date(date_parse(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'));
+    GROUP BY date(event_timestamp);
   EOT
 }
 
@@ -173,14 +174,14 @@ resource "aws_athena_named_query" "ctas_create_iceberg_tables_query" {
   description = "Create table as (CTAS) from existing tables to iceberg"
   workgroup = var.game_events_workgroup
   query     = <<-EOT
-    CREATE TABLE "${var.raw_events_table}"."raw_events_iceberg"
+    CREATE TABLE "${var.events_database}"."raw_events_iceberg"
     WITH (table_type = 'ICEBERG',
-      format = 'PARQUET', 
-      location = 's3://your_bucket/', 
-      is_external = false,
-      partitioning = ARRAY['application_id', 'year', 'month', 'day'],
-      vacuum_min_snapshots_to_keep = 10,
-      vacuum_max_snapshot_age_seconds = 604800
+    format = 'PARQUET', 
+    location = 's3://your_bucket/', 
+    is_external = false,
+    partitioning = ARRAY['application_id', 'month(event_timestamp)'],
+    vacuum_min_snapshots_to_keep = 10,
+    vacuum_max_snapshot_age_seconds = 604800
     ) 
     AS SELECT * FROM "${var.events_database}"."${var.raw_events_table}";
   EOT
