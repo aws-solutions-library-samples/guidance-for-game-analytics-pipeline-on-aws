@@ -48,7 +48,7 @@ export class AthenaQueryConstruct extends Construct {
         name: "LatestEventsQuery",
         description: "Get latest events by event_timestamp",
         workgroup: workgroupName,
-        query: `SELECT *, from_unixtime(event_timestamp, 'America/New_York') as event_timestamp_america_new_york
+        query: `SELECT *, event_timestamp AT TIME ZONE 'America/New_York' as event_timestamp_america_new_york
                 FROM "${databaseName}"."${tableName}"
                 ORDER BY event_timestamp_america_new_york DESC
                 LIMIT 10;`,
@@ -68,11 +68,11 @@ export class AthenaQueryConstruct extends Construct {
         description: "Total events over last month",
         workgroup: workgroupName,
         query: `WITH detail AS
-                (SELECT date_trunc('month', date(date_parse(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'))) as event_month, * 
+                (SELECT date_trunc('month', event_timestamp) as event_month, * 
                 FROM "${databaseName}"."${tableName}") 
-                SELECT date_trunc('month', event_month) as month, application_id, count(DISTINCT event_id) as event_count 
+                SELECT event_month as month, application_id, count(DISTINCT event_id) as event_count 
                 FROM detail 
-                GROUP BY date_trunc('month', event_month), application_id`,
+                GROUP BY event_month, application_id`,
       },
       {
         database: databaseName,
@@ -80,12 +80,12 @@ export class AthenaQueryConstruct extends Construct {
         description: "Total IAP Transactions over the last month",
         workgroup: workgroupName,
         query: `WITH detail AS 
-                (SELECT date_trunc('month', date(date_parse(CONCAT(year, '-', month, '-', day),'%Y-%m-%d'))) as event_month,* 
+                (SELECT date_trunc('month', event_timestamp) as event_month, * 
                 FROM "${databaseName}"."${tableName}") 
-                SELECT date_trunc('month', event_month) as month, application_id, count(DISTINCT json_extract_scalar(event_data, '$.transaction_id')) as transaction_count 
+                SELECT event_month as month, application_id, count(DISTINCT json_extract_scalar(event_data, '$.transaction_id')) as transaction_count 
                 FROM detail WHERE json_extract_scalar(event_data, '$.transaction_id') is NOT null 
                 AND event_type = 'iap_transaction'
-                GROUP BY date_trunc('month', event_month), application_id`,
+                GROUP BY event_month, application_id`,
       },
       {
         database: databaseName,
@@ -93,14 +93,14 @@ export class AthenaQueryConstruct extends Construct {
         description: "New Users over the last month",
         workgroup: workgroupName,
         query: `WITH detail AS (
-                SELECT date_trunc('month', date(date_parse(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'))) as event_month, *
+                SELECT date_trunc('month', event_timestamp) as event_month, *
                 FROM "${databaseName}"."${tableName}")
                 SELECT
-                date_trunc('month', event_month) as month,
+                event_month as month,
                 count(*) as new_accounts
                 FROM detail
                 WHERE event_type = 'user_registration'
-                GROUP BY date_trunc('month', event_month);`,
+                GROUP BY event_month;`,
       },
       {
         database: databaseName,
@@ -167,10 +167,10 @@ export class AthenaQueryConstruct extends Construct {
         workgroup: workgroupName,
         query: `SELECT
                 avg(CAST(json_extract_scalar(event_data, '$.user_rating') AS real)) AS average_user_rating, 
-                date(date_parse(CONCAT(year, '-', month, '-', day), '%Y-%m-%d')) as event_date
+                date(event_timestamp) as event_date
                 FROM "${databaseName}"."${tableName}"
                 WHERE json_extract_scalar(event_data, '$.user_rating') is not null
-                GROUP BY date(date_parse(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'));`,
+                GROUP BY date(event_timestamp);`,
       },
       {
         database: databaseName,
@@ -187,12 +187,12 @@ export class AthenaQueryConstruct extends Construct {
         name: "CTASCreateIcebergTables",
         description: "Create table as (CTAS) from existing tables to iceberg",
         workgroup: workgroupName,
-        query: `CREATE TABLE "${tableName}"."raw_events_iceberg"
+        query: `CREATE TABLE "${databaseName}"."raw_events_iceberg"
                 WITH (table_type = 'ICEBERG',
                     format = 'PARQUET', 
                     location = 's3://your_bucket/', 
                     is_external = false,
-                    partitioning = ARRAY['application_id', 'year', 'month', 'day'],
+                    partitioning = ARRAY['application_id', 'month(event_timestamp)'],
                     vacuum_min_snapshots_to_keep = 10,
                     vacuum_max_snapshot_age_seconds = 604800
                 ) 
