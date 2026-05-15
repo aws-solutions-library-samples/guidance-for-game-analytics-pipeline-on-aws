@@ -23,6 +23,7 @@ cdk.out
 .vscode
 .history/
 *.vsix
+.kiro/
 
 # Terraform
 .terraform
