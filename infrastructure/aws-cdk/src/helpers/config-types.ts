@@ -21,4 +21,7 @@ export interface GameAnalyticsPipelineConfig {
 
   GLUE_TMP_PREFIX: string; // might be able to be removed
   S3_BACKUP_MODE: boolean; // might be inherited by DEV_MODE
+
+  ENABLE_QUICKSIGHT_DASHBOARD: boolean;
+  QUICKSIGHT_USERNAME: string;
 }

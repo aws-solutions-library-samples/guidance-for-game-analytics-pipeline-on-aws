@@ -107,6 +107,15 @@ The cost estimate consists of the required API component and choice of data stac
 
 *When real-time analytics is enabled, the Apache Flink application is registered as an additional consumer of the Amazon Kinesis data stream. Additional charges apply when on-demand capacity is used.*
 
+#### QuickSight Analytics Dashboard (Optional)
+
+| AWS service  | Dimensions | Cost [USD] |
+| ----------- | ------------ | ------------ |
+| Amazon QuickSight Enterprise (Author) | Per author user | $18.00/month |
+| Amazon QuickSight Enterprise (Session Capacity Pricing) | Per session capacity unit (1 reader session = $0.30) | $250.00/month |
+
+*QuickSight requires an active Enterprise subscription in the target AWS account. Author pricing is per-user. Session capacity pricing provides reader access at $0.30 per 30-minute session, with a monthly minimum of $250 per session capacity unit. Enable the dashboard by setting `ENABLE_QUICKSIGHT_DASHBOARD: true` in `config.yaml`. For more details, refer to the [Amazon QuickSight pricing page](https://aws.amazon.com/quicksight/pricing/).*
+
 ## Prerequisites
 
 Before deploying the sample code, ensure that the following required tools have been installed:

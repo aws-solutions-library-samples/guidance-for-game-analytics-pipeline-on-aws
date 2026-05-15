@@ -1,5 +1,5 @@
-CREATE OR REPLACE VIEW
-  average_sentiment_per_day AS
+CREATE MATERIALIZED VIEW average_sentiment_per_day
+AUTO REFRESH YES AS
 SELECT
   avg(
     CAST(
@@ -14,6 +14,4 @@ FROM
 WHERE
   JSON_EXTRACT_PATH_TEXT (event_data, 'user_rating') is not null
 GROUP BY
-  event_date
-WITH
-  NO SCHEMA BINDING;
+  event_date;

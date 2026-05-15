@@ -84,7 +84,10 @@ async function setupRedshift() {
       const statement = fs.readFileSync(`${directoryPath}/${filename}`, "utf8").replaceAll("{db_name}", DATABASE_NAME);
       console.log(`Creating view: ${filename}`);
       const id = await executeStatement(client, statement);
-      await waitForStatement(client, id);
+      // Materialized views don't support CREATE OR REPLACE, so ignore "already exists" errors
+      const viewName = filename.replace(".sql", "");
+      const ignore = [`ERROR: relation "${viewName}" already exists`];
+      await waitForStatement(client, id, ignore);
       console.log(`Created view: ${filename}`);
     }
     console.log("Redshift views created");

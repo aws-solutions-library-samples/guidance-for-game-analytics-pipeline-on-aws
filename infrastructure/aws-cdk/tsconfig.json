@@ -18,6 +18,7 @@
         "inlineSources": true,
         "experimentalDecorators": true,
         "strictPropertyInitialization": false,
+        "skipLibCheck": true,
         "typeRoots": ["./node_modules/@types"]
     },
     "type": "module",

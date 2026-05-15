@@ -42,6 +42,66 @@ The source reads from the input Kinesis data stream and the sink writes to the o
 
 ## Modifying dashboards (ops and analytics)
 
+### Customizing the QuickSight Analytics Dashboard
+
+The QuickSight analytics dashboard is deployed when `ENABLE_QUICKSIGHT_DASHBOARD` is set to `true` in `config.yaml`. The dashboard connects to either Redshift Serverless or Athena depending on the `DATA_STACK` setting, and visualizes game analytics KPIs across three sheets: Acquisition, Engagement/Retention, and Monetization.
+
+#### Adding New DataSets
+
+The construct uses a declarative `DATA_SET_DEFINITIONS` array in `quicksight-construct.ts` to define all DataSets. Each entry maps a SQL view to a QuickSight DataSet. To add a new DataSet:
+
+1. Create the SQL view in your database (Redshift or Athena) with the desired query logic
+2. Add an entry to the `DATA_SET_DEFINITIONS` array in `infrastructure/aws-cdk/src/constructs/quicksight-construct.ts`:
+
+```typescript
+{
+  viewName: "your_new_view_name",
+  kpiCategory: "engagement",  // "acquisition", "engagement", or "monetization"
+  columns: [
+    { name: "column_name", type: "STRING" },   // STRING, INTEGER, DECIMAL, or DATETIME
+    { name: "metric_value", type: "INTEGER" },
+  ],
+}
+```
+
+3. Run `cdk deploy` — the factory helper (`createDataSetFromView`) automatically generates the `CfnDataSet` resource from the new definition. No additional CDK code is needed.
+
+The `kpiCategory` field determines which dashboard sheet the DataSet is associated with. The column definitions must match the output schema of the SQL view.
+
+#### Modifying Dashboard Visuals
+
+The initial dashboard template defines three empty KPI sheets (Acquisition, Engagement/Retention, Monetization) using the CDK `CfnTemplate` `definition` property. To create richer visual layouts:
+
+1. **Console-first approach (recommended for complex layouts)**:
+    - Open the deployed dashboard in the QuickSight console
+    - Use the QuickSight visual editor to add charts, tables, KPIs, and filters
+    - Export the dashboard definition using the **Asset Bundle Export API** with `CLOUDFORMATION_JSON` format:
+      ```bash
+      aws quicksight start-asset-bundle-export-job \
+        --aws-account-id <ACCOUNT_ID> \
+        --asset-bundle-export-job-id <JOB_ID> \
+        --resource-arns <DASHBOARD_ARN> \
+        --export-format CLOUDFORMATION_JSON
+      ```
+    - Download the exported JSON and integrate the `definition` block into the `CfnTemplate` in `quicksight-construct.ts`
+
+2. **Programmatic approach**:
+    - Modify the `definition` property on the `CfnTemplate` resource in `quicksight-construct.ts` directly
+    - Add visual definitions, filter controls, and parameter declarations using the [QuickSight CloudFormation template definition schema](https://docs.aws.amazon.com/quicksight/latest/developerguide/template-definition.html)
+
+#### Changing Dashboard Permissions
+
+By default, the dashboard grants access to the single user or group specified in `QUICKSIGHT_USERNAME` in `config.yaml`. To grant access to additional users:
+
+- Use the QuickSight console to share the dashboard with other users or groups
+- Or modify the `permissions` array on the `CfnDashboard` resource in `quicksight-construct.ts` to include additional QuickSight user/group ARNs
+
+#### Prerequisites
+
+- An active **QuickSight Enterprise** subscription is required in the target AWS account
+- The `QUICKSIGHT_USERNAME` must correspond to a registered QuickSight user or group
+- SQL views must be created via `POST /setup/redshift` (or equivalent) before data appears in the dashboard — the dashboard deploys successfully with empty visuals until views exist
+
 ### Configuring Access to OpenSearch UI 
 
 The deployed OpenSearch Application can be configured to allow users access through SAML federation. 

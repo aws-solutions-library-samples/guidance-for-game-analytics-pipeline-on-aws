@@ -110,7 +110,16 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
     5. Athena is a serverless analytics query service that can perform ad-hoc queries and connect to analytics dashboards to use the queries to power visualizations. The guidance provides sample queries for common game use cases (see [Customizations](./customizations.md) for more details) along with sample operational CTAS (Create-Table-as-Select) queries that can also perform certain ad-hoc ETL.
     
     <br>
-    6. Amazon QuickSight or other dashboard technologies can connect to Athena through their plugins, connectors, or direct integration. Dashboards will call Athena to perform the queries that power visualizations and provide insights to users. Dashboard integration is planned for future releases, and does not come directly with the guidance at this time. Refer to [Customizations](./customizations.md)
+    6. **Amazon QuickSight** provides an analytics dashboard that connects directly to Athena through the deployed QuickSight DataSource. When `ENABLE_QUICKSIGHT_DASHBOARD` is set to `true` in `config.yaml`, the guidance deploys the following QuickSight resource chain:
+
+        - **DataSource** (Athena type) — connects to the existing Athena workgroup; no VPC connection is needed for Data Lake mode
+        - **DataSets** (×11) — one per SQL view, using `DIRECT_QUERY` import mode so queries hit Athena live without SPICE caching
+        - **Template** — defines the dashboard layout with three KPI sheets: Acquisition, Engagement/Retention, and Monetization
+        - **Dashboard** — instantiated from the Template, accessible to the user specified in `QUICKSIGHT_USERNAME`
+
+        The dashboard URL is emitted as a CloudFormation output after deployment. SQL views are created when the customer calls `POST /setup/redshift` (or the equivalent Data Lake setup); until then, visuals display empty data without causing deployment failures.
+
+        A `QUICKSIGHT_USERNAME` must be set in `config.yaml` to grant dashboard access. The target AWS account must have an active QuickSight Enterprise subscription. Refer to [Customizations](./customizations.md) for guidance on adding new DataSets or modifying visuals.
 
 === "Redshift Mode"
 
@@ -118,7 +127,19 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
 
     1. An Amazon Redshift Serverless cluster is deployed. Redshift is initially not integrated with the Kinesis Data Stream until the `setup/redshift` API call - see [API Reference for POST - Setup Redshift](./references/api-reference.md#post-set-up-redshift), in which a [materialized view](https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-streaming-ingestion.html) will be created, as well as a set of other views representing pre-made queries to get you started.
 
-    2. You can query data immediately using [Amazon Redshift Query Editor](https://aws.amazon.com/redshift/query-editor-v2/) in the AWS Console, or connect up other visualization tools compatible with Amazon Redshift. Dashboard integration is planned for future releases, and does not come directly with the guidance at this time. Refer to [Customizations](./customizations.md)
+    2. You can query data immediately using [Amazon Redshift Query Editor](https://aws.amazon.com/redshift/query-editor-v2/) in the AWS Console, or connect up other visualization tools compatible with Amazon Redshift.
+
+    3. **Amazon QuickSight** provides an analytics dashboard that connects directly to Redshift Serverless through a VPC connection. When `ENABLE_QUICKSIGHT_DASHBOARD` is set to `true` in `config.yaml`, the guidance deploys the following QuickSight resource chain:
+
+        - **VPC Connection** — routes QuickSight traffic to the Redshift workgroup through the same private subnets and security group
+        - **DataSource** (Redshift type) — connects using Secrets Manager credentials (the Redshift namespace admin password secret)
+        - **DataSets** (×11) — one per SQL view, using `DIRECT_QUERY` import mode so queries hit Redshift live without SPICE caching
+        - **Template** — defines the dashboard layout with three KPI sheets: Acquisition, Engagement/Retention, and Monetization
+        - **Dashboard** — instantiated from the Template, accessible to the user specified in `QUICKSIGHT_USERNAME`
+
+        The dashboard URL is emitted as a CloudFormation output after deployment. SQL views are created when the customer calls `POST /setup/redshift`; until then, visuals display empty data without causing deployment failures.
+
+        A `QUICKSIGHT_USERNAME` must be set in `config.yaml` to grant dashboard access. The target AWS account must have an active QuickSight Enterprise subscription. Refer to [Customizations](./customizations.md) for guidance on adding new DataSets or modifying visuals.
 
 !!! Note
     By default, the cluster is configured with 4 RPU Compute Capacity, and is accessible on port 5439. Both can be configured in the redshift-construct source for your chosen Infrastructure as Code language in the respective Redshift Construct files.

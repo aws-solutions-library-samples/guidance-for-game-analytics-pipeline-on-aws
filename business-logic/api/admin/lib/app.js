@@ -23,6 +23,7 @@
  */
 const Application = require('./admin.js');
 const {setupRedshift} = require('./redshift.js')
+const {teardownQuickSight} = require('./quicksight-teardown.js')
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -263,6 +264,20 @@ const setupRedshiftHandler = async (req, res) => {
   }
 }
 
+const teardownQuickSightHandler = async (req, res) => {
+  console.log('Attempting to tear down QuickSight VPC connection')
+  try {
+    const result = await teardownQuickSight();
+    res.json(result);
+  } catch (err) {
+    console.log(JSON.stringify(err));
+    return res.status(err.code || 500).json({
+      'error': err.error || 'InternalError',
+      'error_detail': err.message
+    });
+  }
+}
+
 /****************************
  * Event methods *
 ****************************/
@@ -281,6 +296,7 @@ router.put('/applications/:applicationId/authorizations/:apiKeyId', modifyAuthor
 router.delete('/applications/:applicationId/authorizations', deleteAuthorization);
 router.delete('/applications/:applicationId/authorizations/:apiKeyId', deleteAuthorization);
 router.post('/redshift/setup', setupRedshiftHandler);
+router.post('/quicksight/teardown', teardownQuickSightHandler);
 //router.put('/registrations/:registration_name', updateRegistration);
 
 app.use('/', router);
