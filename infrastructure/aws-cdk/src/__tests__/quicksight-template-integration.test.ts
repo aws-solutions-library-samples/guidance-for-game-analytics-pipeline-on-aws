@@ -1,22 +1,19 @@
-import * as cdk from "aws-cdk-lib";
-import * as kinesis from "aws-cdk-lib/aws-kinesis";
-import * as s3 from "aws-cdk-lib/aws-s3";
-import * as sns from "aws-cdk-lib/aws-sns";
-import { Template } from "aws-cdk-lib/assertions";
-import {
-  QuickSightConstruct,
-  DATA_SET_DEFINITIONS,
-} from "../constructs/quicksight-construct";
-import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
-import { VpcConstruct } from "../constructs/vpc-construct";
-import { RedshiftConstruct } from "../constructs/redshift-construct";
-import { DataLakeConstruct } from "../constructs/data-lake-construct";
+import * as cdk from 'aws-cdk-lib';
+import * as kinesis from 'aws-cdk-lib/aws-kinesis';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import { Template } from 'aws-cdk-lib/assertions';
+import { QuickSightConstruct, DATA_SET_DEFINITIONS } from '../constructs/quicksight-construct';
+import { GameAnalyticsPipelineConfig } from '../helpers/config-types';
+import { VpcConstruct } from '../constructs/vpc-construct';
+import { RedshiftConstruct } from '../constructs/redshift-construct';
+import { DataLakeConstruct } from '../constructs/data-lake-construct';
 
 /**
  * Template integration tests for QuickSight visual field well references.
  *
  * These tests synthesize the full CDK stack and verify that every visual
- * field well in the QuickSight Template references a valid DataSet placeholder
+ * field well in the QuickSight Dashboard references a valid DataSet placeholder
  * and an existing column in that DataSet's schema.
  *
  * **Validates: Requirements 9.1, 9.2**
@@ -24,30 +21,28 @@ import { DataLakeConstruct } from "../constructs/data-lake-construct";
 
 // ---- Shared test config ---- //
 
-function baseConfig(
-  overrides: Partial<GameAnalyticsPipelineConfig> = {},
-): GameAnalyticsPipelineConfig {
+function baseConfig(overrides: Partial<GameAnalyticsPipelineConfig> = {}): GameAnalyticsPipelineConfig {
   return {
-    REGION: "us-east-1",
-    WORKLOAD_NAME: "TestWorkload",
+    REGION: 'us-east-1',
+    WORKLOAD_NAME: 'TestWorkload',
     DEV_MODE: true,
-    INGEST_MODE: "KINESIS_DATA_STREAMS",
-    DATA_STACK: "REDSHIFT",
+    INGEST_MODE: 'KINESIS_DATA_STREAMS',
+    DATA_STACK: 'REDSHIFT',
     REAL_TIME_ANALYTICS: false,
     ENABLE_APACHE_ICEBERG_SUPPORT: false,
-    EVENTS_DATABASE: "game_events",
-    RAW_EVENTS_TABLE: "raw_events",
-    RAW_EVENTS_PREFIX: "raw-events/",
-    PROCESSED_EVENTS_PREFIX: "processed-events/",
+    EVENTS_DATABASE: 'game_events',
+    RAW_EVENTS_TABLE: 'raw_events',
+    RAW_EVENTS_PREFIX: 'raw-events/',
+    PROCESSED_EVENTS_PREFIX: 'processed-events/',
     STREAM_PROVISIONED: false,
     STREAM_SHARD_COUNT: 1,
     CLOUDWATCH_RETENTION_DAYS: 7,
-    API_STAGE_NAME: "prod",
-    EMAIL_ADDRESS: "",
-    GLUE_TMP_PREFIX: "glue-tmp/",
+    API_STAGE_NAME: 'prod',
+    EMAIL_ADDRESS: '',
+    GLUE_TMP_PREFIX: 'glue-tmp/',
     S3_BACKUP_MODE: false,
     ENABLE_QUICKSIGHT_DASHBOARD: true,
-    QUICKSIGHT_USERNAME: "admin/quicksight-admin",
+    QUICKSIGHT_USERNAME: 'admin/quicksight-admin',
     ...overrides,
   };
 }
@@ -59,26 +54,24 @@ interface FullStackResult {
   qsConstruct: QuickSightConstruct;
 }
 
-function buildRedshiftFullStack(
-  configOverrides: Partial<GameAnalyticsPipelineConfig> = {},
-): FullStackResult {
+function buildRedshiftFullStack(configOverrides: Partial<GameAnalyticsPipelineConfig> = {}): FullStackResult {
   const app = new cdk.App();
-  const stack = new cdk.Stack(app, "TestStack", {
-    env: { account: "123456789012", region: "us-east-1" },
+  const stack = new cdk.Stack(app, 'TestStack', {
+    env: { account: '123456789012', region: 'us-east-1' },
   });
-  const config = baseConfig({ DATA_STACK: "REDSHIFT", ...configOverrides });
+  const config = baseConfig({ DATA_STACK: 'REDSHIFT', ...configOverrides });
 
-  const vpcConstruct = new VpcConstruct(stack, "VpcConstruct", { config });
-  const gamesEventsStream = new kinesis.Stream(stack, "GameEventStream", {
+  const vpcConstruct = new VpcConstruct(stack, 'VpcConstruct', { config });
+  const gamesEventsStream = new kinesis.Stream(stack, 'GameEventStream', {
     streamMode: kinesis.StreamMode.ON_DEMAND,
   });
-  const redshiftConstruct = new RedshiftConstruct(stack, "RedshiftConstruct", {
+  const redshiftConstruct = new RedshiftConstruct(stack, 'RedshiftConstruct', {
     gamesEventsStream,
     config,
     vpcConstruct,
   });
 
-  const qsConstruct = new QuickSightConstruct(stack, "QuickSightConstruct", {
+  const qsConstruct = new QuickSightConstruct(stack, 'QuickSightConstruct', {
     config,
     redshiftConstruct,
     vpcConstruct,
@@ -87,24 +80,22 @@ function buildRedshiftFullStack(
   return { stack, qsConstruct };
 }
 
-function buildDataLakeFullStack(
-  configOverrides: Partial<GameAnalyticsPipelineConfig> = {},
-): FullStackResult {
+function buildDataLakeFullStack(configOverrides: Partial<GameAnalyticsPipelineConfig> = {}): FullStackResult {
   const app = new cdk.App();
-  const stack = new cdk.Stack(app, "TestStack", {
-    env: { account: "123456789012", region: "us-east-1" },
+  const stack = new cdk.Stack(app, 'TestStack', {
+    env: { account: '123456789012', region: 'us-east-1' },
   });
-  const config = baseConfig({ DATA_STACK: "DATA_LAKE", ...configOverrides });
+  const config = baseConfig({ DATA_STACK: 'DATA_LAKE', ...configOverrides });
 
-  const analyticsBucket = new s3.Bucket(stack, "AnalyticsBucket");
-  const notificationsTopic = new sns.Topic(stack, "Notifications");
-  const dataLakeConstruct = new DataLakeConstruct(stack, "DataLakeConstruct", {
+  const analyticsBucket = new s3.Bucket(stack, 'AnalyticsBucket');
+  const notificationsTopic = new sns.Topic(stack, 'Notifications');
+  const dataLakeConstruct = new DataLakeConstruct(stack, 'DataLakeConstruct', {
     analyticsBucket,
     config,
     notificationsTopic,
   });
 
-  const qsConstruct = new QuickSightConstruct(stack, "QuickSightConstruct", {
+  const qsConstruct = new QuickSightConstruct(stack, 'QuickSightConstruct', {
     config,
     dataLakeConstruct,
     analyticsBucket,
@@ -114,16 +105,11 @@ function buildDataLakeFullStack(
 }
 
 /**
- * Finds the nested DashboardStack inside the QuickSightConstruct and returns
- * its synthesized CloudFormation template for assertions.
+ * Gets the synthesized CloudFormation template from the stack containing
+ * the QuickSight Dashboard resource.
  */
-function getNestedDashboardTemplate(
-  qsConstruct: QuickSightConstruct,
-): Template {
-  const dashboardStack = qsConstruct.node.findChild(
-    "DashboardStack",
-  ) as cdk.NestedStack;
-  return Template.fromStack(dashboardStack);
+function getDashboardTemplate(stack: cdk.Stack): Template {
+  return Template.fromStack(stack);
 }
 
 // ---- Field well extraction helpers ---- //
@@ -140,22 +126,15 @@ interface FieldWellRef {
  * both `dataSetIdentifier` and `columnName` keys (the CloudFormation field well
  * reference pattern used by QuickSight visuals).
  */
-function extractFieldWellRefs(
-  obj: any,
-  visualId: string,
-  sheetId: string,
-): FieldWellRef[] {
+function extractFieldWellRefs(obj: any, visualId: string, sheetId: string): FieldWellRef[] {
   const refs: FieldWellRef[] = [];
 
-  if (obj === null || obj === undefined || typeof obj !== "object") {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
     return refs;
   }
 
   // Check if this object is a column reference (has both dataSetIdentifier and columnName)
-  if (
-    typeof obj.DataSetIdentifier === "string" &&
-    typeof obj.ColumnName === "string"
-  ) {
+  if (typeof obj.DataSetIdentifier === 'string' && typeof obj.ColumnName === 'string') {
     refs.push({
       dataSetIdentifier: obj.DataSetIdentifier,
       columnName: obj.ColumnName,
@@ -170,7 +149,7 @@ function extractFieldWellRefs(
       for (const item of value) {
         refs.push(...extractFieldWellRefs(item, visualId, sheetId));
       }
-    } else if (typeof value === "object" && value !== null) {
+    } else if (typeof value === 'object' && value !== null) {
       refs.push(...extractFieldWellRefs(value, visualId, sheetId));
     }
   }
@@ -189,19 +168,19 @@ function getVisualId(visual: any): string {
       return visual[key].VisualId as string;
     }
   }
-  return "unknown";
+  return 'unknown';
 }
 
 /**
- * Extracts all field well references from a synthesized QuickSight Template resource.
+ * Extracts all field well references from a synthesized QuickSight Dashboard resource.
  */
-function extractAllFieldWellRefs(templateResource: any): FieldWellRef[] {
+function extractAllFieldWellRefs(dashboardResource: any): FieldWellRef[] {
   const allRefs: FieldWellRef[] = [];
-  const definition = templateResource.Properties.Definition;
+  const definition = dashboardResource.Properties.Definition;
   const sheets: any[] = definition.Sheets || [];
 
   for (const sheet of sheets) {
-    const sheetId = sheet.SheetId || "unknown-sheet";
+    const sheetId = sheet.SheetId || 'unknown-sheet';
     const visuals: any[] = sheet.Visuals || [];
 
     for (const visual of visuals) {
@@ -215,268 +194,221 @@ function extractAllFieldWellRefs(templateResource: any): FieldWellRef[] {
 
 // ---- Tests ---- //
 
-describe("QuickSight Template Integration — Visual Field Well References (Property 6)", () => {
+describe('QuickSight Template Integration — Visual Field Well References', () => {
   /**
-   * Property 6: Every visual field well references a valid DataSet and existing column
+   * Every visual field well references a valid DataSet and existing column.
    *
    * Synthesize the full stack and verify every `dataSetIdentifier` in visual field wells
-   * matches a `placeholder` in `dataSetConfigurations`, and every `columnName` exists in
-   * the corresponding `DataSetDefinition.columns`.
+   * matches a `dataSetIdentifier` in `dataSetIdentifierDeclarations`, and every `columnName`
+   * exists in the corresponding DataSet definition columns.
    *
    * **Validates: Requirements 9.1, 9.2**
    */
 
-  describe("REDSHIFT mode", () => {
-    let templateResource: any;
-    let dataSetConfigs: any[];
+  describe('REDSHIFT mode', () => {
+    let dashboardResource: any;
+    let dataSetIdentifierDeclarations: any[];
     let allFieldWellRefs: FieldWellRef[];
 
     beforeAll(() => {
-      const { qsConstruct } = buildRedshiftFullStack();
-      const nestedTemplate = getNestedDashboardTemplate(qsConstruct);
-      const templates = nestedTemplate.findResources(
-        "AWS::QuickSight::Template",
-      );
-      const templateEntries = Object.values(templates);
-      expect(templateEntries).toHaveLength(1);
-      templateResource = templateEntries[0];
-      dataSetConfigs =
-        templateResource.Properties.Definition.DataSetConfigurations;
-      allFieldWellRefs = extractAllFieldWellRefs(templateResource);
+      const { stack } = buildRedshiftFullStack();
+      const template = getDashboardTemplate(stack);
+      const dashboards = template.findResources('AWS::QuickSight::Dashboard');
+      const dashboardEntries = Object.values(dashboards);
+      expect(dashboardEntries).toHaveLength(1);
+      dashboardResource = dashboardEntries[0];
+      dataSetIdentifierDeclarations = dashboardResource.Properties.Definition.DataSetIdentifierDeclarations;
+      allFieldWellRefs = extractAllFieldWellRefs(dashboardResource);
     });
 
-    test("template has dataSetConfigurations with one entry per DATA_SET_DEFINITIONS", () => {
-      expect(dataSetConfigs).toHaveLength(DATA_SET_DEFINITIONS.length);
+    test('dashboard has dataSetIdentifierDeclarations with one entry per DATA_SET_DEFINITIONS', () => {
+      expect(dataSetIdentifierDeclarations).toHaveLength(DATA_SET_DEFINITIONS.length);
     });
 
-    test("field well references are non-empty (visuals actually have field wells)", () => {
-      // We expect at least 12 visuals across 3 sheets, each with at least 1 field well ref
-      expect(allFieldWellRefs.length).toBeGreaterThanOrEqual(12);
+    test('field well references are non-empty (visuals actually have field wells)', () => {
+      // We expect at least 20 visuals across 5 sheets, each with at least 1 field well ref
+      expect(allFieldWellRefs.length).toBeGreaterThanOrEqual(20);
     });
 
-    test("every dataSetIdentifier in field wells matches a Placeholder in dataSetConfigurations", () => {
-      const validPlaceholders = new Set(
-        dataSetConfigs.map((dsc: any) => dsc.Placeholder as string),
-      );
+    test('every dataSetIdentifier in field wells matches an Identifier in dataSetIdentifierDeclarations', () => {
+      const validIdentifiers = new Set(dataSetIdentifierDeclarations.map((d: any) => d.Identifier as string));
 
       for (const ref of allFieldWellRefs) {
-        expect(validPlaceholders).toContain(ref.dataSetIdentifier);
+        expect(validIdentifiers).toContain(ref.dataSetIdentifier);
       }
     });
 
-    test("every columnName in field wells exists in the corresponding DataSetConfiguration ColumnSchemaList", () => {
-      // Build a map: placeholder -> Set of column names from ColumnSchemaList
-      const placeholderToColumns = new Map<string, Set<string>>();
-      for (const dsc of dataSetConfigs) {
-        const placeholder = dsc.Placeholder as string;
-        const columnNames = new Set(
-          (dsc.DataSetSchema.ColumnSchemaList as any[]).map(
-            (col: any) => col.Name as string,
-          ),
-        );
-        placeholderToColumns.set(placeholder, columnNames);
+    test('every columnName in field wells exists in the corresponding DATA_SET_DEFINITIONS columns', () => {
+      // Build a map: viewName -> Set of column names from DATA_SET_DEFINITIONS
+      const viewToColumns = new Map<string, Set<string>>();
+      for (const def of DATA_SET_DEFINITIONS) {
+        viewToColumns.set(def.viewName, new Set(def.columns.map((col) => col.name)));
       }
 
+      // Calculated fields are defined at the dashboard/visual level, not in physical DataSet columns
+      const calculatedFields = new Set(['completion_rate_pct']);
+
       for (const ref of allFieldWellRefs) {
-        const validColumns = placeholderToColumns.get(ref.dataSetIdentifier);
+        if (calculatedFields.has(ref.columnName)) continue;
+        const validColumns = viewToColumns.get(ref.dataSetIdentifier);
         expect(validColumns).toBeDefined();
         expect(validColumns!).toContain(ref.columnName);
       }
     });
   });
 
-  describe("DATA_LAKE mode", () => {
-    let templateResource: any;
-    let dataSetConfigs: any[];
+  describe('DATA_LAKE mode', () => {
+    let dashboardResource: any;
+    let dataSetIdentifierDeclarations: any[];
     let allFieldWellRefs: FieldWellRef[];
 
     beforeAll(() => {
-      const { qsConstruct } = buildDataLakeFullStack();
-      const nestedTemplate = getNestedDashboardTemplate(qsConstruct);
-      const templates = nestedTemplate.findResources(
-        "AWS::QuickSight::Template",
-      );
-      const templateEntries = Object.values(templates);
-      expect(templateEntries).toHaveLength(1);
-      templateResource = templateEntries[0];
-      dataSetConfigs =
-        templateResource.Properties.Definition.DataSetConfigurations;
-      allFieldWellRefs = extractAllFieldWellRefs(templateResource);
+      const { stack } = buildDataLakeFullStack();
+      const template = getDashboardTemplate(stack);
+      const dashboards = template.findResources('AWS::QuickSight::Dashboard');
+      const dashboardEntries = Object.values(dashboards);
+      expect(dashboardEntries).toHaveLength(1);
+      dashboardResource = dashboardEntries[0];
+      dataSetIdentifierDeclarations = dashboardResource.Properties.Definition.DataSetIdentifierDeclarations;
+      allFieldWellRefs = extractAllFieldWellRefs(dashboardResource);
     });
 
-    test("template has dataSetConfigurations with one entry per DATA_SET_DEFINITIONS", () => {
-      expect(dataSetConfigs).toHaveLength(DATA_SET_DEFINITIONS.length);
+    test('dashboard has dataSetIdentifierDeclarations with one entry per DATA_SET_DEFINITIONS', () => {
+      expect(dataSetIdentifierDeclarations).toHaveLength(DATA_SET_DEFINITIONS.length);
     });
 
-    test("field well references are non-empty (visuals actually have field wells)", () => {
-      expect(allFieldWellRefs.length).toBeGreaterThanOrEqual(12);
+    test('field well references are non-empty (visuals actually have field wells)', () => {
+      expect(allFieldWellRefs.length).toBeGreaterThanOrEqual(20);
     });
 
-    test("every dataSetIdentifier in field wells matches a Placeholder in dataSetConfigurations", () => {
-      const validPlaceholders = new Set(
-        dataSetConfigs.map((dsc: any) => dsc.Placeholder as string),
-      );
+    test('every dataSetIdentifier in field wells matches an Identifier in dataSetIdentifierDeclarations', () => {
+      const validIdentifiers = new Set(dataSetIdentifierDeclarations.map((d: any) => d.Identifier as string));
 
       for (const ref of allFieldWellRefs) {
-        expect(validPlaceholders).toContain(ref.dataSetIdentifier);
+        expect(validIdentifiers).toContain(ref.dataSetIdentifier);
       }
     });
 
-    test("every columnName in field wells exists in the corresponding DataSetConfiguration ColumnSchemaList", () => {
-      const placeholderToColumns = new Map<string, Set<string>>();
-      for (const dsc of dataSetConfigs) {
-        const placeholder = dsc.Placeholder as string;
-        const columnNames = new Set(
-          (dsc.DataSetSchema.ColumnSchemaList as any[]).map(
-            (col: any) => col.Name as string,
-          ),
-        );
-        placeholderToColumns.set(placeholder, columnNames);
+    test('every columnName in field wells exists in the corresponding DATA_SET_DEFINITIONS columns', () => {
+      const viewToColumns = new Map<string, Set<string>>();
+      for (const def of DATA_SET_DEFINITIONS) {
+        viewToColumns.set(def.viewName, new Set(def.columns.map((col) => col.name)));
       }
 
+      // Calculated fields are defined at the dashboard/visual level, not in physical DataSet columns
+      const calculatedFields = new Set(['completion_rate_pct']);
+
       for (const ref of allFieldWellRefs) {
-        const validColumns = placeholderToColumns.get(ref.dataSetIdentifier);
+        if (calculatedFields.has(ref.columnName)) continue;
+        const validColumns = viewToColumns.get(ref.dataSetIdentifier);
         expect(validColumns).toBeDefined();
         expect(validColumns!).toContain(ref.columnName);
       }
     });
   });
 
-  describe("cross-validation with DATA_SET_DEFINITIONS source of truth", () => {
+  describe('cross-validation with DATA_SET_DEFINITIONS source of truth', () => {
     let allFieldWellRefs: FieldWellRef[];
+    let dashboardResource: any;
 
     beforeAll(() => {
-      const { qsConstruct } = buildRedshiftFullStack();
-      const nestedTemplate = getNestedDashboardTemplate(qsConstruct);
-      const templates = nestedTemplate.findResources(
-        "AWS::QuickSight::Template",
-      );
-      const templateEntries = Object.values(templates);
-      templateResource = templateEntries[0];
-      allFieldWellRefs = extractAllFieldWellRefs(templateEntries[0]);
+      const { stack } = buildRedshiftFullStack();
+      const template = getDashboardTemplate(stack);
+      const dashboards = template.findResources('AWS::QuickSight::Dashboard');
+      const dashboardEntries = Object.values(dashboards);
+      dashboardResource = dashboardEntries[0];
+      allFieldWellRefs = extractAllFieldWellRefs(dashboardEntries[0]);
     });
 
-    let templateResource: any;
-
-    test("every dataSetIdentifier matches a viewName in DATA_SET_DEFINITIONS", () => {
-      const validViewNames = new Set(
-        DATA_SET_DEFINITIONS.map((def) => def.viewName),
-      );
+    test('every dataSetIdentifier matches a viewName in DATA_SET_DEFINITIONS', () => {
+      const validViewNames = new Set(DATA_SET_DEFINITIONS.map((def) => def.viewName));
 
       for (const ref of allFieldWellRefs) {
         expect(validViewNames).toContain(ref.dataSetIdentifier);
       }
     });
 
-    test("every columnName exists in the corresponding DATA_SET_DEFINITIONS columns array", () => {
+    test('every columnName exists in the corresponding DATA_SET_DEFINITIONS columns array', () => {
       // Build a map: viewName -> Set of column names from DATA_SET_DEFINITIONS
       const viewToColumns = new Map<string, Set<string>>();
       for (const def of DATA_SET_DEFINITIONS) {
-        viewToColumns.set(
-          def.viewName,
-          new Set(def.columns.map((col) => col.name)),
-        );
+        viewToColumns.set(def.viewName, new Set(def.columns.map((col) => col.name)));
       }
 
+      // Calculated fields are defined at the dashboard/visual level, not in physical DataSet columns
+      const calculatedFields = new Set(['completion_rate_pct']);
+
       for (const ref of allFieldWellRefs) {
+        if (calculatedFields.has(ref.columnName)) continue;
         const validColumns = viewToColumns.get(ref.dataSetIdentifier);
         expect(validColumns).toBeDefined();
         expect(validColumns!).toContain(ref.columnName);
       }
     });
 
-    test("dataSetConfigurations Placeholders match DATA_SET_DEFINITIONS viewNames exactly", () => {
-      const definition = templateResource.Properties.Definition;
-      const configPlaceholders = new Set(
-        (definition.DataSetConfigurations as any[]).map(
-          (dsc: any) => dsc.Placeholder as string,
-        ),
+    test('dataSetIdentifierDeclarations Identifiers match DATA_SET_DEFINITIONS viewNames exactly', () => {
+      const definition = dashboardResource.Properties.Definition;
+      const declaredIdentifiers = new Set(
+        (definition.DataSetIdentifierDeclarations as any[]).map((d: any) => d.Identifier as string),
       );
-      const defViewNames = new Set(
-        DATA_SET_DEFINITIONS.map((def) => def.viewName),
-      );
+      const defViewNames = new Set(DATA_SET_DEFINITIONS.map((def) => def.viewName));
 
-      expect(configPlaceholders).toEqual(defViewNames);
+      expect(declaredIdentifiers).toEqual(defViewNames);
     });
   });
 });
 
 /**
  * Template Structure tests — verify the synthesized template contains the
- * correct sheets, visual counts, and that resources live in the nested stack.
+ * correct sheets, visual counts, and that resources live in the main stack.
  *
- * **Validates: Requirements 4.1, 5.1, 6.1, 8.1, 8.2**
+ * **Validates: Requirements 9.1, 9.2**
  */
-describe("QuickSight Template Integration — Template Structure", () => {
-  let nestedTemplate: Template;
-  let parentTemplate: Template;
-  let templateResource: any;
+describe('QuickSight Template Integration — Dashboard Structure', () => {
+  let template: Template;
+  let dashboardResource: any;
   let sheets: any[];
 
   beforeAll(() => {
-    const { stack, qsConstruct } = buildRedshiftFullStack();
-    nestedTemplate = getNestedDashboardTemplate(qsConstruct);
-    parentTemplate = Template.fromStack(stack);
+    const { stack } = buildRedshiftFullStack();
+    template = getDashboardTemplate(stack);
 
-    const templates = nestedTemplate.findResources("AWS::QuickSight::Template");
-    const templateEntries = Object.values(templates);
-    expect(templateEntries).toHaveLength(1);
-    templateResource = templateEntries[0];
-    sheets = templateResource.Properties.Definition.Sheets;
+    const dashboards = template.findResources('AWS::QuickSight::Dashboard');
+    const dashboardEntries = Object.values(dashboards);
+    expect(dashboardEntries).toHaveLength(1);
+    dashboardResource = dashboardEntries[0];
+    sheets = dashboardResource.Properties.Definition.Sheets;
   });
 
-  test("template contains exactly 3 sheets", () => {
-    expect(sheets).toHaveLength(3);
+  test('dashboard contains exactly 5 sheets', () => {
+    expect(sheets).toHaveLength(5);
   });
 
-  test("sheet IDs are acquisition-sheet, engagement-retention-sheet, monetization-sheet", () => {
+  test('sheet IDs are pulse-sheet, progression-sheet, combat-sheet, monetization-sheet, sentiment-sheet', () => {
     const sheetIds = sheets.map((s: any) => s.SheetId);
-    expect(sheetIds).toContain("acquisition-sheet");
-    expect(sheetIds).toContain("engagement-retention-sheet");
-    expect(sheetIds).toContain("monetization-sheet");
+    expect(sheetIds).toContain('pulse-sheet');
+    expect(sheetIds).toContain('progression-sheet');
+    expect(sheetIds).toContain('combat-sheet');
+    expect(sheetIds).toContain('monetization-sheet');
+    expect(sheetIds).toContain('sentiment-sheet');
   });
 
-  test("Acquisition sheet has exactly 2 visuals", () => {
-    const acqSheet = sheets.find((s: any) => s.SheetId === "acquisition-sheet");
-    expect(acqSheet).toBeDefined();
-    expect(acqSheet.Visuals).toHaveLength(2);
+  test('sheets appear in correct order: Pulse, Progression, Combat, Monetization, Sentiment', () => {
+    const sheetIds = sheets.map((s: any) => s.SheetId);
+    expect(sheetIds).toEqual([
+      'pulse-sheet',
+      'progression-sheet',
+      'combat-sheet',
+      'monetization-sheet',
+      'sentiment-sheet',
+    ]);
   });
 
-  test("Engagement sheet has exactly 9 visuals", () => {
-    const engSheet = sheets.find(
-      (s: any) => s.SheetId === "engagement-retention-sheet",
-    );
-    expect(engSheet).toBeDefined();
-    expect(engSheet.Visuals).toHaveLength(9);
+  test('Dashboard resource exists in the stack', () => {
+    template.resourceCountIs('AWS::QuickSight::Dashboard', 1);
   });
 
-  test("Monetization sheet has exactly 2 visuals", () => {
-    const monSheet = sheets.find(
-      (s: any) => s.SheetId === "monetization-sheet",
-    );
-    expect(monSheet).toBeDefined();
-    expect(monSheet.Visuals).toHaveLength(2);
-  });
-
-  test("Template resource exists in the nested stack, not the parent stack", () => {
-    // Nested stack should have exactly 1 Template
-    nestedTemplate.resourceCountIs("AWS::QuickSight::Template", 1);
-
-    // Parent stack should have 0 Templates (they live in the nested stack)
-    const parentTemplates = parentTemplate.findResources(
-      "AWS::QuickSight::Template",
-    );
-    expect(Object.keys(parentTemplates)).toHaveLength(0);
-  });
-
-  test("Dashboard resource exists in the nested stack, not the parent stack", () => {
-    // Nested stack should have exactly 1 Dashboard
-    nestedTemplate.resourceCountIs("AWS::QuickSight::Dashboard", 1);
-
-    // Parent stack should have 0 Dashboards (they live in the nested stack)
-    const parentDashboards = parentTemplate.findResources(
-      "AWS::QuickSight::Dashboard",
-    );
-    expect(Object.keys(parentDashboards)).toHaveLength(0);
+  test('exactly 5 DataSets exist', () => {
+    template.resourceCountIs('AWS::QuickSight::DataSet', 5);
   });
 });

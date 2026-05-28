@@ -1,245 +1,171 @@
 /**
  * QuickSight Sheet Builder Functions — Game Analytics Dashboard
  *
- * Assembles visual definitions into complete sheet configurations with grid layouts.
- * Each function composes visuals from the visual helper module and positions them
- * in a non-overlapping 32-column grid following the "KPI Banner → Trends → Details"
- * inverted pyramid pattern optimized for competitive multiplayer game analytics.
+ * Data Storytelling Dashboard: Each sheet answers a specific business question
+ * using the inverted pyramid pattern (KPI Banner → Trends → Details) combined
+ * with narrative visual types that communicate direction, drop-off, correlation,
+ * and composition at a glance.
+ *
+ * Storytelling Principles Applied:
+ *   - KPIs with sparklines → "Is this metric going up or down?"
+ *   - Funnel charts → "Where do we lose players?"
+ *   - Combo charts → "How do volume and rate relate?"
+ *   - Stacked bars → "Is it balanced across groups?"
+ *   - Tree maps → "What's the biggest contributor?"
+ *   - Gauge charts → "Are we hitting our target?"
+ *   - Subtitles on every visual → explains what the visual answers
  *
  * Sheets:
- *   1. Game Overview — high-level health metrics at a glance
- *   2. Combat & Matches — match/combat data, maps, spells, results
- *   3. Player Progression — level starts, completions, failures over time
- *   4. Economy & Revenue — IAP transactions, lootboxes, currency flow
+ *   1. Pulse — "Is the game healthy today?" (directional KPIs + volume trends)
+ *   2. Combat & Balance — "Is the game fair?" (match lifecycle funnel + balance)
+ *   3. Onboarding & Progression — "Are players progressing?" (tutorial funnel + level performance)
+ *   4. Monetization — "Where does revenue come from?" (conversion funnel + composition)
+ *   5. Player Sentiment — "Are players happy?" (satisfaction gauge + trend + reasons)
  */
 
 import {
-  buildAreaChartVisual,
   buildBarChartVisual,
+  buildDistinctCountKpiWithSparklineVisual,
   buildDonutChartVisual,
-  buildKpiVisual,
-} from "./quicksight-visual-helpers";
+  buildFunnelChartVisual,
+  buildGaugeWithTargetVisual,
+  buildHeatMapVisual,
+  buildKpiWithSparklineVisual,
+  buildLineChartVisual,
+  buildSortedBarChartVisual,
+  buildStackedAreaChartVisual,
+  buildStackedBarChartVisual,
+  buildTreeMapVisual,
+} from './quicksight-visual-helpers';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sheet 1: Game Overview
+// Subtitle Helper — adds storytelling context to each visual
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Builds the Game Overview sheet — high-level health metrics at a glance.
- *
- * Layout (32-col grid):
- *   Row 0-7:   KPI row — Total Events + Total Players (side by side)
- *   Row 8-21:  Area chart — Daily event volume (full width)
- *   Row 22-33: Donut — Events by Type + Donut — Players by Platform (side by side)
+ * Adds a visible subtitle to a visual definition object.
+ * Works with any visual type by finding the chart-type wrapper key and
+ * setting its subtitle property.
  */
-export function buildOverviewSheet(
-  dataSetIdentifiers: Record<string, string>,
-): object {
-  const allEvents = dataSetIdentifiers.all_events;
-  const playerHealth = dataSetIdentifiers.player_health;
-
-  const visuals = [
-    // KPI row
-    buildKpiVisual(
-      "ov-total-events-kpi",
-      "Total Events",
-      allEvents,
-      "ov-event-id-measure",
-      "event_count",
-      "SUM",
-    ),
-    buildKpiVisual(
-      "ov-total-players-kpi",
-      "Total Players (Registrations)",
-      playerHealth,
-      "ov-player-reg-measure",
-      "event_count",
-      "SUM",
-    ),
-
-    // Daily event volume
-    buildAreaChartVisual(
-      "ov-daily-events-area",
-      "Daily Event Volume",
-      allEvents,
-      "ov-event-date-dim",
-      "event_date",
-      "ov-event-count-val",
-      "event_count",
-      "SUM",
-    ),
-
-    // Events by Type donut
-    buildDonutChartVisual(
-      "ov-events-by-type-donut",
-      "Events by Type",
-      allEvents,
-      "ov-event-type-cat",
-      "event_type",
-      "ov-event-type-count",
-      "event_count",
-      "SUM",
-    ),
-
-    // Players by Platform donut
-    buildDonutChartVisual(
-      "ov-players-by-platform-donut",
-      "Players by Platform",
-      playerHealth,
-      "ov-platform-cat",
-      "platform",
-      "ov-platform-count",
-      "event_count",
-      "SUM",
-    ),
-  ];
-
-  return {
-    sheetId: "overview-sheet",
-    name: "Game Overview",
-    visuals,
-    layouts: [
-      {
-        configuration: {
-          gridLayout: {
-            elements: [
-              {
-                elementId: "ov-total-events-kpi",
-                elementType: "VISUAL",
-                columnIndex: 0,
-                columnSpan: 16,
-                rowIndex: 0,
-                rowSpan: 8,
-              },
-              {
-                elementId: "ov-total-players-kpi",
-                elementType: "VISUAL",
-                columnIndex: 16,
-                columnSpan: 16,
-                rowIndex: 0,
-                rowSpan: 8,
-              },
-              {
-                elementId: "ov-daily-events-area",
-                elementType: "VISUAL",
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 8,
-                rowSpan: 14,
-              },
-              {
-                elementId: "ov-events-by-type-donut",
-                elementType: "VISUAL",
-                columnIndex: 0,
-                columnSpan: 16,
-                rowIndex: 22,
-                rowSpan: 12,
-              },
-              {
-                elementId: "ov-players-by-platform-donut",
-                elementType: "VISUAL",
-                columnIndex: 16,
-                columnSpan: 16,
-                rowIndex: 22,
-                rowSpan: 12,
-              },
-            ],
-          },
-        },
-      },
-    ],
-  };
+function withSubtitle(visual: object, subtitle: string): object {
+  const record = visual as Record<string, Record<string, unknown>>;
+  const key = Object.keys(record)[0];
+  if (key && record[key]) {
+    record[key].subtitle = { visibility: 'VISIBLE', formatText: { plainText: subtitle } };
+  }
+  return record;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sheet 2: Combat & Matches
+// Sheet 1: Pulse — "Is the game healthy today?"
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Builds the Combat & Matches sheet.
+ * Builds the Pulse sheet — high-level operational snapshot with directional context.
  *
- * Layout (32-col grid):
- *   Row 0-7:   KPI row — Total Matches + Total Knockouts (side by side)
- *   Row 8-21:  Bar chart — Matches by Map (full width)
- *   Row 22-33: Donut — Match Types + Donut — Most Used Spells (side by side)
- *   Row 34-47: Bar chart — Match Results (full width)
+ * Story: "At a glance, are our key metrics trending up or down?"
  */
-export function buildCombatSheet(
-  dataSetIdentifiers: Record<string, string>,
-): object {
+export function buildPulseSheet(dataSetIdentifiers: Record<string, string>): object {
+  const allEvents = dataSetIdentifiers.all_events;
+  const playerHealth = dataSetIdentifiers.player_health;
   const matchEvents = dataSetIdentifiers.match_events;
 
   const visuals = [
-    // KPI row
-    buildKpiVisual(
-      "cb-total-matches-kpi",
-      "Total Matches",
-      matchEvents,
-      "cb-match-id-measure",
-      "event_count",
-      "SUM",
+    // KPI row — headline numbers
+    withSubtitle(
+      buildKpiWithSparklineVisual(
+        'pulse-total-events-kpi',
+        'Total Events',
+        allEvents,
+        'pulse-event-count-measure',
+        'event_count',
+        'SUM',
+        'pulse-event-trend-dim',
+        'event_date',
+      ),
+      "Growth % this week vs last week. Dates show each week's total.",
     ),
-    buildKpiVisual(
-      "cb-total-knockouts-kpi",
-      "Total Knockouts",
-      matchEvents,
-      "cb-knockout-measure",
-      "event_count",
-      "SUM",
+    withSubtitle(
+      buildKpiWithSparklineVisual(
+        'pulse-new-players-kpi',
+        'New Registrations',
+        playerHealth,
+        'pulse-player-count-measure',
+        'event_count',
+        'SUM',
+        'pulse-player-trend-dim',
+        'event_date',
+      ),
+      "Growth % this week vs last week. Dates show each week's total.",
     ),
-
-    // Matches by Map
-    buildBarChartVisual(
-      "cb-matches-by-map-bar",
-      "Matches by Map",
-      matchEvents,
-      "cb-map-id-cat",
-      "map_id",
-      "cb-map-count-val",
-      "event_count",
-      "SUM",
-    ),
-
-    // Match Types donut
-    buildDonutChartVisual(
-      "cb-match-types-donut",
-      "Match Types",
-      matchEvents,
-      "cb-match-type-cat",
-      "match_type",
-      "cb-match-type-count",
-      "event_count",
-      "SUM",
-    ),
-
-    // Most Used Spells donut
-    buildDonutChartVisual(
-      "cb-spells-donut",
-      "Most Used Spells",
-      matchEvents,
-      "cb-spell-cat",
-      "spell_used",
-      "cb-spell-count",
-      "event_count",
-      "SUM",
+    withSubtitle(
+      buildKpiWithSparklineVisual(
+        'pulse-total-matches-kpi',
+        'Total Matches',
+        matchEvents,
+        'pulse-match-count-measure',
+        'event_count',
+        'SUM',
+        'pulse-match-trend-dim',
+        'event_date',
+      ),
+      "Growth % this week vs last week. Dates show each week's total.",
     ),
 
-    // Match Results bar
-    buildBarChartVisual(
-      "cb-match-results-bar",
-      "Match Results",
-      matchEvents,
-      "cb-result-cat",
-      "match_result",
-      "cb-result-count-val",
-      "event_count",
-      "SUM",
+    // Stacked area: App version adoption over time
+    withSubtitle(
+      buildStackedAreaChartVisual(
+        'pulse-app-version-area',
+        'App Version Adoption Over Time',
+        allEvents,
+        'pulse-version-date-dim',
+        'event_date',
+        'pulse-version-count-val',
+        'event_count',
+        'pulse-version-color',
+        'app_version',
+        'SUM',
+      ),
+      'Are players upgrading to the latest version?',
+    ),
+
+    // Platform distribution
+    withSubtitle(
+      buildBarChartVisual(
+        'pulse-platform-bar',
+        'Platform Distribution',
+        playerHealth,
+        'pulse-platform-cat',
+        'platform',
+        'pulse-platform-count-val',
+        'event_count',
+        'SUM',
+      ),
+      'Which platforms drive the most registrations?',
+    ),
+
+    // Country distribution — heatmap showing country × platform
+    withSubtitle(
+      buildHeatMapVisual(
+        'pulse-country-heatmap',
+        'Player Distribution by Country',
+        playerHealth,
+        'pulse-country-row',
+        'country',
+        'pulse-platform-col',
+        'platform',
+        'pulse-country-count-val',
+        'event_count',
+        'SUM',
+      ),
+      'Where are players coming from and on which platforms?',
     ),
   ];
 
   return {
-    sheetId: "combat-sheet",
-    name: "Combat & Matches",
+    sheetId: 'pulse-sheet',
+    name: 'Pulse',
+    description: 'High-level game health: Are key metrics trending up or down?',
     visuals,
     layouts: [
       {
@@ -247,52 +173,52 @@ export function buildCombatSheet(
           gridLayout: {
             elements: [
               {
-                elementId: "cb-total-matches-kpi",
-                elementType: "VISUAL",
+                elementId: 'pulse-total-events-kpi',
+                elementType: 'VISUAL',
                 columnIndex: 0,
-                columnSpan: 16,
+                columnSpan: 11,
                 rowIndex: 0,
                 rowSpan: 8,
               },
               {
-                elementId: "cb-total-knockouts-kpi",
-                elementType: "VISUAL",
-                columnIndex: 16,
-                columnSpan: 16,
+                elementId: 'pulse-new-players-kpi',
+                elementType: 'VISUAL',
+                columnIndex: 11,
+                columnSpan: 11,
                 rowIndex: 0,
                 rowSpan: 8,
               },
               {
-                elementId: "cb-matches-by-map-bar",
-                elementType: "VISUAL",
+                elementId: 'pulse-total-matches-kpi',
+                elementType: 'VISUAL',
+                columnIndex: 22,
+                columnSpan: 10,
+                rowIndex: 0,
+                rowSpan: 8,
+              },
+              {
+                elementId: 'pulse-app-version-area',
+                elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 32,
                 rowIndex: 8,
-                rowSpan: 14,
-              },
-              {
-                elementId: "cb-match-types-donut",
-                elementType: "VISUAL",
-                columnIndex: 0,
-                columnSpan: 16,
-                rowIndex: 22,
                 rowSpan: 12,
               },
               {
-                elementId: "cb-spells-donut",
-                elementType: "VISUAL",
+                elementId: 'pulse-platform-bar',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 16,
+                rowIndex: 20,
+                rowSpan: 12,
+              },
+              {
+                elementId: 'pulse-country-heatmap',
+                elementType: 'VISUAL',
                 columnIndex: 16,
                 columnSpan: 16,
-                rowIndex: 22,
+                rowIndex: 20,
                 rowSpan: 12,
-              },
-              {
-                elementId: "cb-match-results-bar",
-                elementType: "VISUAL",
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 34,
-                rowSpan: 14,
               },
             ],
           },
@@ -303,85 +229,213 @@ export function buildCombatSheet(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sheet 3: Player Progression
+// Sheet 2: Combat & Balance — "Is the game fair?"
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Builds the Player Progression sheet.
- *
- * Layout (32-col grid):
- *   Row 0-7:   KPI — Total Level Attempts (full width)
- *   Row 8-21:  Area chart — Level events over time (full width)
- *   Row 22-33: Bar × 3 — Starts by Level + Completions by Level + Failures by Level
- */
-export function buildProgressionSheet(
-  dataSetIdentifiers: Record<string, string>,
-): object {
+export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): object {
+  const matchEvents = dataSetIdentifiers.match_events;
+
+  const visuals = [
+    withSubtitle(
+      buildKpiWithSparklineVisual(
+        'cb-total-matches-kpi',
+        'Total Matches',
+        matchEvents,
+        'cb-match-count-measure',
+        'event_count',
+        'SUM',
+        'cb-match-trend-dim',
+        'event_date',
+      ),
+      "Growth % this week vs last week. Dates show each week's total.",
+    ),
+
+    withSubtitle(
+      buildFunnelChartVisual(
+        'cb-match-lifecycle-funnel',
+        'Match Lifecycle Funnel',
+        matchEvents,
+        'cb-funnel-event-type-cat',
+        'event_type',
+        'cb-funnel-count-val',
+        'event_count',
+        'SUM',
+      ),
+      'Where do players drop out of the match pipeline?',
+    ),
+
+    withSubtitle(
+      buildStackedBarChartVisual(
+        'cb-outcomes-by-map-bar',
+        'Match Outcomes by Map',
+        matchEvents,
+        'cb-map-cat',
+        'map_id',
+        'cb-map-outcome-val',
+        'event_count',
+        'cb-outcome-color',
+        'match_result',
+        'SUM',
+      ),
+      'Is any map producing unfair win/loss ratios?',
+    ),
+
+    withSubtitle(
+      buildDonutChartVisual(
+        'cb-match-types-donut',
+        'Match Types',
+        matchEvents,
+        'cb-match-type-cat',
+        'match_type',
+        'cb-match-type-count',
+        'event_count',
+        'SUM',
+      ),
+      'Which game modes are most popular?',
+    ),
+
+    withSubtitle(
+      buildBarChartVisual(
+        'cb-spell-knockouts-bar',
+        'Spell Knockouts',
+        matchEvents,
+        'cb-spell-cat',
+        'spell_used',
+        'cb-spell-count-val',
+        'event_count',
+        'SUM',
+      ),
+      'Which spells dominate? Imbalance signals needed nerfs.',
+    ),
+
+    withSubtitle(
+      buildBarChartVisual(
+        'cb-matchmaking-failures-bar',
+        'Matchmaking Failure Reasons',
+        matchEvents,
+        'cb-failure-reason-cat',
+        'matching_failed_msg',
+        'cb-failure-count-val',
+        'event_count',
+        'SUM',
+      ),
+      'Why are players failing to find matches?',
+    ),
+  ];
+
+  return {
+    sheetId: 'combat-sheet',
+    name: 'Combat & Balance',
+    description: 'Match lifecycle health and game balance across maps, spells, and modes.',
+    visuals,
+    layouts: [
+      {
+        configuration: {
+          gridLayout: {
+            elements: [
+              {
+                elementId: 'cb-total-matches-kpi',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 32,
+                rowIndex: 0,
+                rowSpan: 10,
+              },
+              {
+                elementId: 'cb-match-lifecycle-funnel',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 32,
+                rowIndex: 10,
+                rowSpan: 14,
+              },
+              {
+                elementId: 'cb-outcomes-by-map-bar',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 20,
+                rowIndex: 24,
+                rowSpan: 12,
+              },
+              {
+                elementId: 'cb-match-types-donut',
+                elementType: 'VISUAL',
+                columnIndex: 20,
+                columnSpan: 12,
+                rowIndex: 24,
+                rowSpan: 12,
+              },
+              {
+                elementId: 'cb-spell-knockouts-bar',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 16,
+                rowIndex: 36,
+                rowSpan: 12,
+              },
+              {
+                elementId: 'cb-matchmaking-failures-bar',
+                elementType: 'VISUAL',
+                columnIndex: 16,
+                columnSpan: 16,
+                rowIndex: 36,
+                rowSpan: 12,
+              },
+            ],
+          },
+        },
+      },
+    ],
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sheet 3: Onboarding & Progression — "Are players progressing?"
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function buildProgressionSheet(dataSetIdentifiers: Record<string, string>): object {
+  const playerHealth = dataSetIdentifiers.player_health;
   const levelEvents = dataSetIdentifiers.level_events;
 
   const visuals = [
-    // KPI row
-    buildKpiVisual(
-      "pr-total-attempts-kpi",
-      "Total Level Attempts",
-      levelEvents,
-      "pr-attempts-measure",
-      "event_count",
-      "SUM",
+    withSubtitle(
+      buildFunnelChartVisual(
+        'pr-tutorial-funnel',
+        'Tutorial Drop-off Funnel',
+        playerHealth,
+        'pr-tutorial-screen-cat',
+        'tutorial_screen_id',
+        'pr-tutorial-count-val',
+        'event_count',
+        'SUM',
+      ),
+      'Where do new players abandon the tutorial?',
     ),
 
-    // Level events over time
-    buildAreaChartVisual(
-      "pr-level-events-area",
-      "Level Events Over Time",
-      levelEvents,
-      "pr-event-date-dim",
-      "event_date",
-      "pr-level-count-val",
-      "event_count",
-      "SUM",
-    ),
+    withSubtitle(buildLevelPerformanceVisual(levelEvents), 'Compare starts, completions, and failures per level'),
 
-    // Starts by Level
-    buildBarChartVisual(
-      "pr-starts-by-level-bar",
-      "Starts by Level",
-      levelEvents,
-      "pr-level-start-cat",
-      "level_id",
-      "pr-starts-count-val",
-      "event_count",
-      "SUM",
-    ),
+    withSubtitle(buildCompletionRateComboVisual(levelEvents), 'Bars = total events, Line = completion rate %'),
 
-    // Completions by Level
-    buildBarChartVisual(
-      "pr-completions-by-level-bar",
-      "Completions by Level",
-      levelEvents,
-      "pr-level-complete-cat",
-      "level_id",
-      "pr-completions-count-val",
-      "event_count",
-      "SUM",
-    ),
-
-    // Failures by Level
-    buildBarChartVisual(
-      "pr-failures-by-level-bar",
-      "Failures by Level",
-      levelEvents,
-      "pr-level-fail-cat",
-      "level_id",
-      "pr-failures-count-val",
-      "event_count",
-      "SUM",
+    withSubtitle(
+      buildSortedBarChartVisual(
+        'pr-rank-distribution-bar',
+        'Rank Distribution',
+        playerHealth,
+        'pr-rank-cat',
+        'rank_reached',
+        'pr-rank-count-val',
+        'event_count',
+        'SUM',
+        'ASC',
+      ),
+      'How far do players progress in the ranking system?',
     ),
   ];
 
   return {
-    sheetId: "progression-sheet",
-    name: "Player Progression",
+    sheetId: 'progression-sheet',
+    name: 'Onboarding & Progression',
+    description: 'Player journey from tutorial through levels to ranked play.',
     visuals,
     layouts: [
       {
@@ -389,43 +443,287 @@ export function buildProgressionSheet(
           gridLayout: {
             elements: [
               {
-                elementId: "pr-total-attempts-kpi",
-                elementType: "VISUAL",
+                elementId: 'pr-tutorial-funnel',
+                elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 32,
                 rowIndex: 0,
-                rowSpan: 8,
-              },
-              {
-                elementId: "pr-level-events-area",
-                elementType: "VISUAL",
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 8,
                 rowSpan: 14,
               },
               {
-                elementId: "pr-starts-by-level-bar",
-                elementType: "VISUAL",
+                elementId: 'pr-level-performance-bar',
+                elementType: 'VISUAL',
                 columnIndex: 0,
-                columnSpan: 11,
-                rowIndex: 22,
+                columnSpan: 32,
+                rowIndex: 14,
+                rowSpan: 14,
+              },
+              {
+                elementId: 'pr-completion-combo',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 20,
+                rowIndex: 28,
+                rowSpan: 14,
+              },
+              {
+                elementId: 'pr-rank-distribution-bar',
+                elementType: 'VISUAL',
+                columnIndex: 20,
+                columnSpan: 12,
+                rowIndex: 28,
+                rowSpan: 14,
+              },
+            ],
+          },
+        },
+      },
+    ],
+  };
+}
+
+function buildLevelPerformanceVisual(dataSetIdentifier: string): object {
+  return {
+    barChartVisual: {
+      visualId: 'pr-level-performance-bar',
+      title: { visibility: 'VISIBLE', formatText: { plainText: 'Level Performance (Start / Complete / Fail)' } },
+      subtitle: { visibility: 'HIDDEN' },
+      chartConfiguration: {
+        orientation: 'HORIZONTAL',
+        fieldWells: {
+          barChartAggregatedFieldWells: {
+            category: [
+              {
+                categoricalDimensionField: {
+                  fieldId: 'pr-level-id-cat',
+                  column: { dataSetIdentifier, columnName: 'level_id' },
+                },
+              },
+            ],
+            values: [
+              {
+                numericalMeasureField: {
+                  fieldId: 'pr-level-event-count-val',
+                  column: { dataSetIdentifier, columnName: 'event_count' },
+                  aggregationFunction: { simpleNumericalAggregation: 'SUM' },
+                },
+              },
+            ],
+            colors: [
+              {
+                categoricalDimensionField: {
+                  fieldId: 'pr-event-type-color',
+                  column: { dataSetIdentifier, columnName: 'event_type' },
+                },
+              },
+            ],
+          },
+        },
+        sortConfiguration: { categorySort: [{ fieldSort: { fieldId: 'pr-level-id-cat', direction: 'ASC' } }] },
+        dataLabels: { visibility: 'VISIBLE', position: 'OUTSIDE' },
+        legend: { visibility: 'VISIBLE', position: 'RIGHT' },
+      },
+    },
+  };
+}
+
+function buildCompletionRateComboVisual(dataSetIdentifier: string): object {
+  return {
+    comboChartVisual: {
+      visualId: 'pr-completion-combo',
+      title: { visibility: 'VISIBLE', formatText: { plainText: 'Level Starts vs Completion Rate %' } },
+      subtitle: { visibility: 'HIDDEN' },
+      chartConfiguration: {
+        fieldWells: {
+          comboChartAggregatedFieldWells: {
+            category: [
+              {
+                categoricalDimensionField: {
+                  fieldId: 'pr-combo-level-cat',
+                  column: { dataSetIdentifier, columnName: 'level_id' },
+                },
+              },
+            ],
+            barValues: [
+              {
+                numericalMeasureField: {
+                  fieldId: 'pr-combo-starts-bar',
+                  column: { dataSetIdentifier, columnName: 'event_count' },
+                  aggregationFunction: { simpleNumericalAggregation: 'SUM' },
+                },
+              },
+            ],
+            lineValues: [
+              {
+                numericalMeasureField: {
+                  fieldId: 'pr-combo-rate-line',
+                  column: { dataSetIdentifier, columnName: 'completion_rate_pct' },
+                },
+              },
+            ],
+            colors: [],
+          },
+        },
+        sortConfiguration: { categorySort: [{ fieldSort: { fieldId: 'pr-combo-level-cat', direction: 'ASC' } }] },
+        barDataLabels: { visibility: 'HIDDEN' },
+        lineDataLabels: { visibility: 'VISIBLE' },
+        legend: { visibility: 'VISIBLE', position: 'BOTTOM' },
+      },
+    },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sheet 4: Monetization — "Where does revenue come from?"
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function buildMonetizationSheet(dataSetIdentifiers: Record<string, string>): object {
+  const economyEvents = dataSetIdentifiers.economy_events;
+  const allEvents = dataSetIdentifiers.all_events;
+
+  const visuals = [
+    withSubtitle(
+      buildDistinctCountKpiWithSparklineVisual(
+        'mn-total-transactions-kpi',
+        'Total Transactions',
+        economyEvents,
+        'mn-transaction-id-measure',
+        'transaction_id',
+        'mn-transaction-trend-dim',
+        'event_date',
+      ),
+      "Growth % this week vs last week. Dates show each week's total.",
+    ),
+    withSubtitle(
+      buildKpiWithSparklineVisual(
+        'mn-total-lootboxes-kpi',
+        'Total Lootboxes Opened',
+        economyEvents,
+        'mn-lootbox-measure',
+        'event_count',
+        'SUM',
+        'mn-lootbox-trend-dim',
+        'event_date',
+      ),
+      "Growth % this week vs last week. Dates show each week's total.",
+    ),
+
+    withSubtitle(
+      buildStackedAreaChartVisual(
+        'mn-revenue-by-currency-area',
+        'Daily Revenue by Currency',
+        economyEvents,
+        'mn-event-date-dim',
+        'event_date',
+        'mn-currency-amount-val',
+        'currency_amount',
+        'mn-currency-type-color',
+        'currency_type',
+        'SUM',
+      ),
+      'Revenue split by currency — never sum across currencies',
+    ),
+
+    withSubtitle(
+      buildFunnelChartVisual(
+        'mn-purchase-funnel',
+        'Purchase Conversion Funnel',
+        allEvents,
+        'mn-funnel-event-type-cat',
+        'event_type',
+        'mn-funnel-count-val',
+        'event_count',
+        'SUM',
+      ),
+      'How many item viewers convert to buyers?',
+    ),
+
+    withSubtitle(
+      buildTreeMapVisual(
+        'mn-top-items-tree',
+        'Top Items by Transaction Volume',
+        economyEvents,
+        'mn-item-id-group',
+        'item_id',
+        'mn-item-count-size',
+        'event_count',
+        'SUM',
+      ),
+      'Larger blocks = more transactions. Which items sell most?',
+    ),
+
+    withSubtitle(
+      buildSortedBarChartVisual(
+        'mn-lootbox-rarity-bar',
+        'Lootbox Drops by Rarity',
+        economyEvents,
+        'mn-rarity-cat',
+        'item_rarity',
+        'mn-rarity-count-val',
+        'event_count',
+        'SUM',
+        'ASC',
+      ),
+      'Is the drop rate distribution matching design intent?',
+    ),
+  ];
+
+  return {
+    sheetId: 'monetization-sheet',
+    name: 'Monetization',
+    description: 'Revenue sources, purchase conversion, and lootbox economy health.',
+    visuals,
+    layouts: [
+      {
+        configuration: {
+          gridLayout: {
+            elements: [
+              {
+                elementId: 'mn-total-transactions-kpi',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 16,
+                rowIndex: 0,
+                rowSpan: 10,
+              },
+              {
+                elementId: 'mn-total-lootboxes-kpi',
+                elementType: 'VISUAL',
+                columnIndex: 16,
+                columnSpan: 16,
+                rowIndex: 0,
+                rowSpan: 10,
+              },
+              {
+                elementId: 'mn-revenue-by-currency-area',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 32,
+                rowIndex: 10,
+                rowSpan: 14,
+              },
+              {
+                elementId: 'mn-purchase-funnel',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 32,
+                rowIndex: 24,
+                rowSpan: 14,
+              },
+              {
+                elementId: 'mn-top-items-tree',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 20,
+                rowIndex: 38,
                 rowSpan: 12,
               },
               {
-                elementId: "pr-completions-by-level-bar",
-                elementType: "VISUAL",
-                columnIndex: 11,
-                columnSpan: 11,
-                rowIndex: 22,
-                rowSpan: 12,
-              },
-              {
-                elementId: "pr-failures-by-level-bar",
-                elementType: "VISUAL",
-                columnIndex: 22,
-                columnSpan: 10,
-                rowIndex: 22,
+                elementId: 'mn-lootbox-rarity-bar',
+                elementType: 'VISUAL',
+                columnIndex: 20,
+                columnSpan: 12,
+                rowIndex: 38,
                 rowSpan: 12,
               },
             ],
@@ -437,81 +735,90 @@ export function buildProgressionSheet(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sheet 4: Economy & Revenue
+// Sheet 5: Player Sentiment — "Are players happy?"
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Builds the Economy & Revenue sheet.
- *
- * Layout (32-col grid):
- *   Row 0-7:   KPI row — Total Revenue + Total Lootboxes Opened (side by side)
- *   Row 8-21:  Area chart — Daily revenue (full width)
- *   Row 22-33: Donut — Revenue by Currency + Bar — Lootbox Drops by Rarity (side by side)
- */
-export function buildEconomySheet(
-  dataSetIdentifiers: Record<string, string>,
-): object {
-  const economyEvents = dataSetIdentifiers.economy_events;
+export function buildSentimentSheet(dataSetIdentifiers: Record<string, string>): object {
+  const playerHealth = dataSetIdentifiers.player_health;
 
   const visuals = [
-    // KPI row
-    buildKpiVisual(
-      "ec-total-revenue-kpi",
-      "Total Revenue",
-      economyEvents,
-      "ec-revenue-measure",
-      "currency_amount",
-      "SUM",
-    ),
-    buildKpiVisual(
-      "ec-total-lootboxes-kpi",
-      "Total Lootboxes Opened",
-      economyEvents,
-      "ec-lootbox-measure",
-      "event_count",
-      "SUM",
+    withSubtitle(
+      buildGaugeWithTargetVisual(
+        'st-avg-rating-gauge',
+        'Average User Rating',
+        playerHealth,
+        'st-avg-rating-measure',
+        'user_rating',
+        'AVERAGE',
+      ),
+      'Target: 4.0+ means players are satisfied',
     ),
 
-    // Daily revenue area chart
-    buildAreaChartVisual(
-      "ec-daily-revenue-area",
-      "Daily Revenue",
-      economyEvents,
-      "ec-event-date-dim",
-      "event_date",
-      "ec-revenue-val",
-      "currency_amount",
-      "SUM",
+    withSubtitle(
+      buildKpiWithSparklineVisual(
+        'st-total-reports-kpi',
+        'Total Reports',
+        playerHealth,
+        'st-total-reports-measure',
+        'event_count',
+        'SUM',
+        'st-reports-trend-dim',
+        'event_date',
+      ),
+      "Growth % this week vs last week. Dates show each week's total.",
     ),
 
-    // Revenue by Currency donut
-    buildDonutChartVisual(
-      "ec-revenue-by-currency-donut",
-      "Revenue by Currency",
-      economyEvents,
-      "ec-currency-type-cat",
-      "currency_type",
-      "ec-currency-sum",
-      "currency_amount",
-      "SUM",
+    withSubtitle(
+      buildLineChartVisual(
+        'st-avg-rating-line',
+        'Average User Rating Over Time',
+        playerHealth,
+        'st-rating-date-dim',
+        'event_date',
+        'st-rating-val',
+        'user_rating',
+        'AVERAGE',
+      ),
+      'Is player satisfaction improving over time?',
     ),
 
-    // Lootbox Drops by Rarity bar
-    buildBarChartVisual(
-      "ec-lootbox-rarity-bar",
-      "Lootbox Drops by Rarity",
-      economyEvents,
-      "ec-rarity-cat",
-      "item_rarity",
-      "ec-rarity-count-val",
-      "event_count",
-      "SUM",
+    withSubtitle(
+      buildStackedAreaChartVisual(
+        'st-reports-over-time-area',
+        'Report Reasons Over Time',
+        playerHealth,
+        'st-report-date-dim',
+        'event_date',
+        'st-report-count-val',
+        'event_count',
+        'st-report-reason-color',
+        'report_reason',
+        'SUM',
+      ),
+      'Which toxicity types are trending up?',
     ),
+
+    withSubtitle(
+      buildBarChartVisual(
+        'st-report-reasons-bar',
+        'Report Reasons',
+        playerHealth,
+        'st-report-reason-cat',
+        'report_reason',
+        'st-report-reason-count',
+        'event_count',
+        'SUM',
+      ),
+      'What makes players file reports?',
+    ),
+
+    withSubtitle(buildRatingDistributionVisual(playerHealth), 'Distribution of 1-5 star ratings'),
   ];
 
   return {
-    sheetId: "economy-sheet",
-    name: "Economy & Revenue",
+    sheetId: 'sentiment-sheet',
+    name: 'Player Sentiment',
+    description: 'Player satisfaction, toxicity trends, and report analysis.',
     visuals,
     layouts: [
       {
@@ -519,43 +826,51 @@ export function buildEconomySheet(
           gridLayout: {
             elements: [
               {
-                elementId: "ec-total-revenue-kpi",
-                elementType: "VISUAL",
+                elementId: 'st-avg-rating-gauge',
+                elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 16,
                 rowIndex: 0,
-                rowSpan: 8,
+                rowSpan: 10,
               },
               {
-                elementId: "ec-total-lootboxes-kpi",
-                elementType: "VISUAL",
+                elementId: 'st-total-reports-kpi',
+                elementType: 'VISUAL',
                 columnIndex: 16,
                 columnSpan: 16,
                 rowIndex: 0,
-                rowSpan: 8,
+                rowSpan: 10,
               },
               {
-                elementId: "ec-daily-revenue-area",
-                elementType: "VISUAL",
+                elementId: 'st-avg-rating-line',
+                elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 32,
-                rowIndex: 8,
+                rowIndex: 10,
                 rowSpan: 14,
               },
               {
-                elementId: "ec-revenue-by-currency-donut",
-                elementType: "VISUAL",
+                elementId: 'st-reports-over-time-area',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 32,
+                rowIndex: 24,
+                rowSpan: 14,
+              },
+              {
+                elementId: 'st-report-reasons-bar',
+                elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 16,
-                rowIndex: 22,
+                rowIndex: 38,
                 rowSpan: 12,
               },
               {
-                elementId: "ec-lootbox-rarity-bar",
-                elementType: "VISUAL",
+                elementId: 'st-rating-distribution-vbar',
+                elementType: 'VISUAL',
                 columnIndex: 16,
                 columnSpan: 16,
-                rowIndex: 22,
+                rowIndex: 38,
                 rowSpan: 12,
               },
             ],
@@ -564,4 +879,54 @@ export function buildEconomySheet(
       },
     ],
   };
+}
+
+function buildRatingDistributionVisual(dataSetIdentifier: string): object {
+  return {
+    barChartVisual: {
+      visualId: 'st-rating-distribution-vbar',
+      title: { visibility: 'VISIBLE', formatText: { plainText: 'Rating Distribution' } },
+      subtitle: { visibility: 'HIDDEN' },
+      chartConfiguration: {
+        orientation: 'VERTICAL',
+        fieldWells: {
+          barChartAggregatedFieldWells: {
+            category: [
+              {
+                numericalDimensionField: {
+                  fieldId: 'st-rating-cat',
+                  column: { dataSetIdentifier, columnName: 'user_rating' },
+                },
+              },
+            ],
+            values: [
+              {
+                numericalMeasureField: {
+                  fieldId: 'st-rating-count-val',
+                  column: { dataSetIdentifier, columnName: 'event_count' },
+                  aggregationFunction: { simpleNumericalAggregation: 'SUM' },
+                },
+              },
+            ],
+            colors: [],
+          },
+        },
+        sortConfiguration: { categorySort: [{ fieldSort: { fieldId: 'st-rating-cat', direction: 'ASC' } }] },
+        dataLabels: { visibility: 'VISIBLE', position: 'OUTSIDE' },
+        legend: { visibility: 'HIDDEN' },
+      },
+    },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Legacy exports (kept for backward compatibility with tests)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function buildOverviewSheet(dataSetIdentifiers: Record<string, string>): object {
+  return buildPulseSheet(dataSetIdentifiers);
+}
+
+export function buildEconomySheet(dataSetIdentifiers: Record<string, string>): object {
+  return buildMonetizationSheet(dataSetIdentifiers);
 }

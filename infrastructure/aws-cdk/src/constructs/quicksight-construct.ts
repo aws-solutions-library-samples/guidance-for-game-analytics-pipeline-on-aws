@@ -9,10 +9,11 @@ import { RedshiftConstruct } from './redshift-construct';
 import { VpcConstruct } from './vpc-construct';
 import { DataLakeConstruct } from './data-lake-construct';
 import {
-  buildOverviewSheet,
-  buildCombatSheet,
+  buildPulseSheet,
   buildProgressionSheet,
-  buildEconomySheet,
+  buildCombatSheet,
+  buildMonetizationSheet,
+  buildSentimentSheet,
 } from './quicksight-sheet-builders';
 
 // ---- Data Models ---- //
@@ -27,6 +28,10 @@ export interface DataSetDefinition {
   columns: ColumnDefinition[];
   /** Optional custom SQL query. When provided, replaces the default `SELECT * FROM schema.viewName`. Use `{db_name}` as placeholder for the schema-qualified table path. */
   customSqlQuery?: string;
+  /** Optional calculated columns to add via LogicalTableMap DataTransforms */
+  calculatedColumns?: Array<{ columnName: string; columnId: string; expression: string }>;
+  /** Optional column groups (e.g., for geospatial columns that need a geographic role) */
+  columnGroups?: Array<{ geoSpatialColumnGroup: { name: string; countryCode: string; columns: string[] } }>;
 }
 
 /**
@@ -47,8 +52,8 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       '  application_id,',
       "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
       "  date_trunc('hour', timestamp 'epoch' + event_timestamp * interval '1 second') as event_hour,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'platform') as platform,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'country_id') as country,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'platform'), '') as platform,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '') as country,",
       '  1 as event_count',
       'FROM {db_name}."event_data"',
     ].join('\n'),
@@ -74,11 +79,12 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       '  event_type,',
       "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
       "  JSON_EXTRACT_PATH_TEXT(event_data, 'match_id') as match_id,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'map_id') as map_id,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'match_type') as match_type,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'match_result_type') as match_result,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'spell_id') as spell_used,",
-      "  CAST(JSON_EXTRACT_PATH_TEXT(event_data, 'exp_gained') AS INTEGER) as exp_gained,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'map_id'), '') as map_id,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'match_type'), '') as match_type,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'match_result_type'), '') as match_result,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'spell_id'), '') as spell_used,",
+      "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'exp_gained'), '') AS INTEGER) as exp_gained,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'matching_failed_msg'), '') AS matching_failed_msg,",
       '  1 as event_count',
       'FROM {db_name}."event_data"',
       "WHERE event_type IN ('match_start', 'match_end', 'user_knockout', 'matchmaking_start', 'matchmaking_complete', 'matchmaking_failed')",
@@ -93,6 +99,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       { name: 'match_result', type: 'STRING' },
       { name: 'spell_used', type: 'STRING' },
       { name: 'exp_gained', type: 'INTEGER' },
+      { name: 'matching_failed_msg', type: 'STRING' },
       { name: 'event_count', type: 'INTEGER' },
     ],
   },
@@ -118,6 +125,14 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       { name: 'level_version', type: 'INTEGER' },
       { name: 'event_count', type: 'INTEGER' },
     ],
+    calculatedColumns: [
+      {
+        columnName: 'completion_rate_pct',
+        columnId: 'completion_rate_pct',
+        expression:
+          "sumIf({event_count}, {event_type} = 'level_completed') / sumIf({event_count}, {event_type} = 'level_started') * 100",
+      },
+    ],
   },
   // 4. Monetization & lootbox
   {
@@ -127,12 +142,12 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       '  event_id,',
       '  event_type,',
       "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'item_id') as item_id,",
-      "  CAST(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount') AS INTEGER) as currency_amount,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'currency_type') as currency_type,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'transaction_id') as transaction_id,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'item_rarity') as item_rarity,",
-      "  CAST(JSON_EXTRACT_PATH_TEXT(event_data, 'lootbox_cost') AS INTEGER) as lootbox_cost,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'item_id'), '') as item_id,",
+      "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) as currency_amount,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_type'), '') as currency_type,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'transaction_id'), '') as transaction_id,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'item_rarity'), '') as item_rarity,",
+      "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'lootbox_cost'), '') AS INTEGER) as lootbox_cost,",
       '  1 as event_count',
       'FROM {db_name}."event_data"',
       "WHERE event_type IN ('iap_transaction', 'lootbox_opened', 'item_viewed')",
@@ -157,26 +172,39 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       'SELECT',
       '  event_id,',
       '  event_type,',
+      '  app_version,',
       "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'country_id') as country,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'platform') as platform,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'report_reason') as report_reason,",
-      "  CAST(JSON_EXTRACT_PATH_TEXT(event_data, 'user_rating') AS INTEGER) as user_rating,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'user_rank_reached') as rank_reached,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '') as country,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'platform'), '') as platform,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'report_reason'), '') as report_reason,",
+      "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'user_rating'), '') AS INTEGER) as user_rating,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'user_rank_reached'), '') as rank_reached,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'tutorial_screen_id'), '') AS tutorial_screen_id,",
       '  1 as event_count',
       'FROM {db_name}."event_data"',
-      "WHERE event_type IN ('user_registration', 'user_report', 'user_sentiment', 'user_rank_up')",
+      "WHERE event_type IN ('user_registration', 'user_report', 'user_sentiment', 'user_rank_up', 'tutorial_progression')",
     ].join('\n'),
     columns: [
       { name: 'event_id', type: 'STRING' },
       { name: 'event_type', type: 'STRING' },
+      { name: 'app_version', type: 'STRING' },
       { name: 'event_date', type: 'DATETIME' },
       { name: 'country', type: 'STRING' },
       { name: 'platform', type: 'STRING' },
       { name: 'report_reason', type: 'STRING' },
       { name: 'user_rating', type: 'INTEGER' },
       { name: 'rank_reached', type: 'STRING' },
+      { name: 'tutorial_screen_id', type: 'STRING' },
       { name: 'event_count', type: 'INTEGER' },
+    ],
+    columnGroups: [
+      {
+        geoSpatialColumnGroup: {
+          name: 'country-geo-group',
+          countryCode: 'US',
+          columns: ['country'],
+        },
+      },
     ],
   },
 ];
@@ -268,6 +296,46 @@ export function createDataSetFromView(
     sqlQuery = `SELECT * FROM ${schema}."${def.viewName}"`;
   }
 
+  // Build logicalTableMap with calculated columns and/or geo tags if defined
+  const needsLogicalTable = (def.calculatedColumns?.length ?? 0) > 0 || (def.columnGroups?.length ?? 0) > 0;
+  const dataTransforms: object[] = [];
+
+  if (def.calculatedColumns?.length) {
+    dataTransforms.push({
+      createColumnsOperation: {
+        columns: def.calculatedColumns.map((calc) => ({
+          columnName: calc.columnName,
+          columnId: calc.columnId,
+          expression: calc.expression,
+        })),
+      },
+    });
+  }
+
+  // Add TagColumnOperation for geospatial columns (assigns geographic role)
+  if (def.columnGroups?.length) {
+    for (const group of def.columnGroups) {
+      for (const col of group.geoSpatialColumnGroup.columns) {
+        dataTransforms.push({
+          tagColumnOperation: {
+            columnName: col,
+            tags: [{ columnGeographicRole: 'COUNTRY' }],
+          },
+        });
+      }
+    }
+  }
+
+  const logicalTableMap: Record<string, quicksight.CfnDataSet.LogicalTableProperty> | undefined = needsLogicalTable
+    ? {
+        LogicalTable0: {
+          alias: def.viewName,
+          source: { physicalTableId: 'PhysicalTable0' },
+          dataTransforms,
+        },
+      }
+    : undefined;
+
   return new quicksight.CfnDataSet(scope, `DataSet-${def.viewName}`, {
     awsAccountId: accountId,
     dataSetId: `${workloadName}-${def.viewName}`,
@@ -286,6 +354,8 @@ export function createDataSetFromView(
         },
       },
     },
+    ...(logicalTableMap && { logicalTableMap }),
+    ...(def.columnGroups?.length && { columnGroups: def.columnGroups }),
     permissions: [
       {
         principal: quicksightUserArn,
@@ -293,6 +363,282 @@ export function createDataSetFromView(
       },
     ],
   });
+}
+
+// ---- Null Exclusion Filter Groups ---- //
+
+/**
+ * Builds filter groups that exclude NULL values from categorical dimension fields.
+ * Each filter group targets a specific visual and excludes rows where the category column is NULL.
+ * This prevents "null" from appearing as a bar/slice in charts.
+ */
+function buildNullExclusionFilterGroups(
+  dataSetIdentifiers: Record<string, string>,
+): quicksight.CfnDashboard.FilterGroupProperty[] {
+  const filters: Array<{
+    visualId: string;
+    sheetId: string;
+    dataSet: string;
+    column: string;
+  }> = [
+    // Pulse sheet
+    {
+      visualId: 'pulse-platform-bar',
+      sheetId: 'pulse-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      column: 'platform',
+    },
+    {
+      visualId: 'pulse-country-heatmap',
+      sheetId: 'pulse-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      column: 'country',
+    },
+    // Combat sheet
+    {
+      visualId: 'cb-outcomes-by-map-bar',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      column: 'map_id',
+    },
+    {
+      visualId: 'cb-outcomes-by-map-bar',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      column: 'match_result',
+    },
+    {
+      visualId: 'cb-match-types-donut',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      column: 'match_type',
+    },
+    {
+      visualId: 'cb-spell-knockouts-bar',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      column: 'spell_used',
+    },
+    {
+      visualId: 'cb-matchmaking-failures-bar',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      column: 'matching_failed_msg',
+    },
+    // Progression sheet
+    {
+      visualId: 'pr-tutorial-funnel',
+      sheetId: 'progression-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      column: 'tutorial_screen_id',
+    },
+    {
+      visualId: 'pr-rank-distribution-bar',
+      sheetId: 'progression-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      column: 'rank_reached',
+    },
+    // Monetization sheet
+    {
+      visualId: 'mn-lootbox-rarity-bar',
+      sheetId: 'monetization-sheet',
+      dataSet: dataSetIdentifiers.economy_events,
+      column: 'item_rarity',
+    },
+    {
+      visualId: 'mn-top-items-tree',
+      sheetId: 'monetization-sheet',
+      dataSet: dataSetIdentifiers.economy_events,
+      column: 'item_id',
+    },
+    {
+      visualId: 'mn-revenue-by-currency-area',
+      sheetId: 'monetization-sheet',
+      dataSet: dataSetIdentifiers.economy_events,
+      column: 'currency_type',
+    },
+    // Sentiment sheet
+    {
+      visualId: 'st-report-reasons-bar',
+      sheetId: 'sentiment-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      column: 'report_reason',
+    },
+    {
+      visualId: 'st-reports-over-time-area',
+      sheetId: 'sentiment-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      column: 'report_reason',
+    },
+    {
+      visualId: 'st-rating-distribution-vbar',
+      sheetId: 'sentiment-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      column: 'user_rating',
+    },
+  ];
+
+  // Build null exclusion filters using customFilterConfiguration
+  const nullFilters = filters.map((f, idx) => ({
+    filterGroupId: `null-exclude-${idx}`,
+    filters: [
+      {
+        categoryFilter: {
+          filterId: `null-filter-${idx}`,
+          column: { dataSetIdentifier: f.dataSet, columnName: f.column },
+          configuration: {
+            customFilterConfiguration: {
+              matchOperator: 'DOES_NOT_EQUAL',
+              nullOption: 'NON_NULLS_ONLY',
+              selectAllOptions: 'FILTER_ALL_VALUES',
+            },
+          },
+        },
+      },
+    ],
+    scopeConfiguration: {
+      selectedSheets: {
+        sheetVisualScopingConfigurations: [
+          {
+            sheetId: f.sheetId,
+            scope: 'SELECTED_VISUALS',
+            visualIds: [f.visualId],
+          },
+        ],
+      },
+    },
+    crossDataset: 'SINGLE_DATASET',
+    status: 'ENABLED',
+  }));
+
+  // Additional event_type inclusion filters for visuals that need to restrict
+  // to specific event types (because the DataSet contains multiple event types
+  // but only some have the relevant field populated)
+  const eventTypeFilters: Array<{
+    visualId: string;
+    sheetId: string;
+    dataSet: string;
+    eventTypes: string[];
+  }> = [
+    // Platform only exists on user_registration events in player_health
+    {
+      visualId: 'pulse-platform-bar',
+      sheetId: 'pulse-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      eventTypes: ['user_registration'],
+    },
+    // Country only exists on user_registration events in player_health
+    {
+      visualId: 'pulse-country-heatmap',
+      sheetId: 'pulse-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      eventTypes: ['user_registration'],
+    },
+    // tutorial_screen_id only exists on tutorial_progression
+    {
+      visualId: 'pr-tutorial-funnel',
+      sheetId: 'progression-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      eventTypes: ['tutorial_progression'],
+    },
+    // rank_reached only exists on user_rank_up
+    {
+      visualId: 'pr-rank-distribution-bar',
+      sheetId: 'progression-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      eventTypes: ['user_rank_up'],
+    },
+    // match_result only exists on match_end; map_id on match_start/match_end/user_knockout
+    {
+      visualId: 'cb-outcomes-by-map-bar',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      eventTypes: ['match_end'],
+    },
+    // match_type exists on matchmaking_start, matchmaking_complete, matchmaking_failed
+    {
+      visualId: 'cb-match-types-donut',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      eventTypes: ['matchmaking_start', 'matchmaking_complete', 'matchmaking_failed'],
+    },
+    // spell_used only exists on user_knockout
+    {
+      visualId: 'cb-spell-knockouts-bar',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      eventTypes: ['user_knockout'],
+    },
+    // matching_failed_msg only exists on matchmaking_failed
+    {
+      visualId: 'cb-matchmaking-failures-bar',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      eventTypes: ['matchmaking_failed'],
+    },
+    // item_rarity only exists on lootbox_opened
+    {
+      visualId: 'mn-lootbox-rarity-bar',
+      sheetId: 'monetization-sheet',
+      dataSet: dataSetIdentifiers.economy_events,
+      eventTypes: ['lootbox_opened'],
+    },
+    // report_reason only exists on user_report
+    {
+      visualId: 'st-report-reasons-bar',
+      sheetId: 'sentiment-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      eventTypes: ['user_report'],
+    },
+    // report_reason over time also needs user_report filter
+    {
+      visualId: 'st-reports-over-time-area',
+      sheetId: 'sentiment-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      eventTypes: ['user_report'],
+    },
+    // user_rating only exists on user_sentiment
+    {
+      visualId: 'st-rating-distribution-vbar',
+      sheetId: 'sentiment-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      eventTypes: ['user_sentiment'],
+    },
+  ];
+
+  const inclusionFilters = eventTypeFilters.map((f, idx) => ({
+    filterGroupId: `event-type-include-${idx}`,
+    filters: [
+      {
+        categoryFilter: {
+          filterId: `event-type-filter-${idx}`,
+          column: { dataSetIdentifier: f.dataSet, columnName: 'event_type' },
+          configuration: {
+            filterListConfiguration: {
+              matchOperator: 'CONTAINS',
+              categoryValues: f.eventTypes,
+              nullOption: 'NON_NULLS_ONLY',
+            },
+          },
+        },
+      },
+    ],
+    scopeConfiguration: {
+      selectedSheets: {
+        sheetVisualScopingConfigurations: [
+          {
+            sheetId: f.sheetId,
+            scope: 'SELECTED_VISUALS',
+            visualIds: [f.visualId],
+          },
+        ],
+      },
+    },
+    crossDataset: 'SINGLE_DATASET',
+    status: 'ENABLED',
+  }));
+
+  return [...nullFilters, ...inclusionFilters];
 }
 
 // ---- Construct ---- //
@@ -313,7 +659,7 @@ export class QuickSightConstruct extends Construct {
     super(parent, name);
 
     // Force unique template hash to bypass CloudFormation template caching
-    this.node.addMetadata('version', '2');
+    this.node.addMetadata('version', '6');
 
     const accountId = cdk.Aws.ACCOUNT_ID;
     const region = cdk.Aws.REGION;
@@ -589,11 +935,13 @@ export class QuickSightConstruct extends Construct {
       definition: {
         dataSetIdentifierDeclarations,
         sheets: [
-          buildOverviewSheet(dataSetIdentifierMap) as quicksight.CfnDashboard.SheetDefinitionProperty,
-          buildCombatSheet(dataSetIdentifierMap) as quicksight.CfnDashboard.SheetDefinitionProperty,
+          buildPulseSheet(dataSetIdentifierMap) as quicksight.CfnDashboard.SheetDefinitionProperty,
           buildProgressionSheet(dataSetIdentifierMap) as quicksight.CfnDashboard.SheetDefinitionProperty,
-          buildEconomySheet(dataSetIdentifierMap) as quicksight.CfnDashboard.SheetDefinitionProperty,
+          buildCombatSheet(dataSetIdentifierMap) as quicksight.CfnDashboard.SheetDefinitionProperty,
+          buildMonetizationSheet(dataSetIdentifierMap) as quicksight.CfnDashboard.SheetDefinitionProperty,
+          buildSentimentSheet(dataSetIdentifierMap) as quicksight.CfnDashboard.SheetDefinitionProperty,
         ],
+        filterGroups: buildNullExclusionFilterGroups(dataSetIdentifierMap),
       },
     });
 
