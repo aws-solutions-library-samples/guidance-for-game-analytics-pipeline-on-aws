@@ -20,6 +20,7 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import * as kinesisFirehose from "aws-cdk-lib/aws-kinesisfirehose";
 import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
+import { MSKConstruct } from "./msk-construct";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface StreamingIngestionConstructProps extends cdk.StackProps {
@@ -30,6 +31,11 @@ export interface StreamingIngestionConstructProps extends cdk.StackProps {
   gameEventsDatabase: cdk.aws_glue.CfnDatabase;
   eventsProcessingFunction: cdk.aws_lambda.Function;
   config: GameAnalyticsPipelineConfig;
+  /**
+   * MSK construct to use as the Firehose source when INGEST_MODE === "KAFKA".
+   * Required when INGEST_MODE is "KAFKA"; ignored otherwise.
+   */
+  mskConstruct?: MSKConstruct;
 }
 
 const defaultProps: Partial<StreamingIngestionConstructProps> = {};
@@ -55,7 +61,11 @@ export class StreamingIngestionConstruct extends Construct {
       retention: props.config.CLOUDWATCH_RETENTION_DAYS,
     });
 
-    const kmsKey = new kms.Key(this, "RedshiftKMSKey");
+    const kmsKey = new kms.Key(this, "FirehoseKmsKey", {
+      description: "KMS Key for encrypting Firehose",
+      enableKeyRotation: true,
+      pendingWindow: cdk.Duration.days(7),
+    });
 
     const firehouseS3DeliveryLogStream = new logs.LogStream(
       this,
@@ -157,6 +167,52 @@ export class StreamingIngestionConstruct extends Construct {
       })
       gamesEventsFirehoseRole.addToPolicy(streamAccessPolicy);
     }
+
+    /* Grant Firehose permission to use the KMS key for S3 encryption. */
+    kmsKey.grantEncryptDecrypt(gamesEventsFirehoseRole);
+
+    /* When MSK is the ingest source, grant Firehose the permissions it needs
+       to discover the cluster, read from the topic, and use a consumer group. */
+    if (props.config.INGEST_MODE === "KAFKA") {
+      if (!props.mskConstruct) {
+        throw new Error(
+          "StreamingIngestionConstruct: mskConstruct prop is required when INGEST_MODE === 'KAFKA'"
+        );
+      }
+      gamesEventsFirehoseRole.addToPolicy(
+        new iam.PolicyStatement({
+          sid: "MSKClusterPermission",
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "kafka:GetBootstrapBrokers",
+            "kafka:DescribeCluster",
+            "kafka:DescribeClusterV2",
+            "kafka-cluster:Connect",
+          ],
+          resources: [props.mskConstruct.cluster.attrArn],
+        })
+      );
+      gamesEventsFirehoseRole.addToPolicy(
+        new iam.PolicyStatement({
+          sid: "MSKTopicPermission",
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "kafka-cluster:DescribeTopic",
+            "kafka-cluster:DescribeTopicDynamicConfiguration",
+            "kafka-cluster:ReadData",
+          ],
+          resources: [props.mskConstruct.topicArn],
+        })
+      );
+      gamesEventsFirehoseRole.addToPolicy(
+        new iam.PolicyStatement({
+          sid: "MSKGroupPermission",
+          effect: iam.Effect.ALLOW,
+          actions: ["kafka-cluster:DescribeGroup"],
+          resources: [props.mskConstruct.consumerGroupArnPattern],
+        })
+      );
+    }
     
     // Prefix to send files to in s3
     const s3TimestampPrefix =
@@ -174,7 +230,21 @@ export class StreamingIngestionConstruct extends Construct {
       }
     }
 
-    if (props.config.INGEST_MODE == "DIRECT_BATCH" || props.gamesEventsStream == undefined) {
+    if (props.config.INGEST_MODE === "KAFKA" && props.mskConstruct) {
+      firehoseIngestDeliveryStreamType = "MSKAsSource";
+      firehoseSourceConfiguration = {
+        mskSourceConfiguration: {
+          mskClusterArn: props.mskConstruct.cluster.attrArn,
+          topicName: props.mskConstruct.topicName,
+          authenticationConfiguration: {
+            connectivity: "PRIVATE",
+            roleArn: gamesEventsFirehoseRole.roleArn,
+          },
+        },
+      }
+    }
+
+    if (props.config.INGEST_MODE == "DIRECT_BATCH" || (props.gamesEventsStream == undefined && props.config.INGEST_MODE !== "KAFKA")) {
       firehoseIngestDeliveryStreamType = "DirectPut";
       firehoseSourceConfiguration = {
         directPutSourceConfiguration: {
