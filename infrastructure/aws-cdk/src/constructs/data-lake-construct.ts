@@ -22,6 +22,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as glueCfn from "aws-cdk-lib/aws-glue";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as athena from "aws-cdk-lib/aws-athena";
+import * as s3tables from "aws-cdk-lib/aws-s3tables";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface DataLakeConstructProps extends cdk.StackProps {
@@ -36,32 +37,40 @@ const defaultProps: Partial<DataLakeConstructProps> = {};
  * Deploys the DataLake construct
  *
  * Creates Glue to turn analytics s3 bucket into Datalake. Creates Jobs that can be used to process s3 data for Athena.
+ *
+ * When `ENABLE_S3_TABLES` is set in the config, an S3 Tables-backed datalake
+ * is provisioned instead: a managed table bucket, a namespace, and an Iceberg
+ * table with the standard event schema. The Glue catalog database/table and
+ * Iceberg table optimizers are skipped in that mode (they are not needed —
+ * S3 Tables manages compaction/retention/orphan-file removal automatically).
  */
 export class DataLakeConstruct extends Construct {
-  public readonly gameEventsDatabase: glueCfn.CfnDatabase;
-  public readonly rawEventsTable: glueCfn.CfnTable;
+  /** Glue catalog database. Undefined when ENABLE_S3_TABLES is true. */
+  public readonly gameEventsDatabase?: glueCfn.CfnDatabase;
+  /** Glue catalog table. Undefined when ENABLE_S3_TABLES is true. */
+  public readonly rawEventsTable?: glueCfn.CfnTable;
   public readonly gameAnalyticsWorkgroup: athena.CfnWorkGroup;
+
+  /** S3 Tables resources. Defined only when ENABLE_S3_TABLES is true. */
+  public readonly tableBucket?: s3tables.CfnTableBucket;
+  public readonly namespace?: s3tables.CfnNamespace;
+  public readonly eventsTable?: s3tables.CfnTable;
+
+  /** Canonical name of the database to use downstream (Glue or S3 Tables namespace). */
+  public readonly databaseName: string;
+  /** Canonical name of the raw events table to use downstream. */
+  public readonly rawEventsTableName: string;
+  /**
+   * ARN of the federated S3 Tables Glue catalog. Defined only when
+   * ENABLE_S3_TABLES is true; consumed by Firehose's iceberg destination.
+   */
+  public readonly catalogArn?: string;
 
   constructor(parent: Construct, name: string, props: DataLakeConstructProps) {
     super(parent, name);
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     props = { ...defaultProps, ...props };
-
-    // Glue Database
-    const gameEventsDatabase = new glueCfn.CfnDatabase(
-      this,
-      "GameEventDatabase",
-      {
-        catalogId: cdk.Aws.ACCOUNT_ID,
-        databaseInput: {
-          description: `Database for game analytics events for workload: ${props.config.WORKLOAD_NAME}`,
-          locationUri: props.analyticsBucket.s3UrlForObject(),
-          name: props.config.EVENTS_DATABASE
-        },
-      }
-    );
-
 
     // ---- Athena ---- //
     // Define the resources for the `GameAnalyticsWorkgroup` Athena workgroup
@@ -81,6 +90,71 @@ export class DataLakeConstruct extends Construct {
             },
             outputLocation: `s3://${props.analyticsBucket.bucketName}/athena_query_results/`,
           },
+        },
+      }
+    );
+
+    if (props.config.ENABLE_S3_TABLES) {
+      /* ---- S3 Tables-backed datalake ---- */
+      const tableBucket = new s3tables.CfnTableBucket(this, "GameAnalyticsTableBucket", {
+        tableBucketName: props.config.WORKLOAD_NAME.toLowerCase(),
+        encryptionConfiguration: {
+          sseAlgorithm: "AES256",
+        },
+      });
+
+      const namespace = new s3tables.CfnNamespace(this, "GameAnalyticsNamespace", {
+        namespace: props.config.EVENTS_DATABASE,
+        tableBucketArn: tableBucket.attrTableBucketArn,
+      });
+      namespace.addDependency(tableBucket);
+
+      const eventsTable = new s3tables.CfnTable(this, "GameAnalyticsEventsTable", {
+        tableName: props.config.RAW_EVENTS_TABLE.toLowerCase(),
+        namespace: props.config.EVENTS_DATABASE,
+        tableBucketArn: tableBucket.attrTableBucketArn,
+        openTableFormat: "ICEBERG",
+        icebergMetadata: {
+          icebergSchema: {
+            schemaFieldList: [
+              { name: "event_id", type: "string", required: true },
+              { name: "event_type", type: "string", required: true },
+              { name: "event_name", type: "string", required: false },
+              { name: "event_version", type: "string", required: true },
+              { name: "event_timestamp", type: "timestamp", required: true },
+              { name: "app_version", type: "string", required: true },
+              { name: "application_id", type: "string", required: true },
+              { name: "application_name", type: "string", required: false },
+              { name: "event_data", type: "string", required: false },
+              { name: "metadata", type: "string", required: true },
+            ],
+          },
+        },
+      });
+      eventsTable.addDependency(namespace);
+
+      this.tableBucket = tableBucket;
+      this.namespace = namespace;
+      this.eventsTable = eventsTable;
+      this.databaseName = props.config.EVENTS_DATABASE;
+      this.rawEventsTableName = props.config.RAW_EVENTS_TABLE.toLowerCase();
+      this.catalogArn = `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog/s3tablescatalog/${tableBucket.tableBucketName}`;
+      this.gameAnalyticsWorkgroup = gameAnalyticsWorkgroup;
+      return;
+    }
+
+    /* ---- Glue catalog-backed datalake (default) ---- */
+
+    // Glue Database
+    const gameEventsDatabase = new glueCfn.CfnDatabase(
+      this,
+      "GameEventDatabase",
+      {
+        catalogId: cdk.Aws.ACCOUNT_ID,
+        databaseInput: {
+          description: `Database for game analytics events for workload: ${props.config.WORKLOAD_NAME}`,
+          locationUri: props.analyticsBucket.s3UrlForObject(),
+          name: props.config.EVENTS_DATABASE
         },
       }
     );
@@ -386,5 +460,7 @@ export class DataLakeConstruct extends Construct {
     this.gameEventsDatabase = gameEventsDatabase;
     this.rawEventsTable = rawEventsTable;
     this.gameAnalyticsWorkgroup = gameAnalyticsWorkgroup;
+    this.databaseName = gameEventsDatabase.ref;
+    this.rawEventsTableName = rawEventsTable.ref;
   }
 }

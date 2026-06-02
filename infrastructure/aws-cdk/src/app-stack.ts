@@ -463,23 +463,8 @@ export class InfrastructureStack extends cdk.Stack {
         analyticsBucket: analyticsBucket,
       });
 
-      // create data integration jobs
-      const dataProcessingConstruct = new DataProcessingConstruct(this, "DataProcessingConstruct", {
-        notificationsTopic: notificationsTopic,
-        analyticsBucket: analyticsBucket,
-        gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
-        rawEventsTable: dataLakeConstruct.rawEventsTable,
-        config: props.config,
-      });
-
-      // create sample athena queries
-      const athenaConstruct = new AthenaQueryConstruct(this, "AthenaQueryConstruct", {
-        gameAnalyticsWorkgroup: dataLakeConstruct.gameAnalyticsWorkgroup,
-        gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
-        config: props.config,
-      })
-
-      // Creates firehose and logs related to ingestion
+      /* Firehose ingestion is wired in both modes — the construct picks the
+         correct catalog and IAM statements based on ENABLE_S3_TABLES. */
       streamingIngestionConstruct = new StreamingIngestionConstruct(
         this,
         "StreamingIngestionConstruct",
@@ -492,39 +477,75 @@ export class InfrastructureStack extends cdk.Stack {
           eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
           config: props.config,
           mskConstruct: mskConstruct,
+          dataLakeConstruct: dataLakeConstruct,
         }
       );
 
-      // CFN outputs for given configuration
-      new cdk.CfnOutput(this, "GameEventsDatabaseName", {
-        description: "The name of the Glue Data Catalog database where game events are stored.",
-        value: dataLakeConstruct.gameEventsDatabase.ref,
-      });
-
-      new cdk.CfnOutput(this, "GameEventsEtlJobName", {
-        description:
-          "The name of the ETL job used to move data from the raw events table to the processed events table.",
-        value: dataProcessingConstruct.gameEventsEtlJob.ref,
-      });
-
-      new cdk.CfnOutput(this, "GameEventsIcebergJobName", {
-        description:
-          "The name of the ETL job used to move data from an existing Game Analytics Pipeline Hive table to a new Apache Iceberg table.",
-        value: dataProcessingConstruct.gameEventsIcebergJob.ref,
-      });
-
-      new cdk.CfnOutput(this, "GlueWorkflowConsoleLink", {
-        description:
-          "A web link to the AWS Glue Workflows console page to view details about the deployed workflow",
-        value: `https://console.aws.amazon.com/glue/home?region=${cdk.Aws.REGION}#etl:tab=workflows;workflowView=workflow-list`,
-      });
-
-      if (props.config.ENABLE_APACHE_ICEBERG_SUPPORT) {
-        new cdk.CfnOutput(this, "IcebergSetupJobName", {
-          description:
-            "The name of the Glue Job used to configure partitioning on a newly created Apache Iceberg table.",
-          value: dataProcessingConstruct.icebergSetupJob.ref,
+      /* The Glue-catalog-dependent constructs below are skipped when
+         ENABLE_S3_TABLES is true, because in that mode the datalake is backed
+         by an S3 Tables namespace + Iceberg table and the Glue catalog
+         database/table are not provisioned. */
+      if (!props.config.ENABLE_S3_TABLES && dataLakeConstruct.gameEventsDatabase && dataLakeConstruct.rawEventsTable) {
+        // create data integration jobs
+        const dataProcessingConstruct = new DataProcessingConstruct(this, "DataProcessingConstruct", {
+          notificationsTopic: notificationsTopic,
+          analyticsBucket: analyticsBucket,
+          gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
+          rawEventsTable: dataLakeConstruct.rawEventsTable,
+          config: props.config,
         });
+
+        // create sample athena queries
+        const athenaConstruct = new AthenaQueryConstruct(this, "AthenaQueryConstruct", {
+          gameAnalyticsWorkgroup: dataLakeConstruct.gameAnalyticsWorkgroup,
+          gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
+          config: props.config,
+        })
+
+        new cdk.CfnOutput(this, "GameEventsEtlJobName", {
+          description:
+            "The name of the ETL job used to move data from the raw events table to the processed events table.",
+          value: dataProcessingConstruct.gameEventsEtlJob.ref,
+        });
+
+        new cdk.CfnOutput(this, "GameEventsIcebergJobName", {
+          description:
+            "The name of the ETL job used to move data from an existing Game Analytics Pipeline Hive table to a new Apache Iceberg table.",
+          value: dataProcessingConstruct.gameEventsIcebergJob.ref,
+        });
+
+        new cdk.CfnOutput(this, "GlueWorkflowConsoleLink", {
+          description:
+            "A web link to the AWS Glue Workflows console page to view details about the deployed workflow",
+          value: `https://console.aws.amazon.com/glue/home?region=${cdk.Aws.REGION}#etl:tab=workflows;workflowView=workflow-list`,
+        });
+
+        if (props.config.ENABLE_APACHE_ICEBERG_SUPPORT) {
+          new cdk.CfnOutput(this, "IcebergSetupJobName", {
+            description:
+              "The name of the Glue Job used to configure partitioning on a newly created Apache Iceberg table.",
+            value: dataProcessingConstruct.icebergSetupJob.ref,
+          });
+        }
+      }
+
+      // CFN outputs that apply to both Glue-catalog and S3 Tables modes
+      new cdk.CfnOutput(this, "GameEventsDatabaseName", {
+        description: "The name of the Glue Data Catalog database (or S3 Tables namespace) where game events are stored.",
+        value: dataLakeConstruct.databaseName,
+      });
+
+      if (props.config.ENABLE_S3_TABLES && dataLakeConstruct.tableBucket) {
+        new cdk.CfnOutput(this, "S3TablesBucketArn", {
+          description: "The ARN of the S3 Tables table bucket backing the datalake.",
+          value: dataLakeConstruct.tableBucket.attrTableBucketArn,
+        });
+        if (dataLakeConstruct.catalogArn) {
+          new cdk.CfnOutput(this, "S3TablesCatalogArn", {
+            description: "The federated S3 Tables Glue catalog ARN.",
+            value: dataLakeConstruct.catalogArn,
+          });
+        }
       }
     }
 

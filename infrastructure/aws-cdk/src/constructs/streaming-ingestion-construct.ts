@@ -21,14 +21,23 @@ import * as kinesisFirehose from "aws-cdk-lib/aws-kinesisfirehose";
 import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 import { MSKConstruct } from "./msk-construct";
+import { DataLakeConstruct } from "./data-lake-construct";
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
 export interface StreamingIngestionConstructProps extends cdk.StackProps {
   applicationsTable: cdk.aws_dynamodb.TableV2;
   gamesEventsStream: cdk.aws_kinesis.Stream | cdk.aws_msk.CfnServerlessCluster | undefined;
   analyticsBucket: cdk.aws_s3.Bucket;
-  rawEventsTable: cdk.aws_glue.CfnTable;
-  gameEventsDatabase: cdk.aws_glue.CfnDatabase;
+  /**
+   * Glue catalog table. Required in Glue-catalog mode (ENABLE_S3_TABLES = false).
+   * Undefined in S3 Tables mode.
+   */
+  rawEventsTable?: cdk.aws_glue.CfnTable;
+  /**
+   * Glue catalog database. Required in Glue-catalog mode (ENABLE_S3_TABLES = false).
+   * Undefined in S3 Tables mode.
+   */
+  gameEventsDatabase?: cdk.aws_glue.CfnDatabase;
   eventsProcessingFunction: cdk.aws_lambda.Function;
   config: GameAnalyticsPipelineConfig;
   /**
@@ -36,6 +45,11 @@ export interface StreamingIngestionConstructProps extends cdk.StackProps {
    * Required when INGEST_MODE is "KAFKA"; ignored otherwise.
    */
   mskConstruct?: MSKConstruct;
+  /**
+   * Datalake construct providing the canonical database/table names and, in
+   * S3 Tables mode, the table bucket and federated catalog ARN. Required.
+   */
+  dataLakeConstruct: DataLakeConstruct;
 }
 
 const defaultProps: Partial<StreamingIngestionConstructProps> = {};
@@ -122,28 +136,6 @@ export class StreamingIngestionConstruct extends Construct {
                 resources: [props.eventsProcessingFunction.functionArn],
               }),
               new iam.PolicyStatement({
-                actions: [
-                  "glue:GetTable",
-                  "glue:GetTableVersion",
-                  "glue:GetTableVersions",
-                  "glue:GetSchema",
-                  "glue:GetSchemaVersion",
-                  "glue:CreateTable",
-                  "glue:UpdateTable",
-                  "glue:StartTransaction",
-                  "glue:CommitTransaction",
-                  "glue:GetDatabase",
-                ],
-                effect: iam.Effect.ALLOW,
-                resources: [
-                  `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/${props.gameEventsDatabase.ref}/*`,
-                  `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:database/${props.gameEventsDatabase.ref}`,
-                  `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
-                  `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:registry/*`,
-                  `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:schema/*`,
-                ],
-              }),
-              new iam.PolicyStatement({
                 actions: ["logs:PutLogEvents"],
                 effect: iam.Effect.ALLOW,
                 resources: [firehoseLogGroup.logGroupArn],
@@ -153,6 +145,99 @@ export class StreamingIngestionConstruct extends Construct {
         },
       }
     );
+
+    /* Catalog access — depends on whether we're using the standard Glue
+       catalog or the federated S3 Tables catalog. */
+    if (props.config.ENABLE_S3_TABLES) {
+      if (!props.dataLakeConstruct.tableBucket) {
+        throw new Error(
+          "StreamingIngestionConstruct: dataLakeConstruct.tableBucket is required when ENABLE_S3_TABLES === true"
+        );
+      }
+      const tableBucketArn = props.dataLakeConstruct.tableBucket.attrTableBucketArn;
+      const tableBucketName = props.dataLakeConstruct.tableBucket.tableBucketName;
+      const dbName = props.dataLakeConstruct.databaseName;
+      const tableName = props.dataLakeConstruct.rawEventsTableName;
+
+      gamesEventsFirehoseRole.addToPolicy(
+        new iam.PolicyStatement({
+          sid: "S3TablesAccessPermission",
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "s3tables:ListTables",
+            "s3tables:GetNamespace",
+            "s3tables:ListNamespaces",
+            "s3tables:GetTable",
+            "s3tables:GetTableData",
+            "s3tables:GetTableMetadataLocation",
+            "s3tables:UpdateTableMetadataLocation",
+            "s3tables:PutTableData",
+          ],
+          resources: [
+            tableBucketArn,
+            `${tableBucketArn}/table/*`,
+          ],
+        })
+      );
+      gamesEventsFirehoseRole.addToPolicy(
+        new iam.PolicyStatement({
+          sid: "S3TableBucketAccessPermission",
+          effect: iam.Effect.ALLOW,
+          actions: ["s3tables:GetTableBucket"],
+          resources: [tableBucketArn],
+        })
+      );
+      gamesEventsFirehoseRole.addToPolicy(
+        new iam.PolicyStatement({
+          sid: "GlueCatalogAccessForS3Tables",
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "glue:GetDatabase",
+            "glue:GetDatabases",
+            "glue:GetTable",
+            "glue:GetTables",
+            "glue:UpdateTable",
+          ],
+          resources: [
+            `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
+            `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog/s3tablescatalog`,
+            `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog/s3tablescatalog/${tableBucketName}`,
+            `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:database/${tableBucketName}/${dbName}`,
+            `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/${tableBucketName}/${dbName}/${tableName}`,
+          ],
+        })
+      );
+    } else {
+      if (!props.gameEventsDatabase) {
+        throw new Error(
+          "StreamingIngestionConstruct: gameEventsDatabase prop is required when ENABLE_S3_TABLES === false"
+        );
+      }
+      gamesEventsFirehoseRole.addToPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "glue:GetTable",
+            "glue:GetTableVersion",
+            "glue:GetTableVersions",
+            "glue:GetSchema",
+            "glue:GetSchemaVersion",
+            "glue:CreateTable",
+            "glue:UpdateTable",
+            "glue:StartTransaction",
+            "glue:CommitTransaction",
+            "glue:GetDatabase",
+          ],
+          resources: [
+            `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/${props.gameEventsDatabase.ref}/*`,
+            `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:database/${props.gameEventsDatabase.ref}`,
+            `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
+            `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:registry/*`,
+            `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:schema/*`,
+          ],
+        })
+      );
+    }
 
     if (props.gamesEventsStream instanceof cdk.aws_kinesis.Stream) {
       streamAccessPolicy = new iam.PolicyStatement({
@@ -257,7 +342,9 @@ export class StreamingIngestionConstruct extends Construct {
       {
         icebergDestinationConfiguration: {
           catalogConfiguration: {
-            catalogArn: `arn:aws:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
+            catalogArn: props.config.ENABLE_S3_TABLES && props.dataLakeConstruct.catalogArn
+              ? props.dataLakeConstruct.catalogArn
+              : `arn:${cdk.Aws.PARTITION}:glue:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:catalog`,
           },
           roleArn: gamesEventsFirehoseRole.roleArn,
           appendOnly: true,
@@ -272,8 +359,8 @@ export class StreamingIngestionConstruct extends Construct {
           },
           destinationTableConfigurationList: [
             {
-              destinationDatabaseName: props.config.EVENTS_DATABASE,
-              destinationTableName: props.config.RAW_EVENTS_TABLE,
+              destinationDatabaseName: props.dataLakeConstruct.databaseName,
+              destinationTableName: props.dataLakeConstruct.rawEventsTableName,
               s3ErrorOutputPrefix: `firehose-errors/!{firehose:error-output-type}/`,
               uniqueKeys: ["event_id"],
             },
@@ -414,8 +501,8 @@ export class StreamingIngestionConstruct extends Construct {
             schemaConfiguration: {
               catalogId: cdk.Aws.ACCOUNT_ID,
               roleArn: gamesEventsFirehoseRole.roleArn,
-              databaseName: props.gameEventsDatabase.ref,
-              tableName: props.rawEventsTable.ref,
+              databaseName: props.dataLakeConstruct.databaseName,
+              tableName: props.dataLakeConstruct.rawEventsTableName,
               region: cdk.Aws.REGION,
               versionId: "LATEST",
             },
