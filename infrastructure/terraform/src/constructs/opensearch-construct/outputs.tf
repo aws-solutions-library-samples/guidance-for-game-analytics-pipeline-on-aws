@@ -20,3 +20,13 @@ output "collection_name" {
 output "ingestion_pipeline_name" {
   value = aws_osis_pipeline.ingestion.pipeline_name
 }
+
+output "collection_group_name" {
+  value       = aws_opensearchserverless_collection_group.game_analytics_group.name
+  description = "Name of the OpenSearch Serverless v2 (NextGen) collection group"
+}
+
+output "collection_group_id" {
+  value       = aws_opensearchserverless_collection_group.game_analytics_group.id
+  description = "ID of the OpenSearch Serverless v2 (NextGen) collection group"
+}
