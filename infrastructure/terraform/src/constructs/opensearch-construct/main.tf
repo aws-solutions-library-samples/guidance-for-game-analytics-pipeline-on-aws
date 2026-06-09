@@ -23,7 +23,7 @@ resource "aws_s3_bucket_ownership_controls" "dead_letter_queue_ownership" {
 }
 
 resource "aws_s3_bucket_public_access_block" "dead_letter_queue_access_block" {
-  bucket = aws_s3_bucket.dead_letter_queue.id
+  bucket                  = aws_s3_bucket.dead_letter_queue.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -52,11 +52,28 @@ resource "aws_opensearchserverless_security_policy" "encryption" {
   })
 }
 
-# serverless time series cluster
+# OpenSearch Serverless v2 (NextGen) collection group with scale-to-zero support
+resource "aws_opensearchserverless_collection_group" "game_analytics_group" {
+  name             = "${local.collection_name}-group"
+  description      = "NextGen collection group for game analytics with scale-to-zero"
+  generation       = "NEXTGEN"
+  standby_replicas = "ENABLED"
+
+  capacity_limits {
+    min_indexing_capacity_in_ocu = 0
+    max_indexing_capacity_in_ocu = 10
+    min_search_capacity_in_ocu   = 0
+    max_search_capacity_in_ocu   = 10
+  }
+}
+
+# serverless time series cluster (v2 NextGen with scale-to-zero via collection group)
 resource "aws_opensearchserverless_collection" "game_analytics_collection" {
-  name        = local.collection_name
-  description = "Serverless OpenSearch Collection for analyzing real-time timeseries game event data"
-  type        = "TIMESERIES"
+  name                  = local.collection_name
+  description           = "Serverless OpenSearch Collection for analyzing real-time timeseries game event data"
+  type                  = "TIMESERIES"
+  collection_group_name = aws_opensearchserverless_collection_group.game_analytics_group.name
+  standby_replicas      = "ENABLED"
 
   depends_on = [
     aws_opensearchserverless_security_policy.encryption
@@ -95,59 +112,59 @@ resource "aws_iam_role" "ingestion_role" {
 }
 
 resource "aws_iam_role_policy" "ingestion_role_policy" {
-  name   = "pipeline_access_permissions"
-  role   = aws_iam_role.ingestion_role.name
+  name = "pipeline_access_permissions"
+  role = aws_iam_role.ingestion_role.name
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-        {
-          Sid    = "allowReadFromStream"
-          Effect = "Allow"
-          Action = [
-            "kinesis:DescribeStream",
-            "kinesis:DescribeStreamSummary",
-            "kinesis:GetRecords",
-            "kinesis:GetShardIterator",
-            "kinesis:ListShards",
-            "kinesis:ListStreams",
-            "kinesis:ListStreamConsumers",
-            "kinesis:RegisterStreamConsumer"
-          ]
-          Resource = [var.metric_output_stream_arn]
-        },
-        {
-          Sid    = "allowAPIs"
-          Effect = "Allow"
-          Action = [
-            "aoss:APIAccessAll",
-            "aoss:BatchGetCollection"
-          ]
-          Resource = [aws_opensearchserverless_collection.game_analytics_collection.arn]
-        },
-        {
-          Sid    = "allowSecurityPolicy"
-          Effect = "Allow"
-          Action = [
-            "aoss:CreateSecurityPolicy",
-            "aoss:UpdateSecurityPolicy",
-            "aoss:GetSecurityPolicy"
-          ]
-          Resource = ["*"]
-          Condition = {
-            StringLike = {
-              "aoss:collection" = [aws_opensearchserverless_collection.game_analytics_collection.name]
-            }
-            StringEquals = {
-              "aws:ResourceAccount" = [data.aws_caller_identity.current.account_id]
-            }
+      {
+        Sid    = "allowReadFromStream"
+        Effect = "Allow"
+        Action = [
+          "kinesis:DescribeStream",
+          "kinesis:DescribeStreamSummary",
+          "kinesis:GetRecords",
+          "kinesis:GetShardIterator",
+          "kinesis:ListShards",
+          "kinesis:ListStreams",
+          "kinesis:ListStreamConsumers",
+          "kinesis:RegisterStreamConsumer"
+        ]
+        Resource = [var.metric_output_stream_arn]
+      },
+      {
+        Sid    = "allowAPIs"
+        Effect = "Allow"
+        Action = [
+          "aoss:APIAccessAll",
+          "aoss:BatchGetCollection"
+        ]
+        Resource = [aws_opensearchserverless_collection.game_analytics_collection.arn]
+      },
+      {
+        Sid    = "allowSecurityPolicy"
+        Effect = "Allow"
+        Action = [
+          "aoss:CreateSecurityPolicy",
+          "aoss:UpdateSecurityPolicy",
+          "aoss:GetSecurityPolicy"
+        ]
+        Resource = ["*"]
+        Condition = {
+          StringLike = {
+            "aoss:collection" = [aws_opensearchserverless_collection.game_analytics_collection.name]
           }
-        },
-        {
-          Sid    = "s3Access"
-          Effect = "Allow"
-          Action = ["s3:PutObject"]
-          Resource = ["${aws_s3_bucket.dead_letter_queue.arn}/*"]
+          StringEquals = {
+            "aws:ResourceAccount" = [data.aws_caller_identity.current.account_id]
+          }
         }
+      },
+      {
+        Sid      = "s3Access"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject"]
+        Resource = ["${aws_s3_bucket.dead_letter_queue.arn}/*"]
+      }
     ]
   })
 }
@@ -163,9 +180,9 @@ resource "aws_cloudwatch_log_group" "ingestion" {
 
 resource "aws_osis_pipeline" "ingestion" {
   pipeline_name = local.pipeline_name
-  min_units = 2
-  max_units = 4
-  
+  min_units     = 2
+  max_units     = 4
+
   pipeline_configuration_body = templatefile("${path.root}/../../../business-logic/opensearch-ingestion/ingestion-definition.yml", {
     pipeline_name       = local.pipeline_name
     stream_name         = var.metric_output_stream_name
@@ -177,25 +194,25 @@ resource "aws_osis_pipeline" "ingestion" {
   })
 
   log_publishing_options {
-    is_logging_enabled         = true
+    is_logging_enabled = true
     cloudwatch_log_destination {
       log_group = aws_cloudwatch_log_group.ingestion.name
     }
   }
 
-  depends_on = [ aws_opensearchserverless_security_policy.network ]
+  depends_on = [aws_opensearchserverless_security_policy.network]
 }
 
 resource "aws_opensearchserverless_access_policy" "metric_collection_access_policy" {
   name = aws_opensearchserverless_collection.game_analytics_collection.name
   type = "data"
-  
+
   policy = jsonencode([
     {
       Rules = [
         {
-          Resource     = ["collection/${local.collection_name}"]
-          Permission  = [
+          Resource = ["collection/${local.collection_name}"]
+          Permission = [
             "aoss:CreateCollectionItems",
             "aoss:DeleteCollectionItems",
             "aoss:UpdateCollectionItems",
@@ -204,8 +221,8 @@ resource "aws_opensearchserverless_access_policy" "metric_collection_access_poli
           ResourceType = "collection"
         },
         {
-          Resource     = ["index/${local.collection_name}/*"]
-          Permission  = [
+          Resource = ["index/${local.collection_name}/*"]
+          Permission = [
             "aoss:CreateIndex",
             "aoss:DeleteIndex",
             "aoss:UpdateIndex",
@@ -216,22 +233,22 @@ resource "aws_opensearchserverless_access_policy" "metric_collection_access_poli
           ResourceType = "index"
         }
       ]
-      Principal    = [aws_iam_role.opensearch_admin.arn]
+      Principal   = [aws_iam_role.opensearch_admin.arn]
       Description = "Allow access by Opensearch Admin"
     },
     {
       Rules = [
         {
-          Resource     = ["collection/${local.collection_name}"]
-          Permission  = [
+          Resource = ["collection/${local.collection_name}"]
+          Permission = [
             "aoss:UpdateCollectionItems",
             "aoss:DescribeCollectionItems"
           ]
           ResourceType = "collection"
         },
         {
-          Resource     = ["index/${local.collection_name}/*"]
-          Permission  = [
+          Resource = ["index/${local.collection_name}/*"]
+          Permission = [
             "aoss:CreateIndex",
             "aoss:UpdateIndex",
             "aoss:DescribeIndex",
@@ -241,7 +258,7 @@ resource "aws_opensearchserverless_access_policy" "metric_collection_access_poli
           ResourceType = "index"
         }
       ]
-      Principal    = [aws_iam_role.ingestion_role.arn]
+      Principal   = [aws_iam_role.ingestion_role.arn]
       Description = "Pipeline-Data-Policy"
     }
   ])
@@ -265,37 +282,37 @@ resource "aws_iam_role" "opensearch_admin" {
 }
 
 resource "aws_iam_role_policy" "opensearch_admin_policy" {
-  name   = "opensearch_admin_policy"
-  role   = aws_iam_role.opensearch_admin.name
+  name = "opensearch_admin_policy"
+  role = aws_iam_role.opensearch_admin.name
   policy = jsonencode({
-      Version = "2012-10-17"
-      Statement = [{
-        Effect = "Allow"
-        Action = [
-          "es:GetApplication",
-          "es:ListApplications",
-          "es:UpdateApplication",
-          "es:AddTags",
-          "es:ListTags",
-          "es:RemoveTags",
-          "aoss:APIAccessAll",
-          "es:ESHttp*",
-          "opensearch:StartDirectQuery",
-          "opensearch:GetDirectQuery",
-          "opensearch:CancelDirectQuery",
-          "opensearch:GetDirectQueryResult",
-          "opensearch:ApplicationAccessAll",
-          "aoss:BatchGetCollection",
-          "aoss:ListCollections",
-          "aoss:DashboardsAccessAll",
-          "es:DescribeDomain",
-          "es:DescribeDomains",
-          "es:ListDomainNames",
-          "es:GetDirectQueryDataSource",
-          "es:ListDirectQueryDataSources"
-        ]
-        Resource = ["*"]
-      }]
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "es:GetApplication",
+        "es:ListApplications",
+        "es:UpdateApplication",
+        "es:AddTags",
+        "es:ListTags",
+        "es:RemoveTags",
+        "aoss:APIAccessAll",
+        "es:ESHttp*",
+        "opensearch:StartDirectQuery",
+        "opensearch:GetDirectQuery",
+        "opensearch:CancelDirectQuery",
+        "opensearch:GetDirectQueryResult",
+        "opensearch:ApplicationAccessAll",
+        "aoss:BatchGetCollection",
+        "aoss:ListCollections",
+        "aoss:DashboardsAccessAll",
+        "es:DescribeDomain",
+        "es:DescribeDomains",
+        "es:ListDomainNames",
+        "es:GetDirectQueryDataSource",
+        "es:ListDirectQueryDataSources"
+      ]
+      Resource = ["*"]
+    }]
   })
 }
 
