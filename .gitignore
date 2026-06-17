@@ -36,6 +36,17 @@ node_modules/
 *package-lock.json
 infrastructure/aws-cdk/config.yaml
 infrastructure/config.yaml
+
+# AI coding assistants / agent tooling
+.agents/
+.omo/
+.opencode/
+opencode.json
+skills-lock.json
+
+# LSP / type-checker / analyzer configs
+.fallowrc.jsonc
+pyrefly.toml
 business-logic/flink-event-processing/dependency-reduced-pom.xml
 business-logic/flink-event-processing/target/deploy.zip
 business-logic/flink-event-processing/target/pyflink-dependencies.jar
