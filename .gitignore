@@ -53,3 +53,4 @@ business-logic/flink-event-processing/target/pyflink-dependencies.jar
 business-logic/flink-event-processing/target/classes/original-pyflink-dependencies.jar
 business-logic/flink-event-processing/target/maven-archiver/pom.properties
 infrastructure/aws-cdk/cdk.context.json
+.opencode/fallow-stop.log
