@@ -1026,6 +1026,7 @@ export class ApiConstruct extends Construct {
     });
 
     // Gives permission for API gateway to call necessary lambda
+    // Covers all admin routes: /applications/*, /redshift/setup, /quicksight/teardown
     const applicationAdminServiceExecutionPermission =
       new cdk.aws_lambda.CfnPermission(
         this,
@@ -1034,7 +1035,7 @@ export class ApiConstruct extends Construct {
           action: "lambda:InvokeFunction",
           functionName: props.applicationAdminServiceFunction.functionArn,
           principal: "apigateway.amazonaws.com",
-          sourceArn: `arn:${cdk.Aws.PARTITION}:execute-api:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:${gameAnalyticsApi.restApiName}/*/*/applications/*`,
+          sourceArn: `arn:${cdk.Aws.PARTITION}:execute-api:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:${gameAnalyticsApi.restApiName}/*/*`,
         }
       );
 

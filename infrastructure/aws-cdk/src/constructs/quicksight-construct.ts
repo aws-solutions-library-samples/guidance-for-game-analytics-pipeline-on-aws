@@ -16,6 +16,9 @@ import {
   buildSentimentSheet,
 } from './quicksight-sheet-builders';
 
+export const VPC_CONNECTION_VERSION = 6;
+const DIRECT_QUERY_WINDOW_DAYS = 30;
+
 // ---- Data Models ---- //
 
 export interface ColumnDefinition {
@@ -53,7 +56,10 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
       "  date_trunc('hour', timestamp 'epoch' + event_timestamp * interval '1 second') as event_hour,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'platform'), '') as platform,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '') as country,",
+      "  CASE NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')",
+      "    WHEN 'UK' THEN 'United Kingdom'",
+      "    ELSE INITCAP(LOWER(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')))",
+      "  END as country,",
       '  1 as event_count',
       'FROM {db_name}."event_data"',
     ].join('\n'),
@@ -85,9 +91,11 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'spell_id'), '') as spell_used,",
       "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'exp_gained'), '') AS INTEGER) as exp_gained,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'matching_failed_msg'), '') AS matching_failed_msg,",
+      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'most_used_spell'), '') AS most_used_spell,",
       '  1 as event_count',
       'FROM {db_name}."event_data"',
       "WHERE event_type IN ('match_start', 'match_end', 'user_knockout', 'matchmaking_start', 'matchmaking_complete', 'matchmaking_failed')",
+      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
     ].join('\n'),
     columns: [
       { name: 'event_id', type: 'STRING' },
@@ -100,7 +108,15 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       { name: 'spell_used', type: 'STRING' },
       { name: 'exp_gained', type: 'INTEGER' },
       { name: 'matching_failed_msg', type: 'STRING' },
+      { name: 'most_used_spell', type: 'STRING' },
       { name: 'event_count', type: 'INTEGER' },
+    ],
+    calculatedColumns: [
+      {
+        columnName: 'win_pct_value',
+        columnId: 'win_pct_value',
+        expression: "ifelse({match_result} = 'WIN', 100, 0)",
+      },
     ],
   },
   // 3. Level progression
@@ -116,6 +132,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       '  1 as event_count',
       'FROM {db_name}."event_data"',
       "WHERE event_type IN ('level_started', 'level_completed', 'level_failed')",
+      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
     ].join('\n'),
     columns: [
       { name: 'event_id', type: 'STRING' },
@@ -144,6 +161,14 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'item_id'), '') as item_id,",
       "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) as currency_amount,",
+      "  CASE",
+      "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 1 AND 9 THEN '01: $1-9'",
+      "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 10 AND 19 THEN '02: $10-19'",
+      "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 20 AND 49 THEN '03: $20-49'",
+      "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 50 AND 99 THEN '04: $50-99'",
+      "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) >= 100 THEN '05: $100+'",
+      "    ELSE '99: Unknown'",
+      "  END as currency_amount_band,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_type'), '') as currency_type,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'transaction_id'), '') as transaction_id,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'item_rarity'), '') as item_rarity,",
@@ -151,6 +176,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       '  1 as event_count',
       'FROM {db_name}."event_data"',
       "WHERE event_type IN ('iap_transaction', 'lootbox_opened', 'item_viewed')",
+      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
     ].join('\n'),
     columns: [
       { name: 'event_id', type: 'STRING' },
@@ -158,6 +184,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       { name: 'event_date', type: 'DATETIME' },
       { name: 'item_id', type: 'STRING' },
       { name: 'currency_amount', type: 'INTEGER' },
+      { name: 'currency_amount_band', type: 'STRING' },
       { name: 'currency_type', type: 'STRING' },
       { name: 'transaction_id', type: 'STRING' },
       { name: 'item_rarity', type: 'STRING' },
@@ -174,7 +201,10 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       '  event_type,',
       '  app_version,',
       "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '') as country,",
+      "  CASE NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')",
+      "    WHEN 'UK' THEN 'United Kingdom'",
+      "    ELSE INITCAP(LOWER(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')))",
+      "  END as country,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'platform'), '') as platform,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'report_reason'), '') as report_reason,",
       "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'user_rating'), '') AS INTEGER) as user_rating,",
@@ -183,6 +213,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       '  1 as event_count',
       'FROM {db_name}."event_data"',
       "WHERE event_type IN ('user_registration', 'user_report', 'user_sentiment', 'user_rank_up', 'tutorial_progression')",
+      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
     ].join('\n'),
     columns: [
       { name: 'event_id', type: 'STRING' },
@@ -197,6 +228,13 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       { name: 'tutorial_screen_id', type: 'STRING' },
       { name: 'event_count', type: 'INTEGER' },
     ],
+    calculatedColumns: [
+      {
+        columnName: 'target_rating',
+        columnId: 'target_rating',
+        expression: 'parseDecimal("4.0")',
+      },
+    ],
     columnGroups: [
       {
         geoSpatialColumnGroup: {
@@ -205,6 +243,35 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
           columns: ['country'],
         },
       },
+    ],
+  },
+  // 6. Match lifecycle stages (one row per stage — pre-aggregated for the lifecycle Funnel)
+  {
+    viewName: 'match_lifecycle_funnel',
+    customSqlQuery: [
+      "SELECT '1_matchmaking_start' as stage_label, count(*) as event_count",
+      'FROM {db_name}."event_data"',
+      "WHERE event_type = 'matchmaking_start'",
+      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
+      'UNION ALL',
+      "SELECT '2_matchmaking_complete' as stage_label, count(*) as event_count",
+      'FROM {db_name}."event_data"',
+      "WHERE event_type = 'matchmaking_complete'",
+      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
+      'UNION ALL',
+      "SELECT '3_match_start' as stage_label, count(*) as event_count",
+      'FROM {db_name}."event_data"',
+      "WHERE event_type = 'match_start'",
+      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
+      'UNION ALL',
+      "SELECT '4_match_end' as stage_label, count(*) as event_count",
+      'FROM {db_name}."event_data"',
+      "WHERE event_type = 'match_end'",
+      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
+    ].join('\n'),
+    columns: [
+      { name: 'stage_label', type: 'STRING' },
+      { name: 'event_count', type: 'INTEGER' },
     ],
   },
 ];
@@ -234,6 +301,11 @@ const DATA_SET_PERMISSIONS: string[] = [
   'quicksight:PassDataSet',
   'quicksight:DescribeIngestion',
   'quicksight:ListIngestions',
+  'quicksight:UpdateDataSet',
+  'quicksight:DeleteDataSet',
+  'quicksight:CreateIngestion',
+  'quicksight:CancelIngestion',
+  'quicksight:UpdateDataSetPermissions',
 ];
 
 /**
@@ -255,6 +327,11 @@ const DASHBOARD_PERMISSIONS: string[] = [
   'quicksight:DescribeDashboard',
   'quicksight:ListDashboardVersions',
   'quicksight:QueryDashboard',
+  'quicksight:UpdateDashboard',
+  'quicksight:DeleteDashboard',
+  'quicksight:UpdateDashboardPermissions',
+  'quicksight:DescribeDashboardPermissions',
+  'quicksight:UpdateDashboardPublishedVersion',
 ];
 
 // ---- Factory Helper ---- //
@@ -425,6 +502,24 @@ function buildNullExclusionFilterGroups(
       dataSet: dataSetIdentifiers.match_events,
       column: 'matching_failed_msg',
     },
+    {
+      visualId: 'cb-spell-performance-table',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      column: 'most_used_spell',
+    },
+    {
+      visualId: 'cb-map-outcome-pivot',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      column: 'map_id',
+    },
+    {
+      visualId: 'cb-map-outcome-pivot',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      column: 'match_result',
+    },
     // Progression sheet
     {
       visualId: 'pr-tutorial-funnel',
@@ -446,10 +541,16 @@ function buildNullExclusionFilterGroups(
       column: 'item_rarity',
     },
     {
-      visualId: 'mn-top-items-tree',
+      visualId: 'mn-lootbox-rarity-treemap',
       sheetId: 'monetization-sheet',
       dataSet: dataSetIdentifiers.economy_events,
-      column: 'item_id',
+      column: 'item_rarity',
+    },
+    {
+      visualId: 'mn-transaction-amount-distribution-bar',
+      sheetId: 'monetization-sheet',
+      dataSet: dataSetIdentifiers.economy_events,
+      column: 'currency_amount_band',
     },
     {
       visualId: 'mn-revenue-by-currency-area',
@@ -460,12 +561,6 @@ function buildNullExclusionFilterGroups(
     // Sentiment sheet
     {
       visualId: 'st-report-reasons-bar',
-      sheetId: 'sentiment-sheet',
-      dataSet: dataSetIdentifiers.player_health,
-      column: 'report_reason',
-    },
-    {
-      visualId: 'st-reports-over-time-area',
       sheetId: 'sentiment-sheet',
       dataSet: dataSetIdentifiers.player_health,
       column: 'report_reason',
@@ -583,16 +678,15 @@ function buildNullExclusionFilterGroups(
       dataSet: dataSetIdentifiers.economy_events,
       eventTypes: ['lootbox_opened'],
     },
+    {
+      visualId: 'mn-lootbox-rarity-treemap',
+      sheetId: 'monetization-sheet',
+      dataSet: dataSetIdentifiers.economy_events,
+      eventTypes: ['lootbox_opened'],
+    },
     // report_reason only exists on user_report
     {
       visualId: 'st-report-reasons-bar',
-      sheetId: 'sentiment-sheet',
-      dataSet: dataSetIdentifiers.player_health,
-      eventTypes: ['user_report'],
-    },
-    // report_reason over time also needs user_report filter
-    {
-      visualId: 'st-reports-over-time-area',
       sheetId: 'sentiment-sheet',
       dataSet: dataSetIdentifiers.player_health,
       eventTypes: ['user_report'],
@@ -603,6 +697,99 @@ function buildNullExclusionFilterGroups(
       sheetId: 'sentiment-sheet',
       dataSet: dataSetIdentifiers.player_health,
       eventTypes: ['user_sentiment'],
+    },
+    // Avg rating gauge — scope to user_sentiment so target arc compares against actual rating
+    {
+      visualId: 'st-avg-rating-gauge',
+      sheetId: 'sentiment-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      eventTypes: ['user_sentiment'],
+    },
+    // login vs logout pulse bar restricted to those two event types
+    {
+      visualId: 'pulse-login-logout-bar',
+      sheetId: 'pulse-sheet',
+      dataSet: dataSetIdentifiers.all_events,
+      eventTypes: ['login', 'logout'],
+    },
+    // exp_gained only meaningful on match_end
+    {
+      visualId: 'cb-avg-xp-kpi',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      eventTypes: ['match_end'],
+    },
+    // currency_amount only populated on iap_transaction
+    {
+      visualId: 'mn-revenue-by-currency-area',
+      sheetId: 'monetization-sheet',
+      dataSet: dataSetIdentifiers.economy_events,
+      eventTypes: ['iap_transaction'],
+    },
+    // Purchase funnel: viewer → buyer journey only — exclude unrelated event types
+    {
+      visualId: 'mn-purchase-funnel',
+      sheetId: 'monetization-sheet',
+      dataSet: dataSetIdentifiers.all_events,
+      eventTypes: ['item_viewed', 'iap_transaction'],
+    },
+    // Spell volume + win-rate bars — most_used_spell only populated on match_end events
+    {
+      visualId: 'cb-spell-volume-bar',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      eventTypes: ['match_end'],
+    },
+    {
+      visualId: 'cb-spell-winrate-bar',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      eventTypes: ['match_end'],
+    },
+    {
+      visualId: 'cb-spell-performance-table',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      eventTypes: ['match_end'],
+    },
+    {
+      visualId: 'cb-map-outcome-pivot',
+      sheetId: 'combat-sheet',
+      dataSet: dataSetIdentifiers.match_events,
+      eventTypes: ['match_end'],
+    },
+    // Country x platform heatmap — both fields populated only on user_registration
+    {
+      visualId: 'pulse-country-platform-heatmap',
+      sheetId: 'pulse-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      eventTypes: ['user_registration'],
+    },
+    // Progression KPI banner: scope each headline number to its event type
+    {
+      visualId: 'pr-tutorial-sessions-kpi',
+      sheetId: 'progression-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      eventTypes: ['tutorial_progression'],
+    },
+    {
+      visualId: 'pr-levels-completed-kpi',
+      sheetId: 'progression-sheet',
+      dataSet: dataSetIdentifiers.level_events,
+      eventTypes: ['level_completed'],
+    },
+    {
+      visualId: 'pr-rank-ups-kpi',
+      sheetId: 'progression-sheet',
+      dataSet: dataSetIdentifiers.player_health,
+      eventTypes: ['user_rank_up'],
+    },
+    // Transaction amount band chart — only iap_transaction has currency_amount_band populated
+    {
+      visualId: 'mn-transaction-amount-distribution-bar',
+      sheetId: 'monetization-sheet',
+      dataSet: dataSetIdentifiers.economy_events,
+      eventTypes: ['iap_transaction'],
     },
   ];
 
@@ -638,7 +825,42 @@ function buildNullExclusionFilterGroups(
     status: 'ENABLED',
   }));
 
-  return [...nullFilters, ...inclusionFilters];
+  // Currency-type filter: scope the USD band chart to USD-only transactions.
+  // Mixing currency_amount across different currencies without FX is meaningless,
+  // so this guarantees the bands represent real USD price points.
+  const currencyFilter: quicksight.CfnDashboard.FilterGroupProperty = {
+    filterGroupId: 'currency-type-usd-band',
+    filters: [
+      {
+        categoryFilter: {
+          filterId: 'currency-type-usd-band-filter',
+          column: { dataSetIdentifier: dataSetIdentifiers.economy_events, columnName: 'currency_type' },
+          configuration: {
+            filterListConfiguration: {
+              matchOperator: 'CONTAINS',
+              categoryValues: ['USD'],
+              nullOption: 'NON_NULLS_ONLY',
+            },
+          },
+        },
+      },
+    ],
+    scopeConfiguration: {
+      selectedSheets: {
+        sheetVisualScopingConfigurations: [
+          {
+            sheetId: 'monetization-sheet',
+            scope: 'SELECTED_VISUALS',
+            visualIds: ['mn-transaction-amount-distribution-bar'],
+          },
+        ],
+      },
+    },
+    crossDataset: 'SINGLE_DATASET',
+    status: 'ENABLED',
+  };
+
+  return [...nullFilters, ...inclusionFilters, currencyFilter];
 }
 
 // ---- Construct ---- //
@@ -659,7 +881,7 @@ export class QuickSightConstruct extends Construct {
     super(parent, name);
 
     // Force unique template hash to bypass CloudFormation template caching
-    this.node.addMetadata('version', '6');
+    this.node.addMetadata('version', String(VPC_CONNECTION_VERSION));
 
     const accountId = cdk.Aws.ACCOUNT_ID;
     const region = cdk.Aws.REGION;
@@ -715,9 +937,8 @@ export class QuickSightConstruct extends Construct {
     this.qsRoleName = qsRole.roleName;
 
     if (isRedshift) {
-      // Secrets Manager access — use wildcard for the managed admin password secret
-      // since Namespace.AdminPasswordSecretArn is not available via GetAtt
-      const namespaceSecretArnPattern = `arn:aws:secretsmanager:${region}:${accountId}:secret:redshift!*`;
+      const namespaceSecretName = `redshift!${props.redshiftConstruct!.namespace.ref}-db-admin`;
+      const namespaceSecretArnPattern = `arn:aws:secretsmanager:${region}:${accountId}:secret:redshift!${props.redshiftConstruct!.namespace.ref}-db-admin-*`;
       qsRole.addToPolicy(
         new iam.PolicyStatement({
           actions: ['secretsmanager:GetSecretValue'],
@@ -733,13 +954,40 @@ export class QuickSightConstruct extends Construct {
         }),
       );
 
-      // Redshift Serverless permissions
+      // Redshift Serverless permissions scoped to this workgroup
       qsRole.addToPolicy(
         new iam.PolicyStatement({
           actions: ['redshift-serverless:GetCredentials', 'redshift-serverless:GetWorkgroup'],
-          resources: ['*'],
+          resources: [
+            `arn:aws:redshift-serverless:${region}:${accountId}:workgroup/*`,
+          ],
         }),
       );
+
+      new iam.CfnPolicy(this, 'QuickSightManagedServiceRoleSecretAccessPolicy', {
+        policyName: `${workloadName}-QuickSightSecretAccess`,
+        roles: ['aws-quicksight-service-role-v0'],
+        policyDocument: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: ['secretsmanager:DescribeSecret', 'secretsmanager:GetSecretValue'],
+              resources: [namespaceSecretArnPattern],
+            }),
+            new iam.PolicyStatement({
+              actions: ['kms:Decrypt'],
+              resources: [props.redshiftConstruct!.key.keyArn],
+              conditions: {
+                StringEquals: {
+                  'kms:ViaService': `secretsmanager.${region}.amazonaws.com`,
+                },
+                StringLike: {
+                  'kms:EncryptionContext:SecretARN': `arn:aws:secretsmanager:${region}:${accountId}:secret:${namespaceSecretName}*`,
+                },
+              },
+            }),
+          ],
+        }),
+      });
     } else {
       // Athena query permissions scoped to the workgroup
       qsRole.addToPolicy(
@@ -815,7 +1063,7 @@ export class QuickSightConstruct extends Construct {
 
       const vpcConnection = new quicksight.CfnVPCConnection(this, 'VPCConnection', {
         awsAccountId: accountId,
-        vpcConnectionId: `${workloadName}-qs-vpc-conn-v6`,
+        vpcConnectionId: `${workloadName}-qs-vpc-conn-v${VPC_CONNECTION_VERSION}`,
         name: `${workloadName}-QuickSight-VPC`,
         subnetIds: props.vpcConstruct!.vpc.privateSubnets.map((s) => s.subnetId),
         securityGroupIds: [qsSecurityGroup.attrGroupId],
@@ -848,9 +1096,6 @@ export class QuickSightConstruct extends Construct {
           },
         },
         credentials: {
-          // Use dynamic reference to resolve the Redshift managed admin password
-          // from Secrets Manager at deploy time. The secret name follows the pattern:
-          // redshift!{namespaceName}-{adminUsername}
           credentialPair: {
             username: 'db-admin',
             password: cdk.Fn.join('', [

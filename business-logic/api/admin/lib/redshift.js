@@ -77,7 +77,7 @@ async function setupRedshift() {
   try {
     console.log("Setting up redshift views");
     const directoryPath = path.join(__dirname, "sql/views");
-    filenames = fs.readdirSync(directoryPath);
+    const filenames = fs.readdirSync(directoryPath);
     console.log(filenames);
 
     for (const filename of filenames) {
@@ -104,7 +104,7 @@ const waitForStatement = async (
   client,
   id,
   ignore_errors = [],
-  retries = 20
+  retries = 40
 ) => {
   for (let i = 0; i < retries; i++) {
     const describeStatement = { Id: id };

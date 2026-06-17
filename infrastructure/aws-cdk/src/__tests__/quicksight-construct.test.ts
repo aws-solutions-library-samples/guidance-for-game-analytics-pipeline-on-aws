@@ -138,8 +138,8 @@ describe('QuickSight Construct — REDSHIFT mode resource chain', () => {
     });
   });
 
-  test('creates exactly 5 DataSets', () => {
-    template.resourceCountIs('AWS::QuickSight::DataSet', 5);
+  test('creates exactly 6 DataSets', () => {
+    template.resourceCountIs('AWS::QuickSight::DataSet', 6);
   });
 
   test('creates exactly 1 Dashboard', () => {
@@ -177,8 +177,8 @@ describe('QuickSight Construct — DATA_LAKE mode resource chain', () => {
     });
   });
 
-  test('creates exactly 5 DataSets', () => {
-    template.resourceCountIs('AWS::QuickSight::DataSet', 5);
+  test('creates exactly 6 DataSets', () => {
+    template.resourceCountIs('AWS::QuickSight::DataSet', 6);
   });
 
   test('creates exactly 1 Dashboard', () => {
@@ -472,7 +472,7 @@ describe('QuickSight Construct — Property-Based Tests: Feature Flag Toggle', (
           // Exactly 1 DataSource regardless of mode
           template.resourceCountIs('AWS::QuickSight::DataSource', 1);
           // Exactly 5 DataSets (one per DATA_SET_DEFINITIONS entry)
-          template.resourceCountIs('AWS::QuickSight::DataSet', 5);
+          template.resourceCountIs('AWS::QuickSight::DataSet', 6);
 
           // Exactly 1 Dashboard in the stack
           template.resourceCountIs('AWS::QuickSight::Dashboard', 1);
@@ -692,8 +692,8 @@ describe('QuickSight Construct — Property-Based Tests: DataSet Creation', () =
           const dataSets = template.findResources('AWS::QuickSight::DataSet');
           const dataSetEntries = Object.values(dataSets);
 
-          // All 5 DataSets SHALL exist
-          expect(dataSetEntries).toHaveLength(5);
+          // All 6 DataSets SHALL exist
+          expect(dataSetEntries).toHaveLength(6);
 
           const allDataSetIds: string[] = [];
           const expectedViewNames = DATA_SET_DEFINITIONS.map((d) => d.viewName);
@@ -1051,10 +1051,10 @@ describe('QuickSight Construct — Property-Based Tests: IAM and Permissions', (
           });
           expect(dsHasUser).toBe(true);
 
-          // Req 7.3: All 5 DataSets SHALL have permissions for the configured user
+          // Req 7.3: All 6 DataSets SHALL have permissions for the configured user
           const dataSets = template.findResources('AWS::QuickSight::DataSet');
           const dataSetEntries = Object.values(dataSets);
-          expect(dataSetEntries).toHaveLength(5);
+          expect(dataSetEntries).toHaveLength(6);
           for (const ds of dataSetEntries) {
             const permissions = (ds as any).Properties.Permissions as any[];
             expect(permissions.length).toBeGreaterThanOrEqual(1);

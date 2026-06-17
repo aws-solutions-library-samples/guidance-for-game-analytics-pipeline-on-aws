@@ -57,7 +57,7 @@ function extractVisualIdsFromSheet(sheet: Record<string, any>): string[] {
  * The complete set of DataSet view names required by the four sheet builders.
  * These are the keys that must exist in the dataSetIdentifiers map.
  */
-const REQUIRED_DATASET_KEYS = ['all_events', 'match_events', 'level_events', 'economy_events', 'player_health'];
+const REQUIRED_DATASET_KEYS = ['all_events', 'match_events', 'level_events', 'economy_events', 'player_health', 'match_lifecycle_funnel'];
 
 /** Generates a non-empty alphanumeric string suitable for DataSet identifier values */
 const arbIdentifierValue = fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9_]{0,30}$/);

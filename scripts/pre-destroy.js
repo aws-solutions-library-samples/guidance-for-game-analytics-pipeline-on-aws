@@ -31,14 +31,14 @@ console.log(`Looking up admin Lambda for stack: ${stackName}...`);
 let functionName;
 try {
   const output = execSync(
-    `aws lambda list-functions --query "Functions[?contains(FunctionName, '${stackName}') && contains(FunctionName, 'Application')].FunctionName" --output text`,
+    `aws cloudformation list-stack-resources --stack-name "${stackName}" --query "StackResourceSummaries[?starts_with(LogicalResourceId, 'LambdaConstructApplicationAdminServiceFunction')].PhysicalResourceId" --output text`,
     { encoding: 'utf8', timeout: 30000 }
   ).trim();
   functionName = output.split('\t')[0];
 } catch (err) {
-  console.error('Failed to find admin Lambda. Is the stack deployed?');
+  console.error('Failed to find admin Lambda via CloudFormation. Is the stack deployed?');
   console.error(err.message);
-  process.exit(0); // Non-fatal — stack may already be deleted
+  process.exit(0);
 }
 
 if (!functionName) {

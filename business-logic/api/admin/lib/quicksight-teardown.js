@@ -18,6 +18,7 @@ const {
 const ACCOUNT_ID = process.env.AWS_ACCOUNT_ID || process.env.ACCOUNT_ID;
 const VPC_CONNECTION_ID = process.env.QUICKSIGHT_VPC_CONNECTION_ID;
 const QS_ROLE_NAME = process.env.QUICKSIGHT_ROLE_NAME;
+const WORKLOAD_NAME = process.env.WORKLOAD_NAME;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -49,6 +50,15 @@ async function teardownQuickSight() {
   const qsClient = new QuickSightClient({});
   const iamClient = new IAMClient({});
   const results = [];
+
+  // Ownership guard: verify VPC connection belongs to this workload
+  if (WORKLOAD_NAME && !VPC_CONNECTION_ID.includes(WORKLOAD_NAME)) {
+    return Promise.reject({
+      code: 400,
+      error: 'OwnershipError',
+      message: `VPC connection ID "${VPC_CONNECTION_ID}" does not contain workload name "${WORKLOAD_NAME}". Aborting to prevent deleting foreign resources.`,
+    });
+  }
 
   // Step 1: Delete VPC Connection
   try {
@@ -122,46 +132,48 @@ async function teardownQuickSight() {
 
   // Step 3: Clean up the retained IAM role
   if (QS_ROLE_NAME) {
-    try {
-      console.log(`Cleaning up retained IAM role: ${QS_ROLE_NAME}`);
+    if (WORKLOAD_NAME && !QS_ROLE_NAME.includes(WORKLOAD_NAME)) {
+      console.log(`WARNING: Role "${QS_ROLE_NAME}" does not contain workload name "${WORKLOAD_NAME}". Skipping to prevent deleting foreign resources.`);
+      results.push({ step: 'DeleteIAMRole', status: 'SKIPPED', reason: 'Role name does not match workload' });
+    } else {
+      try {
+        console.log(`Cleaning up retained IAM role: ${QS_ROLE_NAME}`);
 
-      // Delete inline policies
-      const inlinePolicies = await iamClient.send(new ListRolePoliciesCommand({
-        RoleName: QS_ROLE_NAME,
-      }));
-      for (const policyName of (inlinePolicies.PolicyNames || [])) {
-        await iamClient.send(new DeleteRolePolicyCommand({
+        const inlinePolicies = await iamClient.send(new ListRolePoliciesCommand({
           RoleName: QS_ROLE_NAME,
-          PolicyName: policyName,
         }));
-        console.log(`  Deleted inline policy: ${policyName}`);
-      }
+        for (const policyName of (inlinePolicies.PolicyNames || [])) {
+          await iamClient.send(new DeleteRolePolicyCommand({
+            RoleName: QS_ROLE_NAME,
+            PolicyName: policyName,
+          }));
+          console.log(`  Deleted inline policy: ${policyName}`);
+        }
 
-      // Detach managed policies
-      const attachedPolicies = await iamClient.send(new ListAttachedRolePoliciesCommand({
-        RoleName: QS_ROLE_NAME,
-      }));
-      for (const policy of (attachedPolicies.AttachedPolicies || [])) {
-        await iamClient.send(new DetachRolePolicyCommand({
+        const attachedPolicies = await iamClient.send(new ListAttachedRolePoliciesCommand({
           RoleName: QS_ROLE_NAME,
-          PolicyArn: policy.PolicyArn,
         }));
-        console.log(`  Detached managed policy: ${policy.PolicyArn}`);
-      }
+        for (const policy of (attachedPolicies.AttachedPolicies || [])) {
+          await iamClient.send(new DetachRolePolicyCommand({
+            RoleName: QS_ROLE_NAME,
+            PolicyArn: policy.PolicyArn,
+          }));
+          console.log(`  Detached managed policy: ${policy.PolicyArn}`);
+        }
 
-      // Delete the role
-      await iamClient.send(new DeleteRoleCommand({
-        RoleName: QS_ROLE_NAME,
-      }));
-      console.log(`  Deleted role: ${QS_ROLE_NAME}`);
-      results.push({ step: 'DeleteIAMRole', status: 'DELETED' });
-    } catch (err) {
-      if (err.name === 'NoSuchEntityException') {
-        console.log('IAM role not found — already deleted');
-        results.push({ step: 'DeleteIAMRole', status: 'ALREADY_DELETED' });
-      } else {
-        console.log(`Warning: Failed to delete IAM role: ${err.message}`);
-        results.push({ step: 'DeleteIAMRole', status: 'FAILED', error: err.message });
+        await iamClient.send(new DeleteRoleCommand({
+          RoleName: QS_ROLE_NAME,
+        }));
+        console.log(`  Deleted role: ${QS_ROLE_NAME}`);
+        results.push({ step: 'DeleteIAMRole', status: 'DELETED' });
+      } catch (err) {
+        if (err.name === 'NoSuchEntityException') {
+          console.log('IAM role not found — already deleted');
+          results.push({ step: 'DeleteIAMRole', status: 'ALREADY_DELETED' });
+        } else {
+          console.log(`Warning: Failed to delete IAM role: ${err.message}`);
+          results.push({ step: 'DeleteIAMRole', status: 'FAILED', error: err.message });
+        }
       }
     }
   } else {

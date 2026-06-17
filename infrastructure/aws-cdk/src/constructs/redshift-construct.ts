@@ -17,7 +17,6 @@ import * as kms from "aws-cdk-lib/aws-kms";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as redshiftserverless from "aws-cdk-lib/aws-redshiftserverless";
-import { Stack } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { GameAnalyticsPipelineConfig } from "../helpers/config-types";
 import { VpcConstruct } from "./vpc-construct";

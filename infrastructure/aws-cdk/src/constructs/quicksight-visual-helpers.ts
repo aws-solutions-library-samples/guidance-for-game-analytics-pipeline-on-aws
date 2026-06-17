@@ -3,55 +3,13 @@
  *
  * Reusable TypeScript functions that generate CloudFormation visual definition
  * objects for CfnDashboard.definition.sheets[].visuals[].
- *
- * Data Storytelling Visual Library:
- * - KPI with sparklines (directional context — "are we growing?")
- * - Funnel charts (drop-off narrative — "where do we lose players?")
- * - Combo charts (correlation — "how do volume and rate relate?")
- * - Tree maps (hierarchical composition — "what's the biggest slice?")
- * - Stacked bars with color (composition by group — "is it balanced?")
- * - Gauge charts (target progress — "are we hitting our goal?")
- * - Area/Line/Bar/Donut (standard storytelling toolkit)
  */
-
-// ---- Column reference helper ---- //
 
 function col(dataSetIdentifier: string, columnName: string) {
   return { dataSetIdentifier, columnName };
 }
 
-// ---- KPI Visual (Distinct Count) ---- //
-
-export function buildDistinctCountKpiVisual(
-  visualId: string,
-  title: string,
-  dataSetIdentifier: string,
-  measureFieldId: string,
-  measureColumn: string,
-): object {
-  return {
-    kpiVisual: {
-      visualId,
-      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
-      subtitle: { visibility: 'HIDDEN' },
-      chartConfiguration: {
-        fieldWells: {
-          values: [
-            {
-              categoricalMeasureField: {
-                fieldId: measureFieldId,
-                column: col(dataSetIdentifier, measureColumn),
-                aggregationFunction: 'DISTINCT_COUNT',
-              },
-            },
-          ],
-        },
-      },
-    },
-  };
-}
-
-// ---- KPI Visual ---- //
+export type DateGranularity = 'DAY' | 'WEEK' | 'MONTH' | 'QUARTER' | 'YEAR';
 
 export function buildKpiVisual(
   visualId: string,
@@ -83,132 +41,6 @@ export function buildKpiVisual(
   };
 }
 
-// ---- Area Chart (filled line chart) ---- //
-
-export function buildAreaChartVisual(
-  visualId: string,
-  title: string,
-  dataSetIdentifier: string,
-  dateFieldId: string,
-  dateColumn: string,
-  valueFieldId: string,
-  valueColumn: string,
-  aggregation: 'SUM' | 'COUNT' | 'AVERAGE',
-): object {
-  return {
-    lineChartVisual: {
-      visualId,
-      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
-      subtitle: { visibility: 'HIDDEN' },
-      chartConfiguration: {
-        type: 'AREA',
-        fieldWells: {
-          lineChartAggregatedFieldWells: {
-            category: [
-              {
-                dateDimensionField: {
-                  fieldId: dateFieldId,
-                  column: col(dataSetIdentifier, dateColumn),
-                  dateGranularity: 'WEEK',
-                },
-              },
-            ],
-            values: [
-              {
-                numericalMeasureField: {
-                  fieldId: valueFieldId,
-                  column: col(dataSetIdentifier, valueColumn),
-                  aggregationFunction: { simpleNumericalAggregation: aggregation },
-                },
-              },
-            ],
-          },
-        },
-        sortConfiguration: {
-          categorySort: [{ fieldSort: { fieldId: dateFieldId, direction: 'ASC' } }],
-        },
-        xAxisDisplayOptions: {
-          axisLineVisibility: 'VISIBLE',
-          tickLabelOptions: { visibility: 'VISIBLE' },
-        },
-        yAxisDisplayOptions: {
-          axisLineVisibility: 'VISIBLE',
-        },
-        legend: { visibility: 'HIDDEN' },
-      },
-    },
-  };
-}
-
-// ---- Stacked Area Chart (multi-series) ---- //
-
-export function buildStackedAreaChartVisual(
-  visualId: string,
-  title: string,
-  dataSetIdentifier: string,
-  dateFieldId: string,
-  dateColumn: string,
-  valueFieldId: string,
-  valueColumn: string,
-  colorFieldId: string,
-  colorColumn: string,
-  aggregation: 'SUM' | 'COUNT' | 'AVERAGE',
-): object {
-  return {
-    lineChartVisual: {
-      visualId,
-      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
-      subtitle: { visibility: 'HIDDEN' },
-      chartConfiguration: {
-        type: 'STACKED_AREA',
-        fieldWells: {
-          lineChartAggregatedFieldWells: {
-            category: [
-              {
-                dateDimensionField: {
-                  fieldId: dateFieldId,
-                  column: col(dataSetIdentifier, dateColumn),
-                  dateGranularity: 'DAY',
-                },
-              },
-            ],
-            values: [
-              {
-                numericalMeasureField: {
-                  fieldId: valueFieldId,
-                  column: col(dataSetIdentifier, valueColumn),
-                  aggregationFunction: { simpleNumericalAggregation: aggregation },
-                },
-              },
-            ],
-            colors: [
-              {
-                categoricalDimensionField: {
-                  fieldId: colorFieldId,
-                  column: col(dataSetIdentifier, colorColumn),
-                },
-              },
-            ],
-          },
-        },
-        sortConfiguration: {
-          categorySort: [{ fieldSort: { fieldId: dateFieldId, direction: 'ASC' } }],
-        },
-        xAxisDisplayOptions: {
-          axisLineVisibility: 'VISIBLE',
-          tickLabelOptions: { visibility: 'VISIBLE' },
-        },
-        yAxisDisplayOptions: {
-          axisLineVisibility: 'VISIBLE',
-        },
-        legend: { visibility: 'VISIBLE', position: 'RIGHT' },
-      },
-    },
-  };
-}
-
-// ---- Line Chart ---- //
-
 export function buildLineChartVisual(
   visualId: string,
   title: string,
@@ -218,6 +50,7 @@ export function buildLineChartVisual(
   valueFieldId: string,
   valueColumn: string,
   aggregation: 'SUM' | 'COUNT' | 'AVERAGE',
+  dateGranularity: DateGranularity = 'DAY',
 ): object {
   return {
     lineChartVisual: {
@@ -232,7 +65,7 @@ export function buildLineChartVisual(
                 dateDimensionField: {
                   fieldId: dateFieldId,
                   column: col(dataSetIdentifier, dateColumn),
-                  dateGranularity: 'DAY',
+                  dateGranularity,
                 },
               },
             ],
@@ -257,8 +90,6 @@ export function buildLineChartVisual(
     },
   };
 }
-
-// ---- Horizontal Bar Chart ---- //
 
 export function buildBarChartVisual(
   visualId: string,
@@ -309,8 +140,6 @@ export function buildBarChartVisual(
   };
 }
 
-// ---- Donut Chart (modern pie) ---- //
-
 export function buildDonutChartVisual(
   visualId: string,
   title: string,
@@ -357,82 +186,6 @@ export function buildDonutChartVisual(
     },
   };
 }
-
-// ---- Gauge Chart (for rates/percentages) ---- //
-
-export function buildGaugeChartVisual(
-  visualId: string,
-  title: string,
-  dataSetIdentifier: string,
-  valueFieldId: string,
-  valueColumn: string,
-  aggregation: 'SUM' | 'COUNT' | 'AVERAGE',
-): object {
-  return {
-    gaugeChartVisual: {
-      visualId,
-      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
-      subtitle: { visibility: 'HIDDEN' },
-      chartConfiguration: {
-        fieldWells: {
-          values: [
-            {
-              numericalMeasureField: {
-                fieldId: valueFieldId,
-                column: col(dataSetIdentifier, valueColumn),
-                aggregationFunction: { simpleNumericalAggregation: aggregation },
-              },
-            },
-          ],
-        },
-      },
-    },
-  };
-}
-
-// ---- Table Visual ---- //
-
-export function buildTableVisual(
-  visualId: string,
-  title: string,
-  dataSetIdentifier: string,
-  columns: Array<{ fieldId: string; columnName: string; type?: 'STRING' | 'INTEGER' | 'DECIMAL' | 'DATETIME' }>,
-): object {
-  return {
-    tableVisual: {
-      visualId,
-      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
-      subtitle: { visibility: 'HIDDEN' },
-      chartConfiguration: {
-        fieldWells: {
-          tableAggregatedFieldWells: {
-            groupBy: columns.map((c) => {
-              const t = c.type ?? 'STRING';
-              if (t === 'INTEGER' || t === 'DECIMAL') {
-                return {
-                  numericalDimensionField: { fieldId: c.fieldId, column: col(dataSetIdentifier, c.columnName) },
-                };
-              }
-              if (t === 'DATETIME') {
-                return { dateDimensionField: { fieldId: c.fieldId, column: col(dataSetIdentifier, c.columnName) } };
-              }
-              return {
-                categoricalDimensionField: { fieldId: c.fieldId, column: col(dataSetIdentifier, c.columnName) },
-              };
-            }),
-            values: [],
-          },
-        },
-        tableOptions: {
-          headerStyle: { backgroundColor: '#232F3E', fontConfiguration: { fontColor: '#FFFFFF' } },
-          cellStyle: { border: { uniformBorder: { style: 'SOLID', thickness: 1, color: '#E8E8E8' } } },
-        },
-      },
-    },
-  };
-}
-
-// ---- Sorted Bar Chart (sort by category field, not value) ---- //
 
 export function buildSortedBarChartVisual(
   visualId: string,
@@ -484,8 +237,6 @@ export function buildSortedBarChartVisual(
   };
 }
 
-// ---- Vertical Bar Chart (histogram-style, sort by category) ---- //
-
 export function buildVerticalBarChartVisual(
   visualId: string,
   title: string,
@@ -536,57 +287,6 @@ export function buildVerticalBarChartVisual(
   };
 }
 
-// ---- Grouped/Stacked Bar Chart (multiple measures on same category axis) ---- //
-
-export function buildGroupedBarChartVisual(
-  visualId: string,
-  title: string,
-  dataSetIdentifier: string,
-  categoryFieldId: string,
-  categoryColumn: string,
-  values: Array<{ fieldId: string; column: string; aggregation: 'SUM' | 'COUNT' }>,
-  orientation: 'HORIZONTAL' | 'VERTICAL',
-  sortDirection: 'ASC' | 'DESC',
-): object {
-  return {
-    barChartVisual: {
-      visualId,
-      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
-      subtitle: { visibility: 'HIDDEN' },
-      chartConfiguration: {
-        orientation,
-        fieldWells: {
-          barChartAggregatedFieldWells: {
-            category: [
-              {
-                categoricalDimensionField: {
-                  fieldId: categoryFieldId,
-                  column: col(dataSetIdentifier, categoryColumn),
-                },
-              },
-            ],
-            values: values.map((v) => ({
-              numericalMeasureField: {
-                fieldId: v.fieldId,
-                column: col(dataSetIdentifier, v.column),
-                aggregationFunction: { simpleNumericalAggregation: v.aggregation },
-              },
-            })),
-            colors: [],
-          },
-        },
-        sortConfiguration: {
-          categorySort: [{ fieldSort: { fieldId: categoryFieldId, direction: sortDirection } }],
-        },
-        dataLabels: { visibility: 'VISIBLE', position: 'OUTSIDE' },
-        legend: { visibility: 'VISIBLE', position: 'RIGHT' },
-      },
-    },
-  };
-}
-
-// ---- KPI with Sparkline (directional storytelling) ---- //
-
 /**
  * KPI visual with a sparkline trend line — tells the viewer "is this metric
  * going up or down?" at a glance. Requires a date dimension for trendGroups.
@@ -600,6 +300,7 @@ export function buildKpiWithSparklineVisual(
   aggregation: 'SUM' | 'COUNT' | 'AVERAGE',
   trendFieldId: string,
   trendColumn: string,
+  dateGranularity: DateGranularity = 'WEEK',
 ): object {
   return {
     kpiVisual: {
@@ -622,7 +323,7 @@ export function buildKpiWithSparklineVisual(
               dateDimensionField: {
                 fieldId: trendFieldId,
                 column: col(dataSetIdentifier, trendColumn),
-                dateGranularity: 'WEEK',
+                dateGranularity,
               },
             },
           ],
@@ -633,6 +334,13 @@ export function buildKpiWithSparklineVisual(
             comparisonMethod: 'PERCENT_DIFFERENCE',
           },
           primaryValueFontConfiguration: { fontSize: { relative: 'LARGE' } },
+          // sparkline render config — required for the trend line to actually
+          // appear; without this, only the comparison percentage shows.
+          sparkline: {
+            visibility: 'VISIBLE',
+            type: 'LINE',
+            tooltipVisibility: 'VISIBLE',
+          },
         },
       },
     },
@@ -650,6 +358,7 @@ export function buildDistinctCountKpiWithSparklineVisual(
   measureColumn: string,
   trendFieldId: string,
   trendColumn: string,
+  dateGranularity: DateGranularity = 'WEEK',
 ): object {
   return {
     kpiVisual: {
@@ -672,7 +381,7 @@ export function buildDistinctCountKpiWithSparklineVisual(
               dateDimensionField: {
                 fieldId: trendFieldId,
                 column: col(dataSetIdentifier, trendColumn),
-                dateGranularity: 'WEEK',
+                dateGranularity,
               },
             },
           ],
@@ -683,17 +392,29 @@ export function buildDistinctCountKpiWithSparklineVisual(
             comparisonMethod: 'PERCENT_DIFFERENCE',
           },
           primaryValueFontConfiguration: { fontSize: { relative: 'LARGE' } },
+          // sparkline render config — required for the trend line to render.
+          sparkline: {
+            visibility: 'VISIBLE',
+            type: 'LINE',
+            tooltipVisibility: 'VISIBLE',
+          },
         },
       },
     },
   };
 }
 
-// ---- Funnel Chart (drop-off storytelling) ---- //
-
 /**
  * Funnel chart — the visual shape itself tells the drop-off story.
  * Wide at top → narrow at bottom = players lost at each stage.
+ *
+ * Sort logic:
+ *   - sortByCategory=false (default): sort by value field DESC. Use for natural
+ *     funnels where each stage is a strict subset of the prior (e.g. matchmaking_start
+ *     → matchmaking_complete → match_start → match_end). Biggest stage on top.
+ *   - sortByCategory=true: sort by category field ASC. Use when the category column
+ *     is naturally ordered (e.g. tutorial_screen_id values "1_INTRO" < "2_MOVEMENT"
+ *     < "3_WEAPONS" < "4_FINISH") and stages may have ties or non-monotonic counts.
  */
 export function buildFunnelChartVisual(
   visualId: string,
@@ -704,7 +425,10 @@ export function buildFunnelChartVisual(
   valueFieldId: string,
   valueColumn: string,
   aggregation: 'SUM' | 'COUNT',
+  sortByCategory: boolean = false,
 ): object {
+  const sortFieldId = sortByCategory ? categoryFieldId : valueFieldId;
+  const sortDirection: 'ASC' | 'DESC' = sortByCategory ? 'ASC' : 'DESC';
   return {
     funnelChartVisual: {
       visualId,
@@ -733,7 +457,7 @@ export function buildFunnelChartVisual(
           },
         },
         sortConfiguration: {
-          categorySort: [{ fieldSort: { fieldId: categoryFieldId, direction: 'ASC' } }],
+          categorySort: [{ fieldSort: { fieldId: sortFieldId, direction: sortDirection } }],
         },
         dataLabels: {
           visibility: 'VISIBLE',
@@ -746,146 +470,6 @@ export function buildFunnelChartVisual(
   };
 }
 
-// ---- Combo Chart (correlation storytelling — bars + line) ---- //
-
-/**
- * Combo chart — bars for volume, line for rate/trend on secondary axis.
- * Answers: "How do these two metrics relate?"
- */
-export function buildComboChartVisual(
-  visualId: string,
-  title: string,
-  dataSetIdentifier: string,
-  categoryFieldId: string,
-  categoryColumn: string,
-  barValueFieldId: string,
-  barValueColumn: string,
-  barAggregation: 'SUM' | 'COUNT' | 'AVERAGE',
-  lineValueFieldId: string,
-  lineValueColumn: string,
-  lineAggregation: 'SUM' | 'COUNT' | 'AVERAGE',
-  categoryType: 'date' | 'categorical' = 'date',
-): object {
-  const categoryField =
-    categoryType === 'date'
-      ? {
-          dateDimensionField: {
-            fieldId: categoryFieldId,
-            column: col(dataSetIdentifier, categoryColumn),
-            dateGranularity: 'DAY' as const,
-          },
-        }
-      : {
-          categoricalDimensionField: {
-            fieldId: categoryFieldId,
-            column: col(dataSetIdentifier, categoryColumn),
-          },
-        };
-
-  return {
-    comboChartVisual: {
-      visualId,
-      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
-      subtitle: { visibility: 'HIDDEN' },
-      chartConfiguration: {
-        fieldWells: {
-          comboChartAggregatedFieldWells: {
-            category: [categoryField],
-            barValues: [
-              {
-                numericalMeasureField: {
-                  fieldId: barValueFieldId,
-                  column: col(dataSetIdentifier, barValueColumn),
-                  aggregationFunction: { simpleNumericalAggregation: barAggregation },
-                },
-              },
-            ],
-            lineValues: [
-              {
-                numericalMeasureField: {
-                  fieldId: lineValueFieldId,
-                  column: col(dataSetIdentifier, lineValueColumn),
-                  aggregationFunction: { simpleNumericalAggregation: lineAggregation },
-                },
-              },
-            ],
-            colors: [],
-          },
-        },
-        sortConfiguration: {
-          categorySort: [{ fieldSort: { fieldId: categoryFieldId, direction: 'ASC' } }],
-        },
-        barDataLabels: { visibility: 'HIDDEN' },
-        lineDataLabels: { visibility: 'HIDDEN' },
-        legend: { visibility: 'VISIBLE', position: 'BOTTOM' },
-      },
-    },
-  };
-}
-
-// ---- Tree Map (hierarchical composition) ---- //
-
-/**
- * Tree map — shows both volume (size) and a secondary dimension (color grouping).
- * Answers: "What's the biggest slice and what category does it belong to?"
- */
-export function buildTreeMapVisual(
-  visualId: string,
-  title: string,
-  dataSetIdentifier: string,
-  groupFieldId: string,
-  groupColumn: string,
-  sizeFieldId: string,
-  sizeColumn: string,
-  aggregation: 'SUM' | 'COUNT',
-): object {
-  return {
-    treeMapVisual: {
-      visualId,
-      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
-      subtitle: { visibility: 'HIDDEN' },
-      chartConfiguration: {
-        fieldWells: {
-          treeMapAggregatedFieldWells: {
-            groups: [
-              {
-                categoricalDimensionField: {
-                  fieldId: groupFieldId,
-                  column: col(dataSetIdentifier, groupColumn),
-                },
-              },
-            ],
-            sizes: [
-              {
-                numericalMeasureField: {
-                  fieldId: sizeFieldId,
-                  column: col(dataSetIdentifier, sizeColumn),
-                  aggregationFunction: { simpleNumericalAggregation: aggregation },
-                },
-              },
-            ],
-            colors: [],
-          },
-        },
-        sortConfiguration: {
-          treeMapSort: [{ fieldSort: { fieldId: sizeFieldId, direction: 'DESC' } }],
-          treeMapGroupItemsLimitConfiguration: { itemsLimit: 10, otherCategories: 'INCLUDE' },
-        },
-        groupLabelOptions: { visibility: 'VISIBLE' },
-        sizeLabelOptions: { visibility: 'VISIBLE' },
-        dataLabels: { visibility: 'VISIBLE' },
-        legend: { visibility: 'HIDDEN' },
-      },
-    },
-  };
-}
-
-// ---- Stacked Bar with Color (composition by group) ---- //
-
-/**
- * Stacked bar chart with a color dimension — shows composition within each category.
- * Answers: "Is it balanced across groups?"
- */
 export function buildStackedBarChartVisual(
   visualId: string,
   title: string,
@@ -945,13 +529,6 @@ export function buildStackedBarChartVisual(
   };
 }
 
-// ---- Gauge with Target (progress storytelling) ---- //
-
-/**
- * Gauge chart comparing the metric against itself — instantly communicates
- * the metric value with a visual arc. Use when you want to highlight a single
- * number with more visual weight than a KPI.
- */
 export function buildGaugeWithTargetVisual(
   visualId: string,
   title: string,
@@ -959,6 +536,8 @@ export function buildGaugeWithTargetVisual(
   valueFieldId: string,
   valueColumn: string,
   aggregation: 'SUM' | 'COUNT' | 'AVERAGE',
+  targetFieldId: string,
+  targetColumn: string,
 ): object {
   return {
     gaugeChartVisual: {
@@ -976,8 +555,19 @@ export function buildGaugeWithTargetVisual(
               },
             },
           ],
+          targetValues: [
+            {
+              numericalMeasureField: {
+                fieldId: targetFieldId,
+                column: col(dataSetIdentifier, targetColumn),
+                aggregationFunction: { simpleNumericalAggregation: 'AVERAGE' },
+              },
+            },
+          ],
         },
         gaugeChartOptions: {
+          arc: { arcAngle: 270, arcThickness: 'MEDIUM' },
+          primaryValueDisplayType: 'ACTUAL',
           primaryValueFontConfiguration: { fontSize: { relative: 'LARGE' } },
         },
       },
@@ -985,15 +575,8 @@ export function buildGaugeWithTargetVisual(
   };
 }
 
-// ---- Filled Map / Geospatial Heatmap (geographic distribution) ---- //
-
 /**
  * Geospatial filled map (choropleth) — colors countries by event volume.
- * Answers: "Where are our players geographically?"
- *
- * QuickSight geospatialMapVisual uses:
- * - geospatial field (country name/code) for location
- * - values field for the color intensity (heatmap effect)
  */
 export function buildFilledMapVisual(
   visualId: string,
@@ -1040,16 +623,82 @@ export function buildFilledMapVisual(
   };
 }
 
-// ---- Heat Map Visual (matrix heatmap — rows × columns with color intensity) ---- //
+/**
+ * Combo chart — bars for volume, line for rate/trend on secondary axis.
+ */
+export function buildComboChartVisual(
+  visualId: string,
+  title: string,
+  dataSetIdentifier: string,
+  categoryFieldId: string,
+  categoryColumn: string,
+  barValueFieldId: string,
+  barValueColumn: string,
+  barAggregation: 'SUM' | 'COUNT' | 'AVERAGE',
+  lineValueFieldId: string,
+  lineValueColumn: string,
+  lineAggregation: 'SUM' | 'COUNT' | 'AVERAGE',
+  categoryType: 'date' | 'categorical' = 'categorical',
+): object {
+  const categoryField =
+    categoryType === 'date'
+      ? {
+          dateDimensionField: {
+            fieldId: categoryFieldId,
+            column: col(dataSetIdentifier, categoryColumn),
+            dateGranularity: 'DAY' as const,
+          },
+        }
+      : {
+          categoricalDimensionField: {
+            fieldId: categoryFieldId,
+            column: col(dataSetIdentifier, categoryColumn),
+          },
+        };
+
+  return {
+    comboChartVisual: {
+      visualId,
+      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
+      subtitle: { visibility: 'HIDDEN' },
+      chartConfiguration: {
+        fieldWells: {
+          comboChartAggregatedFieldWells: {
+            category: [categoryField],
+            barValues: [
+              {
+                numericalMeasureField: {
+                  fieldId: barValueFieldId,
+                  column: col(dataSetIdentifier, barValueColumn),
+                  aggregationFunction: { simpleNumericalAggregation: barAggregation },
+                },
+              },
+            ],
+            lineValues: [
+              {
+                numericalMeasureField: {
+                  fieldId: lineValueFieldId,
+                  column: col(dataSetIdentifier, lineValueColumn),
+                  aggregationFunction: { simpleNumericalAggregation: lineAggregation },
+                },
+              },
+            ],
+            colors: [],
+          },
+        },
+        sortConfiguration: {
+          categorySort: [{ fieldSort: { fieldId: barValueFieldId, direction: 'DESC' } }],
+        },
+        barDataLabels: { visibility: 'HIDDEN' },
+        lineDataLabels: { visibility: 'VISIBLE' },
+        legend: { visibility: 'VISIBLE', position: 'BOTTOM' },
+      },
+    },
+  };
+}
 
 /**
- * Heat map visual — shows a matrix of two categorical dimensions with color
- * intensity representing the measure value. Great for geographic or cross-tab analysis.
- *
- * QuickSight heatMapVisual uses:
- * - rows: categorical dimension (e.g., country)
- * - columns: categorical dimension (e.g., platform or event_type)
- * - values: numerical measure for color intensity
+ * Heat map — matrix of two categorical dimensions with color intensity for the measure.
  */
 export function buildHeatMapVisual(
   visualId: string,
@@ -1075,7 +724,7 @@ export function buildHeatMapVisual(
               {
                 categoricalDimensionField: {
                   fieldId: rowFieldId,
-                  column: { dataSetIdentifier, columnName: rowColumn },
+                  column: col(dataSetIdentifier, rowColumn),
                 },
               },
             ],
@@ -1083,7 +732,7 @@ export function buildHeatMapVisual(
               {
                 categoricalDimensionField: {
                   fieldId: columnFieldId,
-                  column: { dataSetIdentifier, columnName: columnColumn },
+                  column: col(dataSetIdentifier, columnColumn),
                 },
               },
             ],
@@ -1091,7 +740,7 @@ export function buildHeatMapVisual(
               {
                 numericalMeasureField: {
                   fieldId: valueFieldId,
-                  column: { dataSetIdentifier, columnName: valueColumn },
+                  column: col(dataSetIdentifier, valueColumn),
                   aggregationFunction: { simpleNumericalAggregation: aggregation },
                 },
               },
@@ -1112,25 +761,320 @@ export function buildHeatMapVisual(
   };
 }
 
-// Keep legacy export for backward compat
-export function buildPieChartVisual(
+/**
+ * Sankey diagram — visualizes flow between source and destination nodes.
+ * Used for branching processes: e.g. matchmaking_start splits into complete vs failed.
+ * The DataSet must have one row per edge (source, destination, weight).
+ */
+export function buildSankeyDiagramVisual(
   visualId: string,
   title: string,
   dataSetIdentifier: string,
-  categoryFieldId: string,
-  categoryColumn: string,
-  valueFieldId: string,
-  valueColumn: string,
+  sourceFieldId: string,
+  sourceColumn: string,
+  destinationFieldId: string,
+  destinationColumn: string,
+  weightFieldId: string,
+  weightColumn: string,
+): object {
+  return {
+    sankeyDiagramVisual: {
+      visualId,
+      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
+      subtitle: { visibility: 'HIDDEN' },
+      chartConfiguration: {
+        fieldWells: {
+          sankeyDiagramAggregatedFieldWells: {
+            source: [
+              {
+                categoricalDimensionField: {
+                  fieldId: sourceFieldId,
+                  column: col(dataSetIdentifier, sourceColumn),
+                },
+              },
+            ],
+            destination: [
+              {
+                categoricalDimensionField: {
+                  fieldId: destinationFieldId,
+                  column: col(dataSetIdentifier, destinationColumn),
+                },
+              },
+            ],
+            weight: [
+              {
+                numericalMeasureField: {
+                  fieldId: weightFieldId,
+                  column: col(dataSetIdentifier, weightColumn),
+                  aggregationFunction: { simpleNumericalAggregation: 'SUM' },
+                },
+              },
+            ],
+          },
+        },
+        sortConfiguration: {
+          weightSort: [{ fieldSort: { fieldId: weightFieldId, direction: 'DESC' } }],
+          sourceItemsLimit: { itemsLimit: 20 },
+          destinationItemsLimit: { itemsLimit: 20 },
+        },
+        dataLabels: { visibility: 'VISIBLE', labelContent: 'VALUE' },
+      },
+    },
+  };
+}
+
+/**
+ * Tree map — proportional tiles for "scarcity at a glance" stories. Native QuickSight
+ * equivalent of a Highcharts packed bubble for showing rarity hierarchy by tile size.
+ */
+export function buildTreeMapVisual(
+  visualId: string,
+  title: string,
+  dataSetIdentifier: string,
+  groupFieldId: string,
+  groupColumn: string,
+  sizeFieldId: string,
+  sizeColumn: string,
   aggregation: 'SUM' | 'COUNT',
 ): object {
-  return buildDonutChartVisual(
-    visualId,
-    title,
-    dataSetIdentifier,
-    categoryFieldId,
-    categoryColumn,
-    valueFieldId,
-    valueColumn,
-    aggregation,
-  );
+  return {
+    treeMapVisual: {
+      visualId,
+      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
+      subtitle: { visibility: 'HIDDEN' },
+      chartConfiguration: {
+        fieldWells: {
+          treeMapAggregatedFieldWells: {
+            groups: [
+              {
+                categoricalDimensionField: {
+                  fieldId: groupFieldId,
+                  column: col(dataSetIdentifier, groupColumn),
+                },
+              },
+            ],
+            sizes: [
+              {
+                numericalMeasureField: {
+                  fieldId: sizeFieldId,
+                  column: col(dataSetIdentifier, sizeColumn),
+                  aggregationFunction: { simpleNumericalAggregation: aggregation },
+                },
+              },
+            ],
+            colors: [],
+          },
+        },
+        sortConfiguration: {
+          treeMapSort: [{ fieldSort: { fieldId: sizeFieldId, direction: 'DESC' } }],
+        },
+        groupLabelOptions: { visibility: 'VISIBLE' },
+        sizeLabelOptions: { visibility: 'VISIBLE' },
+        dataLabels: { visibility: 'VISIBLE' },
+        legend: { visibility: 'HIDDEN' },
+      },
+    },
+  };
+}
+
+export function buildTableVisual(
+  visualId: string,
+  title: string,
+  dataSetIdentifier: string,
+  groupFieldId: string,
+  groupColumn: string,
+  measureFieldId: string,
+  measureColumn: string,
+  aggregation: 'SUM' | 'COUNT' | 'AVERAGE',
+  measureLabel: string,
+  groupLabel: string,
+): object {
+  return {
+    tableVisual: {
+      visualId,
+      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
+      subtitle: { visibility: 'HIDDEN' },
+      chartConfiguration: {
+        fieldWells: {
+          tableAggregatedFieldWells: {
+            groupBy: [
+              {
+                categoricalDimensionField: {
+                  fieldId: groupFieldId,
+                  column: col(dataSetIdentifier, groupColumn),
+                },
+              },
+            ],
+            values: [
+              {
+                numericalMeasureField: {
+                  fieldId: measureFieldId,
+                  column: col(dataSetIdentifier, measureColumn),
+                  aggregationFunction: { simpleNumericalAggregation: aggregation },
+                },
+              },
+            ],
+          },
+        },
+        sortConfiguration: {
+          rowSort: [{ fieldSort: { fieldId: measureFieldId, direction: 'DESC' } }],
+          paginationConfiguration: { pageSize: 100, pageNumber: 1 },
+        },
+        fieldOptions: {
+          selectedFieldOptions: [
+            { fieldId: groupFieldId, customLabel: groupLabel, visibility: 'VISIBLE', width: '220px' },
+            { fieldId: measureFieldId, customLabel: measureLabel, visibility: 'VISIBLE', width: '120px' },
+          ],
+        },
+        tableOptions: {
+          headerStyle: {
+            backgroundColor: '#232F3E',
+            fontConfiguration: { fontColor: '#FFFFFF', fontWeight: { name: 'BOLD' } },
+            horizontalTextAlignment: 'LEFT',
+          },
+          cellStyle: {
+            horizontalTextAlignment: 'LEFT',
+          },
+        },
+        totalOptions: {
+          totalsVisibility: 'VISIBLE',
+          placement: 'END',
+          customLabel: 'Total',
+        },
+      },
+    },
+  };
+}
+
+export function buildMultiMeasureTableVisual(
+  visualId: string,
+  title: string,
+  dataSetIdentifier: string,
+  groupFieldId: string,
+  groupColumn: string,
+  measures: Array<{
+    fieldId: string;
+    columnName: string;
+    aggregation: 'SUM' | 'COUNT' | 'AVERAGE';
+    label: string;
+    width?: string;
+  }>,
+  groupLabel: string,
+): object {
+  return {
+    tableVisual: {
+      visualId,
+      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
+      subtitle: { visibility: 'HIDDEN' },
+      chartConfiguration: {
+        fieldWells: {
+          tableAggregatedFieldWells: {
+            groupBy: [
+              {
+                categoricalDimensionField: {
+                  fieldId: groupFieldId,
+                  column: col(dataSetIdentifier, groupColumn),
+                },
+              },
+            ],
+            values: measures.map((measure) => ({
+              numericalMeasureField: {
+                fieldId: measure.fieldId,
+                column: col(dataSetIdentifier, measure.columnName),
+                aggregationFunction: { simpleNumericalAggregation: measure.aggregation },
+              },
+            })),
+          },
+        },
+        sortConfiguration: {
+          rowSort: [{ fieldSort: { fieldId: measures[0].fieldId, direction: 'DESC' } }],
+          paginationConfiguration: { pageSize: 100, pageNumber: 1 },
+        },
+        fieldOptions: {
+          selectedFieldOptions: [
+            { fieldId: groupFieldId, customLabel: groupLabel, visibility: 'VISIBLE', width: '180px' },
+            ...measures.map((measure) => ({
+              fieldId: measure.fieldId,
+              customLabel: measure.label,
+              visibility: 'VISIBLE' as const,
+              width: measure.width ?? '120px',
+            })),
+          ],
+        },
+        tableOptions: {
+          headerStyle: {
+            backgroundColor: '#232F3E',
+            fontConfiguration: { fontColor: '#FFFFFF', fontWeight: { name: 'BOLD' } },
+            horizontalTextAlignment: 'LEFT',
+          },
+          cellStyle: {
+            horizontalTextAlignment: 'LEFT',
+          },
+        },
+      },
+    },
+  };
+}
+
+export function buildPivotTableVisual(
+  visualId: string,
+  title: string,
+  dataSetIdentifier: string,
+  rowFieldId: string,
+  rowColumn: string,
+  columnFieldId: string,
+  columnColumn: string,
+  valueFieldId: string,
+  valueColumn: string,
+  aggregation: 'SUM' | 'COUNT' | 'AVERAGE',
+): object {
+  return {
+    pivotTableVisual: {
+      visualId,
+      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
+      subtitle: { visibility: 'HIDDEN' },
+      chartConfiguration: {
+        fieldWells: {
+          pivotTableAggregatedFieldWells: {
+            rows: [
+              {
+                categoricalDimensionField: {
+                  fieldId: rowFieldId,
+                  column: col(dataSetIdentifier, rowColumn),
+                },
+              },
+            ],
+            columns: [
+              {
+                categoricalDimensionField: {
+                  fieldId: columnFieldId,
+                  column: col(dataSetIdentifier, columnColumn),
+                },
+              },
+            ],
+            values: [
+              {
+                numericalMeasureField: {
+                  fieldId: valueFieldId,
+                  column: col(dataSetIdentifier, valueColumn),
+                  aggregationFunction: { simpleNumericalAggregation: aggregation },
+                },
+              },
+            ],
+          },
+        },
+        tableOptions: {
+          metricPlacement: 'COLUMN',
+          singleMetricVisibility: 'VISIBLE',
+          columnNamesVisibility: 'VISIBLE',
+          rowsLayout: 'TABULAR',
+          toggleButtonsVisibility: 'HIDDEN',
+        },
+        totalOptions: {
+          rowTotalOptions: { totalsVisibility: 'VISIBLE', placement: 'END' },
+          columnTotalOptions: { totalsVisibility: 'VISIBLE', placement: 'END' },
+        },
+      },
+    },
+  };
 }

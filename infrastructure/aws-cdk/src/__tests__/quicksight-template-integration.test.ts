@@ -246,7 +246,7 @@ describe('QuickSight Template Integration — Visual Field Well References', () 
       }
 
       // Calculated fields are defined at the dashboard/visual level, not in physical DataSet columns
-      const calculatedFields = new Set(['completion_rate_pct']);
+      const calculatedFields = new Set(['completion_rate_pct', 'win_pct_value', 'target_rating']);
 
       for (const ref of allFieldWellRefs) {
         if (calculatedFields.has(ref.columnName)) continue;
@@ -296,7 +296,7 @@ describe('QuickSight Template Integration — Visual Field Well References', () 
       }
 
       // Calculated fields are defined at the dashboard/visual level, not in physical DataSet columns
-      const calculatedFields = new Set(['completion_rate_pct']);
+      const calculatedFields = new Set(['completion_rate_pct', 'win_pct_value', 'target_rating']);
 
       for (const ref of allFieldWellRefs) {
         if (calculatedFields.has(ref.columnName)) continue;
@@ -336,7 +336,7 @@ describe('QuickSight Template Integration — Visual Field Well References', () 
       }
 
       // Calculated fields are defined at the dashboard/visual level, not in physical DataSet columns
-      const calculatedFields = new Set(['completion_rate_pct']);
+      const calculatedFields = new Set(['completion_rate_pct', 'win_pct_value', 'target_rating']);
 
       for (const ref of allFieldWellRefs) {
         if (calculatedFields.has(ref.columnName)) continue;
@@ -408,7 +408,7 @@ describe('QuickSight Template Integration — Dashboard Structure', () => {
     template.resourceCountIs('AWS::QuickSight::Dashboard', 1);
   });
 
-  test('exactly 5 DataSets exist', () => {
-    template.resourceCountIs('AWS::QuickSight::DataSet', 5);
+  test('exactly 6 DataSets exist', () => {
+    template.resourceCountIs('AWS::QuickSight::DataSet', 6);
   });
 });

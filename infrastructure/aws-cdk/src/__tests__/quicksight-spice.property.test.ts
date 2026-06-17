@@ -284,7 +284,7 @@ describe('QuickSight DIRECT_QUERY Property Tests', () => {
 
           // Stack assertions
           const parentTemplate = Template.fromStack(stack);
-          parentTemplate.resourceCountIs('AWS::QuickSight::DataSet', 5);
+          parentTemplate.resourceCountIs('AWS::QuickSight::DataSet', 6);
           parentTemplate.resourceCountIs('AWS::QuickSight::DataSource', 1);
           parentTemplate.resourceCountIs('AWS::QuickSight::Dashboard', 1);
 

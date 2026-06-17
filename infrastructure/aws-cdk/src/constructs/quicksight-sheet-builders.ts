@@ -21,21 +21,30 @@
  *   3. Onboarding & Progression — "Are players progressing?" (tutorial funnel + level performance)
  *   4. Monetization — "Where does revenue come from?" (conversion funnel + composition)
  *   5. Player Sentiment — "Are players happy?" (satisfaction gauge + trend + reasons)
+ *
+ * Direct-query performance guardrails applied:
+ *   - Keep sheets lean (roughly 3-6 visuals each)
+ *   - Put cheapest KPI/summary visuals first in the grid
+ *   - Avoid adding high-cardinality controls in code-defined dashboards
  */
 
 import {
   buildBarChartVisual,
   buildDistinctCountKpiWithSparklineVisual,
   buildDonutChartVisual,
+  buildFilledMapVisual,
   buildFunnelChartVisual,
   buildGaugeWithTargetVisual,
   buildHeatMapVisual,
+  buildKpiVisual,
   buildKpiWithSparklineVisual,
   buildLineChartVisual,
+  buildMultiMeasureTableVisual,
+  buildPivotTableVisual,
   buildSortedBarChartVisual,
-  buildStackedAreaChartVisual,
   buildStackedBarChartVisual,
   buildTreeMapVisual,
+  buildVerticalBarChartVisual,
 } from './quicksight-visual-helpers';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,7 +92,7 @@ export function buildPulseSheet(dataSetIdentifiers: Record<string, string>): obj
         'pulse-event-trend-dim',
         'event_date',
       ),
-      "Growth % this week vs last week. Dates show each week's total.",
+      'Week-over-week growth. Watch for sudden drops — they signal outages or churn.',
     ),
     withSubtitle(
       buildKpiWithSparklineVisual(
@@ -96,7 +105,7 @@ export function buildPulseSheet(dataSetIdentifiers: Record<string, string>): obj
         'pulse-player-trend-dim',
         'event_date',
       ),
-      "Growth % this week vs last week. Dates show each week's total.",
+      'Acquisition health: a flat trend means marketing or virality has stalled.',
     ),
     withSubtitle(
       buildKpiWithSparklineVisual(
@@ -109,24 +118,22 @@ export function buildPulseSheet(dataSetIdentifiers: Record<string, string>): obj
         'pulse-match-trend-dim',
         'event_date',
       ),
-      "Growth % this week vs last week. Dates show each week's total.",
+      'Engagement proxy: rising matches per player indicates retention strength.',
     ),
 
-    // Stacked area: App version adoption over time
+    // Daily activity volume — replaces version-adoption stacked area (only 3 versions, low signal)
     withSubtitle(
-      buildStackedAreaChartVisual(
-        'pulse-app-version-area',
-        'App Version Adoption Over Time',
+      buildLineChartVisual(
+        'pulse-daily-events-line',
+        'Daily Active Events',
         allEvents,
-        'pulse-version-date-dim',
+        'pulse-daily-date-dim',
         'event_date',
-        'pulse-version-count-val',
+        'pulse-daily-count-val',
         'event_count',
-        'pulse-version-color',
-        'app_version',
         'SUM',
       ),
-      'Are players upgrading to the latest version?',
+      'Daily volume across the 33-day window. Spot weekly seasonality and anomalies.',
     ),
 
     // Platform distribution
@@ -141,24 +148,54 @@ export function buildPulseSheet(dataSetIdentifiers: Record<string, string>): obj
         'event_count',
         'SUM',
       ),
-      'Which platforms drive the most registrations?',
+      'Where to focus optimization: heaviest platform deserves the most QA budget.',
     ),
 
-    // Country distribution — heatmap showing country × platform
+    // Login vs Logout — session abandonment indicator
     withSubtitle(
-      buildHeatMapVisual(
+      buildVerticalBarChartVisual(
+        'pulse-login-logout-bar',
+        'Logins vs Logouts',
+        allEvents,
+        'pulse-login-logout-cat',
+        'event_type',
+        'pulse-login-logout-val',
+        'event_count',
+        'SUM',
+        'DESC',
+      ),
+      'Gap between logins and logouts = sessions abandoned without clean exit.',
+    ),
+
+    // Country distribution — filled map showing player concentration
+    withSubtitle(
+      buildFilledMapVisual(
         'pulse-country-heatmap',
         'Player Distribution by Country',
         playerHealth,
         'pulse-country-row',
         'country',
-        'pulse-platform-col',
-        'platform',
         'pulse-country-count-val',
         'event_count',
         'SUM',
       ),
-      'Where are players coming from and on which platforms?',
+      'Darker regions = more players. Prioritize localization and server placement there.',
+    ),
+
+    withSubtitle(
+      buildHeatMapVisual(
+        'pulse-country-platform-heatmap',
+        'Country × Platform Registrations',
+        playerHealth,
+        'pulse-cp-country-row',
+        'country',
+        'pulse-cp-platform-col',
+        'platform',
+        'pulse-cp-count-val',
+        'event_count',
+        'SUM',
+      ),
+      'Cross-tab of registrations by country (rows) and platform (cols). Reveals which platforms dominate which markets — e.g. iOS in Japan vs xbox in US.',
     ),
   ];
 
@@ -176,32 +213,32 @@ export function buildPulseSheet(dataSetIdentifiers: Record<string, string>): obj
                 elementId: 'pulse-total-events-kpi',
                 elementType: 'VISUAL',
                 columnIndex: 0,
-                columnSpan: 11,
+                columnSpan: 8,
                 rowIndex: 0,
-                rowSpan: 8,
+                rowSpan: 6,
               },
               {
                 elementId: 'pulse-new-players-kpi',
                 elementType: 'VISUAL',
-                columnIndex: 11,
-                columnSpan: 11,
+                columnIndex: 8,
+                columnSpan: 8,
                 rowIndex: 0,
-                rowSpan: 8,
+                rowSpan: 6,
               },
               {
                 elementId: 'pulse-total-matches-kpi',
                 elementType: 'VISUAL',
-                columnIndex: 22,
-                columnSpan: 10,
+                columnIndex: 16,
+                columnSpan: 8,
                 rowIndex: 0,
-                rowSpan: 8,
+                rowSpan: 6,
               },
               {
-                elementId: 'pulse-app-version-area',
+                elementId: 'pulse-daily-events-line',
                 elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 32,
-                rowIndex: 8,
+                rowIndex: 6,
                 rowSpan: 12,
               },
               {
@@ -209,16 +246,32 @@ export function buildPulseSheet(dataSetIdentifiers: Record<string, string>): obj
                 elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 16,
-                rowIndex: 20,
+                rowIndex: 18,
+                rowSpan: 12,
+              },
+              {
+                elementId: 'pulse-login-logout-bar',
+                elementType: 'VISUAL',
+                columnIndex: 16,
+                columnSpan: 16,
+                rowIndex: 18,
                 rowSpan: 12,
               },
               {
                 elementId: 'pulse-country-heatmap',
                 elementType: 'VISUAL',
-                columnIndex: 16,
-                columnSpan: 16,
-                rowIndex: 20,
+                columnIndex: 0,
+                columnSpan: 32,
+                rowIndex: 30,
                 rowSpan: 12,
+              },
+              {
+                elementId: 'pulse-country-platform-heatmap',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 32,
+                rowIndex: 42,
+                rowSpan: 14,
               },
             ],
           },
@@ -234,6 +287,7 @@ export function buildPulseSheet(dataSetIdentifiers: Record<string, string>): obj
 
 export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): object {
   const matchEvents = dataSetIdentifiers.match_events;
+  const matchLifecycleFunnel = dataSetIdentifiers.match_lifecycle_funnel;
 
   const visuals = [
     withSubtitle(
@@ -247,21 +301,34 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
         'cb-match-trend-dim',
         'event_date',
       ),
-      "Growth % this week vs last week. Dates show each week's total.",
+      'Combat throughput. A drop after a patch hints at balance backlash.',
+    ),
+
+    withSubtitle(
+      buildKpiVisual(
+        'cb-avg-xp-kpi',
+        'Avg XP per Match',
+        matchEvents,
+        'cb-avg-xp-measure',
+        'exp_gained',
+        'AVERAGE',
+      ),
+      'Reward economy health. Tune match length or XP curve if this drifts.',
     ),
 
     withSubtitle(
       buildFunnelChartVisual(
         'cb-match-lifecycle-funnel',
-        'Match Lifecycle Funnel',
-        matchEvents,
-        'cb-funnel-event-type-cat',
-        'event_type',
+        'Match Lifecycle Success Funnel',
+        matchLifecycleFunnel,
+        'cb-funnel-stage-cat',
+        'stage_label',
         'cb-funnel-count-val',
         'event_count',
         'SUM',
+        true,
       ),
-      'Where do players drop out of the match pipeline?',
+      'Match success path: matchmaking_start → matchmaking_complete → match_start → match_end. Stage with biggest drop = where to invest matchmaking or stability fixes. Failed matchmaking is shown separately in the failures bar below.',
     ),
 
     withSubtitle(
@@ -277,7 +344,7 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
         'match_result',
         'SUM',
       ),
-      'Is any map producing unfair win/loss ratios?',
+      'Lopsided win/loss on a map signals layout or spawn-point issues to redesign.',
     ),
 
     withSubtitle(
@@ -291,7 +358,7 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
         'event_count',
         'SUM',
       ),
-      'Which game modes are most popular?',
+      'Mode mix tells you which queues to prioritize for matchmaking improvements.',
     ),
 
     withSubtitle(
@@ -305,7 +372,7 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
         'event_count',
         'SUM',
       ),
-      'Which spells dominate? Imbalance signals needed nerfs.',
+      'Top-1 spell dominance is a balance flag — consider nerfs or counter-play buffs.',
     ),
 
     withSubtitle(
@@ -319,8 +386,79 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
         'event_count',
         'SUM',
       ),
-      'Why are players failing to find matches?',
+      'Most-frequent reason should drive the next matchmaking-service fix.',
     ),
+
+    withSubtitle(
+      buildBarChartVisual(
+        'cb-spell-volume-bar',
+        'Most-Used Spell by Match Volume',
+        matchEvents,
+        'cb-spell-volume-cat',
+        'most_used_spell',
+        'cb-spell-volume-val',
+        'event_count',
+        'SUM',
+      ),
+      'Total matches where each spell was the most-used. Higher = more popular spell.',
+    ),
+
+    withSubtitle(
+      buildBarChartVisual(
+        'cb-spell-winrate-bar',
+        'Most-Used Spell by Win Rate (%)',
+        matchEvents,
+        'cb-spell-winrate-cat',
+        'most_used_spell',
+        'cb-spell-winrate-val',
+        'win_pct_value',
+        'AVERAGE',
+      ),
+      'Avg win % among matches where each spell was most-used. High volume + low win rate = nerf candidate.',
+    ),
+
+    withSubtitle(
+      buildMultiMeasureTableVisual(
+        'cb-spell-performance-table',
+        'Spell Performance Detail',
+        matchEvents,
+        'cb-spell-performance-cat',
+        'most_used_spell',
+        [
+          {
+            fieldId: 'cb-spell-performance-matches-val',
+            columnName: 'event_count',
+            aggregation: 'SUM',
+            label: 'Matches',
+          },
+          {
+            fieldId: 'cb-spell-performance-winrate-val',
+            columnName: 'win_pct_value',
+            aggregation: 'AVERAGE',
+            label: 'Avg Win %',
+          },
+        ],
+        'Spell',
+      ),
+      'Different from the bars: this combines popularity and win rate in one sortable detail view for balance review.',
+    ),
+
+    withSubtitle(
+      buildPivotTableVisual(
+        'cb-map-outcome-pivot',
+        'Map × Outcome Pivot',
+        matchEvents,
+        'cb-map-pivot-row',
+        'map_id',
+        'cb-map-pivot-col',
+        'match_result',
+        'cb-map-pivot-count-val',
+        'event_count',
+        'SUM',
+      ),
+      'Matrix view of wins and losses by map. Faster to compare balance patterns than separate bars when scanning exact counts.',
+    ),
+
   ];
 
   return {
@@ -337,16 +475,24 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
                 elementId: 'cb-total-matches-kpi',
                 elementType: 'VISUAL',
                 columnIndex: 0,
-                columnSpan: 32,
+                columnSpan: 16,
                 rowIndex: 0,
-                rowSpan: 10,
+                rowSpan: 6,
+              },
+              {
+                elementId: 'cb-avg-xp-kpi',
+                elementType: 'VISUAL',
+                columnIndex: 16,
+                columnSpan: 16,
+                rowIndex: 0,
+                rowSpan: 6,
               },
               {
                 elementId: 'cb-match-lifecycle-funnel',
                 elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 32,
-                rowIndex: 10,
+                rowIndex: 6,
                 rowSpan: 14,
               },
               {
@@ -354,7 +500,7 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
                 elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 20,
-                rowIndex: 24,
+                rowIndex: 20,
                 rowSpan: 12,
               },
               {
@@ -362,7 +508,7 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
                 elementType: 'VISUAL',
                 columnIndex: 20,
                 columnSpan: 12,
-                rowIndex: 24,
+                rowIndex: 20,
                 rowSpan: 12,
               },
               {
@@ -370,7 +516,7 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
                 elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 16,
-                rowIndex: 36,
+                rowIndex: 32,
                 rowSpan: 12,
               },
               {
@@ -378,8 +524,40 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
                 elementType: 'VISUAL',
                 columnIndex: 16,
                 columnSpan: 16,
-                rowIndex: 36,
+                rowIndex: 32,
                 rowSpan: 12,
+              },
+              {
+                elementId: 'cb-spell-volume-bar',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 14,
+                rowIndex: 44,
+                rowSpan: 12,
+              },
+              {
+                elementId: 'cb-spell-winrate-bar',
+                elementType: 'VISUAL',
+                columnIndex: 14,
+                columnSpan: 18,
+                rowIndex: 44,
+                rowSpan: 12,
+              },
+              {
+                elementId: 'cb-spell-performance-table',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 16,
+                rowIndex: 56,
+                rowSpan: 10,
+              },
+              {
+                elementId: 'cb-map-outcome-pivot',
+                elementType: 'VISUAL',
+                columnIndex: 16,
+                columnSpan: 16,
+                rowIndex: 56,
+                rowSpan: 10,
               },
             ],
           },
@@ -399,6 +577,47 @@ export function buildProgressionSheet(dataSetIdentifiers: Record<string, string>
 
   const visuals = [
     withSubtitle(
+      buildKpiWithSparklineVisual(
+        'pr-tutorial-sessions-kpi',
+        'Tutorial Sessions',
+        playerHealth,
+        'pr-tutorial-sessions-measure',
+        'event_count',
+        'SUM',
+        'pr-tutorial-sessions-trend-dim',
+        'event_date',
+      ),
+      'Onboarding throughput. Slower growth here forecasts weaker D1 retention.',
+    ),
+
+    withSubtitle(
+      buildKpiWithSparklineVisual(
+        'pr-levels-completed-kpi',
+        'Levels Completed',
+        levelEvents,
+        'pr-levels-completed-measure',
+        'event_count',
+        'SUM',
+        'pr-levels-completed-trend-dim',
+        'event_date',
+      ),
+      'Mid-funnel velocity. Drops imply difficulty spike or content fatigue.',
+    ),
+
+    withSubtitle(
+      buildDistinctCountKpiWithSparklineVisual(
+        'pr-rank-ups-kpi',
+        'Players Ranked Up',
+        playerHealth,
+        'pr-rank-ups-measure',
+        'event_id',
+        'pr-rank-ups-trend-dim',
+        'event_date',
+      ),
+      'End-funnel signal. Trending down? Re-balance ranked ladder or rewards.',
+    ),
+
+    withSubtitle(
       buildFunnelChartVisual(
         'pr-tutorial-funnel',
         'Tutorial Drop-off Funnel',
@@ -408,13 +627,15 @@ export function buildProgressionSheet(dataSetIdentifiers: Record<string, string>
         'pr-tutorial-count-val',
         'event_count',
         'SUM',
+        true,
       ),
-      'Where do new players abandon the tutorial?',
+      'Biggest stage drop = the tutorial screen to redesign or shorten next sprint.',
     ),
 
-    withSubtitle(buildLevelPerformanceVisual(levelEvents), 'Compare starts, completions, and failures per level'),
-
-    withSubtitle(buildCompletionRateComboVisual(levelEvents), 'Bars = total events, Line = completion rate %'),
+    withSubtitle(
+      buildLevelPerformanceVisual(levelEvents),
+      'Compare starts, completions, and failures per level. Skew toward fails = difficulty spike.',
+    ),
 
     withSubtitle(
       buildSortedBarChartVisual(
@@ -428,7 +649,7 @@ export function buildProgressionSheet(dataSetIdentifiers: Record<string, string>
         'SUM',
         'ASC',
       ),
-      'How far do players progress in the ranking system?',
+      'A long tail at low ranks signals progression friction or matchmaking unfairness.',
     ),
   ];
 
@@ -443,11 +664,35 @@ export function buildProgressionSheet(dataSetIdentifiers: Record<string, string>
           gridLayout: {
             elements: [
               {
+                elementId: 'pr-tutorial-sessions-kpi',
+                elementType: 'VISUAL',
+                columnIndex: 0,
+                columnSpan: 11,
+                rowIndex: 0,
+                rowSpan: 6,
+              },
+              {
+                elementId: 'pr-levels-completed-kpi',
+                elementType: 'VISUAL',
+                columnIndex: 11,
+                columnSpan: 11,
+                rowIndex: 0,
+                rowSpan: 6,
+              },
+              {
+                elementId: 'pr-rank-ups-kpi',
+                elementType: 'VISUAL',
+                columnIndex: 22,
+                columnSpan: 10,
+                rowIndex: 0,
+                rowSpan: 6,
+              },
+              {
                 elementId: 'pr-tutorial-funnel',
                 elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 32,
-                rowIndex: 0,
+                rowIndex: 6,
                 rowSpan: 14,
               },
               {
@@ -455,24 +700,16 @@ export function buildProgressionSheet(dataSetIdentifiers: Record<string, string>
                 elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 32,
-                rowIndex: 14,
-                rowSpan: 14,
-              },
-              {
-                elementId: 'pr-completion-combo',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 20,
-                rowIndex: 28,
-                rowSpan: 14,
+                rowIndex: 20,
+                rowSpan: 16,
               },
               {
                 elementId: 'pr-rank-distribution-bar',
                 elementType: 'VISUAL',
-                columnIndex: 20,
-                columnSpan: 12,
-                rowIndex: 28,
-                rowSpan: 14,
+                columnIndex: 0,
+                columnSpan: 32,
+                rowIndex: 36,
+                rowSpan: 12,
               },
             ],
           },
@@ -527,52 +764,6 @@ function buildLevelPerformanceVisual(dataSetIdentifier: string): object {
   };
 }
 
-function buildCompletionRateComboVisual(dataSetIdentifier: string): object {
-  return {
-    comboChartVisual: {
-      visualId: 'pr-completion-combo',
-      title: { visibility: 'VISIBLE', formatText: { plainText: 'Level Starts vs Completion Rate %' } },
-      subtitle: { visibility: 'HIDDEN' },
-      chartConfiguration: {
-        fieldWells: {
-          comboChartAggregatedFieldWells: {
-            category: [
-              {
-                categoricalDimensionField: {
-                  fieldId: 'pr-combo-level-cat',
-                  column: { dataSetIdentifier, columnName: 'level_id' },
-                },
-              },
-            ],
-            barValues: [
-              {
-                numericalMeasureField: {
-                  fieldId: 'pr-combo-starts-bar',
-                  column: { dataSetIdentifier, columnName: 'event_count' },
-                  aggregationFunction: { simpleNumericalAggregation: 'SUM' },
-                },
-              },
-            ],
-            lineValues: [
-              {
-                numericalMeasureField: {
-                  fieldId: 'pr-combo-rate-line',
-                  column: { dataSetIdentifier, columnName: 'completion_rate_pct' },
-                },
-              },
-            ],
-            colors: [],
-          },
-        },
-        sortConfiguration: { categorySort: [{ fieldSort: { fieldId: 'pr-combo-level-cat', direction: 'ASC' } }] },
-        barDataLabels: { visibility: 'HIDDEN' },
-        lineDataLabels: { visibility: 'VISIBLE' },
-        legend: { visibility: 'VISIBLE', position: 'BOTTOM' },
-      },
-    },
-  };
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Sheet 4: Monetization — "Where does revenue come from?"
 // ─────────────────────────────────────────────────────────────────────────────
@@ -592,7 +783,7 @@ export function buildMonetizationSheet(dataSetIdentifiers: Record<string, string
         'mn-transaction-trend-dim',
         'event_date',
       ),
-      "Growth % this week vs last week. Dates show each week's total.",
+      'Paying-user momentum. Trending down? Re-evaluate offer placement and pricing.',
     ),
     withSubtitle(
       buildKpiWithSparklineVisual(
@@ -605,23 +796,21 @@ export function buildMonetizationSheet(dataSetIdentifiers: Record<string, string
         'mn-lootbox-trend-dim',
         'event_date',
       ),
-      "Growth % this week vs last week. Dates show each week's total.",
+      'Engagement signal for the chase loop. Sudden drops imply waning rarity appeal.',
     ),
 
     withSubtitle(
-      buildStackedAreaChartVisual(
+      buildDonutChartVisual(
         'mn-revenue-by-currency-area',
-        'Daily Revenue by Currency',
+        'Transactions by Currency',
         economyEvents,
-        'mn-event-date-dim',
-        'event_date',
-        'mn-currency-amount-val',
-        'currency_amount',
-        'mn-currency-type-color',
+        'mn-currency-type-cat',
         'currency_type',
+        'mn-currency-tx-count-val',
+        'event_count',
         'SUM',
       ),
-      'Revenue split by currency — never sum across currencies',
+      'Which currencies do players transact in. Mixing currency_amount across USD/EUR/YEN/RMB is meaningless without FX, so this counts transactions instead.',
     ),
 
     withSubtitle(
@@ -635,25 +824,26 @@ export function buildMonetizationSheet(dataSetIdentifiers: Record<string, string
         'event_count',
         'SUM',
       ),
-      'How many item viewers convert to buyers?',
+      'View → transaction drop-off shows where to A/B test storefront copy or pricing.',
     ),
 
     withSubtitle(
-      buildTreeMapVisual(
-        'mn-top-items-tree',
-        'Top Items by Transaction Volume',
+      buildVerticalBarChartVisual(
+        'mn-transaction-amount-distribution-bar',
+        'USD Transaction Amount Distribution',
         economyEvents,
-        'mn-item-id-group',
-        'item_id',
-        'mn-item-count-size',
+        'mn-amount-cat',
+        'currency_amount_band',
+        'mn-amount-count-val',
         'event_count',
         'SUM',
+        'ASC',
       ),
-      'Larger blocks = more transactions. Which items sell most?',
+      'Scoped to USD only — mixing currency_amount across currencies without FX would be meaningless. Peaks reveal the most effective USD price bands.',
     ),
 
     withSubtitle(
-      buildSortedBarChartVisual(
+      buildBarChartVisual(
         'mn-lootbox-rarity-bar',
         'Lootbox Drops by Rarity',
         economyEvents,
@@ -662,9 +852,22 @@ export function buildMonetizationSheet(dataSetIdentifiers: Record<string, string
         'mn-rarity-count-val',
         'event_count',
         'SUM',
-        'ASC',
       ),
-      'Is the drop rate distribution matching design intent?',
+      'Compare actual drops to design intent — rarity inversions break trust.',
+    ),
+
+    withSubtitle(
+      buildTreeMapVisual(
+        'mn-lootbox-rarity-treemap',
+        'Rarity Scarcity (treemap)',
+        economyEvents,
+        'mn-rarity-tree-cat',
+        'item_rarity',
+        'mn-rarity-tree-size',
+        'event_count',
+        'SUM',
+      ),
+      'Same rarity counts as the bar at left, sized as proportional tiles. COMMON dwarfs LEGENDARY at-a-glance — native QuickSight visual conveying scarcity disproportion.',
     ),
   ];
 
@@ -684,7 +887,7 @@ export function buildMonetizationSheet(dataSetIdentifiers: Record<string, string
                 columnIndex: 0,
                 columnSpan: 16,
                 rowIndex: 0,
-                rowSpan: 10,
+                rowSpan: 6,
               },
               {
                 elementId: 'mn-total-lootboxes-kpi',
@@ -692,38 +895,46 @@ export function buildMonetizationSheet(dataSetIdentifiers: Record<string, string
                 columnIndex: 16,
                 columnSpan: 16,
                 rowIndex: 0,
-                rowSpan: 10,
-              },
-              {
-                elementId: 'mn-revenue-by-currency-area',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 10,
-                rowSpan: 14,
+                rowSpan: 6,
               },
               {
                 elementId: 'mn-purchase-funnel',
                 elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 32,
-                rowIndex: 24,
+                rowIndex: 6,
                 rowSpan: 14,
               },
               {
-                elementId: 'mn-top-items-tree',
+                elementId: 'mn-revenue-by-currency-area',
                 elementType: 'VISUAL',
                 columnIndex: 0,
+                columnSpan: 12,
+                rowIndex: 20,
+                rowSpan: 12,
+              },
+              {
+                elementId: 'mn-transaction-amount-distribution-bar',
+                elementType: 'VISUAL',
+                columnIndex: 12,
                 columnSpan: 20,
-                rowIndex: 38,
+                rowIndex: 20,
                 rowSpan: 12,
               },
               {
                 elementId: 'mn-lootbox-rarity-bar',
                 elementType: 'VISUAL',
-                columnIndex: 20,
-                columnSpan: 12,
-                rowIndex: 38,
+                columnIndex: 0,
+                columnSpan: 16,
+                rowIndex: 32,
+                rowSpan: 12,
+              },
+              {
+                elementId: 'mn-lootbox-rarity-treemap',
+                elementType: 'VISUAL',
+                columnIndex: 16,
+                columnSpan: 16,
+                rowIndex: 32,
                 rowSpan: 12,
               },
             ],
@@ -750,8 +961,10 @@ export function buildSentimentSheet(dataSetIdentifiers: Record<string, string>):
         'st-avg-rating-measure',
         'user_rating',
         'AVERAGE',
+        'st-avg-rating-target-measure',
+        'target_rating',
       ),
-      'Target: 4.0+ means players are satisfied',
+      'Below 4.0 sustained = NPS-style alarm; review the top report reasons next.',
     ),
 
     withSubtitle(
@@ -765,7 +978,7 @@ export function buildSentimentSheet(dataSetIdentifiers: Record<string, string>):
         'st-reports-trend-dim',
         'event_date',
       ),
-      "Growth % this week vs last week. Dates show each week's total.",
+      'Spikes correlate with toxicity events — escalate moderation if trend rises.',
     ),
 
     withSubtitle(
@@ -779,23 +992,7 @@ export function buildSentimentSheet(dataSetIdentifiers: Record<string, string>):
         'user_rating',
         'AVERAGE',
       ),
-      'Is player satisfaction improving over time?',
-    ),
-
-    withSubtitle(
-      buildStackedAreaChartVisual(
-        'st-reports-over-time-area',
-        'Report Reasons Over Time',
-        playerHealth,
-        'st-report-date-dim',
-        'event_date',
-        'st-report-count-val',
-        'event_count',
-        'st-report-reason-color',
-        'report_reason',
-        'SUM',
-      ),
-      'Which toxicity types are trending up?',
+      'Sustained dips after a release = patch regressions or content backlash.',
     ),
 
     withSubtitle(
@@ -809,10 +1006,10 @@ export function buildSentimentSheet(dataSetIdentifiers: Record<string, string>):
         'event_count',
         'SUM',
       ),
-      'What makes players file reports?',
+      'Top reason = the next moderation rule or in-game messaging to prioritize.',
     ),
 
-    withSubtitle(buildRatingDistributionVisual(playerHealth), 'Distribution of 1-5 star ratings'),
+    withSubtitle(buildRatingDistributionVisual(playerHealth), '1-5 star spread. Bimodal? You have lovers and haters — investigate both.'),
   ];
 
   return {
@@ -831,7 +1028,7 @@ export function buildSentimentSheet(dataSetIdentifiers: Record<string, string>):
                 columnIndex: 0,
                 columnSpan: 16,
                 rowIndex: 0,
-                rowSpan: 10,
+                rowSpan: 6,
               },
               {
                 elementId: 'st-total-reports-kpi',
@@ -839,22 +1036,14 @@ export function buildSentimentSheet(dataSetIdentifiers: Record<string, string>):
                 columnIndex: 16,
                 columnSpan: 16,
                 rowIndex: 0,
-                rowSpan: 10,
+                rowSpan: 6,
               },
               {
                 elementId: 'st-avg-rating-line',
                 elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 32,
-                rowIndex: 10,
-                rowSpan: 14,
-              },
-              {
-                elementId: 'st-reports-over-time-area',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 24,
+                rowIndex: 6,
                 rowSpan: 14,
               },
               {
@@ -862,7 +1051,7 @@ export function buildSentimentSheet(dataSetIdentifiers: Record<string, string>):
                 elementType: 'VISUAL',
                 columnIndex: 0,
                 columnSpan: 16,
-                rowIndex: 38,
+                rowIndex: 20,
                 rowSpan: 12,
               },
               {
@@ -870,7 +1059,7 @@ export function buildSentimentSheet(dataSetIdentifiers: Record<string, string>):
                 elementType: 'VISUAL',
                 columnIndex: 16,
                 columnSpan: 16,
-                rowIndex: 38,
+                rowIndex: 20,
                 rowSpan: 12,
               },
             ],

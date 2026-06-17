@@ -38,7 +38,7 @@ import { RedshiftConstruct } from "./constructs/redshift-construct";
 import { OpenSearchConstruct } from "./constructs/opensearch-construct";
 import { AthenaQueryConstruct } from "./constructs/samples/athena-construct";
 import { DataProcessingConstruct } from "./constructs/data-processing-construct";
-import { QuickSightConstruct } from "./constructs/quicksight-construct";
+import { QuickSightConstruct, VPC_CONNECTION_VERSION } from "./constructs/quicksight-construct";
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
@@ -573,7 +573,7 @@ export class InfrastructureStack extends cdk.Stack {
       });
 
       // Pass QuickSight teardown env vars to the admin Lambda
-      const vpcConnectionId = `${props.config.WORKLOAD_NAME}-qs-vpc-conn-v6`;
+      const vpcConnectionId = `${props.config.WORKLOAD_NAME}-qs-vpc-conn-v${VPC_CONNECTION_VERSION}`;
       lambdaConstruct.applicationAdminServiceFunction.addEnvironment(
         "QUICKSIGHT_VPC_CONNECTION_ID", vpcConnectionId
       );
@@ -611,9 +611,14 @@ export class InfrastructureStack extends cdk.Stack {
             "iam:DetachRolePolicy",
           ],
           resources: [
-            `arn:aws:iam::${cdk.Aws.ACCOUNT_ID}:role/${props.config.WORKLOAD_NAME}-QuickSightConstruct*`,
+            `arn:aws:iam::${cdk.Aws.ACCOUNT_ID}:role/${quicksightConstruct.qsRoleName}`,
           ],
         })
+      );
+
+      // Increase admin Lambda timeout to accommodate VPC connection deletion polling (~5 min)
+      lambdaConstruct.applicationAdminServiceFunction.addEnvironment(
+        "WORKLOAD_NAME", props.config.WORKLOAD_NAME
       );
     }
 
