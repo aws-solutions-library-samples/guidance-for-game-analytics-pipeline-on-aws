@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.24.2",
+    "fallow": "^2.97.0",
     "js-yaml": "^4.1.0"
   },
   "dependencies": {
