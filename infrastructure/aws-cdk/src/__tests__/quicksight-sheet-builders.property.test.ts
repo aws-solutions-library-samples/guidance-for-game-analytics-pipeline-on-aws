@@ -407,17 +407,21 @@ function collectDimensionColumns(obj: unknown): string[] {
     return cols;
   };
 
-  function walk(node: unknown): void {
-    if (node === null || node === undefined || typeof node !== 'object') return;
-    const record = node as Record<string, unknown>;
-    for (const col of classifyDimensionNode(record)) results.push(col);
-    for (const value of Object.values(record)) {
-      if (Array.isArray(value)) {
-        for (const item of value) walk(item);
-      } else if (typeof value === 'object' && value !== null) {
-        walk(value);
-      }
+  const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+    typeof v === 'object' && v !== null && !Array.isArray(v);
+
+  const visitChild = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const item of value) walk(item);
+    } else if (isPlainObject(value)) {
+      walk(value);
     }
+  };
+
+  function walk(node: unknown): void {
+    if (!isPlainObject(node)) return;
+    for (const col of classifyDimensionNode(node)) results.push(col);
+    for (const value of Object.values(node)) visitChild(value);
   }
 
   walk(obj);

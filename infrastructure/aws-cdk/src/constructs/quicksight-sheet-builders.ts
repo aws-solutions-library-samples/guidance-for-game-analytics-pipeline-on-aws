@@ -66,6 +66,39 @@ function withSubtitle(visual: object, subtitle: string): object {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Grid Layout Helper — collapses the layouts/gridLayout/elements wrapper that
+// was duplicated across every sheet builder.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Tuple: `[elementId, columnIndex, columnSpan, rowIndex, rowSpan]`. */
+type GridElementSpec = readonly [
+  elementId: string,
+  columnIndex: number,
+  columnSpan: number,
+  rowIndex: number,
+  rowSpan: number,
+];
+
+function buildGridLayout(elements: readonly GridElementSpec[]): object[] {
+  return [
+    {
+      configuration: {
+        gridLayout: {
+          elements: elements.map(([elementId, columnIndex, columnSpan, rowIndex, rowSpan]) => ({
+            elementId,
+            elementType: 'VISUAL',
+            columnIndex,
+            columnSpan,
+            rowIndex,
+            rowSpan,
+          })),
+        },
+      },
+    },
+  ];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Sheet 1: Pulse — "Is the game healthy today?"
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -204,80 +237,16 @@ export function buildPulseSheet(dataSetIdentifiers: Record<string, string>): obj
     name: 'Pulse',
     description: 'High-level game health: Are key metrics trending up or down?',
     visuals,
-    layouts: [
-      {
-        configuration: {
-          gridLayout: {
-            elements: [
-              {
-                elementId: 'pulse-total-events-kpi',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 8,
-                rowIndex: 0,
-                rowSpan: 6,
-              },
-              {
-                elementId: 'pulse-new-players-kpi',
-                elementType: 'VISUAL',
-                columnIndex: 8,
-                columnSpan: 8,
-                rowIndex: 0,
-                rowSpan: 6,
-              },
-              {
-                elementId: 'pulse-total-matches-kpi',
-                elementType: 'VISUAL',
-                columnIndex: 16,
-                columnSpan: 8,
-                rowIndex: 0,
-                rowSpan: 6,
-              },
-              {
-                elementId: 'pulse-daily-events-line',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 6,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'pulse-platform-bar',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 16,
-                rowIndex: 18,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'pulse-login-logout-bar',
-                elementType: 'VISUAL',
-                columnIndex: 16,
-                columnSpan: 16,
-                rowIndex: 18,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'pulse-country-heatmap',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 30,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'pulse-country-platform-heatmap',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 42,
-                rowSpan: 14,
-              },
-            ],
-          },
-        },
-      },
-    ],
+    layouts: buildGridLayout([
+      ['pulse-total-events-kpi', 0, 8, 0, 6],
+      ['pulse-new-players-kpi', 8, 8, 0, 6],
+      ['pulse-total-matches-kpi', 16, 8, 0, 6],
+      ['pulse-daily-events-line', 0, 32, 6, 12],
+      ['pulse-platform-bar', 0, 16, 18, 12],
+      ['pulse-login-logout-bar', 16, 16, 18, 12],
+      ['pulse-country-heatmap', 0, 32, 30, 12],
+      ['pulse-country-platform-heatmap', 0, 32, 42, 14],
+    ]),
   };
 }
 
@@ -458,104 +427,19 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
     name: 'Combat & Balance',
     description: 'Match lifecycle health and game balance across maps, spells, and modes.',
     visuals,
-    layouts: [
-      {
-        configuration: {
-          gridLayout: {
-            elements: [
-              {
-                elementId: 'cb-total-matches-kpi',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 16,
-                rowIndex: 0,
-                rowSpan: 6,
-              },
-              {
-                elementId: 'cb-avg-xp-kpi',
-                elementType: 'VISUAL',
-                columnIndex: 16,
-                columnSpan: 16,
-                rowIndex: 0,
-                rowSpan: 6,
-              },
-              {
-                elementId: 'cb-match-lifecycle-funnel',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 6,
-                rowSpan: 14,
-              },
-              {
-                elementId: 'cb-outcomes-by-map-bar',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 20,
-                rowIndex: 20,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'cb-match-types-donut',
-                elementType: 'VISUAL',
-                columnIndex: 20,
-                columnSpan: 12,
-                rowIndex: 20,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'cb-spell-knockouts-bar',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 16,
-                rowIndex: 32,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'cb-matchmaking-failures-bar',
-                elementType: 'VISUAL',
-                columnIndex: 16,
-                columnSpan: 16,
-                rowIndex: 32,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'cb-spell-volume-bar',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 14,
-                rowIndex: 44,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'cb-spell-winrate-bar',
-                elementType: 'VISUAL',
-                columnIndex: 14,
-                columnSpan: 18,
-                rowIndex: 44,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'cb-spell-performance-table',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 16,
-                rowIndex: 56,
-                rowSpan: 10,
-              },
-              {
-                elementId: 'cb-map-outcome-pivot',
-                elementType: 'VISUAL',
-                columnIndex: 16,
-                columnSpan: 16,
-                rowIndex: 56,
-                rowSpan: 10,
-              },
-            ],
-          },
-        },
-      },
-    ],
+    layouts: buildGridLayout([
+      ['cb-total-matches-kpi', 0, 16, 0, 6],
+      ['cb-avg-xp-kpi', 16, 16, 0, 6],
+      ['cb-match-lifecycle-funnel', 0, 32, 6, 14],
+      ['cb-outcomes-by-map-bar', 0, 20, 20, 12],
+      ['cb-match-types-donut', 20, 12, 20, 12],
+      ['cb-spell-knockouts-bar', 0, 16, 32, 12],
+      ['cb-matchmaking-failures-bar', 16, 16, 32, 12],
+      ['cb-spell-volume-bar', 0, 14, 44, 12],
+      ['cb-spell-winrate-bar', 14, 18, 44, 12],
+      ['cb-spell-performance-table', 0, 16, 56, 10],
+      ['cb-map-outcome-pivot', 16, 16, 56, 10],
+    ]),
   };
 }
 
@@ -650,64 +534,14 @@ export function buildProgressionSheet(dataSetIdentifiers: Record<string, string>
     name: 'Onboarding & Progression',
     description: 'Player journey from tutorial through levels to ranked play.',
     visuals,
-    layouts: [
-      {
-        configuration: {
-          gridLayout: {
-            elements: [
-              {
-                elementId: 'pr-tutorial-sessions-kpi',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 11,
-                rowIndex: 0,
-                rowSpan: 6,
-              },
-              {
-                elementId: 'pr-levels-completed-kpi',
-                elementType: 'VISUAL',
-                columnIndex: 11,
-                columnSpan: 11,
-                rowIndex: 0,
-                rowSpan: 6,
-              },
-              {
-                elementId: 'pr-rank-ups-kpi',
-                elementType: 'VISUAL',
-                columnIndex: 22,
-                columnSpan: 10,
-                rowIndex: 0,
-                rowSpan: 6,
-              },
-              {
-                elementId: 'pr-tutorial-funnel',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 6,
-                rowSpan: 14,
-              },
-              {
-                elementId: 'pr-level-performance-bar',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 20,
-                rowSpan: 16,
-              },
-              {
-                elementId: 'pr-rank-distribution-bar',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 36,
-                rowSpan: 12,
-              },
-            ],
-          },
-        },
-      },
-    ],
+    layouts: buildGridLayout([
+      ['pr-tutorial-sessions-kpi', 0, 11, 0, 6],
+      ['pr-levels-completed-kpi', 11, 11, 0, 6],
+      ['pr-rank-ups-kpi', 22, 10, 0, 6],
+      ['pr-tutorial-funnel', 0, 32, 6, 14],
+      ['pr-level-performance-bar', 0, 32, 20, 16],
+      ['pr-rank-distribution-bar', 0, 32, 36, 12],
+    ]),
   };
 }
 
@@ -868,72 +702,15 @@ export function buildMonetizationSheet(dataSetIdentifiers: Record<string, string
     name: 'Monetization',
     description: 'Revenue sources, purchase conversion, and lootbox economy health.',
     visuals,
-    layouts: [
-      {
-        configuration: {
-          gridLayout: {
-            elements: [
-              {
-                elementId: 'mn-total-transactions-kpi',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 16,
-                rowIndex: 0,
-                rowSpan: 6,
-              },
-              {
-                elementId: 'mn-total-lootboxes-kpi',
-                elementType: 'VISUAL',
-                columnIndex: 16,
-                columnSpan: 16,
-                rowIndex: 0,
-                rowSpan: 6,
-              },
-              {
-                elementId: 'mn-purchase-funnel',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 6,
-                rowSpan: 14,
-              },
-              {
-                elementId: 'mn-revenue-by-currency-area',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 12,
-                rowIndex: 20,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'mn-transaction-amount-distribution-bar',
-                elementType: 'VISUAL',
-                columnIndex: 12,
-                columnSpan: 20,
-                rowIndex: 20,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'mn-lootbox-rarity-bar',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 16,
-                rowIndex: 32,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'mn-lootbox-rarity-treemap',
-                elementType: 'VISUAL',
-                columnIndex: 16,
-                columnSpan: 16,
-                rowIndex: 32,
-                rowSpan: 12,
-              },
-            ],
-          },
-        },
-      },
-    ],
+    layouts: buildGridLayout([
+      ['mn-total-transactions-kpi', 0, 16, 0, 6],
+      ['mn-total-lootboxes-kpi', 16, 16, 0, 6],
+      ['mn-purchase-funnel', 0, 32, 6, 14],
+      ['mn-revenue-by-currency-area', 0, 12, 20, 12],
+      ['mn-transaction-amount-distribution-bar', 12, 20, 20, 12],
+      ['mn-lootbox-rarity-bar', 0, 16, 32, 12],
+      ['mn-lootbox-rarity-treemap', 16, 16, 32, 12],
+    ]),
   };
 }
 
@@ -1012,56 +789,13 @@ export function buildSentimentSheet(dataSetIdentifiers: Record<string, string>):
     name: 'Player Sentiment',
     description: 'Player satisfaction, toxicity trends, and report analysis.',
     visuals,
-    layouts: [
-      {
-        configuration: {
-          gridLayout: {
-            elements: [
-              {
-                elementId: 'st-avg-rating-gauge',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 16,
-                rowIndex: 0,
-                rowSpan: 6,
-              },
-              {
-                elementId: 'st-total-reports-kpi',
-                elementType: 'VISUAL',
-                columnIndex: 16,
-                columnSpan: 16,
-                rowIndex: 0,
-                rowSpan: 6,
-              },
-              {
-                elementId: 'st-avg-rating-line',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 32,
-                rowIndex: 6,
-                rowSpan: 14,
-              },
-              {
-                elementId: 'st-report-reasons-bar',
-                elementType: 'VISUAL',
-                columnIndex: 0,
-                columnSpan: 16,
-                rowIndex: 20,
-                rowSpan: 12,
-              },
-              {
-                elementId: 'st-rating-distribution-vbar',
-                elementType: 'VISUAL',
-                columnIndex: 16,
-                columnSpan: 16,
-                rowIndex: 20,
-                rowSpan: 12,
-              },
-            ],
-          },
-        },
-      },
-    ],
+    layouts: buildGridLayout([
+      ['st-avg-rating-gauge', 0, 16, 0, 6],
+      ['st-total-reports-kpi', 16, 16, 0, 6],
+      ['st-avg-rating-line', 0, 32, 6, 14],
+      ['st-report-reasons-bar', 0, 16, 20, 12],
+      ['st-rating-distribution-vbar', 16, 16, 20, 12],
+    ]),
   };
 }
 

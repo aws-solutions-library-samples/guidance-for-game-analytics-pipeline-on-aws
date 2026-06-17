@@ -11,6 +11,74 @@ function col(dataSetIdentifier: string, columnName: string) {
 
 export type DateGranularity = 'DAY' | 'WEEK' | 'MONTH' | 'QUARTER' | 'YEAR';
 
+function categoricalDimField(fieldId: string, dataSetIdentifier: string, columnName: string): object {
+  return {
+    categoricalDimensionField: {
+      fieldId,
+      column: col(dataSetIdentifier, columnName),
+    },
+  };
+}
+
+function numericalMeasureField(
+  fieldId: string,
+  dataSetIdentifier: string,
+  columnName: string,
+  aggregation: 'SUM' | 'COUNT' | 'AVERAGE',
+): object {
+  return {
+    numericalMeasureField: {
+      fieldId,
+      column: col(dataSetIdentifier, columnName),
+      aggregationFunction: { simpleNumericalAggregation: aggregation },
+    },
+  };
+}
+
+// Shared bar-chart visual body. Three exported bar-chart variants
+// (HORIZONTAL/value-sort, HORIZONTAL/category-sort, VERTICAL/category-sort) only
+// vary by orientation, sortFieldId, and sortDirection; everything else is identical.
+type BarChartObjectArgs = {
+  visualId: string;
+  title: string;
+  dataSetIdentifier: string;
+  categoryFieldId: string;
+  categoryColumn: string;
+  valueFieldId: string;
+  valueColumn: string;
+  aggregation: 'SUM' | 'COUNT' | 'AVERAGE';
+  orientation: 'HORIZONTAL' | 'VERTICAL';
+  sortFieldId: string;
+  sortDirection: 'ASC' | 'DESC';
+};
+
+function barChartObject(args: BarChartObjectArgs): object {
+  return {
+    barChartVisual: {
+      visualId: args.visualId,
+      title: { visibility: 'VISIBLE', formatText: { plainText: args.title } },
+      subtitle: { visibility: 'HIDDEN' },
+      chartConfiguration: {
+        orientation: args.orientation,
+        fieldWells: {
+          barChartAggregatedFieldWells: {
+            category: [categoricalDimField(args.categoryFieldId, args.dataSetIdentifier, args.categoryColumn)],
+            values: [
+              numericalMeasureField(args.valueFieldId, args.dataSetIdentifier, args.valueColumn, args.aggregation),
+            ],
+            colors: [],
+          },
+        },
+        sortConfiguration: {
+          categorySort: [{ fieldSort: { fieldId: args.sortFieldId, direction: args.sortDirection } }],
+        },
+        dataLabels: { visibility: 'VISIBLE', position: 'OUTSIDE' },
+        legend: { visibility: 'HIDDEN' },
+      },
+    },
+  };
+}
+
 export function buildKpiVisual(
   visualId: string,
   title: string,
@@ -101,43 +169,19 @@ export function buildBarChartVisual(
   valueColumn: string,
   aggregation: 'SUM' | 'COUNT' | 'AVERAGE',
 ): object {
-  return {
-    barChartVisual: {
-      visualId,
-      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
-      subtitle: { visibility: 'HIDDEN' },
-      chartConfiguration: {
-        orientation: 'HORIZONTAL',
-        fieldWells: {
-          barChartAggregatedFieldWells: {
-            category: [
-              {
-                categoricalDimensionField: {
-                  fieldId: categoryFieldId,
-                  column: col(dataSetIdentifier, categoryColumn),
-                },
-              },
-            ],
-            values: [
-              {
-                numericalMeasureField: {
-                  fieldId: valueFieldId,
-                  column: col(dataSetIdentifier, valueColumn),
-                  aggregationFunction: { simpleNumericalAggregation: aggregation },
-                },
-              },
-            ],
-            colors: [],
-          },
-        },
-        sortConfiguration: {
-          categorySort: [{ fieldSort: { fieldId: valueFieldId, direction: 'DESC' } }],
-        },
-        dataLabels: { visibility: 'VISIBLE', position: 'OUTSIDE' },
-        legend: { visibility: 'HIDDEN' },
-      },
-    },
-  };
+  return barChartObject({
+    visualId,
+    title,
+    dataSetIdentifier,
+    categoryFieldId,
+    categoryColumn,
+    valueFieldId,
+    valueColumn,
+    aggregation,
+    orientation: 'HORIZONTAL',
+    sortFieldId: valueFieldId,
+    sortDirection: 'DESC',
+  });
 }
 
 export function buildDonutChartVisual(
@@ -198,43 +242,19 @@ export function buildSortedBarChartVisual(
   aggregation: 'SUM' | 'COUNT' | 'AVERAGE',
   sortDirection: 'ASC' | 'DESC',
 ): object {
-  return {
-    barChartVisual: {
-      visualId,
-      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
-      subtitle: { visibility: 'HIDDEN' },
-      chartConfiguration: {
-        orientation: 'HORIZONTAL',
-        fieldWells: {
-          barChartAggregatedFieldWells: {
-            category: [
-              {
-                categoricalDimensionField: {
-                  fieldId: categoryFieldId,
-                  column: col(dataSetIdentifier, categoryColumn),
-                },
-              },
-            ],
-            values: [
-              {
-                numericalMeasureField: {
-                  fieldId: valueFieldId,
-                  column: col(dataSetIdentifier, valueColumn),
-                  aggregationFunction: { simpleNumericalAggregation: aggregation },
-                },
-              },
-            ],
-            colors: [],
-          },
-        },
-        sortConfiguration: {
-          categorySort: [{ fieldSort: { fieldId: categoryFieldId, direction: sortDirection } }],
-        },
-        dataLabels: { visibility: 'VISIBLE', position: 'OUTSIDE' },
-        legend: { visibility: 'HIDDEN' },
-      },
-    },
-  };
+  return barChartObject({
+    visualId,
+    title,
+    dataSetIdentifier,
+    categoryFieldId,
+    categoryColumn,
+    valueFieldId,
+    valueColumn,
+    aggregation,
+    orientation: 'HORIZONTAL',
+    sortFieldId: categoryFieldId,
+    sortDirection,
+  });
 }
 
 export function buildVerticalBarChartVisual(
@@ -248,43 +268,19 @@ export function buildVerticalBarChartVisual(
   aggregation: 'SUM' | 'COUNT' | 'AVERAGE',
   sortDirection: 'ASC' | 'DESC',
 ): object {
-  return {
-    barChartVisual: {
-      visualId,
-      title: { visibility: 'VISIBLE', formatText: { plainText: title } },
-      subtitle: { visibility: 'HIDDEN' },
-      chartConfiguration: {
-        orientation: 'VERTICAL',
-        fieldWells: {
-          barChartAggregatedFieldWells: {
-            category: [
-              {
-                categoricalDimensionField: {
-                  fieldId: categoryFieldId,
-                  column: col(dataSetIdentifier, categoryColumn),
-                },
-              },
-            ],
-            values: [
-              {
-                numericalMeasureField: {
-                  fieldId: valueFieldId,
-                  column: col(dataSetIdentifier, valueColumn),
-                  aggregationFunction: { simpleNumericalAggregation: aggregation },
-                },
-              },
-            ],
-            colors: [],
-          },
-        },
-        sortConfiguration: {
-          categorySort: [{ fieldSort: { fieldId: categoryFieldId, direction: sortDirection } }],
-        },
-        dataLabels: { visibility: 'VISIBLE', position: 'OUTSIDE' },
-        legend: { visibility: 'HIDDEN' },
-      },
-    },
-  };
+  return barChartObject({
+    visualId,
+    title,
+    dataSetIdentifier,
+    categoryFieldId,
+    categoryColumn,
+    valueFieldId,
+    valueColumn,
+    aggregation,
+    orientation: 'VERTICAL',
+    sortFieldId: categoryFieldId,
+    sortDirection,
+  });
 }
 
 /**
@@ -596,23 +592,8 @@ export function buildFilledMapVisual(
       chartConfiguration: {
         fieldWells: {
           geospatialMapAggregatedFieldWells: {
-            geospatial: [
-              {
-                categoricalDimensionField: {
-                  fieldId: geoFieldId,
-                  column: col(dataSetIdentifier, geoColumn),
-                },
-              },
-            ],
-            values: [
-              {
-                numericalMeasureField: {
-                  fieldId: valueFieldId,
-                  column: col(dataSetIdentifier, valueColumn),
-                  aggregationFunction: { simpleNumericalAggregation: aggregation },
-                },
-              },
-            ],
+            geospatial: [categoricalDimField(geoFieldId, dataSetIdentifier, geoColumn)],
+            values: [numericalMeasureField(valueFieldId, dataSetIdentifier, valueColumn, aggregation)],
             colors: [],
           },
         },
@@ -900,31 +881,9 @@ export function buildPivotTableVisual(
       chartConfiguration: {
         fieldWells: {
           pivotTableAggregatedFieldWells: {
-            rows: [
-              {
-                categoricalDimensionField: {
-                  fieldId: rowFieldId,
-                  column: col(dataSetIdentifier, rowColumn),
-                },
-              },
-            ],
-            columns: [
-              {
-                categoricalDimensionField: {
-                  fieldId: columnFieldId,
-                  column: col(dataSetIdentifier, columnColumn),
-                },
-              },
-            ],
-            values: [
-              {
-                numericalMeasureField: {
-                  fieldId: valueFieldId,
-                  column: col(dataSetIdentifier, valueColumn),
-                  aggregationFunction: { simpleNumericalAggregation: aggregation },
-                },
-              },
-            ],
+            rows: [categoricalDimField(rowFieldId, dataSetIdentifier, rowColumn)],
+            columns: [categoricalDimField(columnFieldId, dataSetIdentifier, columnColumn)],
+            values: [numericalMeasureField(valueFieldId, dataSetIdentifier, valueColumn, aggregation)],
           },
         },
         tableOptions: {

@@ -19,6 +19,20 @@ import {
 export const VPC_CONNECTION_VERSION = 6;
 const DIRECT_QUERY_WINDOW_DAYS = 30;
 
+// Each entry of `columnExpressions` MUST include its own trailing comma; a final
+// `'  1 as event_count'` line is appended automatically.
+function buildEventDataSql(columnExpressions: string[], eventTypes: string[]): string {
+  const eventTypeList = eventTypes.map((t) => `'${t}'`).join(', ');
+  return [
+    'SELECT',
+    ...columnExpressions,
+    '  1 as event_count',
+    'FROM {db_name}."event_data"',
+    `WHERE event_type IN (${eventTypeList})`,
+    `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
+  ].join('\n');
+}
+
 // ---- Data Models ---- //
 
 export interface ColumnDefinition {
@@ -79,24 +93,22 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
   // 2. Match/combat data
   {
     viewName: 'match_events',
-    customSqlQuery: [
-      'SELECT',
-      '  event_id,',
-      '  event_type,',
-      "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
-      "  JSON_EXTRACT_PATH_TEXT(event_data, 'match_id') as match_id,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'map_id'), '') as map_id,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'match_type'), '') as match_type,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'match_result_type'), '') as match_result,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'spell_id'), '') as spell_used,",
-      "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'exp_gained'), '') AS INTEGER) as exp_gained,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'matching_failed_msg'), '') AS matching_failed_msg,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'most_used_spell'), '') AS most_used_spell,",
-      '  1 as event_count',
-      'FROM {db_name}."event_data"',
-      "WHERE event_type IN ('match_start', 'match_end', 'user_knockout', 'matchmaking_start', 'matchmaking_complete', 'matchmaking_failed')",
-      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
-    ].join('\n'),
+    customSqlQuery: buildEventDataSql(
+      [
+        '  event_id,',
+        '  event_type,',
+        "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
+        "  JSON_EXTRACT_PATH_TEXT(event_data, 'match_id') as match_id,",
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'map_id'), '') as map_id,",
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'match_type'), '') as match_type,",
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'match_result_type'), '') as match_result,",
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'spell_id'), '') as spell_used,",
+        "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'exp_gained'), '') AS INTEGER) as exp_gained,",
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'matching_failed_msg'), '') AS matching_failed_msg,",
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'most_used_spell'), '') AS most_used_spell,",
+      ],
+      ['match_start', 'match_end', 'user_knockout', 'matchmaking_start', 'matchmaking_complete', 'matchmaking_failed'],
+    ),
     columns: [
       { name: 'event_id', type: 'STRING' },
       { name: 'event_type', type: 'STRING' },
@@ -154,30 +166,28 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
   // 4. Monetization & lootbox
   {
     viewName: 'economy_events',
-    customSqlQuery: [
-      'SELECT',
-      '  event_id,',
-      '  event_type,',
-      "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'item_id'), '') as item_id,",
-      "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) as currency_amount,",
-      '  CASE',
-      "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 1 AND 9 THEN '01: $1-9'",
-      "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 10 AND 19 THEN '02: $10-19'",
-      "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 20 AND 49 THEN '03: $20-49'",
-      "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 50 AND 99 THEN '04: $50-99'",
-      "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) >= 100 THEN '05: $100+'",
-      "    ELSE '99: Unknown'",
-      '  END as currency_amount_band,',
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_type'), '') as currency_type,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'transaction_id'), '') as transaction_id,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'item_rarity'), '') as item_rarity,",
-      "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'lootbox_cost'), '') AS INTEGER) as lootbox_cost,",
-      '  1 as event_count',
-      'FROM {db_name}."event_data"',
-      "WHERE event_type IN ('iap_transaction', 'lootbox_opened', 'item_viewed')",
-      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
-    ].join('\n'),
+    customSqlQuery: buildEventDataSql(
+      [
+        '  event_id,',
+        '  event_type,',
+        "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'item_id'), '') as item_id,",
+        "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) as currency_amount,",
+        '  CASE',
+        "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 1 AND 9 THEN '01: $1-9'",
+        "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 10 AND 19 THEN '02: $10-19'",
+        "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 20 AND 49 THEN '03: $20-49'",
+        "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 50 AND 99 THEN '04: $50-99'",
+        "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) >= 100 THEN '05: $100+'",
+        "    ELSE '99: Unknown'",
+        '  END as currency_amount_band,',
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_type'), '') as currency_type,",
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'transaction_id'), '') as transaction_id,",
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'item_rarity'), '') as item_rarity,",
+        "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'lootbox_cost'), '') AS INTEGER) as lootbox_cost,",
+      ],
+      ['iap_transaction', 'lootbox_opened', 'item_viewed'],
+    ),
     columns: [
       { name: 'event_id', type: 'STRING' },
       { name: 'event_type', type: 'STRING' },
@@ -195,26 +205,24 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
   // 5. Sentiment, reports, registrations
   {
     viewName: 'player_health',
-    customSqlQuery: [
-      'SELECT',
-      '  event_id,',
-      '  event_type,',
-      '  app_version,',
-      "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
-      "  CASE NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')",
-      "    WHEN 'UK' THEN 'United Kingdom'",
-      "    ELSE INITCAP(LOWER(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')))",
-      '  END as country,',
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'platform'), '') as platform,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'report_reason'), '') as report_reason,",
-      "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'user_rating'), '') AS INTEGER) as user_rating,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'user_rank_reached'), '') as rank_reached,",
-      "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'tutorial_screen_id'), '') AS tutorial_screen_id,",
-      '  1 as event_count',
-      'FROM {db_name}."event_data"',
-      "WHERE event_type IN ('user_registration', 'user_report', 'user_sentiment', 'user_rank_up', 'tutorial_progression')",
-      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
-    ].join('\n'),
+    customSqlQuery: buildEventDataSql(
+      [
+        '  event_id,',
+        '  event_type,',
+        '  app_version,',
+        "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
+        "  CASE NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')",
+        "    WHEN 'UK' THEN 'United Kingdom'",
+        "    ELSE INITCAP(LOWER(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')))",
+        '  END as country,',
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'platform'), '') as platform,",
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'report_reason'), '') as report_reason,",
+        "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'user_rating'), '') AS INTEGER) as user_rating,",
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'user_rank_reached'), '') as rank_reached,",
+        "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'tutorial_screen_id'), '') AS tutorial_screen_id,",
+      ],
+      ['user_registration', 'user_report', 'user_sentiment', 'user_rank_up', 'tutorial_progression'],
+    ),
     columns: [
       { name: 'event_id', type: 'STRING' },
       { name: 'event_type', type: 'STRING' },
@@ -353,38 +361,44 @@ const DASHBOARD_PERMISSIONS: string[] = [
  * @param quicksightUserArn - ARN of the QuickSight user/group for permissions
  */
 
-export function buildLogicalTableMap(
-  def: DataSetDefinition,
-): Record<string, quicksight.CfnDataSet.LogicalTableProperty> | undefined {
-  const needsLogicalTable = (def.calculatedColumns?.length ?? 0) > 0 || (def.columnGroups?.length ?? 0) > 0;
-  if (!needsLogicalTable) return undefined;
-
-  const dataTransforms: object[] = [];
-
-  if (def.calculatedColumns?.length) {
-    dataTransforms.push({
+function buildCalculatedColumnTransforms(calculatedColumns: DataSetDefinition['calculatedColumns']): object[] {
+  if (!calculatedColumns?.length) return [];
+  return [
+    {
       createColumnsOperation: {
-        columns: def.calculatedColumns.map((calc) => ({
+        columns: calculatedColumns.map((calc) => ({
           columnName: calc.columnName,
           columnId: calc.columnId,
           expression: calc.expression,
         })),
       },
-    });
-  }
+    },
+  ];
+}
 
-  if (def.columnGroups?.length) {
-    for (const group of def.columnGroups) {
-      for (const col of group.geoSpatialColumnGroup.columns) {
-        dataTransforms.push({
-          tagColumnOperation: {
-            columnName: col,
-            tags: [{ columnGeographicRole: 'COUNTRY' }],
-          },
-        });
-      }
+function buildGeoTagTransforms(columnGroups: DataSetDefinition['columnGroups']): object[] {
+  if (!columnGroups?.length) return [];
+  const transforms: object[] = [];
+  for (const group of columnGroups) {
+    for (const col of group.geoSpatialColumnGroup.columns) {
+      transforms.push({
+        tagColumnOperation: {
+          columnName: col,
+          tags: [{ columnGeographicRole: 'COUNTRY' }],
+        },
+      });
     }
   }
+  return transforms;
+}
+
+function buildLogicalTableMap(
+  def: DataSetDefinition,
+): Record<string, quicksight.CfnDataSet.LogicalTableProperty> | undefined {
+  const calcTransforms = buildCalculatedColumnTransforms(def.calculatedColumns);
+  const geoTransforms = buildGeoTagTransforms(def.columnGroups);
+  const dataTransforms = [...calcTransforms, ...geoTransforms];
+  if (dataTransforms.length === 0) return undefined;
 
   return {
     LogicalTable0: {
