@@ -149,8 +149,9 @@ Refer to the [customization documentation](https://aws-solutions-library-samples
 
 ## Cleanup
 
-- To teardown the stack, run the `npm run destroy` command.
+- To teardown the stack, run the `npm run destroy` command. This first invokes the pre-destroy hook (`scripts/pre-destroy.js`), which calls the admin Lambda to delete the QuickSight VPC connection and IAM role. After that, `cdk destroy` removes the rest of the stack.
 - The teardown command will not delete data stored in S3, DynamoDB tables, and if enabled, Redshift and OpenSearch. These components will have to be manually deleted.
+- If the automated QuickSight teardown fails (for example, because the VPC connection is in `DELETION_IN_PROGRESS` state), wait a few minutes and re-run `npm run destroy`. The pre-destroy script is idempotent and will retry only what is still standing. If the failure persists, delete the QuickSight VPC connection manually from the AWS console before re-running.
 
 ## Notices
 
