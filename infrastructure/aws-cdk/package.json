@@ -8,8 +8,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "./node_modules/aws-cdk/bin/cdk",
-    "bootstrap": "./node_modules/aws-cdk/bin/cdk bootstrap --cloudformation-execution-policies 'arn:aws:iam::aws:policy/PowerUserAccess,arn:aws:iam::aws:policy/IAMFullAccess'",
+    "cdk": "cdk",
+    "bootstrap": "cdk bootstrap --cloudformation-execution-policies 'arn:aws:iam::aws:policy/PowerUserAccess,arn:aws:iam::aws:policy/IAMFullAccess'",
     "lint": "npx @biomejs/biome check src/"
   },
   "devDependencies": {
