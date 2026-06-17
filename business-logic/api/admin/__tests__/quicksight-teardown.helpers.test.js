@@ -23,7 +23,7 @@ const {
   waitForVpcDeletion,
   cleanupIamRolePolicies,
   deleteIamRole,
-} = require('../lib/quicksight-teardown');
+} = require('../lib/quicksight-teardown-helpers');
 
 describe('deleteVpcConnection', () => {
   beforeEach(() => {
