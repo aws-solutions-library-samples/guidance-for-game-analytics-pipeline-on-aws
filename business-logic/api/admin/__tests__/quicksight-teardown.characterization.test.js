@@ -184,5 +184,6 @@ describe('teardownQuickSight characterization', () => {
     expect(result.Steps[2]).toMatchObject({ step: 'DeleteIAMRole', status: 'ALREADY_DELETED' });
   });
 
+  // TODO(teardown-bug): handle DELETION_IN_PROGRESS — see audit plan
   it.skip('DELETION_IN_PROGRESS: poll should continue past transient in-progress status', () => {});
 });
