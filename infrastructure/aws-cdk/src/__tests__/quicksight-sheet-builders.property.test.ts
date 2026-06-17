@@ -29,6 +29,9 @@ const VISUAL_KEYS = [
   'funnelChartVisual',
   'comboChartVisual',
   'treeMapVisual',
+  'geospatialMapVisual',
+  'heatMapVisual',
+  'pivotTableVisual',
 ];
 
 /**
@@ -57,7 +60,14 @@ function extractVisualIdsFromSheet(sheet: Record<string, any>): string[] {
  * The complete set of DataSet view names required by the four sheet builders.
  * These are the keys that must exist in the dataSetIdentifiers map.
  */
-const REQUIRED_DATASET_KEYS = ['all_events', 'match_events', 'level_events', 'economy_events', 'player_health', 'match_lifecycle_funnel'];
+const REQUIRED_DATASET_KEYS = [
+  'all_events',
+  'match_events',
+  'level_events',
+  'economy_events',
+  'player_health',
+  'match_lifecycle_funnel',
+];
 
 /** Generates a non-empty alphanumeric string suitable for DataSet identifier values */
 const arbIdentifierValue = fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9_]{0,30}$/);
@@ -337,20 +347,15 @@ function collectMeasureColumns(obj: unknown): string[] {
   const json = JSON.stringify(obj);
   if (!json.includes('numericalMeasureField')) return results;
 
-  function walk(node: unknown): void {
-    if (node === null || node === undefined || typeof node !== 'object') return;
-    const record = node as Record<string, unknown>;
-    if (
-      'numericalMeasureField' in record &&
-      typeof record.numericalMeasureField === 'object' &&
-      record.numericalMeasureField !== null
-    ) {
-      const field = record.numericalMeasureField as Record<string, unknown>;
-      const column = field.column as Record<string, unknown> | undefined;
-      if (column?.columnName && typeof column.columnName === 'string') {
-        results.push(column.columnName);
-      }
-    }
+  const classifyMeasureNode = (record: Record<string, unknown>): string | null => {
+    if (typeof record.numericalMeasureField !== 'object' || record.numericalMeasureField === null) return null;
+    const field = record.numericalMeasureField as Record<string, unknown>;
+    const column = field.column as Record<string, unknown> | undefined;
+    if (column?.columnName && typeof column.columnName === 'string') return column.columnName;
+    return null;
+  };
+
+  const walkChildren = (record: Record<string, unknown>): void => {
     for (const value of Object.values(record)) {
       if (Array.isArray(value)) {
         for (const item of value) walk(item);
@@ -358,6 +363,16 @@ function collectMeasureColumns(obj: unknown): string[] {
         walk(value);
       }
     }
+  };
+
+  function walk(node: unknown): void {
+    if (node === null || typeof node !== 'object') return;
+    const record = node as Record<string, unknown>;
+    if ('numericalMeasureField' in record) {
+      const col = classifyMeasureNode(record);
+      if (col !== null) results.push(col);
+    }
+    walkChildren(record);
   }
 
   walk(obj);
@@ -371,33 +386,31 @@ function collectMeasureColumns(obj: unknown): string[] {
 function collectDimensionColumns(obj: unknown): string[] {
   const results: string[] = [];
 
+  const extractFieldColumnName = (fieldValue: unknown): string | null => {
+    if (typeof fieldValue !== 'object' || fieldValue === null) return null;
+    const field = fieldValue as Record<string, unknown>;
+    const column = field.column as Record<string, unknown> | undefined;
+    if (column?.columnName && typeof column.columnName === 'string') return column.columnName;
+    return null;
+  };
+
+  const classifyDimensionNode = (record: Record<string, unknown>): string[] => {
+    const cols: string[] = [];
+    if ('categoricalDimensionField' in record) {
+      const col = extractFieldColumnName(record.categoricalDimensionField);
+      if (col !== null) cols.push(col);
+    }
+    if ('dateDimensionField' in record) {
+      const col = extractFieldColumnName(record.dateDimensionField);
+      if (col !== null) cols.push(col);
+    }
+    return cols;
+  };
+
   function walk(node: unknown): void {
     if (node === null || node === undefined || typeof node !== 'object') return;
     const record = node as Record<string, unknown>;
-
-    if (
-      'categoricalDimensionField' in record &&
-      typeof record.categoricalDimensionField === 'object' &&
-      record.categoricalDimensionField !== null
-    ) {
-      const field = record.categoricalDimensionField as Record<string, unknown>;
-      const column = field.column as Record<string, unknown> | undefined;
-      if (column?.columnName && typeof column.columnName === 'string') {
-        results.push(column.columnName);
-      }
-    }
-    if (
-      'dateDimensionField' in record &&
-      typeof record.dateDimensionField === 'object' &&
-      record.dateDimensionField !== null
-    ) {
-      const field = record.dateDimensionField as Record<string, unknown>;
-      const column = field.column as Record<string, unknown> | undefined;
-      if (column?.columnName && typeof column.columnName === 'string') {
-        results.push(column.columnName);
-      }
-    }
-
+    for (const col of classifyDimensionNode(record)) results.push(col);
     for (const value of Object.values(record)) {
       if (Array.isArray(value)) {
         for (const item of value) walk(item);

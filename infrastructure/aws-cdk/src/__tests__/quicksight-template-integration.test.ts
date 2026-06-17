@@ -122,38 +122,37 @@ interface FieldWellRef {
 }
 
 /**
+ * Recursively walks a CloudFormation object tree (PascalCase keys), calling
+ * `visit` on every plain-object node encountered.
+ */
+function walkCfnObject(node: unknown, visit: (node: Record<string, unknown>) => void): void {
+  if (node === null || typeof node !== 'object') return;
+  if (Array.isArray(node)) {
+    node.forEach((item) => walkCfnObject(item, visit));
+    return;
+  }
+  const obj = node as Record<string, unknown>;
+  visit(obj);
+  Object.values(obj).forEach((val) => walkCfnObject(val, visit));
+}
+
+/**
  * Recursively walks an object tree looking for `column` objects that contain
- * both `dataSetIdentifier` and `columnName` keys (the CloudFormation field well
+ * both `DataSetIdentifier` and `ColumnName` keys (the CloudFormation field well
  * reference pattern used by QuickSight visuals).
  */
-function extractFieldWellRefs(obj: any, visualId: string, sheetId: string): FieldWellRef[] {
+function extractFieldWellRefs(obj: unknown, visualId: string, sheetId: string): FieldWellRef[] {
   const refs: FieldWellRef[] = [];
-
-  if (obj === null || obj === undefined || typeof obj !== 'object') {
-    return refs;
-  }
-
-  // Check if this object is a column reference (has both dataSetIdentifier and columnName)
-  if (typeof obj.DataSetIdentifier === 'string' && typeof obj.ColumnName === 'string') {
-    refs.push({
-      dataSetIdentifier: obj.DataSetIdentifier,
-      columnName: obj.ColumnName,
-      visualId,
-      sheetId,
-    });
-  }
-
-  // Recurse into all values
-  for (const value of Object.values(obj)) {
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        refs.push(...extractFieldWellRefs(item, visualId, sheetId));
-      }
-    } else if (typeof value === 'object' && value !== null) {
-      refs.push(...extractFieldWellRefs(value, visualId, sheetId));
+  walkCfnObject(obj, (node) => {
+    if (typeof node.DataSetIdentifier === 'string' && typeof node.ColumnName === 'string') {
+      refs.push({
+        dataSetIdentifier: node.DataSetIdentifier,
+        columnName: node.ColumnName,
+        visualId,
+        sheetId,
+      });
     }
-  }
-
+  });
   return refs;
 }
 
