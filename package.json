@@ -26,11 +26,19 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.14",
+    "caniuse-lite": "^1.0.30001646",
     "esbuild": "^0.24.2",
     "js-yaml": "^4.1.0",
     "prettier": "^3.8.3"
   },
+  "workspaces": [
+    "infrastructure/aws-cdk",
+    "business-logic/api/admin",
+    "business-logic/api/lambda-authorizer",
+    "business-logic/events-processing"
+  ],
   "dependencies": {
+    "@smithy/core": "^3.25.0",
     "@types/node": "^22.13.17"
   }
 }

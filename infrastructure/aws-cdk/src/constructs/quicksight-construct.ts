@@ -59,7 +59,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       "  CASE NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')",
       "    WHEN 'UK' THEN 'United Kingdom'",
       "    ELSE INITCAP(LOWER(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')))",
-      "  END as country,",
+      '  END as country,',
       '  1 as event_count',
       'FROM {db_name}."event_data"',
     ].join('\n'),
@@ -161,14 +161,14 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'item_id'), '') as item_id,",
       "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) as currency_amount,",
-      "  CASE",
+      '  CASE',
       "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 1 AND 9 THEN '01: $1-9'",
       "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 10 AND 19 THEN '02: $10-19'",
       "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 20 AND 49 THEN '03: $20-49'",
       "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) BETWEEN 50 AND 99 THEN '04: $50-99'",
       "    WHEN CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) >= 100 THEN '05: $100+'",
       "    ELSE '99: Unknown'",
-      "  END as currency_amount_band,",
+      '  END as currency_amount_band,',
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_type'), '') as currency_type,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'transaction_id'), '') as transaction_id,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'item_rarity'), '') as item_rarity,",
@@ -204,7 +204,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       "  CASE NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')",
       "    WHEN 'UK' THEN 'United Kingdom'",
       "    ELSE INITCAP(LOWER(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')))",
-      "  END as country,",
+      '  END as country,',
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'platform'), '') as platform,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'report_reason'), '') as report_reason,",
       "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'user_rating'), '') AS INTEGER) as user_rating,",
@@ -352,29 +352,13 @@ const DASHBOARD_PERMISSIONS: string[] = [
  * @param database - Database name from config (EVENTS_DATABASE)
  * @param quicksightUserArn - ARN of the QuickSight user/group for permissions
  */
-export function createDataSetFromView(
-  scope: Construct,
+
+export function buildLogicalTableMap(
   def: DataSetDefinition,
-  dataSourceArn: string,
-  accountId: string,
-  workloadName: string,
-  isRedshift: boolean,
-  database: string,
-  quicksightUserArn: string,
-): quicksight.CfnDataSet {
-  // Build schema-qualified path based on data source mode
-  const schema = isRedshift ? `"${database}"."public"` : `"${database}"`;
-
-  let sqlQuery: string;
-  if (def.customSqlQuery) {
-    // Replace {db_name} placeholder with the schema-qualified path
-    sqlQuery = def.customSqlQuery.replace(/\{db_name\}/g, schema);
-  } else {
-    sqlQuery = `SELECT * FROM ${schema}."${def.viewName}"`;
-  }
-
-  // Build logicalTableMap with calculated columns and/or geo tags if defined
+): Record<string, quicksight.CfnDataSet.LogicalTableProperty> | undefined {
   const needsLogicalTable = (def.calculatedColumns?.length ?? 0) > 0 || (def.columnGroups?.length ?? 0) > 0;
+  if (!needsLogicalTable) return undefined;
+
   const dataTransforms: object[] = [];
 
   if (def.calculatedColumns?.length) {
@@ -389,7 +373,6 @@ export function createDataSetFromView(
     });
   }
 
-  // Add TagColumnOperation for geospatial columns (assigns geographic role)
   if (def.columnGroups?.length) {
     for (const group of def.columnGroups) {
       for (const col of group.geoSpatialColumnGroup.columns) {
@@ -403,15 +386,32 @@ export function createDataSetFromView(
     }
   }
 
-  const logicalTableMap: Record<string, quicksight.CfnDataSet.LogicalTableProperty> | undefined = needsLogicalTable
-    ? {
-        LogicalTable0: {
-          alias: def.viewName,
-          source: { physicalTableId: 'PhysicalTable0' },
-          dataTransforms,
-        },
-      }
-    : undefined;
+  return {
+    LogicalTable0: {
+      alias: def.viewName,
+      source: { physicalTableId: 'PhysicalTable0' },
+      dataTransforms,
+    },
+  };
+}
+
+export function createDataSetFromView(
+  scope: Construct,
+  def: DataSetDefinition,
+  dataSourceArn: string,
+  accountId: string,
+  workloadName: string,
+  isRedshift: boolean,
+  database: string,
+  quicksightUserArn: string,
+): quicksight.CfnDataSet {
+  const schema = isRedshift ? `"${database}"."public"` : `"${database}"`;
+
+  const sqlQuery = def.customSqlQuery
+    ? def.customSqlQuery.replace(/\{db_name\}/g, schema)
+    : `SELECT * FROM ${schema}."${def.viewName}"`;
+
+  const logicalTableMap = buildLogicalTableMap(def);
 
   return new quicksight.CfnDataSet(scope, `DataSet-${def.viewName}`, {
     awsAccountId: accountId,
@@ -880,7 +880,6 @@ export class QuickSightConstruct extends Construct {
   constructor(parent: Construct, name: string, props: QuickSightConstructProps) {
     super(parent, name);
 
-    // Force unique template hash to bypass CloudFormation template caching
     this.node.addMetadata('version', String(VPC_CONNECTION_VERSION));
 
     const accountId = cdk.Aws.ACCOUNT_ID;
@@ -889,8 +888,42 @@ export class QuickSightConstruct extends Construct {
     const database = props.config.EVENTS_DATABASE;
     const isRedshift = props.config.DATA_STACK === 'REDSHIFT';
 
-    // ---- Config Validation ---- //
+    this.validateProps(props, isRedshift);
 
+    const quicksightUserArn = `arn:aws:quicksight:${region}:${accountId}:user/default/${props.config.QUICKSIGHT_USERNAME}`;
+
+    const qsRole = this.createIamRole(props, isRedshift, accountId, region, workloadName, database);
+    this.qsRoleName = qsRole.roleName;
+
+    const dataSource = this.createDataSource(
+      props,
+      isRedshift,
+      accountId,
+      region,
+      workloadName,
+      database,
+      quicksightUserArn,
+      qsRole,
+    );
+    this.dataSource = dataSource;
+
+    const dataSets = DATA_SET_DEFINITIONS.map((def) =>
+      createDataSetFromView(
+        this,
+        def,
+        dataSource.attrArn,
+        accountId,
+        workloadName,
+        isRedshift,
+        database,
+        quicksightUserArn,
+      ),
+    );
+
+    this.createDashboard(accountId, region, workloadName, quicksightUserArn, dataSets);
+  }
+
+  private validateProps(props: QuickSightConstructProps, isRedshift: boolean): void {
     if (!props.config.QUICKSIGHT_USERNAME || props.config.QUICKSIGHT_USERNAME.trim() === '') {
       throw new Error(
         'QUICKSIGHT_USERNAME must be provided when ENABLE_QUICKSIGHT_DASHBOARD is true. ' +
@@ -921,46 +954,34 @@ export class QuickSightConstruct extends Construct {
         );
       }
     }
+  }
 
-    // QuickSight user ARN for permissions
-    const quicksightUserArn = `arn:aws:quicksight:${region}:${accountId}:user/default/${props.config.QUICKSIGHT_USERNAME}`;
-
-    // ---- Task 3.1: IAM Service Role ---- //
-
+  private createIamRole(
+    props: QuickSightConstructProps,
+    isRedshift: boolean,
+    accountId: string,
+    region: string,
+    workloadName: string,
+    database: string,
+  ): iam.Role {
     const qsRole = new iam.Role(this, 'QuickSightServiceRole', {
       assumedBy: new iam.ServicePrincipal('quicksight.amazonaws.com'),
     });
-    // Retain the role on stack deletion so QuickSight can use it to clean up
-    // VPC connection ENIs. The POST /quicksight/teardown endpoint deletes this
-    // role after confirming the VPC connection is fully removed.
     qsRole.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN);
-    this.qsRoleName = qsRole.roleName;
 
     if (isRedshift) {
       const namespaceSecretName = `redshift!${props.redshiftConstruct!.namespace.ref}-db-admin`;
       const namespaceSecretArnPattern = `arn:aws:secretsmanager:${region}:${accountId}:secret:redshift!${props.redshiftConstruct!.namespace.ref}-db-admin-*`;
       qsRole.addToPolicy(
-        new iam.PolicyStatement({
-          actions: ['secretsmanager:GetSecretValue'],
-          resources: [namespaceSecretArnPattern],
-        }),
+        new iam.PolicyStatement({ actions: ['secretsmanager:GetSecretValue'], resources: [namespaceSecretArnPattern] }),
       );
-
-      // KMS decrypt scoped to the Redshift encryption key
       qsRole.addToPolicy(
-        new iam.PolicyStatement({
-          actions: ['kms:Decrypt'],
-          resources: [props.redshiftConstruct!.key.keyArn],
-        }),
+        new iam.PolicyStatement({ actions: ['kms:Decrypt'], resources: [props.redshiftConstruct!.key.keyArn] }),
       );
-
-      // Redshift Serverless permissions scoped to this workgroup
       qsRole.addToPolicy(
         new iam.PolicyStatement({
           actions: ['redshift-serverless:GetCredentials', 'redshift-serverless:GetWorkgroup'],
-          resources: [
-            `arn:aws:redshift-serverless:${region}:${accountId}:workgroup/*`,
-          ],
+          resources: [`arn:aws:redshift-serverless:${region}:${accountId}:workgroup/*`],
         }),
       );
 
@@ -977,9 +998,7 @@ export class QuickSightConstruct extends Construct {
               actions: ['kms:Decrypt'],
               resources: [props.redshiftConstruct!.key.keyArn],
               conditions: {
-                StringEquals: {
-                  'kms:ViaService': `secretsmanager.${region}.amazonaws.com`,
-                },
+                StringEquals: { 'kms:ViaService': `secretsmanager.${region}.amazonaws.com` },
                 StringLike: {
                   'kms:EncryptionContext:SecretARN': `arn:aws:secretsmanager:${region}:${accountId}:secret:${namespaceSecretName}*`,
                 },
@@ -989,7 +1008,6 @@ export class QuickSightConstruct extends Construct {
         }),
       });
     } else {
-      // Athena query permissions scoped to the workgroup
       qsRole.addToPolicy(
         new iam.PolicyStatement({
           actions: [
@@ -1002,8 +1020,6 @@ export class QuickSightConstruct extends Construct {
           resources: [`arn:aws:athena:*:*:workgroup/${props.dataLakeConstruct!.gameAnalyticsWorkgroup.name}`],
         }),
       );
-
-      // Glue catalog read permissions scoped to the events database
       qsRole.addToPolicy(
         new iam.PolicyStatement({
           actions: ['glue:GetTable', 'glue:GetTables', 'glue:GetDatabase'],
@@ -1014,8 +1030,6 @@ export class QuickSightConstruct extends Construct {
           ],
         }),
       );
-
-      // S3 read permissions scoped to the analytics bucket
       qsRole.addToPolicy(
         new iam.PolicyStatement({
           actions: ['s3:GetObject', 's3:ListBucket', 's3:GetBucketLocation'],
@@ -1024,15 +1038,20 @@ export class QuickSightConstruct extends Construct {
       );
     }
 
-    // ---- Task 3.2: VPC Connection (REDSHIFT only) ---- //
-    // ---- Task 3.3: Redshift DataSource ---- //
-    // ---- Task 3.4: Athena DataSource ---- //
+    return qsRole;
+  }
 
-    let dataSource: quicksight.CfnDataSource;
-
+  private createDataSource(
+    props: QuickSightConstructProps,
+    isRedshift: boolean,
+    accountId: string,
+    region: string,
+    workloadName: string,
+    database: string,
+    quicksightUserArn: string,
+    qsRole: iam.Role,
+  ): quicksight.CfnDataSource {
     if (isRedshift) {
-      // QuickSight VPC connection requires EC2 network interface permissions
-      // so it can create ENIs in the private subnets to reach Redshift
       qsRole.addToPolicy(
         new iam.PolicyStatement({
           actions: [
@@ -1047,18 +1066,10 @@ export class QuickSightConstruct extends Construct {
         }),
       );
 
-      // Create a security group for QuickSight VPC connection using L1 to avoid
-      // CDK's automatic egress rule dependency chain
       const qsSecurityGroup = new ec2.CfnSecurityGroup(this, 'QuickSightSecurityGroup', {
         vpcId: props.vpcConstruct!.vpc.vpcId,
         groupDescription: 'Security group for QuickSight VPC connection to Redshift',
-        securityGroupEgress: [
-          {
-            ipProtocol: '-1',
-            cidrIp: '0.0.0.0/0',
-            description: 'Allow all outbound traffic',
-          },
-        ],
+        securityGroupEgress: [{ ipProtocol: '-1', cidrIp: '0.0.0.0/0', description: 'Allow all outbound traffic' }],
       });
 
       const vpcConnection = new quicksight.CfnVPCConnection(this, 'VPCConnection', {
@@ -1069,28 +1080,16 @@ export class QuickSightConstruct extends Construct {
         securityGroupIds: [qsSecurityGroup.attrGroupId],
         roleArn: qsRole.roleArn,
       });
-
-      // Ensure the IAM role and its policies are fully created before the VPC connection
       vpcConnection.node.addDependency(qsRole);
 
-      // Note: QuickSight VPC connections create ENIs in the private subnets.
-      // On stack deletion, if the VPC connection's IAM role is deleted before
-      // QuickSight finishes cleaning up ENIs, deletion of subnets/SGs will fail.
-      // The IAM role naturally outlives the VPC connection because CDK reverses
-      // creation order for deletion (role created before VPC connection = deleted after).
-      // If stack deletion gets stuck, manually delete the VPC connection via:
-      //   aws quicksight delete-vpc-connection --aws-account-id <ACCOUNT> \
-      //     --vpc-connection-id <WORKLOAD>-qs-vpc-connection --region <REGION>
-
-      // Task 3.3: Redshift DataSource
-      dataSource = new quicksight.CfnDataSource(this, 'RedshiftDataSource', {
+      const dataSource = new quicksight.CfnDataSource(this, 'RedshiftDataSource', {
         awsAccountId: accountId,
         dataSourceId: `${workloadName}-redshift-ds`,
         name: `${workloadName}-Redshift`,
         type: 'REDSHIFT',
         dataSourceParameters: {
           redshiftParameters: {
-            database: database,
+            database,
             host: props.redshiftConstruct!.workgroup.attrWorkgroupEndpointAddress,
             port: props.redshiftConstruct!.workgroup.attrWorkgroupEndpointPort,
           },
@@ -1105,55 +1104,29 @@ export class QuickSightConstruct extends Construct {
             ]),
           },
         },
-        vpcConnectionProperties: {
-          vpcConnectionArn: vpcConnection.attrArn,
-        },
-        permissions: [
-          {
-            principal: quicksightUserArn,
-            actions: DATA_SOURCE_PERMISSIONS,
-          },
-        ],
+        vpcConnectionProperties: { vpcConnectionArn: vpcConnection.attrArn },
+        permissions: [{ principal: quicksightUserArn, actions: DATA_SOURCE_PERMISSIONS }],
       });
+      return dataSource;
     } else {
-      // Task 3.4: Athena DataSource — no VPC connection needed
-      dataSource = new quicksight.CfnDataSource(this, 'AthenaDataSource', {
+      return new quicksight.CfnDataSource(this, 'AthenaDataSource', {
         awsAccountId: accountId,
         dataSourceId: `${workloadName}-athena-ds`,
         name: `${workloadName}-Athena`,
         type: 'ATHENA',
-        dataSourceParameters: {
-          athenaParameters: {
-            workGroup: props.dataLakeConstruct!.gameAnalyticsWorkgroup.name,
-          },
-        },
-        permissions: [
-          {
-            principal: quicksightUserArn,
-            actions: DATA_SOURCE_PERMISSIONS,
-          },
-        ],
+        dataSourceParameters: { athenaParameters: { workGroup: props.dataLakeConstruct!.gameAnalyticsWorkgroup.name } },
+        permissions: [{ principal: quicksightUserArn, actions: DATA_SOURCE_PERMISSIONS }],
       });
     }
+  }
 
-    // ---- Task 3.6 (partial): Create 11 DataSets via factory ---- //
-
-    const dataSets = DATA_SET_DEFINITIONS.map((def) =>
-      createDataSetFromView(
-        this,
-        def,
-        dataSource.attrArn,
-        accountId,
-        workloadName,
-        isRedshift,
-        database,
-        quicksightUserArn,
-      ),
-    );
-
-    // ---- Task 3.5: Dashboard (definition-based, no template needed) ---- //
-
-    // Build dataSetIdentifierDeclarations for the definition-based dashboard
+  private createDashboard(
+    accountId: string,
+    region: string,
+    workloadName: string,
+    quicksightUserArn: string,
+    dataSets: quicksight.CfnDataSet[],
+  ): void {
     const dataSetIdentifierDeclarations = DATA_SET_DEFINITIONS.map((def) => ({
       identifier: def.viewName,
       dataSetArn: cdk.Fn.sub(
@@ -1161,7 +1134,6 @@ export class QuickSightConstruct extends Construct {
       ),
     }));
 
-    // Build dataSetIdentifierMap for sheet builders
     const dataSetIdentifierMap: Record<string, string> = {};
     for (const def of DATA_SET_DEFINITIONS) {
       dataSetIdentifierMap[def.viewName] = def.viewName;
@@ -1171,12 +1143,7 @@ export class QuickSightConstruct extends Construct {
       awsAccountId: accountId,
       dashboardId: `${workloadName}-game-dashboard`,
       name: `${workloadName}-Game-Analytics`,
-      permissions: [
-        {
-          principal: quicksightUserArn,
-          actions: DASHBOARD_PERMISSIONS,
-        },
-      ],
+      permissions: [{ principal: quicksightUserArn, actions: DASHBOARD_PERMISSIONS }],
       definition: {
         dataSetIdentifierDeclarations,
         sheets: [
@@ -1190,20 +1157,13 @@ export class QuickSightConstruct extends Construct {
       },
     });
 
-    // Ensure dashboard deploys after all DataSets are created
     for (const ds of dataSets) {
       dashboard.node.addDependency(ds);
     }
 
-    // ---- Task 3.6: Wire together and expose properties ---- //
-
-    // Emit dashboard URL as CfnOutput
     new cdk.CfnOutput(this, 'QuickSightDashboardURL', {
       value: `https://${region}.quicksight.aws.amazon.com/sn/dashboards/${workloadName}-game-dashboard`,
       description: 'URL of the Game Analytics QuickSight Dashboard',
     });
-
-    // Expose public readonly properties
-    this.dataSource = dataSource;
   }
 }

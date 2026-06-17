@@ -305,14 +305,7 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
     ),
 
     withSubtitle(
-      buildKpiVisual(
-        'cb-avg-xp-kpi',
-        'Avg XP per Match',
-        matchEvents,
-        'cb-avg-xp-measure',
-        'exp_gained',
-        'AVERAGE',
-      ),
+      buildKpiVisual('cb-avg-xp-kpi', 'Avg XP per Match', matchEvents, 'cb-avg-xp-measure', 'exp_gained', 'AVERAGE'),
       'Reward economy health. Tune match length or XP curve if this drifts.',
     ),
 
@@ -458,7 +451,6 @@ export function buildCombatSheet(dataSetIdentifiers: Record<string, string>): ob
       ),
       'Matrix view of wins and losses by map. Faster to compare balance patterns than separate bars when scanning exact counts.',
     ),
-
   ];
 
   return {
@@ -1009,7 +1001,10 @@ export function buildSentimentSheet(dataSetIdentifiers: Record<string, string>):
       'Top reason = the next moderation rule or in-game messaging to prioritize.',
     ),
 
-    withSubtitle(buildRatingDistributionVisual(playerHealth), '1-5 star spread. Bimodal? You have lovers and haters — investigate both.'),
+    withSubtitle(
+      buildRatingDistributionVisual(playerHealth),
+      '1-5 star spread. Bimodal? You have lovers and haters — investigate both.',
+    ),
   ];
 
   return {
@@ -1106,16 +1101,4 @@ function buildRatingDistributionVisual(dataSetIdentifier: string): object {
       },
     },
   };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Legacy exports (kept for backward compatibility with tests)
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function buildOverviewSheet(dataSetIdentifiers: Record<string, string>): object {
-  return buildPulseSheet(dataSetIdentifiers);
-}
-
-export function buildEconomySheet(dataSetIdentifiers: Record<string, string>): object {
-  return buildMonetizationSheet(dataSetIdentifiers);
 }
