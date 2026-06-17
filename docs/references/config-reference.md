@@ -214,3 +214,22 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 - *Type:* String
 
 - *Example:* `"latest"`
+
+## QuickSight Dashboard Options
+
+`ENABLE_QUICKSIGHT_DASHBOARD`
+
+- *Description:* Whether or not to provision the optional Amazon QuickSight Analytics Dashboard. When set to `true`, the stack creates a VPC connection (REDSHIFT mode), a QuickSight DataSource, six DataSets, and a five-sheet Dashboard (Pulse, Combat, Progression, Monetization, Sentiment) for the configured `QUICKSIGHT_USERNAME`. Requires an active QuickSight Enterprise subscription in the target AWS account. The deployed Lambda teardown handler removes QuickSight resources automatically when `npm run destroy` is invoked.
+
+- *Type:* Boolean
+
+- *Example:* `true`
+
+
+`QUICKSIGHT_USERNAME`
+
+- *Description:* The QuickSight user identity that will be granted Owner permissions on the dashboard, datasets, and data source. Must reference an existing QuickSight user in the `default` namespace of the target account. For IAM Identity Center–federated users this is typically `<role>/<username>` (e.g. `Admin/jane-doe`); for classic IAM-mapped users it is the IAM user name. Required when `ENABLE_QUICKSIGHT_DASHBOARD` is `true`.
+
+- *Type:* String
+
+- *Example:* `"Admin/jane-doe"`
