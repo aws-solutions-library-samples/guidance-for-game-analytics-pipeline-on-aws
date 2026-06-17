@@ -31,6 +31,15 @@ The following table shows unsupported configurations when options in this sectio
 
 - *Example:* `"KINESIS_DATA_STREAMS"`, `"DIRECT_BATCH"`
 
+!!! Info
+    When `"DIRECT_BATCH"` is configured as the data source, the Firehose stream can support up to the following throughput:
+
+    - For US East (N. Virginia), US West (Oregon), and Europe (Ireland): 500,000 records/second, 2,000 requests/second, and 5 MiB/second.
+
+    - For other AWS Regions: 100,000 records/second, 1,000 requests/second, and 1 MiB/second.
+
+    Choose `"DIRECT_BATCH"` if you know that your peak event ingestion throughput will fall below these limits and optimize event ingestion by batching multiple events per request. If higher throughput is needed, please consider using `"KINESIS_DATA_STREAMS"` which will enable Firehose to scale up and down with no limit. More information can be found in the [Quota section of the Amazon Data Firehose documentation](https://docs.aws.amazon.com/firehose/latest/dev/limits.html).
+
 `REAL_TIME_ANALYTICS`
 
 - *Description:* Whether or not to enable the [Real-Time](../component-deep-dive.md#3-real-time-optional) component/module of the guidance. It is recommended to set this value to `true` when first deploying this sample code for testing, as this setting will allow you to verify if streaming analytics is required for your use case. This setting can be changed at a later time, and the guidance re-deployed through CI/CD.
@@ -53,7 +62,16 @@ The following table shows unsupported configurations when options in this sectio
 
 `ENABLE_APACHE_ICEBERG_SUPPORT`
 
-- *Description:* Whether or not to enable Apache Iceberg support in place of Apache Hive tables. When set to `true`, the raw events table will be configured as an Apache Iceberg table and the Firehose will be reconfigured to send data as Iceberg transactions. Enabling this option comes with [considerations for Firehose](https://docs.aws.amazon.com/firehose/latest/dev/apache-iceberg-considerations.html).
+- *Description:* Whether or not to enable Apache Iceberg support in place of Apache Hive tables. When set to `true`, the raw events table will be configured as an Apache Iceberg table and the Firehose will be reconfigured to send data as Iceberg transactions. 
+
+!!! Info
+    For a general overview on Hive vs Iceberg:
+
+    - **Apache Iceberg** is a metadata layer over the data lake. It brings benefits such as atomic transactions, advanced partitioning, improved query performance, lower management overhead, and potentially lower event ingestion cost. However, the metadata and transaction mechanism may introduce throttling for high event throughput. 
+
+    - **Apache Hive** is a data lake format where events are stored as parquet objects in S3 and partitioned by prefixes. The Hive format can have faster data ingestion due to the lack of metadata and transaction mechanism, but can lead to unclean reads. Hive data lakes are potentially more expensive during ingestion due to Amazon Data Firehose [rounding event sizes up to the nearest 5KB increment](https://aws.amazon.com/firehose/pricing/).
+
+    **We generally recommend Iceberg tables for most workloads at this time, along with using Iceberg with Amazon Data Firehose. More details can be found in the AWS documentation for [Considerations and limitations](https://docs.aws.amazon.com/firehose/latest/dev/apache-iceberg-considerations.html) with Amazon Data Firehose.**
 
 - *Type:* Boolean
 
@@ -68,6 +86,12 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 `STREAM_PROVISIONED`
 
 - *Description:* The Kinesis stream capacity mode. When set to `true`, the stream will be created with the number of shards specified in `STREAM_SHARD_COUNT`. When set to `false`, the number of shards will be scaled automatically to handle throughput and the `STREAM_SHARD_COUNT` setting will be ignored. This value can be changed at a later time and re-deployed through CI/CD. For information about determining the capacity mode required for your use case, refer to [Choose the data stream capacity mode](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html) in the *Amazon Kinesis Data Streams Developer Guide*.
+
+
+!!! Info
+    If you expect that **the total On-demand Kinesis Data Stream throughput will be at least 25 MiBps across all on-demand streams within the account and region** where you are deploying the Game Analytics Pipeline, please consider enabling **Kinesis On-Demand Advantage mode** when using On-demand Kinesis streams. On-Demand Advantage mode can provide at least **60% savings** on On-demand streams when compared to On-demand standard by committing to a minimum spend amount per day. 
+    
+    Please refer to the blog [Kinesis On-demand Advantage saves 60%+ on streaming costs](https://aws.amazon.com/blogs/big-data/kinesis-on-demand-advantage-saves-60-on-streaming-costs/) for more information.
 
 `STREAM_SHARD_COUNT`
 
@@ -183,15 +207,6 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 
 ## Version Options
 
-`CDK_VERSION`
-
-- *Description:* The version of the CDK installed in your environment. To see the current version of the CDK, run the `cdk --version` command. The guidance has been tested using CDK version `2.92.0` of the CDK. If you are using a different version of the CDK, ensure that this version is also reflected in the `./infrastructure/package.json` file.
-
-- *Type:* String
-
-- *Example:* `"2.92.0"`
-
-
 `NODE_VERSION`
 
 - *Description:* The version of NodeJS being used. The default value is set to `"latest"`, and should only be changed this if you require a specific version.
@@ -199,12 +214,3 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 - *Type:* String
 
 - *Example:* `"latest"`
-
-
-`PYTHON_VESION`
-
-- *Description:* The version of Python being used. The default value is set to `"3.8"`, and should only be changed if you require a specific version.
-
-- *Type:* String
-
-- *Example:* `"3.8"`
