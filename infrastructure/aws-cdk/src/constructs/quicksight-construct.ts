@@ -72,7 +72,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       "  NULLIF({json:platform}, '') as platform,",
       "  CASE NULLIF({json:country_id}, '')",
       "    WHEN 'UK' THEN 'United Kingdom'",
-      "    ELSE INITCAP(LOWER(NULLIF({json:country_id}, '')))",
+      '    ELSE {initcap:country_id}',
       '  END as country,',
       '  1 as event_count',
       'FROM {db_name}."event_data"',
@@ -98,7 +98,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
         '  event_id,',
         '  event_type,',
         '  date({epoch_to_ts:event_timestamp}) as event_date,',
-        "  {json:match_id} as match_id,",
+        '  {json:match_id} as match_id,',
         "  NULLIF({json:map_id}, '') as map_id,",
         "  NULLIF({json:match_type}, '') as match_type,",
         "  NULLIF({json:match_result_type}, '') as match_result,",
@@ -139,8 +139,8 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       '  event_id,',
       '  event_type,',
       '  date({epoch_to_ts:event_timestamp}) as event_date,',
-      "  {json:level_id} as level_id,",
-      "  CAST({json:level_version} AS INTEGER) as level_version,",
+      '  {json:level_id} as level_id,',
+      '  CAST({json:level_version} AS INTEGER) as level_version,',
       '  1 as event_count',
       'FROM {db_name}."event_data"',
       "WHERE event_type IN ('level_started', 'level_completed', 'level_failed')",
@@ -213,7 +213,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
         '  date({epoch_to_ts:event_timestamp}) as event_date,',
         "  CASE NULLIF({json:country_id}, '')",
         "    WHEN 'UK' THEN 'United Kingdom'",
-        "    ELSE INITCAP(LOWER(NULLIF({json:country_id}, '')))",
+        '    ELSE {initcap:country_id}',
         '  END as country,',
         "  NULLIF({json:platform}, '') as platform,",
         "  NULLIF({json:report_reason}, '') as report_reason,",
@@ -431,9 +431,12 @@ export function createDataSetFromView(
         isRedshift ? `timestamp 'epoch' + ${col} * interval '1 second'` : `from_unixtime(${col})`,
       )
       .replace(/\{json:([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (_, key) =>
+        isRedshift ? `JSON_EXTRACT_PATH_TEXT(event_data, '${key}')` : `json_extract_scalar(event_data, '$.${key}')`,
+      )
+      .replace(/\{initcap:([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (_, key) =>
         isRedshift
-          ? `JSON_EXTRACT_PATH_TEXT(event_data, '${key}')`
-          : `json_extract_scalar(event_data, '$.${key}')`,
+          ? `INITCAP(LOWER(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, '${key}'), '')))`
+          : `regexp_replace(LOWER(NULLIF(json_extract_scalar(event_data, '$.${key}'), '')), '(\\w)(\\w*)', x -> upper(x[1]) || x[2])`,
       );
   };
   const sqlQuery = def.customSqlQuery
