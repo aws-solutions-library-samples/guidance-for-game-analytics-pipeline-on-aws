@@ -1069,6 +1069,46 @@ export class QuickSightConstruct extends Construct {
           resources: [props.analyticsBucket!.bucketArn, `${props.analyticsBucket!.bucketArn}/*`],
         }),
       );
+
+      new iam.CfnPolicy(this, 'QuickSightManagedServiceRoleAthenaAccessPolicy', {
+        policyName: `${workloadName}-QuickSightAthenaAccess`,
+        roles: ['aws-quicksight-service-role-v0'],
+        policyDocument: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: [
+                'athena:GetQueryExecution',
+                'athena:GetQueryResults',
+                'athena:StartQueryExecution',
+                'athena:StopQueryExecution',
+                'athena:GetWorkGroup',
+              ],
+              resources: [`arn:aws:athena:*:*:workgroup/${props.dataLakeConstruct!.gameAnalyticsWorkgroup.name}`],
+            }),
+            new iam.PolicyStatement({
+              actions: ['glue:GetTable', 'glue:GetTables', 'glue:GetDatabase'],
+              resources: [
+                `arn:aws:glue:*:*:catalog`,
+                `arn:aws:glue:*:*:database/${database}`,
+                `arn:aws:glue:*:*:table/${database}/*`,
+              ],
+            }),
+            new iam.PolicyStatement({
+              actions: [
+                's3:GetObject',
+                's3:ListBucket',
+                's3:GetBucketLocation',
+                's3:PutObject',
+                's3:DeleteObject',
+                's3:AbortMultipartUpload',
+                's3:ListBucketMultipartUploads',
+                's3:ListMultipartUploadParts',
+              ],
+              resources: [props.analyticsBucket!.bucketArn, `${props.analyticsBucket!.bucketArn}/*`],
+            }),
+          ],
+        }),
+      });
     }
 
     return qsRole;
