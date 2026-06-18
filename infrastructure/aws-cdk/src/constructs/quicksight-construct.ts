@@ -29,7 +29,7 @@ function buildEventDataSql(columnExpressions: string[], eventTypes: string[]): s
     '  1 as event_count',
     'FROM {db_name}."event_data"',
     `WHERE event_type IN (${eventTypeList})`,
-    `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
+    `  AND {epoch_to_ts:event_timestamp} >= {time_window:${DIRECT_QUERY_WINDOW_DAYS}}`,
   ].join('\n');
 }
 
@@ -67,8 +67,8 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       '  event_name,',
       '  app_version,',
       '  application_id,',
-      "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
-      "  date_trunc('hour', timestamp 'epoch' + event_timestamp * interval '1 second') as event_hour,",
+      '  date({epoch_to_ts:event_timestamp}) as event_date,',
+      "  date_trunc('hour', {epoch_to_ts:event_timestamp}) as event_hour,",
       "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'platform'), '') as platform,",
       "  CASE NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')",
       "    WHEN 'UK' THEN 'United Kingdom'",
@@ -97,7 +97,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       [
         '  event_id,',
         '  event_type,',
-        "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
+        '  date({epoch_to_ts:event_timestamp}) as event_date,',
         "  JSON_EXTRACT_PATH_TEXT(event_data, 'match_id') as match_id,",
         "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'map_id'), '') as map_id,",
         "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'match_type'), '') as match_type,",
@@ -138,13 +138,13 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       'SELECT',
       '  event_id,',
       '  event_type,',
-      "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
+      '  date({epoch_to_ts:event_timestamp}) as event_date,',
       "  JSON_EXTRACT_PATH_TEXT(event_data, 'level_id') as level_id,",
       "  CAST(JSON_EXTRACT_PATH_TEXT(event_data, 'level_version') AS INTEGER) as level_version,",
       '  1 as event_count',
       'FROM {db_name}."event_data"',
       "WHERE event_type IN ('level_started', 'level_completed', 'level_failed')",
-      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
+      `  AND {epoch_to_ts:event_timestamp} >= {time_window:${DIRECT_QUERY_WINDOW_DAYS}}`,
     ].join('\n'),
     columns: [
       { name: 'event_id', type: 'STRING' },
@@ -170,7 +170,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       [
         '  event_id,',
         '  event_type,',
-        "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
+        '  date({epoch_to_ts:event_timestamp}) as event_date,',
         "  NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'item_id'), '') as item_id,",
         "  CAST(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'currency_amount'), '') AS INTEGER) as currency_amount,",
         '  CASE',
@@ -210,7 +210,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
         '  event_id,',
         '  event_type,',
         '  app_version,',
-        "  date(timestamp 'epoch' + event_timestamp * interval '1 second') as event_date,",
+        '  date({epoch_to_ts:event_timestamp}) as event_date,',
         "  CASE NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')",
         "    WHEN 'UK' THEN 'United Kingdom'",
         "    ELSE INITCAP(LOWER(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, 'country_id'), '')))",
@@ -260,22 +260,22 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       "SELECT '1_matchmaking_start' as stage_label, count(*) as event_count",
       'FROM {db_name}."event_data"',
       "WHERE event_type = 'matchmaking_start'",
-      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
+      `  AND {epoch_to_ts:event_timestamp} >= {time_window:${DIRECT_QUERY_WINDOW_DAYS}}`,
       'UNION ALL',
       "SELECT '2_matchmaking_complete' as stage_label, count(*) as event_count",
       'FROM {db_name}."event_data"',
       "WHERE event_type = 'matchmaking_complete'",
-      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
+      `  AND {epoch_to_ts:event_timestamp} >= {time_window:${DIRECT_QUERY_WINDOW_DAYS}}`,
       'UNION ALL',
       "SELECT '3_match_start' as stage_label, count(*) as event_count",
       'FROM {db_name}."event_data"',
       "WHERE event_type = 'match_start'",
-      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
+      `  AND {epoch_to_ts:event_timestamp} >= {time_window:${DIRECT_QUERY_WINDOW_DAYS}}`,
       'UNION ALL',
       "SELECT '4_match_end' as stage_label, count(*) as event_count",
       'FROM {db_name}."event_data"',
       "WHERE event_type = 'match_end'",
-      `  AND timestamp 'epoch' + event_timestamp * interval '1 second' >= dateadd(day, -${DIRECT_QUERY_WINDOW_DAYS}, getdate())`,
+      `  AND {epoch_to_ts:event_timestamp} >= {time_window:${DIRECT_QUERY_WINDOW_DAYS}}`,
     ].join('\n'),
     columns: [
       { name: 'stage_label', type: 'STRING' },
@@ -421,8 +421,18 @@ export function createDataSetFromView(
 ): quicksight.CfnDataSet {
   const schema = isRedshift ? `"${database}"."public"` : `"${database}"`;
 
+  const resolveSqlTokens = (sql: string): string => {
+    return sql
+      .replace(/\{db_name\}/g, schema)
+      .replace(/\{time_window:(\d+)\}/g, (_, n) =>
+        isRedshift ? `dateadd(day, -${n}, getdate())` : `current_timestamp - interval '${n}' day`,
+      )
+      .replace(/\{epoch_to_ts:([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (_, col) =>
+        isRedshift ? `timestamp 'epoch' + ${col} * interval '1 second'` : `from_unixtime(${col})`,
+      );
+  };
   const sqlQuery = def.customSqlQuery
-    ? def.customSqlQuery.replace(/\{db_name\}/g, schema)
+    ? resolveSqlTokens(def.customSqlQuery)
     : `SELECT * FROM ${schema}."${def.viewName}"`;
 
   const logicalTableMap = buildLogicalTableMap(def);
@@ -1123,7 +1133,7 @@ export class QuickSightConstruct extends Construct {
       });
       return dataSource;
     } else {
-      return new quicksight.CfnDataSource(this, 'AthenaDataSource', {
+      const dataSource = new quicksight.CfnDataSource(this, 'AthenaDataSource', {
         awsAccountId: accountId,
         dataSourceId: `${workloadName}-athena-ds`,
         name: `${workloadName}-Athena`,
@@ -1131,6 +1141,8 @@ export class QuickSightConstruct extends Construct {
         dataSourceParameters: { athenaParameters: { workGroup: props.dataLakeConstruct!.gameAnalyticsWorkgroup.name } },
         permissions: [{ principal: quicksightUserArn, actions: DATA_SOURCE_PERMISSIONS }],
       });
+      dataSource.node.addDependency(props.dataLakeConstruct!.gameAnalyticsWorkgroup);
+      return dataSource;
     }
   }
 
