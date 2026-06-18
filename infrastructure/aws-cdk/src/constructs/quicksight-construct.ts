@@ -16,7 +16,7 @@ import {
   buildSentimentSheet,
 } from './quicksight-sheet-builders';
 
-export const VPC_CONNECTION_VERSION = 6;
+export const VPC_CONNECTION_VERSION = 7;
 const DIRECT_QUERY_WINDOW_DAYS = 30;
 
 // Each entry of `columnExpressions` MUST include its own trailing comma; a final
@@ -1188,6 +1188,9 @@ export class QuickSightConstruct extends Construct {
         vpcConnectionProperties: { vpcConnectionArn: vpcConnection.attrArn },
         permissions: [{ principal: quicksightUserArn, actions: DATA_SOURCE_PERMISSIONS }],
       });
+      // Bug #9: workgroup hits CREATE_COMPLETE before its endpoint accepts connections;
+      // depend on snapshot (which requires an ACTIVE workgroup) so QuickSight validation succeeds.
+      dataSource.node.addDependency(props.redshiftConstruct!.snapshot);
       return dataSource;
     } else {
       const dataSource = new quicksight.CfnDataSource(this, 'AthenaDataSource', {
