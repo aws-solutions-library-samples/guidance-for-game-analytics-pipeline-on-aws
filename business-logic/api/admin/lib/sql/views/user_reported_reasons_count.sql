@@ -1,13 +1,12 @@
+-- Reads directly from Kinesis so AUTO REFRESH YES is legal.
 CREATE MATERIALIZED VIEW user_reported_reasons_count
 AUTO REFRESH YES AS
 SELECT
-  JSON_EXTRACT_PATH_TEXT (event_data, 'report_reason') as reason,
-  COUNT(
-    JSON_EXTRACT_PATH_TEXT (event_data, 'report_reason')
-  ) as reason_count
-FROM
-  "{db_name}"."public"."event_data"
-WHERE
-  event_type = 'user_report'
-GROUP BY
-  JSON_EXTRACT_PATH_TEXT (event_data, 'report_reason');
+  json_extract_path_text(
+    json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_data',true),
+    'report_reason'
+  ) AS reason,
+  count(*) AS reason_count
+FROM kds."{stream_name}"
+WHERE json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_type',true) = 'user_report'
+GROUP BY reason;

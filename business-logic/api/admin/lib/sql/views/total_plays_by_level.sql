@@ -1,11 +1,12 @@
+-- Reads directly from Kinesis so AUTO REFRESH YES is legal.
 CREATE MATERIALIZED VIEW total_plays_by_level
 AUTO REFRESH YES AS
 SELECT
-  JSON_EXTRACT_PATH_TEXT (event_data, 'level_id') as level,
-  count(JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')) as number_of_plays
-FROM
-  "{db_name}"."public"."event_data"
-WHERE
-  event_type = 'level_started'
-GROUP BY
-  JSON_EXTRACT_PATH_TEXT (event_data, 'level_id');
+  json_extract_path_text(
+    json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_data',true),
+    'level_id'
+  ) AS level,
+  count(*) AS number_of_plays
+FROM kds."{stream_name}"
+WHERE json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_type',true) = 'level_started'
+GROUP BY level;

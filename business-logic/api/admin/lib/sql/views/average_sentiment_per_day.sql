@@ -1,17 +1,19 @@
+-- Reads directly from Kinesis so AUTO REFRESH YES is legal.
 CREATE MATERIALIZED VIEW average_sentiment_per_day
 AUTO REFRESH YES AS
 SELECT
+  date(timestamp 'epoch' + json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_timestamp',true)::BIGINT * interval '1 second') AS event_date,
   avg(
-    CAST(
-      JSON_EXTRACT_PATH_TEXT (event_data, 'user_rating') AS real
+    cast(
+      json_extract_path_text(
+        json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_data',true),
+        'user_rating'
+      ) AS REAL
     )
-  ) AS average_user_rating,
-  date (
-    timestamp 'epoch' + event_timestamp * interval '1 second'
-  ) as event_date
-FROM
-  "{db_name}"."public"."event_data"
-WHERE
-  JSON_EXTRACT_PATH_TEXT (event_data, 'user_rating') is not null
-GROUP BY
-  event_date;
+  ) AS average_user_rating
+FROM kds."{stream_name}"
+WHERE json_extract_path_text(
+        json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_data',true),
+        'user_rating'
+      ) IS NOT NULL
+GROUP BY event_date;
