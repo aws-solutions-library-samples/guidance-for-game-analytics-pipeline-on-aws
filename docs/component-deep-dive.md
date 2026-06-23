@@ -3,7 +3,9 @@
 ![Architecture-Simplified](media/architecture-simplified.png)
 
 ---
+
 ## Overview
+
 The Game Analytics Pipeline Guidance has the following modes:
 
 1. `DATA_LAKE` - Deploys a lightweight data lake cost-optimized for lower data scan volume and ad-hoc queries
@@ -27,7 +29,9 @@ Optionally, there is a real-time analytics mode for time-sensitive analytics:
 For help deciding between the modes and options, or even for explanations and justifications for why we chose the services and processes below, refer to the [Design Considerations Page](./design-considerations.md)
 
 ---
+
 ## 1. Source
+
 The Game Analytics Pipeline Guidance can accept from any HTTP/HTTPS REST supported sources, such as Game Clients, Game Servers, or Backend services. Refer to the [API Reference Page](./references/api-reference.md) and [Getting Started Guide](./getting-started.md) on how to send events to the endpoint.
 
 ![Architecture-Verbose-Source](media/architecture-verbose-source.png)
@@ -35,21 +39,22 @@ The Game Analytics Pipeline Guidance can accept from any HTTP/HTTPS REST support
 ---
 
 ## 2. Endpoint
+
 1. API Gateway hosts a managed REST API endpoint configured to either:
 
-    - Send to the analytics ingest infrastructure based on the above configurations in the [overview section](./component-deep-dive.md#overview)
-    - Perform [administrative tasks](./component-deep-dive.md#administration)
+   - Send to the analytics ingest infrastructure based on the above configurations in the [overview section](./component-deep-dive.md#overview)
+   - Perform [administrative tasks](./component-deep-dive.md#administration)
 
 2. Two helper DynamoDB tables hold the following:
-    - `Applications Table`: Holds Application IDs which represent a specific game/application to perform per-application analytics on. Applications can be created or deleted through [Administrative API calls](./component-deep-dive.md#administration)
-    - `Authorizations Table`: Holds API authorization tokens for each Application used to authorize sending events to the Application (like a password). When sending events, the API Key's value/code is included in the `Authorization` header for security. Authorizations can be created or deleted through [Administrative API calls](./component-deep-dive.md#administration)
+   - `Applications Table`: Holds Application IDs which represent a specific game/application to perform per-application analytics on. Applications can be created or deleted through [Administrative API calls](./component-deep-dive.md#administration)
+   - `Authorizations Table`: Holds API authorization tokens for each Application used to authorize sending events to the Application (like a password). When sending events, the API Key's value/code is included in the `Authorization` header for security. Authorizations can be created or deleted through [Administrative API calls](./component-deep-dive.md#administration)
 
 3. Events sent through REST API will first go through the integrated Lambda Authorizer, which dissects the API call's headers, checks the DynamoDB authorizer table entries against the one sent from the event, and [checks if the caller's IAM passed through SigV4 allows for sending events](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-access-control-iam.html). If everything passes, API Gateway proceeds with executing the API call.
 
 4. [Based on the guidance configurations](./component-deep-dive.md#overview), API Gateway performs the following:
 
-    - `KINESIS_DATA_STREAMS` - [Sends a passthrough call directly to Amazon Kinesis Data Streams](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services.html) via stream in real-time
-    - `DIRECT_BATCH` - [Sends a passthrough call directly to the Amazon services](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services.html) via batch in near-real-time to Firehose for `DATA_LAKE` mode
+   - `KINESIS_DATA_STREAMS` - [Sends a passthrough call directly to Amazon Kinesis Data Streams](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services.html) via stream in real-time
+   - `DIRECT_BATCH` - [Sends a passthrough call directly to the Amazon services](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services.html) via batch in near-real-time to Firehose for `DATA_LAKE` mode
 
 ![Architecture-Verbose-Endpoint](media/architecture-verbose-endpoint.png)
 
@@ -76,7 +81,7 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
     ![Architecture-Verbose-DataLake-Mode](media/architecture-verbose-datalake-mode.png)
 
     1. Amazon Data Firehose performs the following actions on the incoming events:
-    
+
         - Provides an ingest buffer on incoming data, holding events until it reaches a certain size or after certain time passes
         - Triggers a Lambda Function through its [integrated Lambda transformation feature](https://docs.aws.amazon.com/firehose/latest/dev/data-transformation.html) which performs the following:
             - Validates the event's json format against the AJV2020 standard, a valid Application ID, and the guidance's game event schema set in `business-logic/events-processing/config`
@@ -108,7 +113,7 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
 
     <br>
     5. Athena is a serverless analytics query service that can perform ad-hoc queries and connect to analytics dashboards to use the queries to power visualizations. The guidance provides sample queries for common game use cases (see [Customizations](./customizations.md) for more details) along with sample operational CTAS (Create-Table-as-Select) queries that can also perform certain ad-hoc ETL.
-    
+
     <br>
     6. **Amazon QuickSight** provides an analytics dashboard that connects directly to Athena through the deployed QuickSight DataSource. When `ENABLE_QUICKSIGHT_DASHBOARD` is set to `true` in `config.yaml`, the guidance deploys the following QuickSight resource chain:
 
@@ -117,7 +122,7 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
         - **Template** — defines the dashboard layout with three KPI sheets: Acquisition, Engagement/Retention, and Monetization
         - **Dashboard** — instantiated from the Template, accessible to the user specified in `QUICKSIGHT_USERNAME`
 
-        The dashboard URL is emitted as a CloudFormation output after deployment. SQL views are created when the customer calls `POST /setup/redshift` (or the equivalent Data Lake setup); until then, visuals display empty data without causing deployment failures.
+        The dashboard URL is emitted as a CloudFormation output after deployment. SQL views are created when the customer calls `POST /redshift/setup` (or the equivalent Data Lake setup); until then, visuals display empty data without causing deployment failures.
 
         A `QUICKSIGHT_USERNAME` must be set in `config.yaml` to grant dashboard access. The target AWS account must have an active QuickSight Enterprise subscription. Refer to [Customizations](./customizations.md) for guidance on adding new DataSets or modifying visuals.
 
@@ -125,7 +130,7 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
 
     ![Architecture-Verbose-Redshift-Mode](media/architecture-verbose-redshift-mode.png)
 
-    1. An Amazon Redshift Serverless cluster is deployed. Redshift is initially not integrated with the Kinesis Data Stream until the `setup/redshift` API call - see [API Reference for POST - Setup Redshift](./references/api-reference.md#post-set-up-redshift), in which a [materialized view](https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-streaming-ingestion.html) will be created, as well as a set of other views representing pre-made queries to get you started.
+    1. An Amazon Redshift Serverless cluster is deployed. Redshift is initially not integrated with the Kinesis Data Stream until the `/redshift/setup` API call - see [API Reference for POST - Setup Redshift](./references/api-reference.md#post-set-up-redshift), in which a [materialized view](https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-streaming-ingestion.html) will be created, as well as a set of other views representing pre-made queries to get you started.
 
     2. You can query data immediately using [Amazon Redshift Query Editor](https://aws.amazon.com/redshift/query-editor-v2/) in the AWS Console, or connect up other visualization tools compatible with Amazon Redshift.
 
@@ -137,12 +142,12 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
         - **Template** — defines the dashboard layout with three KPI sheets: Acquisition, Engagement/Retention, and Monetization
         - **Dashboard** — instantiated from the Template, accessible to the user specified in `QUICKSIGHT_USERNAME`
 
-        The dashboard URL is emitted as a CloudFormation output after deployment. SQL views are created when the customer calls `POST /setup/redshift`; until then, visuals display empty data without causing deployment failures.
+        The dashboard URL is emitted as a CloudFormation output after deployment. SQL views are created when the customer calls `POST /redshift/setup`; until then, visuals display empty data without causing deployment failures.
 
         A `QUICKSIGHT_USERNAME` must be set in `config.yaml` to grant dashboard access. The target AWS account must have an active QuickSight Enterprise subscription. Refer to [Customizations](./customizations.md) for guidance on adding new DataSets or modifying visuals.
 
 !!! Note
-    By default, the cluster is configured with 4 RPU Compute Capacity, and is accessible on port 5439. Both can be configured in the redshift-construct source for your chosen Infrastructure as Code language in the respective Redshift Construct files.
+By default, the cluster is configured with 4 RPU Compute Capacity, and is accessible on port 5439. Both can be configured in the redshift-construct source for your chosen Infrastructure as Code language in the respective Redshift Construct files.
 
 ## Administration
 
