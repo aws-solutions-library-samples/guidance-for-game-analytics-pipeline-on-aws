@@ -14,7 +14,7 @@
     "express": "*",
     "moment": "*",
     "underscore": "*",
-    "uuid": "*",
+    "uuid": "^9.0.1",
     "@aws-sdk/client-redshift-data": "^3.758.0",
     "@aws-sdk/client-iam": "^3.731.0",
     "@aws-sdk/client-quicksight": "^3.731.0"
