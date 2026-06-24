@@ -23,10 +23,19 @@ const create_materialized_view_statement = `CREATE MATERIALIZED VIEW ${MATERIALI
       partition_key,
       shard_id,
       sequence_number,
-      json_parse(kinesis_data) as event_data,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','metadata',true)::TEXT as metadata
-  FROM kds."${STREAM_NAME}"
-  WHERE CAN_JSON_PARSE(kinesis_data);`;
+      event_data,
+      event_data.event.metadata::VARCHAR as metadata
+  FROM (
+      SELECT
+        refresh_time,
+        approximate_arrival_timestamp,
+        partition_key,
+        shard_id,
+        sequence_number,
+        json_parse(kinesis_data) as event_data
+      FROM kds."${STREAM_NAME}"
+      WHERE CAN_JSON_PARSE(kinesis_data)
+  ) events;`;
 
 // When executing create_materialized_view_statement, do not consider the following an error
 // All other statements support CREATE OR REPLACE, or IF NOT EXISTS
