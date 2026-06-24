@@ -120,11 +120,11 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
         - **DataSource** (Athena type) — connects to the existing Athena workgroup; no VPC connection is needed for Data Lake mode
         - **DataSets** (×11) — one per SQL view, using `DIRECT_QUERY` import mode so queries hit Athena live without SPICE caching
         - **Template** — defines the dashboard layout with three KPI sheets: Acquisition, Engagement/Retention, and Monetization
-        - **Dashboard** — instantiated from the Template, accessible to the user specified in `QUICKSIGHT_USERNAME`
+        - **Dashboard** — instantiated from the Template, accessible to the primary user specified in `QUICKSIGHT_USERNAME` and any additional users specified in `QUICKSIGHT_ALLOWED_USERS`
 
         The dashboard URL is emitted as a CloudFormation output after deployment. SQL views are created when the customer calls `POST /redshift/setup` (or the equivalent Data Lake setup); until then, visuals display empty data without causing deployment failures.
 
-        A `QUICKSIGHT_USERNAME` must be set in `config.yaml` to grant dashboard access. The target AWS account must have an active QuickSight Enterprise subscription. Refer to [Customizations](./customizations.md) for guidance on adding new DataSets or modifying visuals.
+        A `QUICKSIGHT_USERNAME` must be set in `config.yaml` to grant dashboard access. Additional dashboard users can be added with `QUICKSIGHT_ALLOWED_USERS`. The target AWS account must have an active QuickSight Enterprise subscription. Refer to [Customizations](./customizations.md) for guidance on adding new DataSets or modifying visuals.
 
 === "Redshift Mode"
 
@@ -140,11 +140,11 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
         - **DataSource** (Redshift type) — connects using Secrets Manager credentials (the Redshift namespace admin password secret)
         - **DataSets** (×11) — one per SQL view, using `DIRECT_QUERY` import mode so queries hit Redshift live without SPICE caching
         - **Template** — defines the dashboard layout with three KPI sheets: Acquisition, Engagement/Retention, and Monetization
-        - **Dashboard** — instantiated from the Template, accessible to the user specified in `QUICKSIGHT_USERNAME`
+        - **Dashboard** — instantiated from the Template, accessible to the primary user specified in `QUICKSIGHT_USERNAME` and any additional users specified in `QUICKSIGHT_ALLOWED_USERS`
 
         The dashboard URL is emitted as a CloudFormation output after deployment. SQL views are created when the customer calls `POST /redshift/setup`; until then, visuals display empty data without causing deployment failures.
 
-        A `QUICKSIGHT_USERNAME` must be set in `config.yaml` to grant dashboard access. The target AWS account must have an active QuickSight Enterprise subscription. Refer to [Customizations](./customizations.md) for guidance on adding new DataSets or modifying visuals.
+        A `QUICKSIGHT_USERNAME` must be set in `config.yaml` to grant dashboard access. Additional dashboard users can be added with `QUICKSIGHT_ALLOWED_USERS`. The target AWS account must have an active QuickSight Enterprise subscription. Refer to [Customizations](./customizations.md) for guidance on adding new DataSets or modifying visuals.
 
 !!! Note
 By default, the cluster is configured with 4 RPU Compute Capacity, and is accessible on port 5439. Both can be configured in the redshift-construct source for your chosen Infrastructure as Code language in the respective Redshift Construct files.

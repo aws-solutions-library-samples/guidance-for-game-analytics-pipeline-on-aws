@@ -93,7 +93,7 @@ The initial dashboard template defines three empty KPI sheets (Acquisition, Enga
 
 #### Changing Dashboard Permissions
 
-By default, the dashboard grants access to the single user or group specified in `QUICKSIGHT_USERNAME` in `config.yaml`. To grant access to additional users:
+By default, the dashboard grants access to the primary user specified in `QUICKSIGHT_USERNAME` and any additional users specified in `QUICKSIGHT_ALLOWED_USERS` in `config.yaml`. To grant access to additional users outside of configuration:
 
 - Use the QuickSight console to share the dashboard with other users or groups
 - Or modify the `permissions` array on the `CfnDashboard` resource in `quicksight-construct.ts` to include additional QuickSight user/group ARNs
