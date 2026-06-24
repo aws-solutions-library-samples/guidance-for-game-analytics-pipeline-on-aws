@@ -6,33 +6,32 @@ The following settings can be adjusted in `./infrastructure/config.yaml` for you
 
 `WORKLOAD_NAME`
 
-- *Description:* The name of the workload that will deployed. This name will be used as a prefix for for any component deployed into your AWS Account.
+- _Description:_ The name of the workload that will deployed. This name will be used as a prefix for for any component deployed into your AWS Account.
 
-- *Type:* String 
+- _Type:_ String
 
-- *Example:* `"GameAnalyticsPipeline"`
-
+- _Example:_ `"GameAnalyticsPipeline"`
 
 ## Data Platform Options
 
 The following table shows unsupported configurations when options in this section are enabled
 
-| Control | Setting | Exception |
-| - | - | - |
-| `INGEST_MODE` | `DIRECT_BATCH` | <ul><li>`DATA_STACK` cannot be set to `REDSHIFT`</li><li>`REAL_TIME_ANALYTICS` cannot be set to `true`</li><li>Settings for `STREAM_PROVISIONED` and `STREAM_SHARD_COUNT` are ignored since no stream is deployed</li></ul> |
-| `DATA_STACK` | `REDSHIFT` | <ul><li>`ENABLE_APACHE_ICEBERG_SUPPORT` cannot be set to `true`</li></ul> |
-| `REAL_TIME_ANALYTICS` | `true` | <ul><li>`INGEST_MODE` must be set to `KINESIS_DATA_STREAMS`</li></ul> |
+| Control               | Setting        | Exception                                                                                                                                                                                                                   |
+| --------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `INGEST_MODE`         | `DIRECT_BATCH` | <ul><li>`DATA_STACK` cannot be set to `REDSHIFT`</li><li>`REAL_TIME_ANALYTICS` cannot be set to `true`</li><li>Settings for `STREAM_PROVISIONED` and `STREAM_SHARD_COUNT` are ignored since no stream is deployed</li></ul> |
+| `DATA_STACK`          | `REDSHIFT`     | <ul><li>`ENABLE_APACHE_ICEBERG_SUPPORT` cannot be set to `true`</li></ul>                                                                                                                                                   |
+| `REAL_TIME_ANALYTICS` | `true`         | <ul><li>`INGEST_MODE` must be set to `KINESIS_DATA_STREAMS`</li></ul>                                                                                                                                                       |
 
 `INGEST_MODE`
 
-- *Description:* Controls the ingestion method for events recieved from the API. When set to `"KINESIS_DATA_STREAMS"` events are ingested into a real-time Kinesis Data Stream for live analytics. When set to `"DIRECT_BATCH"` events are ingested into an Amazon Data Firehose for near-real-time batch ingestion to a data lake.
+- _Description:_ Controls the ingestion method for events recieved from the API. When set to `"KINESIS_DATA_STREAMS"` events are ingested into a real-time Kinesis Data Stream for live analytics. When set to `"DIRECT_BATCH"` events are ingested into an Amazon Data Firehose for near-real-time batch ingestion to a data lake.
 
-- *Type:* String
+- _Type:_ String
 
-- *Example:* `"KINESIS_DATA_STREAMS"`, `"DIRECT_BATCH"`
+- _Example:_ `"KINESIS_DATA_STREAMS"`, `"DIRECT_BATCH"`
 
 !!! Info
-    When `"DIRECT_BATCH"` is configured as the data source, the Firehose stream can support up to the following throughput:
+When `"DIRECT_BATCH"` is configured as the data source, the Firehose stream can support up to the following throughput:
 
     - For US East (N. Virginia), US West (Oregon), and Europe (Ireland): 500,000 records/second, 2,000 requests/second, and 5 MiB/second.
 
@@ -42,40 +41,38 @@ The following table shows unsupported configurations when options in this sectio
 
 `REAL_TIME_ANALYTICS`
 
-- *Description:* Whether or not to enable the [Real-Time](../component-deep-dive.md#3-real-time-optional) component/module of the guidance. It is recommended to set this value to `true` when first deploying this sample code for testing, as this setting will allow you to verify if streaming analytics is required for your use case. This setting can be changed at a later time, and the guidance re-deployed through CI/CD.
+- _Description:_ Whether or not to enable the [Real-Time](../component-deep-dive.md#3-real-time-optional) component/module of the guidance. It is recommended to set this value to `true` when first deploying this sample code for testing, as this setting will allow you to verify if streaming analytics is required for your use case. This setting can be changed at a later time, and the guidance re-deployed through CI/CD.
 
-- *Type:* Boolean
+- _Type:_ Boolean
 
-- *Example:* `true`
-
+- _Example:_ `true`
 
 `DATA_STACK`
 
-- *Description:* Controls the data stack that event data is saved to for analysis. When set to `"DATA_LAKE"`, raw events are saved to a data lake in S3 and cataloged using Glue Data Catalog. When set to `"REDSHIFT"` events are using the [streaming ingestion feature of Redshift](https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-streaming-ingestion.html).
+- _Description:_ Controls the data stack that event data is saved to for analysis. When set to `"DATA_LAKE"`, raw events are saved to a data lake in S3 and cataloged using Glue Data Catalog. When set to `"REDSHIFT"` events are using the [streaming ingestion feature of Redshift](https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-streaming-ingestion.html).
 
+- _Type:_ String
 
-- *Type:* String
-
-- *Example:* `"DATA_LAKE"`, `"REDSHIFT"`
+- _Example:_ `"DATA_LAKE"`, `"REDSHIFT"`
 
 - **Do not change this configuration after the stack is deployed**
 
 `ENABLE_APACHE_ICEBERG_SUPPORT`
 
-- *Description:* Whether or not to enable Apache Iceberg support in place of Apache Hive tables. When set to `true`, the raw events table will be configured as an Apache Iceberg table and the Firehose will be reconfigured to send data as Iceberg transactions. 
+- _Description:_ Whether or not to enable Apache Iceberg support in place of Apache Hive tables. When set to `true`, the raw events table will be configured as an Apache Iceberg table and the Firehose will be reconfigured to send data as Iceberg transactions.
 
 !!! Info
-    For a general overview on Hive vs Iceberg:
+For a general overview on Hive vs Iceberg:
 
-    - **Apache Iceberg** is a metadata layer over the data lake. It brings benefits such as atomic transactions, advanced partitioning, improved query performance, lower management overhead, and potentially lower event ingestion cost. However, the metadata and transaction mechanism may introduce throttling for high event throughput. 
+    - **Apache Iceberg** is a metadata layer over the data lake. It brings benefits such as atomic transactions, advanced partitioning, improved query performance, lower management overhead, and potentially lower event ingestion cost. However, the metadata and transaction mechanism may introduce throttling for high event throughput.
 
     - **Apache Hive** is a data lake format where events are stored as parquet objects in S3 and partitioned by prefixes. The Hive format can have faster data ingestion due to the lack of metadata and transaction mechanism, but can lead to unclean reads. Hive data lakes are potentially more expensive during ingestion due to Amazon Data Firehose [rounding event sizes up to the nearest 5KB increment](https://aws.amazon.com/firehose/pricing/).
 
     **We generally recommend Iceberg tables for most workloads at this time, along with using Iceberg with Amazon Data Firehose. More details can be found in the AWS documentation for [Considerations and limitations](https://docs.aws.amazon.com/firehose/latest/dev/apache-iceberg-considerations.html) with Amazon Data Firehose.**
 
-- *Type:* Boolean
+- _Type:_ Boolean
 
-- *Example:* `true`
+- _Example:_ `true`
 
 - **Do not change this configuration after the stack is deployed. If you would like to enable Iceberg, we recommend deploying a new stack in parallel and migrating existing data.**
 
@@ -85,151 +82,155 @@ These options are used for when `INGEST_MODE` is set to `KINESIS_DATA_STREAMS`
 
 `STREAM_PROVISIONED`
 
-- *Description:* The Kinesis stream capacity mode. When set to `true`, the stream will be created with the number of shards specified in `STREAM_SHARD_COUNT`. When set to `false`, the number of shards will be scaled automatically to handle throughput and the `STREAM_SHARD_COUNT` setting will be ignored. This value can be changed at a later time and re-deployed through CI/CD. For information about determining the capacity mode required for your use case, refer to [Choose the data stream capacity mode](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html) in the *Amazon Kinesis Data Streams Developer Guide*.
-
+- _Description:_ The Kinesis stream capacity mode. When set to `true`, the stream will be created with the number of shards specified in `STREAM_SHARD_COUNT`. When set to `false`, the number of shards will be scaled automatically to handle throughput and the `STREAM_SHARD_COUNT` setting will be ignored. This value can be changed at a later time and re-deployed through CI/CD. For information about determining the capacity mode required for your use case, refer to [Choose the data stream capacity mode](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html) in the _Amazon Kinesis Data Streams Developer Guide_.
 
 !!! Info
-    If you expect that **the total On-demand Kinesis Data Stream throughput will be at least 25 MiBps across all on-demand streams within the account and region** where you are deploying the Game Analytics Pipeline, please consider enabling **Kinesis On-Demand Advantage mode** when using On-demand Kinesis streams. On-Demand Advantage mode can provide at least **60% savings** on On-demand streams when compared to On-demand standard by committing to a minimum spend amount per day. 
-    
+If you expect that **the total On-demand Kinesis Data Stream throughput will be at least 25 MiBps across all on-demand streams within the account and region** where you are deploying the Game Analytics Pipeline, please consider enabling **Kinesis On-Demand Advantage mode** when using On-demand Kinesis streams. On-Demand Advantage mode can provide at least **60% savings** on On-demand streams when compared to On-demand standard by committing to a minimum spend amount per day.
+
     Please refer to the blog [Kinesis On-demand Advantage saves 60%+ on streaming costs](https://aws.amazon.com/blogs/big-data/kinesis-on-demand-advantage-saves-60-on-streaming-costs/) for more information.
 
 `STREAM_SHARD_COUNT`
 
-- *Description:* The number of Kinesis shards, or sequence of data records, to use for the data stream. The default value has been set to `1` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. For information about determining the shards required for your use case, refer to [Amazon Kinesis Data Streams Terminology and Concepts](https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html) in the *Amazon Kinesis Data Streams Developer Guide*.
+- _Description:_ The number of Kinesis shards, or sequence of data records, to use for the data stream. The default value has been set to `1` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. For information about determining the shards required for your use case, refer to [Amazon Kinesis Data Streams Terminology and Concepts](https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html) in the _Amazon Kinesis Data Streams Developer Guide_.
 
-- *Type:* Integer
+- _Type:_ Integer
 
-- *Example:* `1`
+- _Example:_ `1`
 
+- _Type:_ Boolean
 
-- *Type:* Boolean
-
-- *Example:* `true`
+- _Example:_ `true`
 
 ## Data Storage Controls
 
 `EVENTS_DATABASE`
 
-- *Description:* Specifies the name of the [AWS Glue database](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) that contains the glue tables when `DATA_STACK` is set to `"DATA_LAKE"`. Specifies the name of the [Redshift Serverless database](https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-serverless.html) when `DATA_STACK` is set to `"REDSHIFT"`.
+- _Description:_ Specifies the name of the [AWS Glue database](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) that contains the glue tables when `DATA_STACK` is set to `"DATA_LAKE"`. Specifies the name of the [Redshift Serverless database](https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-serverless.html) when `DATA_STACK` is set to `"REDSHIFT"`.
 
-- *Type:* String (1-255 characters)
+- _Type:_ String (1-255 characters)
 
-- *Example:* `"game_analytics"`
+- _Example:_ `"game_analytics"`
 
-- *Limitations:* For compatibility with tools, the name should consist of lowercase letters, numbers, and underscores and start with a letter.
+- _Limitations:_ For compatibility with tools, the name should consist of lowercase letters, numbers, and underscores and start with a letter.
 
 - **Do not change this configuration after the stack is deployed**
 
 `RAW_EVENTS_TABLE`
 
-- *Description:* The name of the of the [AWS Glue table](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) within which all new/raw data is cataloged.
+- _Description:_ The name of the of the [AWS Glue table](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) within which all new/raw data is cataloged.
 
-- *Type:* String (1-255 characters)
+- _Type:_ String (1-255 characters)
 
-- *Example:* `"raw_events"`
+- _Example:_ `"raw_events"`
 
-- *Limitations:* For compatibility with tools, the name should consist of lowercase letters, numbers, and underscores and start with a letter.
+- _Limitations:_ For compatibility with tools, the name should consist of lowercase letters, numbers, and underscores and start with a letter.
 
 - **Do not change this configuration after the stack is deployed**
 
 `RAW_EVENTS_PREFIX`
 
-- *Description:* The prefix for new/raw data files stored in S3.
+- _Description:_ The prefix for new/raw data files stored in S3.
 
-- *Type:* String
+- _Type:_ String
 
-- *Example:* `"raw_events"`
+- _Example:_ `"raw_events"`
 
 - **Do not change this configuration after the stack is deployed**
 
-
 `PROCESSED_EVENTS_PREFIX`
 
-- *Description:* The prefix processed data files stored in S3.
+- _Description:_ The prefix processed data files stored in S3.
 
-- *Type:* String
+- _Type:_ String
 
-- *Example:* `"processed_events"`
+- _Example:_ `"processed_events"`
 
 - **Do not change this configuration after the stack is deployed**
 
 `GLUE_TMP_PREFIX`
 
-- *Description:* The name of the temporary data store for AWS Glue.
+- _Description:_ The name of the temporary data store for AWS Glue.
 
-- *Type:* String
+- _Type:_ String
 
-- *Example:* `"glueetl-tmp"`
+- _Example:_ `"glueetl-tmp"`
 
 ## Development Options
 
 `API_STAGE_NAME`
 
-- *Description:* The name of the REST API [stage](https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-stages.html) for the [Amazon API Gateway](https://aws.amazon.com/api-gateway/) configuration endpoint for sending telemetry data to the pipeline. This provides an integration option for applications that cannot integrate with Amazon Kinesis directly. The API also provides configuration endpoints for admins to use for registering their game applications with the guidance, and generating API keys for developers to use when sending events to the REST API. The default value is set to `live`.
+- _Description:_ The name of the REST API [stage](https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-stages.html) for the [Amazon API Gateway](https://aws.amazon.com/api-gateway/) configuration endpoint for sending telemetry data to the pipeline. This provides an integration option for applications that cannot integrate with Amazon Kinesis directly. The API also provides configuration endpoints for admins to use for registering their game applications with the guidance, and generating API keys for developers to use when sending events to the REST API. The default value is set to `live`.
 
-- *Type:* String
+- _Type:_ String
 
-- *Example:* `"live"`
+- _Example:_ `"live"`
 
 `DEV_MODE`
 
-- *Description:* Whether or not to enable developer mode. This mode will ensure synthetic data, and shorter retention times are enabled. It is recommended that you set the value to `true` when first deploying the sample code for testing, as this setting will enable S3 versioning, and won't delete S3 buckets on teardown. This setting can be changed at a later time, and the infrastructure re-deployed through CI/CD.
+- _Description:_ Whether or not to enable developer mode. This mode will ensure synthetic data, and shorter retention times are enabled. It is recommended that you set the value to `true` when first deploying the sample code for testing, as this setting will enable S3 versioning, and won't delete S3 buckets on teardown. This setting can be changed at a later time, and the infrastructure re-deployed through CI/CD.
 
-- *Type:* Boolean
+- _Type:_ Boolean
 
-- *Example:* `true`
+- _Example:_ `true`
 
 `S3_BACKUP_MODE`
 
-- *Description:* Whether or not to enable [Kinesis Data Firehose](https://aws.amazon.com/kinesis/data-firehose/) to send a backup of new/raw data to S3. The default value has been set to `false` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. 
+- _Description:_ Whether or not to enable [Kinesis Data Firehose](https://aws.amazon.com/kinesis/data-firehose/) to send a backup of new/raw data to S3. The default value has been set to `false` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD.
 
-- *Type:* Boolean
+- _Type:_ Boolean
 
-- *Example:* `false`
+- _Example:_ `false`
 
 ## Monitoring Options
 
 `EMAIL_ADDRESS`
 
-- *Description:* The email address to receive operational notifications, and delivered by CloudWatch.
+- _Description:_ The email address to receive operational notifications, and delivered by CloudWatch.
 
-- *Type:* String
+- _Type:_ String
 
-- *Example:* `"user@example.com"`
+- _Example:_ `"user@example.com"`
 
 `CLOUDWATCH_RETENTION_DAYS`
 
-- *Description:* The default number of days in which [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) stores all the logs. The default value has been set to `30` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD. 
+- _Description:_ The default number of days in which [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) stores all the logs. The default value has been set to `30` for initial deployment, and testing purposes. This value can be changed at a later time, and the guidance re-deployed through CI/CD.
 
-- *Type:* Integer
+- _Type:_ Integer
 
-- *Example:* `30`
+- _Example:_ `30`
 
 ## Version Options
 
 `NODE_VERSION`
 
-- *Description:* The version of NodeJS being used. The default value is set to `"latest"`, and should only be changed this if you require a specific version.
+- _Description:_ The version of NodeJS being used. The default value is set to `"latest"`, and should only be changed this if you require a specific version.
 
-- *Type:* String
+- _Type:_ String
 
-- *Example:* `"latest"`
+- _Example:_ `"latest"`
 
 ## QuickSight Dashboard Options
 
 `ENABLE_QUICKSIGHT_DASHBOARD`
 
-- *Description:* Whether or not to provision the optional Amazon QuickSight Analytics Dashboard. When set to `true`, the stack creates a VPC connection (REDSHIFT mode), a QuickSight DataSource, six DataSets, and a five-sheet Dashboard (Pulse, Combat, Progression, Monetization, Sentiment) for the configured `QUICKSIGHT_USERNAME`. Requires an active QuickSight Enterprise subscription in the target AWS account. The deployed Lambda teardown handler removes QuickSight resources automatically when `npm run destroy` is invoked.
+- _Description:_ Whether or not to provision the optional Amazon QuickSight Analytics Dashboard. When set to `true`, the stack creates a VPC connection (REDSHIFT mode), a QuickSight DataSource, six DataSets, and a five-sheet Dashboard (Pulse, Combat, Progression, Monetization, Sentiment) for the configured `QUICKSIGHT_USERNAME`. Requires an active QuickSight Enterprise subscription in the target AWS account. The deployed Lambda teardown handler removes QuickSight resources automatically when `npm run destroy` is invoked.
 
-- *Type:* Boolean
+- _Type:_ Boolean
 
-- *Example:* `true`
-
+- _Example:_ `true`
 
 `QUICKSIGHT_USERNAME`
 
-- *Description:* The QuickSight user identity that will be granted Owner permissions on the dashboard, datasets, and data source. Must reference an existing QuickSight user in the `default` namespace of the target account. For IAM Identity Center–federated users this is typically `<role>/<username>` (e.g. `Admin/jane-doe`); for classic IAM-mapped users it is the IAM user name. Required when `ENABLE_QUICKSIGHT_DASHBOARD` is `true`.
+- _Description:_ The primary QuickSight user identity that will be granted Owner permissions on the dashboard, datasets, and data source. Must reference an existing QuickSight user in the `default` namespace of the target account. For IAM Identity Center–federated users this is typically `<role>/<username>` (e.g. `Admin/jane-doe`); for classic IAM-mapped users it is the IAM user name. Required when `ENABLE_QUICKSIGHT_DASHBOARD` is `true`.
 
-- *Type:* String
+- _Type:_ String
 
-- *Example:* `"Admin/jane-doe"`
+- _Example:_ `"Admin/jane-doe"`
+
+`QUICKSIGHT_ALLOWED_USERS`
+
+- _Description:_ Additional QuickSight users that will be granted the same permissions as `QUICKSIGHT_USERNAME` on the dashboard, datasets, and data source. Each entry must reference an existing QuickSight user in the `default` namespace of the target account.
+
+- _Type:_ List of strings
+
+- _Example:_ `["Admin/jane-doe", "Admin/sksonti-Isengard"]`
