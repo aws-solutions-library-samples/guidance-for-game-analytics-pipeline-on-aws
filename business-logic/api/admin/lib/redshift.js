@@ -17,23 +17,10 @@ const MATERIALIZED_VIEW_NAME = 'event_data';
 
 const create_schema_statement = `CREATE EXTERNAL SCHEMA IF NOT EXISTS kds FROM KINESIS IAM_ROLE '${REDSHIFT_ROLE_ARN}';`;
 const { redactSqlStatement } = require('./log-sanitizer');
-const create_materialized_view_statement = `CREATE MATERIALIZED VIEW ${MATERIALIZED_VIEW_NAME} AUTO REFRESH YES AS SELECT 
-      refresh_time,
-      approximate_arrival_timestamp,
-      partition_key,
-      shard_id,
-      sequence_number,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_id',true)::TEXT as event_id,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_type',true)::TEXT as event_type,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_name',true)::TEXT as event_name,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_version',true)::TEXT as event_version,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_timestamp',true)::BIGINT as event_timestamp,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','app_version',true)::TEXT as app_version,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'application_id',true)::TEXT as application_id,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','application_name',true)::TEXT as application_name,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_data',true)::TEXT as event_data,
-      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','metadata',true)::TEXT as metadata 
-  FROM kds."${STREAM_NAME}";`;
+const create_materialized_view_statement = `CREATE MATERIALIZED VIEW ${MATERIALIZED_VIEW_NAME} AUTO REFRESH YES AS SELECT
+      json_parse(kinesis_data) as event_data
+  FROM kds."${STREAM_NAME}"
+  WHERE CAN_JSON_PARSE(kinesis_data);`;
 
 // When executing create_materialized_view_statement, do not consider the following an error
 // All other statements support CREATE OR REPLACE, or IF NOT EXISTS
