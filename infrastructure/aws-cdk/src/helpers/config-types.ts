@@ -3,8 +3,8 @@ export interface GameAnalyticsPipelineConfig {
   WORKLOAD_NAME: string;
   DEV_MODE: boolean;
 
-  INGEST_MODE: "DIRECT_BATCH" | "KINESIS_DATA_STREAMS";
-  DATA_STACK: "DATA_LAKE" | "REDSHIFT";
+  INGEST_MODE: 'DIRECT_BATCH' | 'KINESIS_DATA_STREAMS';
+  DATA_STACK: 'DATA_LAKE' | 'REDSHIFT';
   REAL_TIME_ANALYTICS: boolean;
   ENABLE_APACHE_ICEBERG_SUPPORT: boolean;
 
@@ -24,4 +24,5 @@ export interface GameAnalyticsPipelineConfig {
 
   ENABLE_QUICKSIGHT_DASHBOARD: boolean;
   QUICKSIGHT_USERNAME: string;
+  QUICKSIGHT_ALLOWED_USERS?: string[];
 }

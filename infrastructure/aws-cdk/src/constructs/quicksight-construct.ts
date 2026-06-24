@@ -27,8 +27,8 @@ function buildEventDataSql(columnExpressions: string[], eventTypes: string[]): s
     'SELECT',
     ...columnExpressions,
     '  1 as event_count',
-    'FROM {db_name}."event_data"',
-    `WHERE event_type IN (${eventTypeList})`,
+    'FROM {db_name}."event_data" events',
+    `WHERE {col:event_type} IN (${eventTypeList})`,
     `  AND {epoch_to_ts:event_timestamp} >= {time_window:${DIRECT_QUERY_WINDOW_DAYS}}`,
   ].join('\n');
 }
@@ -53,7 +53,7 @@ export interface DataSetDefinition {
 
 /**
  * Declarative definitions for 5 rich DataSets that query `event_data` directly
- * using custom SQL with JSON extraction. These preserve multiple dimensions so
+ * using custom SQL with semi-structured field access. These preserve multiple dimensions so
  * QuickSight can aggregate and cross-filter across the dashboard.
  */
 export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
@@ -62,11 +62,11 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
     viewName: 'all_events',
     customSqlQuery: [
       'SELECT',
-      '  event_id,',
-      '  event_type,',
-      '  event_name,',
-      '  app_version,',
-      '  application_id,',
+      '  {col:event_id} as event_id,',
+      '  {col:event_type} as event_type,',
+      '  {col:event_name} as event_name,',
+      '  {col:app_version} as app_version,',
+      '  {col:application_id} as application_id,',
       '  date({epoch_to_ts:event_timestamp}) as event_date,',
       "  date_trunc('hour', {epoch_to_ts:event_timestamp}) as event_hour,",
       "  NULLIF({json:platform}, '') as platform,",
@@ -75,7 +75,7 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       '    ELSE {initcap:country_id}',
       '  END as country,',
       '  1 as event_count',
-      'FROM {db_name}."event_data"',
+      'FROM {db_name}."event_data" events',
     ].join('\n'),
     columns: [
       { name: 'event_id', type: 'STRING' },
@@ -95,8 +95,8 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
     viewName: 'match_events',
     customSqlQuery: buildEventDataSql(
       [
-        '  event_id,',
-        '  event_type,',
+        '  {col:event_id} as event_id,',
+        '  {col:event_type} as event_type,',
         '  date({epoch_to_ts:event_timestamp}) as event_date,',
         '  {json:match_id} as match_id,',
         "  NULLIF({json:map_id}, '') as map_id,",
@@ -136,14 +136,14 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
     viewName: 'level_events',
     customSqlQuery: [
       'SELECT',
-      '  event_id,',
-      '  event_type,',
+      '  {col:event_id} as event_id,',
+      '  {col:event_type} as event_type,',
       '  date({epoch_to_ts:event_timestamp}) as event_date,',
       '  {json:level_id} as level_id,',
       '  CAST({json:level_version} AS INTEGER) as level_version,',
       '  1 as event_count',
-      'FROM {db_name}."event_data"',
-      "WHERE event_type IN ('level_started', 'level_completed', 'level_failed')",
+      'FROM {db_name}."event_data" events',
+      "WHERE {col:event_type} IN ('level_started', 'level_completed', 'level_failed')",
       `  AND {epoch_to_ts:event_timestamp} >= {time_window:${DIRECT_QUERY_WINDOW_DAYS}}`,
     ].join('\n'),
     columns: [
@@ -168,8 +168,8 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
     viewName: 'economy_events',
     customSqlQuery: buildEventDataSql(
       [
-        '  event_id,',
-        '  event_type,',
+        '  {col:event_id} as event_id,',
+        '  {col:event_type} as event_type,',
         '  date({epoch_to_ts:event_timestamp}) as event_date,',
         "  NULLIF({json:item_id}, '') as item_id,",
         "  CAST(NULLIF({json:currency_amount}, '') AS INTEGER) as currency_amount,",
@@ -207,9 +207,9 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
     viewName: 'player_health',
     customSqlQuery: buildEventDataSql(
       [
-        '  event_id,',
-        '  event_type,',
-        '  app_version,',
+        '  {col:event_id} as event_id,',
+        '  {col:event_type} as event_type,',
+        '  {col:app_version} as app_version,',
         '  date({epoch_to_ts:event_timestamp}) as event_date,',
         "  CASE NULLIF({json:country_id}, '')",
         "    WHEN 'UK' THEN 'United Kingdom'",
@@ -258,23 +258,23 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
     viewName: 'match_lifecycle_funnel',
     customSqlQuery: [
       "SELECT '1_matchmaking_start' as stage_label, count(*) as event_count",
-      'FROM {db_name}."event_data"',
-      "WHERE event_type = 'matchmaking_start'",
+      'FROM {db_name}."event_data" events',
+      "WHERE {col:event_type} = 'matchmaking_start'",
       `  AND {epoch_to_ts:event_timestamp} >= {time_window:${DIRECT_QUERY_WINDOW_DAYS}}`,
       'UNION ALL',
       "SELECT '2_matchmaking_complete' as stage_label, count(*) as event_count",
-      'FROM {db_name}."event_data"',
-      "WHERE event_type = 'matchmaking_complete'",
+      'FROM {db_name}."event_data" events',
+      "WHERE {col:event_type} = 'matchmaking_complete'",
       `  AND {epoch_to_ts:event_timestamp} >= {time_window:${DIRECT_QUERY_WINDOW_DAYS}}`,
       'UNION ALL',
       "SELECT '3_match_start' as stage_label, count(*) as event_count",
-      'FROM {db_name}."event_data"',
-      "WHERE event_type = 'match_start'",
+      'FROM {db_name}."event_data" events',
+      "WHERE {col:event_type} = 'match_start'",
       `  AND {epoch_to_ts:event_timestamp} >= {time_window:${DIRECT_QUERY_WINDOW_DAYS}}`,
       'UNION ALL',
       "SELECT '4_match_end' as stage_label, count(*) as event_count",
-      'FROM {db_name}."event_data"',
-      "WHERE event_type = 'match_end'",
+      'FROM {db_name}."event_data" events',
+      "WHERE {col:event_type} = 'match_end'",
       `  AND {epoch_to_ts:event_timestamp} >= {time_window:${DIRECT_QUERY_WINDOW_DAYS}}`,
     ].join('\n'),
     columns: [
@@ -358,7 +358,7 @@ const DASHBOARD_PERMISSIONS: string[] = [
  * @param workloadName - Workload name from config (used in dataSetId)
  * @param isRedshift - Whether the data source is Redshift (true) or Athena (false)
  * @param database - Database name from config (EVENTS_DATABASE)
- * @param quicksightUserArn - ARN of the QuickSight user/group for permissions
+ * @param quicksightPrincipalArns - ARNs of the QuickSight users for permissions
  */
 
 function buildCalculatedColumnTransforms(calculatedColumns: DataSetDefinition['calculatedColumns']): object[] {
@@ -417,25 +417,39 @@ export function createDataSetFromView(
   workloadName: string,
   isRedshift: boolean,
   database: string,
-  quicksightUserArn: string,
+  quicksightPrincipalArns: string | string[],
 ): quicksight.CfnDataSet {
   const schema = isRedshift ? `"${database}"."public"` : `"${database}"`;
+  const principals = Array.isArray(quicksightPrincipalArns) ? quicksightPrincipalArns : [quicksightPrincipalArns];
 
   const resolveSqlTokens = (sql: string): string => {
+    const coreColumns: Record<string, string> = {
+      application_id: 'events.event_data.application_id::VARCHAR',
+      event_id: 'events.event_data.event.event_id::VARCHAR',
+      event_type: 'events.event_data.event.event_type::VARCHAR',
+      event_name: 'events.event_data.event.event_name::VARCHAR',
+      event_timestamp: 'events.event_data.event.event_timestamp::BIGINT',
+      app_version: 'events.event_data.event.app_version::VARCHAR',
+    };
+    const coreColumn = (key: string) => (isRedshift ? coreColumns[key] : key);
+
     return sql
       .replace(/\{db_name\}/g, schema)
+      .replace(/\{col:([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (_, key) => coreColumn(key))
       .replace(/\{time_window:(\d+)\}/g, (_, n) =>
         isRedshift ? `dateadd(day, -${n}, getdate())` : `current_timestamp - interval '${n}' day`,
       )
       .replace(/\{epoch_to_ts:([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (_, col) =>
-        isRedshift ? `timestamp 'epoch' + ${col} * interval '1 second'` : `from_unixtime(${col})`,
+        isRedshift ? `timestamp 'epoch' + ${coreColumn(col)} * interval '1 second'` : `from_unixtime(${col})`,
       )
       .replace(/\{json:([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (_, key) =>
-        isRedshift ? `JSON_EXTRACT_PATH_TEXT(event_data, '${key}')` : `json_extract_scalar(event_data, '$.${key}')`,
+        isRedshift
+          ? `events.event_data.event.event_data.${key}::VARCHAR`
+          : `json_extract_scalar(event_data, '$.${key}')`,
       )
       .replace(/\{initcap:([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (_, key) =>
         isRedshift
-          ? `INITCAP(LOWER(NULLIF(JSON_EXTRACT_PATH_TEXT(event_data, '${key}'), '')))`
+          ? `INITCAP(LOWER(NULLIF(events.event_data.event.event_data.${key}::VARCHAR, '')))`
           : `regexp_replace(LOWER(NULLIF(json_extract_scalar(event_data, '$.${key}'), '')), '(\\w)(\\w*)', x -> upper(x[1]) || x[2])`,
       );
   };
@@ -465,12 +479,7 @@ export function createDataSetFromView(
     },
     ...(logicalTableMap && { logicalTableMap }),
     ...(def.columnGroups?.length && { columnGroups: def.columnGroups }),
-    permissions: [
-      {
-        principal: quicksightUserArn,
-        actions: DATA_SET_PERMISSIONS,
-      },
-    ],
+    permissions: principals.map((principal) => ({ principal, actions: DATA_SET_PERMISSIONS })),
   });
 }
 
@@ -922,7 +931,7 @@ export class QuickSightConstruct extends Construct {
 
     this.validateProps(props, isRedshift);
 
-    const quicksightUserArn = `arn:aws:quicksight:${region}:${accountId}:user/default/${props.config.QUICKSIGHT_USERNAME}`;
+    const quicksightPrincipalArns = this.buildQuickSightPrincipalArns(props.config, region, accountId);
 
     const qsRole = this.createIamRole(props, isRedshift, accountId, region, workloadName, database);
     this.qsRoleName = qsRole.roleName;
@@ -931,10 +940,9 @@ export class QuickSightConstruct extends Construct {
       props,
       isRedshift,
       accountId,
-      region,
       workloadName,
       database,
-      quicksightUserArn,
+      quicksightPrincipalArns,
       qsRole,
     );
     this.dataSource = dataSource;
@@ -948,11 +956,25 @@ export class QuickSightConstruct extends Construct {
         workloadName,
         isRedshift,
         database,
-        quicksightUserArn,
+        quicksightPrincipalArns,
       ),
     );
 
-    this.createDashboard(accountId, region, workloadName, quicksightUserArn, dataSets);
+    this.createDashboard(accountId, region, workloadName, quicksightPrincipalArns, dataSets);
+  }
+
+  private buildQuickSightPrincipalArns(
+    config: GameAnalyticsPipelineConfig,
+    region: string,
+    accountId: string,
+  ): string[] {
+    const usernames = [config.QUICKSIGHT_USERNAME, ...(config.QUICKSIGHT_ALLOWED_USERS ?? [])]
+      .map((username) => username.trim())
+      .filter((username) => username.length > 0);
+
+    return [...new Set(usernames)].map(
+      (username) => `arn:aws:quicksight:${region}:${accountId}:user/default/${username}`,
+    );
   }
 
   private validateProps(props: QuickSightConstructProps, isRedshift: boolean): void {
@@ -1126,10 +1148,9 @@ export class QuickSightConstruct extends Construct {
     props: QuickSightConstructProps,
     isRedshift: boolean,
     accountId: string,
-    region: string,
     workloadName: string,
     database: string,
-    quicksightUserArn: string,
+    quicksightPrincipalArns: string[],
     qsRole: iam.Role,
   ): quicksight.CfnDataSource {
     if (isRedshift) {
@@ -1186,7 +1207,7 @@ export class QuickSightConstruct extends Construct {
           },
         },
         vpcConnectionProperties: { vpcConnectionArn: vpcConnection.attrArn },
-        permissions: [{ principal: quicksightUserArn, actions: DATA_SOURCE_PERMISSIONS }],
+        permissions: quicksightPrincipalArns.map((principal) => ({ principal, actions: DATA_SOURCE_PERMISSIONS })),
       });
       // Bug #9: workgroup hits CREATE_COMPLETE before its endpoint accepts connections;
       // depend on snapshot (which requires an ACTIVE workgroup) so QuickSight validation succeeds.
@@ -1199,7 +1220,7 @@ export class QuickSightConstruct extends Construct {
         name: `${workloadName}-Athena`,
         type: 'ATHENA',
         dataSourceParameters: { athenaParameters: { workGroup: props.dataLakeConstruct!.gameAnalyticsWorkgroup.name } },
-        permissions: [{ principal: quicksightUserArn, actions: DATA_SOURCE_PERMISSIONS }],
+        permissions: quicksightPrincipalArns.map((principal) => ({ principal, actions: DATA_SOURCE_PERMISSIONS })),
       });
       dataSource.node.addDependency(props.dataLakeConstruct!.gameAnalyticsWorkgroup);
       return dataSource;
@@ -1210,7 +1231,7 @@ export class QuickSightConstruct extends Construct {
     accountId: string,
     region: string,
     workloadName: string,
-    quicksightUserArn: string,
+    quicksightPrincipalArns: string[],
     dataSets: quicksight.CfnDataSet[],
   ): void {
     const dataSetIdentifierDeclarations = DATA_SET_DEFINITIONS.map((def) => ({
@@ -1229,7 +1250,7 @@ export class QuickSightConstruct extends Construct {
       awsAccountId: accountId,
       dashboardId: `${workloadName}-game-dashboard`,
       name: `${workloadName}-Game-Analytics`,
-      permissions: [{ principal: quicksightUserArn, actions: DASHBOARD_PERMISSIONS }],
+      permissions: quicksightPrincipalArns.map((principal) => ({ principal, actions: DASHBOARD_PERMISSIONS })),
       definition: {
         dataSetIdentifierDeclarations,
         sheets: [
