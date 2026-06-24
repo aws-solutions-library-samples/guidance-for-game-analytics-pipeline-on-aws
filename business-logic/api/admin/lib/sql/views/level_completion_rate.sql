@@ -5,25 +5,25 @@ CREATE OR REPLACE VIEW
 WITH
   t1 AS (
     SELECT
-      events.event_data.event.event_data.level_id::VARCHAR as level,
-      count(events.event_data.event.event_data.level_id) as level_count
+      events.payload.event.event_data.level_id::VARCHAR as level,
+      count(events.payload.event.event_data.level_id) as level_count
     FROM
       "{db_name}"."public"."event_data" events
     WHERE
-      events.event_data.event.event_type::VARCHAR = 'level_started'
+      events.payload.event.event_type::VARCHAR = 'level_started'
     GROUP BY
-      events.event_data.event.event_data.level_id::VARCHAR
+      events.payload.event.event_data.level_id::VARCHAR
   ),
   t2 AS (
     SELECT
-      events.event_data.event.event_data.level_id::VARCHAR as level,
-      count(events.event_data.event.event_data.level_id) as level_count
+      events.payload.event.event_data.level_id::VARCHAR as level,
+      count(events.payload.event.event_data.level_id) as level_count
     FROM
       "{db_name}"."public"."event_data" events
     WHERE
-      events.event_data.event.event_type::VARCHAR = 'level_completed'
+      events.payload.event.event_type::VARCHAR = 'level_completed'
     GROUP BY
-      events.event_data.event.event_data.level_id::VARCHAR
+      events.payload.event.event_data.level_id::VARCHAR
   )
 SELECT
   t2.level,

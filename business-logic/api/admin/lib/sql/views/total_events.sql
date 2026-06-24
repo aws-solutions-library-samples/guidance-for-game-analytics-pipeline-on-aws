@@ -1,6 +1,6 @@
 CREATE OR REPLACE VIEW total_events AS
 SELECT
-  events.event_data.application_id::VARCHAR AS application_id,
+  events.payload.application_id::VARCHAR AS application_id,
   count(*) AS event_count
 FROM "{db_name}"."public"."event_data" events
 GROUP BY application_id

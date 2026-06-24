@@ -424,12 +424,12 @@ export function createDataSetFromView(
 
   const resolveSqlTokens = (sql: string): string => {
     const coreColumns: Record<string, string> = {
-      application_id: 'events.event_data.application_id::VARCHAR',
-      event_id: 'events.event_data.event.event_id::VARCHAR',
-      event_type: 'events.event_data.event.event_type::VARCHAR',
-      event_name: 'events.event_data.event.event_name::VARCHAR',
-      event_timestamp: 'events.event_data.event.event_timestamp::BIGINT',
-      app_version: 'events.event_data.event.app_version::VARCHAR',
+      application_id: 'events.payload.application_id::VARCHAR',
+      event_id: 'events.payload.event.event_id::VARCHAR',
+      event_type: 'events.payload.event.event_type::VARCHAR',
+      event_name: 'events.payload.event.event_name::VARCHAR',
+      event_timestamp: 'events.payload.event.event_timestamp::BIGINT',
+      app_version: 'events.payload.event.app_version::VARCHAR',
     };
     const coreColumn = (key: string) => (isRedshift ? coreColumns[key] : key);
 
@@ -443,13 +443,11 @@ export function createDataSetFromView(
         isRedshift ? `timestamp 'epoch' + ${coreColumn(col)} * interval '1 second'` : `from_unixtime(${col})`,
       )
       .replace(/\{json:([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (_, key) =>
-        isRedshift
-          ? `events.event_data.event.event_data.${key}::VARCHAR`
-          : `json_extract_scalar(event_data, '$.${key}')`,
+        isRedshift ? `events.payload.event.event_data.${key}::VARCHAR` : `json_extract_scalar(event_data, '$.${key}')`,
       )
       .replace(/\{initcap:([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (_, key) =>
         isRedshift
-          ? `INITCAP(LOWER(NULLIF(events.event_data.event.event_data.${key}::VARCHAR, '')))`
+          ? `INITCAP(LOWER(NULLIF(events.payload.event.event_data.${key}::VARCHAR, '')))`
           : `regexp_replace(LOWER(NULLIF(json_extract_scalar(event_data, '$.${key}'), '')), '(\\w)(\\w*)', x -> upper(x[1]) || x[2])`,
       );
   };
