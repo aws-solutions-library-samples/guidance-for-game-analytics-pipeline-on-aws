@@ -1,18 +1,13 @@
--- Reads directly from Kinesis so AUTO REFRESH YES is legal.
--- Note: COUNT(*) instead of COUNT(DISTINCT transaction_id) for streaming-MV compatibility.
-CREATE MATERIALIZED VIEW total_iap_transactions_last_month
-AUTO REFRESH YES AS
+CREATE OR REPLACE VIEW total_iap_transactions_last_month AS
 SELECT
   date_trunc(
     'month',
-    date(timestamp 'epoch' + json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_timestamp',true)::BIGINT * interval '1 second')
+    date(timestamp 'epoch' + events.event_data.event.event_timestamp::BIGINT * interval '1 second')
   ) AS month,
-  json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'application_id',true)::TEXT AS application_id,
+  events.event_data.application_id::VARCHAR AS application_id,
   count(*) AS transaction_count
-FROM kds."{stream_name}"
-WHERE json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_type',true) = 'iap_transaction'
-  AND json_extract_path_text(
-    json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','event_data',true),
-    'transaction_id'
-  ) IS NOT NULL
-GROUP BY month, application_id;
+FROM "{db_name}"."public"."event_data" events
+WHERE events.event_data.event.event_type::VARCHAR = 'iap_transaction'
+  AND events.event_data.event.event_data.transaction_id IS NOT NULL
+GROUP BY month, application_id
+WITH NO SCHEMA BINDING;
