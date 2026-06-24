@@ -18,7 +18,13 @@ const MATERIALIZED_VIEW_NAME = 'event_data';
 const create_schema_statement = `CREATE EXTERNAL SCHEMA IF NOT EXISTS kds FROM KINESIS IAM_ROLE '${REDSHIFT_ROLE_ARN}';`;
 const { redactSqlStatement } = require('./log-sanitizer');
 const create_materialized_view_statement = `CREATE MATERIALIZED VIEW ${MATERIALIZED_VIEW_NAME} AUTO REFRESH YES AS SELECT
-      json_parse(kinesis_data) as event_data
+      refresh_time,
+      approximate_arrival_timestamp,
+      partition_key,
+      shard_id,
+      sequence_number,
+      json_parse(kinesis_data) as event_data,
+      json_extract_path_text(from_varbyte(kinesis_data,'utf-8'),'event','metadata',true)::TEXT as metadata
   FROM kds."${STREAM_NAME}"
   WHERE CAN_JSON_PARSE(kinesis_data);`;
 
