@@ -1,0 +1,27 @@
+{
+  "name": "com.amazon.aws.game-analytics-pipeline",
+  "version": "1.0.0",
+  "displayName": "AWS Game Analytics Pipeline",
+  "description": "Integrate your Unity game with the AWS Game Analytics Pipeline (GAP). Send gameplay events to your GAP stack, manage applications and API keys from the Unity Editor, and query analytics data via Amazon Athena.",
+  "unity": "2019.4",
+  "unityRelease": "0f1",
+  "documentationUrl": "https://github.com/aws-solutions/guidance-for-game-analytics-pipeline-on-aws",
+  "changelogUrl": "https://github.com/aws-solutions/guidance-for-game-analytics-pipeline-on-aws/resources/engine-samples/unity/CHANGELOG.md",
+  "licensesUrl": "https://github.com/aws-solutions/guidance-for-game-analytics-pipeline-on-aws/blob/main/LICENSE",
+  "keywords": [
+    "analytics",
+    "aws",
+    "telemetry",
+    "gap",
+    "game-analytics",
+    "kinesis",
+    "athena"
+  ],
+  "author": {
+    "name": "Amazon Web Services",
+    "email": "mccarrdy@amazon.com",
+    "url": "https://aws.amazon.com/gametech/"
+  },
+  "dependencies": {}
+}
+

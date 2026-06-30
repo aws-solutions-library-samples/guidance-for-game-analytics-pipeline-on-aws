@@ -1,0 +1,25 @@
+{
+    "name": "GAP.Editor",
+    "rootNamespace": "GAP.Editor",
+    "references": [
+        "GAP.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "AWSSDK.CloudFormation.dll",
+        "AWSSDK.Core.dll",
+        "AWSSDK.SecurityToken.dll",
+        "Microsoft.Bcl.AsyncInterfaces.dll",
+        "System.Runtime.CompilerServices.Unsafe.dll",
+        "System.Threading.Tasks.Extensions.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
