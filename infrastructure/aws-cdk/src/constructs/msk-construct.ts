@@ -73,20 +73,17 @@ const defaultProps: Partial<MSKConstructProps> = {
  *    both the client and the VPC connectivity endpoint
  *  - A cluster resource policy allowing Firehose and the deploying account
  *    to discover and connect to the cluster
+ *  - The game events Kafka topic (AWS::MSK::Topic), created declaratively with
+ *    the configured partition count and a replication factor of 3
  *  - A VPC-attached Node.js Lambda producer that publishes events to the
  *    game events topic over the cluster's IAM SASL bootstrap endpoint
- *
- * Note: CloudFormation has no native MSK topic resource. The topic is
- * expected to be auto-created by the producer on first use. The configured
- * `topicName` and `partitionCount` are passed to the Lambda via environment
- * variables so the producer can create the topic with the right partition
- * count.
  */
 export class MSKConstruct extends Construct {
   public readonly cluster: msk.CfnCluster;
   public readonly clusterName: string;
   public readonly securityGroup: ec2.SecurityGroup;
   public readonly clusterLogGroup: logs.LogGroup;
+  public readonly topic: msk.CfnTopic;
   public readonly topicName: string;
   public readonly topicArn: string;
   public readonly consumerGroupArnPattern: string;
@@ -245,6 +242,18 @@ export class MSKConstruct extends Construct {
       "BootstrapBrokerStringSaslIam"
     );
 
+    /* ---- Game events Kafka topic ---- */
+    /* AWS::MSK::Topic manages the topic declaratively via the MSK topic
+       management APIs, replacing client-side auto-creation. Replication
+       factor of 3 matches the broker count / Terraform construct. */
+    const topic = new msk.CfnTopic(this, "GameEventTopic", {
+      clusterArn: cluster.attrArn,
+      topicName: topicName,
+      partitionCount: partitionCount,
+      replicationFactor: 3,
+    });
+    topic.addDependency(cluster);
+
     /* ---- VPC-attached event ingestion Lambda ---- */
     const eventIngestionRole = new iam.Role(this, "EventIngestionFunctionRole", {
       roleName: `${props.config.WORKLOAD_NAME}-kafka-event-ingestion-function-role`,
@@ -274,7 +283,6 @@ export class MSKConstruct extends Construct {
               actions: [
                 "kafka-cluster:DescribeTopic",
                 "kafka-cluster:WriteData",
-                "kafka-cluster:CreateTopic",
               ],
               resources: [topicArn],
             }),
@@ -316,11 +324,15 @@ export class MSKConstruct extends Construct {
       }
     );
 
+    /* Ensure the topic exists before the producer Lambda is created. */
+    eventIngestionFunction.node.addDependency(topic);
+
     /* ---- Public exports ---- */
     this.cluster = cluster;
     this.clusterName = clusterName;
     this.securityGroup = securityGroup;
     this.clusterLogGroup = clusterLogGroup;
+    this.topic = topic;
     this.topicName = topicName;
     this.topicArn = topicArn;
     this.consumerGroupArnPattern = consumerGroupArnPattern;
