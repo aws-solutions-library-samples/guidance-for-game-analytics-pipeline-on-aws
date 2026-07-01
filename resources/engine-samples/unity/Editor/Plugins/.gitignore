@@ -1,0 +1,7 @@
+# AWS SDK DLLs - download via scripts or manually per README.md
+*.dll
+
+# Keep the download scripts and docs
+!download-dlls.sh
+!download-dlls.ps1
+!README.md
