@@ -102,6 +102,7 @@ nav:
       - Upgrade Guide: upgrading/v2-migration.md
   - Component Deep Dive: component-deep-dive.md
   - Customizations: customizations.md
+  - QuickSight Dashboard: quicksight-dashboard.md
   - Design Considerations: design-considerations.md
   - Troubleshooting: troubleshooting.md
   - Roadmap: roadmap.md
