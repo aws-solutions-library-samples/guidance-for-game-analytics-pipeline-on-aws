@@ -1,0 +1,271 @@
+[
+  {
+    "viewName": "all_events",
+    "customSqlQuery": "SELECT\n  {col:event_id} as event_id,\n  {col:event_type} as event_type,\n  {col:event_name} as event_name,\n  {col:app_version} as app_version,\n  {col:application_id} as application_id,\n  date({epoch_to_ts:event_timestamp}) as event_date,\n  date_trunc('hour', {epoch_to_ts:event_timestamp}) as event_hour,\n  NULLIF({json:platform}, '') as platform,\n  CASE NULLIF({json:country_id}, '')\n    WHEN 'UK' THEN 'United Kingdom'\n    ELSE {initcap:country_id}\n  END as country,\n  1 as event_count\nFROM {db_name}.\"event_data\" events",
+    "columns": [
+      {
+        "name": "event_id",
+        "type": "STRING"
+      },
+      {
+        "name": "event_type",
+        "type": "STRING"
+      },
+      {
+        "name": "event_name",
+        "type": "STRING"
+      },
+      {
+        "name": "app_version",
+        "type": "STRING"
+      },
+      {
+        "name": "application_id",
+        "type": "STRING"
+      },
+      {
+        "name": "event_date",
+        "type": "DATETIME"
+      },
+      {
+        "name": "event_hour",
+        "type": "DATETIME"
+      },
+      {
+        "name": "platform",
+        "type": "STRING"
+      },
+      {
+        "name": "country",
+        "type": "STRING"
+      },
+      {
+        "name": "event_count",
+        "type": "INTEGER"
+      }
+    ]
+  },
+  {
+    "viewName": "match_events",
+    "customSqlQuery": "SELECT\n  {col:event_id} as event_id,\n  {col:event_type} as event_type,\n  date({epoch_to_ts:event_timestamp}) as event_date,\n  {json:match_id} as match_id,\n  NULLIF({json:map_id}, '') as map_id,\n  NULLIF({json:match_type}, '') as match_type,\n  NULLIF({json:match_result_type}, '') as match_result,\n  NULLIF({json:spell_id}, '') as spell_used,\n  CAST(NULLIF({json:exp_gained}, '') AS INTEGER) as exp_gained,\n  NULLIF({json:matching_failed_msg}, '') AS matching_failed_msg,\n  NULLIF({json:most_used_spell}, '') AS most_used_spell,\n  1 as event_count\nFROM {db_name}.\"event_data\" events\nWHERE {col:event_type} IN ('match_start', 'match_end', 'user_knockout', 'matchmaking_start', 'matchmaking_complete', 'matchmaking_failed')\n  AND {epoch_to_ts:event_timestamp} >= {time_window:30}",
+    "columns": [
+      {
+        "name": "event_id",
+        "type": "STRING"
+      },
+      {
+        "name": "event_type",
+        "type": "STRING"
+      },
+      {
+        "name": "event_date",
+        "type": "DATETIME"
+      },
+      {
+        "name": "match_id",
+        "type": "STRING"
+      },
+      {
+        "name": "map_id",
+        "type": "STRING"
+      },
+      {
+        "name": "match_type",
+        "type": "STRING"
+      },
+      {
+        "name": "match_result",
+        "type": "STRING"
+      },
+      {
+        "name": "spell_used",
+        "type": "STRING"
+      },
+      {
+        "name": "exp_gained",
+        "type": "INTEGER"
+      },
+      {
+        "name": "matching_failed_msg",
+        "type": "STRING"
+      },
+      {
+        "name": "most_used_spell",
+        "type": "STRING"
+      },
+      {
+        "name": "event_count",
+        "type": "INTEGER"
+      }
+    ],
+    "calculatedColumns": [
+      {
+        "columnName": "win_pct_value",
+        "columnId": "win_pct_value",
+        "expression": "ifelse({match_result} = 'WIN', 100, 0)"
+      }
+    ]
+  },
+  {
+    "viewName": "level_events",
+    "customSqlQuery": "SELECT\n  {col:event_id} as event_id,\n  {col:event_type} as event_type,\n  date({epoch_to_ts:event_timestamp}) as event_date,\n  {json:level_id} as level_id,\n  CAST({json:level_version} AS INTEGER) as level_version,\n  1 as event_count\nFROM {db_name}.\"event_data\" events\nWHERE {col:event_type} IN ('level_started', 'level_completed', 'level_failed')\n  AND {epoch_to_ts:event_timestamp} >= {time_window:30}",
+    "columns": [
+      {
+        "name": "event_id",
+        "type": "STRING"
+      },
+      {
+        "name": "event_type",
+        "type": "STRING"
+      },
+      {
+        "name": "event_date",
+        "type": "DATETIME"
+      },
+      {
+        "name": "level_id",
+        "type": "STRING"
+      },
+      {
+        "name": "level_version",
+        "type": "INTEGER"
+      },
+      {
+        "name": "event_count",
+        "type": "INTEGER"
+      }
+    ],
+    "calculatedColumns": [
+      {
+        "columnName": "completion_rate_pct",
+        "columnId": "completion_rate_pct",
+        "expression": "sumIf({event_count}, {event_type} = 'level_completed') / sumIf({event_count}, {event_type} = 'level_started') * 100"
+      }
+    ]
+  },
+  {
+    "viewName": "economy_events",
+    "customSqlQuery": "SELECT\n  {col:event_id} as event_id,\n  {col:event_type} as event_type,\n  date({epoch_to_ts:event_timestamp}) as event_date,\n  NULLIF({json:item_id}, '') as item_id,\n  CAST(NULLIF({json:currency_amount}, '') AS INTEGER) as currency_amount,\n  CASE\n    WHEN CAST(NULLIF({json:currency_amount}, '') AS INTEGER) BETWEEN 1 AND 9 THEN '01: $1-9'\n    WHEN CAST(NULLIF({json:currency_amount}, '') AS INTEGER) BETWEEN 10 AND 19 THEN '02: $10-19'\n    WHEN CAST(NULLIF({json:currency_amount}, '') AS INTEGER) BETWEEN 20 AND 49 THEN '03: $20-49'\n    WHEN CAST(NULLIF({json:currency_amount}, '') AS INTEGER) BETWEEN 50 AND 99 THEN '04: $50-99'\n    WHEN CAST(NULLIF({json:currency_amount}, '') AS INTEGER) >= 100 THEN '05: $100+'\n    ELSE '99: Unknown'\n  END as currency_amount_band,\n  NULLIF({json:currency_type}, '') as currency_type,\n  NULLIF({json:transaction_id}, '') as transaction_id,\n  NULLIF({json:item_rarity}, '') as item_rarity,\n  CAST(NULLIF({json:lootbox_cost}, '') AS INTEGER) as lootbox_cost,\n  1 as event_count\nFROM {db_name}.\"event_data\" events\nWHERE {col:event_type} IN ('iap_transaction', 'lootbox_opened', 'item_viewed')\n  AND {epoch_to_ts:event_timestamp} >= {time_window:30}",
+    "columns": [
+      {
+        "name": "event_id",
+        "type": "STRING"
+      },
+      {
+        "name": "event_type",
+        "type": "STRING"
+      },
+      {
+        "name": "event_date",
+        "type": "DATETIME"
+      },
+      {
+        "name": "item_id",
+        "type": "STRING"
+      },
+      {
+        "name": "currency_amount",
+        "type": "INTEGER"
+      },
+      {
+        "name": "currency_amount_band",
+        "type": "STRING"
+      },
+      {
+        "name": "currency_type",
+        "type": "STRING"
+      },
+      {
+        "name": "transaction_id",
+        "type": "STRING"
+      },
+      {
+        "name": "item_rarity",
+        "type": "STRING"
+      },
+      {
+        "name": "lootbox_cost",
+        "type": "INTEGER"
+      },
+      {
+        "name": "event_count",
+        "type": "INTEGER"
+      }
+    ]
+  },
+  {
+    "viewName": "player_health",
+    "customSqlQuery": "SELECT\n  {col:event_id} as event_id,\n  {col:event_type} as event_type,\n  {col:app_version} as app_version,\n  date({epoch_to_ts:event_timestamp}) as event_date,\n  CASE NULLIF({json:country_id}, '')\n    WHEN 'UK' THEN 'United Kingdom'\n    ELSE {initcap:country_id}\n  END as country,\n  NULLIF({json:platform}, '') as platform,\n  NULLIF({json:report_reason}, '') as report_reason,\n  CAST(NULLIF({json:user_rating}, '') AS INTEGER) as user_rating,\n  NULLIF({json:user_rank_reached}, '') as rank_reached,\n  NULLIF({json:tutorial_screen_id}, '') AS tutorial_screen_id,\n  1 as event_count\nFROM {db_name}.\"event_data\" events\nWHERE {col:event_type} IN ('user_registration', 'user_report', 'user_sentiment', 'user_rank_up', 'tutorial_progression')\n  AND {epoch_to_ts:event_timestamp} >= {time_window:30}",
+    "columns": [
+      {
+        "name": "event_id",
+        "type": "STRING"
+      },
+      {
+        "name": "event_type",
+        "type": "STRING"
+      },
+      {
+        "name": "app_version",
+        "type": "STRING"
+      },
+      {
+        "name": "event_date",
+        "type": "DATETIME"
+      },
+      {
+        "name": "country",
+        "type": "STRING"
+      },
+      {
+        "name": "platform",
+        "type": "STRING"
+      },
+      {
+        "name": "report_reason",
+        "type": "STRING"
+      },
+      {
+        "name": "user_rating",
+        "type": "INTEGER"
+      },
+      {
+        "name": "rank_reached",
+        "type": "STRING"
+      },
+      {
+        "name": "tutorial_screen_id",
+        "type": "STRING"
+      },
+      {
+        "name": "event_count",
+        "type": "INTEGER"
+      }
+    ],
+    "columnGroups": [
+      {
+        "geoSpatialColumnGroup": {
+          "name": "country-geo-group",
+          "countryCode": "US",
+          "columns": [
+            "country"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "viewName": "match_lifecycle_funnel",
+    "customSqlQuery": "SELECT '1_matchmaking_start' as stage_label, count(*) as event_count\nFROM {db_name}.\"event_data\" events\nWHERE {col:event_type} = 'matchmaking_start'\n  AND {epoch_to_ts:event_timestamp} >= {time_window:30}\nUNION ALL\nSELECT '2_matchmaking_complete' as stage_label, count(*) as event_count\nFROM {db_name}.\"event_data\" events\nWHERE {col:event_type} = 'matchmaking_complete'\n  AND {epoch_to_ts:event_timestamp} >= {time_window:30}\nUNION ALL\nSELECT '3_match_start' as stage_label, count(*) as event_count\nFROM {db_name}.\"event_data\" events\nWHERE {col:event_type} = 'match_start'\n  AND {epoch_to_ts:event_timestamp} >= {time_window:30}\nUNION ALL\nSELECT '4_match_end' as stage_label, count(*) as event_count\nFROM {db_name}.\"event_data\" events\nWHERE {col:event_type} = 'match_end'\n  AND {epoch_to_ts:event_timestamp} >= {time_window:30}",
+    "columns": [
+      {
+        "name": "stage_label",
+        "type": "STRING"
+      },
+      {
+        "name": "event_count",
+        "type": "INTEGER"
+      }
+    ]
+  }
+]
