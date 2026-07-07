@@ -38,6 +38,7 @@ import { RedshiftConstruct } from "./constructs/redshift-construct";
 import { OpenSearchConstruct } from "./constructs/opensearch-construct";
 import { AthenaQueryConstruct } from "./constructs/samples/athena-construct";
 import { DataProcessingConstruct } from "./constructs/data-processing-construct";
+import { MSKConstruct } from "./constructs/msk-construct";
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   config: GameAnalyticsPipelineConfig;
@@ -281,9 +282,12 @@ export class InfrastructureStack extends cdk.Stack {
 
     //////////// ---- CONSTRUCT RESOURCES ---- ////////////
 
-    // ---- VPC resources (IF REDSHIFT OR REAL TIME in DEV_MODE is enabled) ---- //
+    // ---- VPC resources (IF REDSHIFT, REAL TIME in DEV_MODE, or KAFKA ingest is enabled) ---- //
     var vpcConstruct;
-    if (props.config.DATA_STACK === "REDSHIFT") {
+    if (
+      props.config.DATA_STACK === "REDSHIFT" ||
+      props.config.INGEST_MODE === "KAFKA"
+    ) {
       vpcConstruct = new VpcConstruct(this, "VpcConstruct", {
         config: props.config,
       });
@@ -370,6 +374,33 @@ export class InfrastructureStack extends cdk.Stack {
       })
     }
 
+    // ---- MSK (Kafka ingest) ---- //
+    var mskConstruct;
+    if (props.config.INGEST_MODE === "KAFKA" && vpcConstruct) {
+      mskConstruct = new MSKConstruct(this, "MSKConstruct", {
+        baseCodePath: codePath,
+        vpc: vpcConstruct.vpc,
+        config: props.config,
+      });
+
+      new cdk.CfnOutput(this, "MSKClusterArn", {
+        description: "The ARN of the MSK cluster used for Kafka ingest.",
+        value: mskConstruct.cluster.attrArn,
+      });
+      new cdk.CfnOutput(this, "MSKClusterName", {
+        description: "The name of the MSK cluster used for Kafka ingest.",
+        value: mskConstruct.clusterName,
+      });
+      new cdk.CfnOutput(this, "MSKTopicName", {
+        description: "The name of the Kafka topic events are produced to.",
+        value: mskConstruct.topicName,
+      });
+      new cdk.CfnOutput(this, "MSKEventIngestionFunctionArn", {
+        description: "The ARN of the Lambda function that produces events to the MSK topic.",
+        value: mskConstruct.eventIngestionFunction.functionArn,
+      });
+    }
+
     // ---- Functions ---- //
 
     // Create lambda functions
@@ -432,23 +463,8 @@ export class InfrastructureStack extends cdk.Stack {
         analyticsBucket: analyticsBucket,
       });
 
-      // create data integration jobs
-      const dataProcessingConstruct = new DataProcessingConstruct(this, "DataProcessingConstruct", {
-        notificationsTopic: notificationsTopic,
-        analyticsBucket: analyticsBucket,
-        gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
-        rawEventsTable: dataLakeConstruct.rawEventsTable,
-        config: props.config,
-      });
-
-      // create sample athena queries
-      const athenaConstruct = new AthenaQueryConstruct(this, "AthenaQueryConstruct", {
-        gameAnalyticsWorkgroup: dataLakeConstruct.gameAnalyticsWorkgroup,
-        gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
-        config: props.config,
-      })
-
-      // Creates firehose and logs related to ingestion
+      /* Firehose ingestion is wired in both modes — the construct picks the
+         correct catalog and IAM statements based on ENABLE_S3_TABLES. */
       streamingIngestionConstruct = new StreamingIngestionConstruct(
         this,
         "StreamingIngestionConstruct",
@@ -460,39 +476,76 @@ export class InfrastructureStack extends cdk.Stack {
           gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
           eventsProcessingFunction: lambdaConstruct.eventsProcessingFunction,
           config: props.config,
+          mskConstruct: mskConstruct,
+          dataLakeConstruct: dataLakeConstruct,
         }
       );
 
-      // CFN outputs for given configuration
-      new cdk.CfnOutput(this, "GameEventsDatabaseName", {
-        description: "The name of the Glue Data Catalog database where game events are stored.",
-        value: dataLakeConstruct.gameEventsDatabase.ref,
-      });
-
-      new cdk.CfnOutput(this, "GameEventsEtlJobName", {
-        description:
-          "The name of the ETL job used to move data from the raw events table to the processed events table.",
-        value: dataProcessingConstruct.gameEventsEtlJob.ref,
-      });
-
-      new cdk.CfnOutput(this, "GameEventsIcebergJobName", {
-        description:
-          "The name of the ETL job used to move data from an existing Game Analytics Pipeline Hive table to a new Apache Iceberg table.",
-        value: dataProcessingConstruct.gameEventsIcebergJob.ref,
-      });
-
-      new cdk.CfnOutput(this, "GlueWorkflowConsoleLink", {
-        description:
-          "A web link to the AWS Glue Workflows console page to view details about the deployed workflow",
-        value: `https://console.aws.amazon.com/glue/home?region=${cdk.Aws.REGION}#etl:tab=workflows;workflowView=workflow-list`,
-      });
-
-      if (props.config.ENABLE_APACHE_ICEBERG_SUPPORT) {
-        new cdk.CfnOutput(this, "IcebergSetupJobName", {
-          description:
-            "The name of the Glue Job used to configure partitioning on a newly created Apache Iceberg table.",
-          value: dataProcessingConstruct.icebergSetupJob.ref,
+      /* The Glue-catalog-dependent constructs below are skipped when
+         ENABLE_S3_TABLES is true, because in that mode the datalake is backed
+         by an S3 Tables namespace + Iceberg table and the Glue catalog
+         database/table are not provisioned. */
+      if (!props.config.ENABLE_S3_TABLES && dataLakeConstruct.gameEventsDatabase && dataLakeConstruct.rawEventsTable) {
+        // create data integration jobs
+        const dataProcessingConstruct = new DataProcessingConstruct(this, "DataProcessingConstruct", {
+          notificationsTopic: notificationsTopic,
+          analyticsBucket: analyticsBucket,
+          gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
+          rawEventsTable: dataLakeConstruct.rawEventsTable,
+          config: props.config,
         });
+
+        // create sample athena queries
+        const athenaConstruct = new AthenaQueryConstruct(this, "AthenaQueryConstruct", {
+          gameAnalyticsWorkgroup: dataLakeConstruct.gameAnalyticsWorkgroup,
+          gameEventsDatabase: dataLakeConstruct.gameEventsDatabase,
+          config: props.config,
+        })
+
+        new cdk.CfnOutput(this, "GameEventsEtlJobName", {
+          description:
+            "The name of the ETL job used to move data from the raw events table to the processed events table.",
+          value: dataProcessingConstruct.gameEventsEtlJob.ref,
+        });
+
+        new cdk.CfnOutput(this, "GameEventsIcebergJobName", {
+          description:
+            "The name of the ETL job used to move data from an existing Game Analytics Pipeline Hive table to a new Apache Iceberg table.",
+          value: dataProcessingConstruct.gameEventsIcebergJob.ref,
+        });
+
+        new cdk.CfnOutput(this, "GlueWorkflowConsoleLink", {
+          description:
+            "A web link to the AWS Glue Workflows console page to view details about the deployed workflow",
+          value: `https://console.aws.amazon.com/glue/home?region=${cdk.Aws.REGION}#etl:tab=workflows;workflowView=workflow-list`,
+        });
+
+        if (props.config.ENABLE_APACHE_ICEBERG_SUPPORT) {
+          new cdk.CfnOutput(this, "IcebergSetupJobName", {
+            description:
+              "The name of the Glue Job used to configure partitioning on a newly created Apache Iceberg table.",
+            value: dataProcessingConstruct.icebergSetupJob.ref,
+          });
+        }
+      }
+
+      // CFN outputs that apply to both Glue-catalog and S3 Tables modes
+      new cdk.CfnOutput(this, "GameEventsDatabaseName", {
+        description: "The name of the Glue Data Catalog database (or S3 Tables namespace) where game events are stored.",
+        value: dataLakeConstruct.databaseName,
+      });
+
+      if (props.config.ENABLE_S3_TABLES && dataLakeConstruct.tableBucket) {
+        new cdk.CfnOutput(this, "S3TablesBucketArn", {
+          description: "The ARN of the S3 Tables table bucket backing the datalake.",
+          value: dataLakeConstruct.tableBucket.attrTableBucketArn,
+        });
+        if (dataLakeConstruct.catalogArn) {
+          new cdk.CfnOutput(this, "S3TablesCatalogArn", {
+            description: "The federated S3 Tables Glue catalog ARN.",
+            value: dataLakeConstruct.catalogArn,
+          });
+        }
       }
     }
 
