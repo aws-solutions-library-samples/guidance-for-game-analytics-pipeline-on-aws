@@ -236,13 +236,6 @@ export const DATA_SET_DEFINITIONS: DataSetDefinition[] = [
       { name: 'tutorial_screen_id', type: 'STRING' },
       { name: 'event_count', type: 'INTEGER' },
     ],
-    calculatedColumns: [
-      {
-        columnName: 'target_rating',
-        columnId: 'target_rating',
-        expression: 'parseDecimal("4.0")',
-      },
-    ],
     columnGroups: [
       {
         geoSpatialColumnGroup: {

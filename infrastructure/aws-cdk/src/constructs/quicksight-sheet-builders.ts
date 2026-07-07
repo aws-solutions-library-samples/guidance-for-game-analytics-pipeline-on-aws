@@ -34,7 +34,6 @@ import {
   buildDonutChartVisual,
   buildFilledMapVisual,
   buildFunnelChartVisual,
-  buildGaugeWithTargetVisual,
   buildHeatMapVisual,
   buildKpiVisual,
   buildKpiWithSparklineVisual,
@@ -723,15 +722,13 @@ export function buildSentimentSheet(dataSetIdentifiers: Record<string, string>):
 
   const visuals = [
     withSubtitle(
-      buildGaugeWithTargetVisual(
+      buildKpiVisual(
         'st-avg-rating-gauge',
         'Average User Rating',
         playerHealth,
         'st-avg-rating-measure',
         'user_rating',
         'AVERAGE',
-        'st-avg-rating-target-measure',
-        'target_rating',
       ),
       'Below 4.0 sustained = NPS-style alarm; review the top report reasons next.',
     ),
