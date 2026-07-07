@@ -15,7 +15,7 @@ The following resources are required to install, configure, and deploy the game 
 - **IAM Users + Credentials**
 	- IAM User for deploying the guidance Infrastructure-as-Code resources
 	- IAM User with AWS Console access
-	- IAM User for administrating the API, requires [credentials (Access Key, Secret Access Key)](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)
+	- IAM User for administrating the API, requires [credentials (Access Key, Secret Access Key)](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html). This user does not need any policy attached yet. The guidance will provision a sample policy that you can attach and customize.
 !!! Info
 	When using Access Keys and Secret Access Keys, a best practice is to periodically rotate them. This means your administrators and deployments will need to keep the rotation of your keys in mind as well, more information [here](https://docs.aws.amazon.com/IAM/latest/UserGuide/id-credentials-access-keys-update.html)
 
@@ -67,6 +67,18 @@ The following resources are required to install, configure, and deploy the game 
 
 	After following the instructions in [Installation](#installation), when the project is opened in your code editor, a popup will appear indicating that the folder contains a dev container configuration. To utilize the Dev Container environment, click on “Reopen in Container”.
 
+	---
+
+	#### Setting up AWS Credentials with the AWS extension
+
+	The provided Dev Container also comes pre-installed with the [AWS Toolkit Extension for Visual Studio Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html), which you can use to easily set up you AWS Credentials with VS Code.
+
+	1. Click the AWS Extension icon on the nav bar on the far left of the screen
+
+	![Credential Setup Sample](media/credential_setup.png)
+
+	2. Click on your [preferred method](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/establish-credentials.html) of signing in and complete the sign-in process
+
 === "Manual Install"
 
 	Before deploying the sample code, ensure that the following required tools have been installed:
@@ -88,8 +100,12 @@ The following resources are required to install, configure, and deploy the game 
 	echo 'CDK_DOCKER="finch"' >> ~/.bashrc 
 	```
 
-	!!! Warning
-		The NPM commands to build and deploy the project are written to use UNIX shell commands. Because of this, **the manual install is incompatible with the Windows Powershell** without modifications to the NPM commands. Please consider using the Dev Container to have a consistent deployment environment.
+
+### AWS CLI Configuration
+If you are not using the [AWS Toolkit Extension for Visual Studio Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html), the AWS CLI must be properly configured with credentials to your AWS account before use. The `aws configure` or `aws configure sso` commands in your development enviornment terminal are the fastest way to set up your AWS CLI depending on your credential method. Based on the credential method you prefer, the AWS CLI prompts you for the relevant information. 
+
+More information about the aws configure command can be found in the documentation for the [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html#getting-started-quickstart-new).
+
 
 ---
 
@@ -118,6 +134,11 @@ The Game Analytics Pipeline can be deployed using [AWS Cloud Development Kit (CD
 
 5. Open the `./infrastructure/config.yaml` file for editing. Configure the parameters for the pipeline according to the options available in the [Config Reference](./references/config-reference.md).
 
+	!!! Info
+		- Please refer to the [Config Reference](./references/config-reference.md) to confirm that the pipeline architecture that you have configured in your config.yaml is correct for your intended use-case. 
+		- Right-size the pipeline based on your expected data volume, latency, management overhead, and desired integrations to avoid additional costs for unused features. 
+		- Some configuration parameters cannot be changed after deployment without risking data loss.
+
 6. Terraform Only - Terraform does not use a default region like CDK does, and needs to specify the region in the providers file (`./infrastructure/terraform/src/providers.tf`). It is defaulted to `us-east-1` but please modify the below section on the file to your desired region code:
 
 	```json
@@ -139,14 +160,6 @@ npm install .
 ```
 
 `esbuild` is listed as a development dependency under `package.json` and will be installed.
-
----
-
-### AWS CLI Configuration
-
-The AWS CLI must be properly configured with credentials to your AWS account before use. The `aws configure` or `aws configure sso` commands in your development enviornment terminal are the fastest way to set up your AWS CLI depending on your credential method. Based on the credential method you prefer, the AWS CLI prompts you for the relevant information. 
-
-More information about the aws configure command can be found in the documentation for the [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html#getting-started-quickstart-new).
 
 ---
 
@@ -188,21 +201,38 @@ Before sending events to the pipeline, an Application and corresponding Authoriz
 	- If deployed using Terraform, this endpoint is the value of `api_endpoint`
 2. The collection file is located at `/resources/game-analytics-pipeline-postman-collection.json`
 
+!!! Warning
+	We highly recommend installing the Postman/Bruno desktop application instead of using the VS Code extensions for most compatibility. We continue to work to maintain compatibility for VS Code but there are occasional breaking changes.
+
 === "Postman"
 
 	1. For instructions on how to import a collection, refer to the documentation for your selected API Client: [Import Postman data](https://learning.postman.com/docs/getting-started/importing-and-exporting/importing-data/#import-postman-data)
 	2. Once the collection is imported into Postman, create a new environment by selecting Environments in the sidebar and select the Add icon. You can also select the environment selector at the top right of the workbench and select Add icon. Enter a name for your new environment.
 	3. In order to perform administrator actions on your API, Authentication must be configured to utilize SigV4 authentication for an IAM identity. These credentials inherit from your `access_key` and `secret_access_key` variables configured in the collection. For more information, refer to [Authenticate with AWS Signature authentication workflow in Postman](https://learning.postman.com/docs/sending-requests/authorization/aws-signature/)
-	4. Replicate the following image for your environment (Note: leave `application_id` blank. This will be filled in later):
-		- The AWS Access Key and Secret Access Key is specifically for administrating the API only, and should not be used by event sources. You should have an IAM User specifically with these credentials with sufficient permissions to run the tasks on the API, but for security best practice to use least privilege, a sample policy is created by the guidance `{WORKLOAD_NAME}-AdminAPIAccess` to attach to the user to perform only the admin tasks
+	4. Refer to the IAM Console in your AWS Console. You will be attaching a sample policy created by the guidance `{WORKLOAD_NAME}-AdminAPIAccess` to the IAM User for administrating the API that you created in Prerequisites. To attach the policy to the user:
+		- In the IAM console, in the navigation pane, choose Policies.
+		- At the top of the policy list, in the search box, start typing `{WORKLOAD_NAME}-AdminAPIAccess` until you can see your policy. Then choose the radio button next to `{WORKLOAD_NAME}-AdminAPIAccess` in the list.
+		- Choose the Actions button, and then choose Attach.
+		- In IAM entities choose the option to filter for Users.
+		- In the search box, start typing the name of the IAM User for administrating the API you created in Prerequisites until that user is visible on the list. Then check the box next to that user in the list.
+		- Choose Attach policy.
+	5. Replicate the following image for your environment (Note: leave `application_id` blank. This will be filled in later):
+		- The AWS Access Key and Secret Access Key is specifically for administrating the API only, and should not be used by event sources. You should have an IAM User specifically with these credentials with sufficient permissions to run the tasks on the API, but for security best practice to use least privilege.
 		![Postman Environment Sample](media/postman-environment-sample.png)
-	5. Ensure there are no trailing return/enter spaces at the end of the variables, and click "Save" on the top right.
-	6. Select your newly created and saved environment by navigating to the top right drop-down menu that says `No environment`, selecting on it and selecting your new environment
+	6. Ensure there are no trailing return/enter spaces at the end of the variables, and click "Save" on the top right.
+	7. Select your newly created and saved environment by navigating to the top right drop-down menu that says `No environment`, selecting on it and selecting your new environment
 
 === "Bruno"
 
 	1. For instructions on how to import a collection, refer to the documentation for your selected API Client: [Importing Enviornment into Bruno](https://docs.usebruno.com/get-started/import-export-data/postman-migration#importing-environment-into-bruno)
-	2. Once the collection is imported into your API client, navigate to the Vars tab for the collection. 
+	2. 	Refer to the IAM Console in your AWS Console. You will be attaching a sample policy created by the guidance `{WORKLOAD_NAME}-AdminAPIAccess` to the IAM User for administrating the API that you created in Prerequisites. To attach the policy to the user:
+		- In the IAM console, in the navigation pane, choose Policies.
+		- At the top of the policy list, in the search box, start typing `{WORKLOAD_NAME}-AdminAPIAccess` until you can see your policy. Then choose the radio button next to `{WORKLOAD_NAME}-AdminAPIAccess` in the list.
+		- Choose the Actions button, and then choose Attach.
+		- In IAM entities choose the option to filter for Users.
+		- In the search box, start typing the name of the IAM User for administrating the API you created in Prerequisites until that user is visible on the list. Then check the box next to that user in the list.
+		- Choose Attach policy.
+	3. Once the collection is imported into your API client, navigate to the Vars tab for the collection. 
 		- Validate that five variables (`api_base_path`, `application_id`, `access_key`, `secret_access_key`, and `region`) are under Pre Request variables. If they are not, create variables with those names.
 		- Configure the collection-wide `api_base_path` variable to be your deployed API base path. The value of the path should be the URL retrieved from step 1.
 		- Configure `region` to be the region where the stack is deployed
@@ -213,9 +243,9 @@ Before sending events to the pipeline, an Application and corresponding Authoriz
 
 		![Bruno Environment Sample](media/bruno-enviornment-sample.png)
 
-	4. In order to perform administrator actions on your API, Authentication must be configured to utilize SigV4 authentication for an IAM identity. These credentials inherit from your `access_key` and `secret_access_key` variables configured in the collection. For more information, refer to  [Authenticate using AWS Signature](https://docs.usebruno.com/auth/aws-signature)
+	5. In order to perform administrator actions on your API, Authentication must be configured to utilize SigV4 authentication for an IAM identity. These credentials inherit from your `access_key` and `secret_access_key` variables configured in the collection. For more information, refer to  [Authenticate using AWS Signature](https://docs.usebruno.com/auth/aws-signature)
 		- If a session token is needed for temporary credentials, please add them manually
-	5. Ensure there are no trailing return/enter spaces at the end of the variables. Save the configuration by pressing `ctrl + s` (or `cmd + s` on mac).
+	6. Ensure there are no trailing return/enter spaces at the end of the variables. Save the configuration by pressing `ctrl + s` (or `cmd + s` on mac).
 
 
 After the pipeline is deployed, a new application must be created using the Application API. 
@@ -313,17 +343,17 @@ For more information, refer to the [API Reference for POST - Send Events](./refe
 
 	3. At the top left of the editor, select the workgroup for your stack. The name should consist of the name specified by `WORKLOAD_NAME` in config.yaml followed by the suffix `-workgroup` and a random suffix.
 
-		![Athena 1](media/Athena-1.png)
+		![Athena 1](media/Athena-1.png){ width="400" }
 
 	4. Acknowledge the settings for the workgroup
 
 	5. On the left hand side, select the Database with the name specified by `EVENTS_DATABASE` in config.yaml
 
-		![Athena 2](media/Athena-2.png)
+		![Athena 2](media/Athena-2.png){ width="400" }
 
 	6. A list of tables should appear below the selection. Select a table, click the three buttons on the left, and select **At** to see the items in the table.
 
-		![Athena 3](media/Athena-3.png)
+		![Athena 3](media/Athena-3.png){ width="400" }
 
 	7. To use the pre-defined queries, select Saved queries at the top toolbar of the query editor. This will show a list of queries created for the stack. 
 
@@ -345,11 +375,11 @@ For more information, refer to the [API Reference for POST - Send Events](./refe
 
 	3. In the Query Editor, you will see your namespace in the top left.
 
-		![Redshift 3](media/Redshift-3.png)
+		![Redshift 3](media/Redshift-3.png){ width="400" }
 
 	4. Select the ... to the right of the name to create a connection. Choose Secrets Manager and the relevant secret.
 
-		![Redshift 4](media/Redshift-4.png)
+		![Redshift 4](media/Redshift-4.png){ width="500" }
 
 	5. Navigate to `native databases / events / Views`
 
@@ -377,7 +407,7 @@ For more information, refer to the [API Reference for POST - Send Events](./refe
 		- If deployed using Terraform, this output is identified by `opensearch_dashboard_link`
 	6. Paste the link into your browser of choice. Ensure that you are logged in to the AWS console as the OpenSearch Admin before proceeding. 
 	7. On the main dashboard page, verify that you are logged in as the OpenSearch Admin by clicking on the "a" icon on the bottom right and viewing the associated role.
-		![Verify Assumed Identity](media/os_validate_identity.png){ width="300" }
+		![Verify Assumed Identity](media/os_validate_identity.png){ width="400" }
 	8. On the main dashboard page, click on **Create workspace** under Essentials
 		![Create Workspace](media/os_home.png)
 	9. On the next page, provide a name and description to the workspace
