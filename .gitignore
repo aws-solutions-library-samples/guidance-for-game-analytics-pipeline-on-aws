@@ -41,6 +41,7 @@ infrastructure/config.yaml
 .agents/
 .omo/
 .opencode/
+.serena/
 opencode.json
 skills-lock.json
 
