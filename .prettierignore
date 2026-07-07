@@ -3,3 +3,6 @@ dist
 cdk.out
 .venv
 *.d.ts
+
+# Upstream vendored samples: keep byte-identical, do not reformat
+samples/
