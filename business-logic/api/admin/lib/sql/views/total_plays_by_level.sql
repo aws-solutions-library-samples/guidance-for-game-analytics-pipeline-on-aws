@@ -1,15 +1,8 @@
-CREATE OR REPLACE VIEW
-  total_plays_by_level AS
+CREATE OR REPLACE VIEW total_plays_by_level AS
 SELECT
-  JSON_EXTRACT_PATH_TEXT (event_data, 'level_id') as level,
-  count(JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')) as number_of_plays
-FROM
-  "{db_name}"."public"."event_data"
-WHERE
-  event_type = 'level_started'
-GROUP BY
-  JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')
-ORDER by
-  JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')
-WITH
-  NO SCHEMA BINDING;
+  events.payload.event.event_data.level_id::VARCHAR AS level,
+  count(*) AS number_of_plays
+FROM "{db_name}"."public"."event_data" events
+WHERE events.payload.event.event_type::VARCHAR = 'level_started'
+GROUP BY level
+WITH NO SCHEMA BINDING;

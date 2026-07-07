@@ -1,39 +1,39 @@
+-- NOTE: Materialized views do not support CTEs (WITH ... AS) or JOINs in all cases.
+-- This remains a regular view due to the CTE + JOIN pattern.
 CREATE OR REPLACE VIEW
   level_completion_rate AS
-with
-  t1 as (
+WITH
+  t1 AS (
     SELECT
-      JSON_EXTRACT_PATH_TEXT (event_data, 'level_id') as level,
-      count(JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')) as level_count
+      events.payload.event.event_data.level_id::VARCHAR as level,
+      count(events.payload.event.event_data.level_id) as level_count
     FROM
-      "{db_name}"."public"."event_data"
+      "{db_name}"."public"."event_data" events
     WHERE
-      event_type = 'level_started'
+      events.payload.event.event_type::VARCHAR = 'level_started'
     GROUP BY
-      JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')
+      events.payload.event.event_data.level_id::VARCHAR
   ),
-  t2 as (
+  t2 AS (
     SELECT
-      JSON_EXTRACT_PATH_TEXT (event_data, 'level_id') as level,
-      count(JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')) as level_count
+      events.payload.event.event_data.level_id::VARCHAR as level,
+      count(events.payload.event.event_data.level_id) as level_count
     FROM
-      "{db_name}"."public"."event_data"
+      "{db_name}"."public"."event_data" events
     WHERE
-      event_type = 'level_completed'
+      events.payload.event.event_type::VARCHAR = 'level_completed'
     GROUP BY
-      JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')
+      events.payload.event.event_data.level_id::VARCHAR
   )
-select
+SELECT
   t2.level,
   (
     cast(t2.level_count AS DOUBLE PRECISION) / (
       cast(t2.level_count AS DOUBLE PRECISION) + cast(t1.level_count AS DOUBLE PRECISION)
     )
   ) * 100 as level_completion_rate
-from
+FROM
   t1
   JOIN t2 ON t1.level = t2.level
-ORDER by
-  level
 WITH
   NO SCHEMA BINDING;

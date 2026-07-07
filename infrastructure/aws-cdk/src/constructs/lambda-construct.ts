@@ -100,7 +100,7 @@ function. This function to process and transform raw events before they get writ
     let redshiftEnv = {};
     if (props.redshiftConstruct) {
       redshiftEnv = {
-        SECRET_ARN: `redshift!${props.redshiftConstruct.namespace.namespaceName}-db-admin`,
+        SECRET_ARN: `arn:aws:secretsmanager:${Stack.of(this).region}:${Stack.of(this).account}:secret:redshift!${props.redshiftConstruct.namespace.namespaceName}-db-admin`,
         WORKGROUP_NAME: props.redshiftConstruct.workgroup.workgroupName,
         DATABASE_NAME: props.config.EVENTS_DATABASE,
         REDSHIFT_ROLE_ARN: props.redshiftConstruct.redshiftRole.roleArn,
