@@ -68,19 +68,24 @@ async function setupRedshift() {
     const filenames = fs.readdirSync(directoryPath);
     console.log(filenames);
 
-    for (const filename of filenames) {
-      const statement = fs
-        .readFileSync(`${directoryPath}/${filename}`, 'utf8')
-        .replaceAll('{db_name}', DATABASE_NAME)
-        .replaceAll('{stream_name}', STREAM_NAME);
-      console.log(`Creating view: ${filename}`);
-      const id = await executeStatement(client, statement);
-      // Materialized views don't support CREATE OR REPLACE, so ignore "already exists" errors
-      const viewName = filename.replace('.sql', '');
-      const ignore = [`ERROR: relation "${viewName}" already exists`];
-      await waitForStatement(client, id, ignore);
-      console.log(`Created view: ${filename}`);
-    }
+    // The views only depend on the materialized view (created above), not on each
+    // other, so create them concurrently. Running them sequentially exceeds the
+    // API Gateway 29s integration timeout; parallelizing keeps the endpoint synchronous.
+    await Promise.all(
+      filenames.map(async (filename) => {
+        const statement = fs
+          .readFileSync(`${directoryPath}/${filename}`, 'utf8')
+          .replaceAll('{db_name}', DATABASE_NAME)
+          .replaceAll('{stream_name}', STREAM_NAME);
+        console.log(`Creating view: ${filename}`);
+        const id = await executeStatement(client, statement);
+        // Materialized views don't support CREATE OR REPLACE, so ignore "already exists" errors
+        const viewName = filename.replace('.sql', '');
+        const ignore = [`ERROR: relation "${viewName}" already exists`];
+        await waitForStatement(client, id, ignore);
+        console.log(`Created view: ${filename}`);
+      })
+    );
     console.log('Redshift views created');
   } catch (error) {
     console.log('Error setupRedshift B');
@@ -91,7 +96,7 @@ async function setupRedshift() {
   return Promise.resolve({ Result: 'OK' });
 }
 
-const waitForStatement = async (client, id, ignore_errors = [], retries = 40) => {
+const waitForStatement = async (client, id, ignore_errors = [], retries = 80) => {
   for (let i = 0; i < retries; i++) {
     const describeStatement = { Id: id };
     const result = await client.send(new DescribeStatementCommand(describeStatement));
@@ -111,7 +116,7 @@ const waitForStatement = async (client, id, ignore_errors = [], retries = 40) =>
     } else if (result.Status == 'FINISHED') {
       return;
     }
-    await sleep(500);
+    await sleep(250);
   }
   throw new Error('Failed to get statement status, took too long.');
 };
