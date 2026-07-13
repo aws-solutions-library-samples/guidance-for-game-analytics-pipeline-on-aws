@@ -13,7 +13,7 @@ The dashboard connects to an **Amazon Redshift Serverless** workgroup and visual
 
 - An active **Amazon QuickSight Enterprise** subscription in the target AWS account and Region. QuickSight Standard does not support the API calls used in this guide.
 - A registered QuickSight user or group to grant dashboard access to (console: **QuickSight > Manage QuickSight > Manage users**).
-- The Game Analytics Pipeline data stack already deployed in **Redshift mode** and receiving events: the Redshift Serverless workgroup is `ACTIVE` and `POST /redshift/setup` has been called at least once, so the `event_data` table and the SQL views referenced by the datasets exist.
+- The Game Analytics Pipeline data stack already deployed in **Redshift mode** and receiving events: the Redshift Serverless workgroup is `ACTIVE` and `POST /redshift/setup` has been called at least once, so the `event_data` materialized view exists in the `public` schema. The six dataset templates in this guide query that `event_data` materialized view directly (via its SUPER `payload` column); they do **not** depend on the additional reporting views that `POST /redshift/setup` also creates. See the [Start initial Application and API section of the Getting Started guide](getting-started.md#start-initial-application-and-api) (and the [API Reference for POST - Set up Redshift](references/api-reference.md#post-set-up-redshift)) for how to invoke that call.
 - The AWS CLI v2, configured with credentials that can call `quicksight:*`, `iam:*`, and `secretsmanager:GetSecretValue` in the target account.
 
 !!! Info "Cost"
@@ -98,9 +98,41 @@ aws iam put-role-policy \
   --policy-document file://qs-redshift-policy.json
 ```
 
+Where to find the two ARN placeholders above:
+
+- `<REDSHIFT_SECRET_ARN>` — the admin secret created for the workgroup. Its name is `redshift!<WORKLOAD_NAME>-workspace-db-admin`; get the full ARN (with the trailing random suffix) with:
+
+    ```bash
+    aws secretsmanager list-secrets \
+      --query "SecretList[?starts_with(Name, 'redshift!<WORKLOAD_NAME>-workspace-db-admin')].ARN" --output text
+    ```
+
+- `<REDSHIFT_KMS_KEY_ARN>` — the KMS key that encrypts that secret. Read it straight off the secret:
+
+    ```bash
+    aws secretsmanager describe-secret \
+      --secret-id <REDSHIFT_SECRET_ARN> --query 'KmsKeyId' --output text
+    ```
+
 The `ec2:*NetworkInterface*` / `ec2:Describe*` statement is required: QuickSight validates the execution role when the VPC connection is created and rejects any role that cannot manage the connection's elastic network interfaces, so `create-vpc-connection` fails with `Provided role is invalid` without it.
 
-QuickSight also needs a security group and a QuickSight VPC connection so it can reach the Redshift Serverless workgroup over the private subnets. Create the security group in the same VPC as the workgroup (egress-only, `0.0.0.0/0`), then create the VPC connection:
+QuickSight also needs a security group and a QuickSight VPC connection so it can reach the Redshift Serverless workgroup over the private subnets. Create the security group in the same VPC as the workgroup, then create the VPC connection. The workgroup exposes its subnets and security group here:
+
+```bash
+aws redshift-serverless get-workgroup \
+  --workgroup-name <WORKLOAD_NAME>-workgroup \
+  --query 'workgroup.{subnets:subnetIds,securityGroups:securityGroupIds}'
+
+# Create an egress-only security group in the workgroup's VPC (derive <VPC_ID>
+# from one of the subnets above via: aws ec2 describe-subnets --subnet-ids <SUBNET_ID>).
+# A new security group already allows all outbound traffic, so no extra egress rule is needed.
+aws ec2 create-security-group \
+  --group-name <WORKLOAD_NAME>-QuickSight-SG \
+  --description "QuickSight VPC connection SG" \
+  --vpc-id <VPC_ID> --query 'GroupId' --output text
+```
+
+The workgroup's own security group must allow inbound on the Redshift port (see the port note in step 3) from within the VPC; the security group created by this guidance already does (it allows the VPC CIDR), so the QuickSight ENIs placed in those subnets can reach it. Then create the VPC connection:
 
 ```bash
 aws quicksight create-vpc-connection \
@@ -114,13 +146,16 @@ aws quicksight create-vpc-connection \
 
 If `create-vpc-connection` still returns `InvalidParameterValueException: Provided role is invalid` after the role above is in place, see the troubleshooting section at the end of this guide — some caller identities hit this error from the CLI even with a correct role, and the QuickSight console path works instead.
 
-Wait for `describe-vpc-connection` to report `Status: AVAILABLE` before continuing:
+Wait for the connection to finish provisioning before continuing. `describe-vpc-connection` returns two separate fields: the lifecycle field `Status` (which progresses `CREATION_IN_PROGRESS` → `CREATION_SUCCESSFUL`, **not** `AVAILABLE`) and a separate reachability field `AvailabilityStatus` (which becomes `AVAILABLE`). Wait until `Status` is `CREATION_SUCCESSFUL` **and** `AvailabilityStatus` is `AVAILABLE`:
 
 ```bash
 aws quicksight describe-vpc-connection \
   --aws-account-id <AWS_ACCOUNT_ID> \
-  --vpc-connection-id <VPC_CONNECTION_ID>
+  --vpc-connection-id <VPC_CONNECTION_ID> \
+  --query 'VPCConnection.{Status:Status,AvailabilityStatus:AvailabilityStatus}'
 ```
+
+Do not poll for `Status: AVAILABLE` — that value never appears on the `Status` field and the loop will never terminate.
 
 ---
 
@@ -149,7 +184,7 @@ aws quicksight create-data-source \
   --data-source-id <WORKLOAD_NAME>-redshift-ds \
   --name "<WORKLOAD_NAME>-Redshift" \
   --type REDSHIFT \
-  --data-source-parameters '{"RedshiftParameters":{"Database":"<REDSHIFT_DATABASE>","Host":"<REDSHIFT_HOST>","Port":<REDSHIFT_PORT>}}' \
+  --data-source-parameters '{"RedshiftParameters":{"Database":"<EVENTS_DATABASE>","Host":"<REDSHIFT_HOST>","Port":<REDSHIFT_PORT>}}' \
   --credentials "file://${CREDS_FILE}" \
   --vpc-connection-properties '{"VpcConnectionArn":"arn:aws:quicksight:<REGION>:<AWS_ACCOUNT_ID>:vpcConnection/<VPC_CONNECTION_ID>"}' \
   --permissions Principal=<QUICKSIGHT_PRINCIPAL_ARN>,Actions=quicksight:DescribeDataSource,quicksight:DescribeDataSourcePermissions,quicksight:PassDataSource,quicksight:UpdateDataSource,quicksight:DeleteDataSource,quicksight:UpdateDataSourcePermissions
@@ -159,12 +194,24 @@ rm -f "$CREDS_FILE"
 trap - EXIT
 ```
 
-Confirm the data source is ready before moving on:
+`<EVENTS_DATABASE>` is the `EVENTS_DATABASE` value from `config.yaml` (the same token used in step 4).
+
+!!! Warning "Host and port come from the workgroup endpoint — do not assume port 5439"
+    Get `<REDSHIFT_HOST>` and `<REDSHIFT_PORT>` from the workgroup endpoint, not from Redshift defaults. Redshift Serverless workgroups created by this guidance listen on port **5431**, not the provisioned-Redshift default of 5439, and using the wrong port makes `create-data-source` succeed but leaves the connection unusable. Read the real values with:
+
+    ```bash
+    aws redshift-serverless get-workgroup \
+      --workgroup-name <WORKLOAD_NAME>-workgroup \
+      --query 'workgroup.endpoint.{Host:address,Port:port}'
+    ```
+
+Confirm the data source connected before moving on — wait until `Status` is `CREATION_SUCCESSFUL` (a `CREATION_FAILED` here almost always means the VPC connection cannot reach the workgroup on the port above, or the credentials/secret are wrong):
 
 ```bash
 aws quicksight describe-data-source \
   --aws-account-id <AWS_ACCOUNT_ID> \
-  --data-source-id <WORKLOAD_NAME>-redshift-ds
+  --data-source-id <WORKLOAD_NAME>-redshift-ds \
+  --query 'DataSource.{Status:Status,Error:ErrorInfo}'
 ```
 
 Note the `Arn` from the response, you need it as `<DATA_SOURCE_ARN>` in the next step.
@@ -173,15 +220,15 @@ Note the `Arn` from the response, you need it as `<DATA_SOURCE_ARN>` in the next
 
 ## 4. Create the six datasets
 
-Dataset definitions are provided in this repository's `resources/quicksight/datasets/<viewName>.json` (one file per view). Each JSON file is already shaped for `create-data-set --cli-input-json`. Before running the commands, replace all five placeholders in every dataset file:
+Dataset definitions are provided in this repository's `resources/quicksight/datasets/<datasetName>.json` (one file per dataset). Each JSON file is already shaped for `create-data-set --cli-input-json` and carries its own inline `CustomSql` that reads directly from the `event_data` materialized view — these are QuickSight dataset queries, not the Redshift reporting views created by `POST /redshift/setup`. Before running the commands, replace all five placeholders in every dataset file:
 
 - `<DATA_SOURCE_ARN>` — the data source ARN from step 3.
-- `<EVENTS_DATABASE>` — the name of the Redshift database that holds the `event_data` table (the same database name configured for the Redshift Serverless workgroup). The dataset SQL reads `FROM "<EVENTS_DATABASE>"."public"."event_data"`, so this must match your deployed database.
+- `<EVENTS_DATABASE>` — the name of the Redshift database that holds the `event_data` materialized view (the same database name configured for the Redshift Serverless workgroup, i.e. `EVENTS_DATABASE` in `config.yaml`). The dataset SQL reads `FROM "<EVENTS_DATABASE>"."public"."event_data"`, so this must match your deployed database.
 - `<AWS_ACCOUNT_ID>` — your AWS account ID.
 - `<WORKLOAD_NAME>` — the workload name from `config.yaml` (also the prefix of each `DataSetId`).
 - `<QUICKSIGHT_PRINCIPAL_ARN>` — the QuickSight user ARN the dataset permissions are granted to (same value used in step 3).
 
-The six views are: `all_events`, `match_events`, `level_events`, `economy_events`, `player_health`, and `match_lifecycle_funnel`.
+The six datasets are: `all_events`, `match_events`, `level_events`, `economy_events`, `player_health`, and `match_lifecycle_funnel`. Each is a QuickSight dataset backed by its own SQL against `event_data`; they are unrelated to the Redshift reporting views (`total_events`, `level_completion_rate`, `average_sentiment_per_day`, and so on) that `POST /redshift/setup` creates for ad-hoc querying in the Redshift console.
 
 ```bash
 for view in all_events match_events level_events economy_events player_health match_lifecycle_funnel; do
