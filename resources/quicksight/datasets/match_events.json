@@ -1,0 +1,103 @@
+{
+  "AwsAccountId": "<AWS_ACCOUNT_ID>",
+  "DataSetId": "<WORKLOAD_NAME>-match_events",
+  "ImportMode": "DIRECT_QUERY",
+  "LogicalTableMap": {
+    "LogicalTable0": {
+      "Alias": "match_events",
+      "DataTransforms": [
+        {
+          "CreateColumnsOperation": {
+            "Columns": [
+              {
+                "ColumnId": "win_pct_value",
+                "ColumnName": "win_pct_value",
+                "Expression": "ifelse({match_result} = 'WIN', 100, 0)"
+              }
+            ]
+          }
+        }
+      ],
+      "Source": {
+        "PhysicalTableId": "PhysicalTable0"
+      }
+    }
+  },
+  "Name": "match_events",
+  "Permissions": [
+    {
+      "Actions": [
+        "quicksight:DescribeDataSet",
+        "quicksight:DescribeDataSetPermissions",
+        "quicksight:PassDataSet",
+        "quicksight:DescribeIngestion",
+        "quicksight:ListIngestions",
+        "quicksight:UpdateDataSet",
+        "quicksight:DeleteDataSet",
+        "quicksight:CreateIngestion",
+        "quicksight:CancelIngestion",
+        "quicksight:UpdateDataSetPermissions"
+      ],
+      "Principal": "<QUICKSIGHT_PRINCIPAL_ARN>"
+    }
+  ],
+  "PhysicalTableMap": {
+    "PhysicalTable0": {
+      "CustomSql": {
+        "Columns": [
+          {
+            "Name": "event_id",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_type",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_date",
+            "Type": "DATETIME"
+          },
+          {
+            "Name": "match_id",
+            "Type": "STRING"
+          },
+          {
+            "Name": "map_id",
+            "Type": "STRING"
+          },
+          {
+            "Name": "match_type",
+            "Type": "STRING"
+          },
+          {
+            "Name": "match_result",
+            "Type": "STRING"
+          },
+          {
+            "Name": "spell_used",
+            "Type": "STRING"
+          },
+          {
+            "Name": "exp_gained",
+            "Type": "INTEGER"
+          },
+          {
+            "Name": "matching_failed_msg",
+            "Type": "STRING"
+          },
+          {
+            "Name": "most_used_spell",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_count",
+            "Type": "INTEGER"
+          }
+        ],
+        "DataSourceArn": "<DATA_SOURCE_ARN>",
+        "Name": "match_events",
+        "SqlQuery": "SELECT\n  events.payload.event.event_id::VARCHAR as event_id,\n  events.payload.event.event_type::VARCHAR as event_type,\n  date(timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second') as event_date,\n  events.payload.event.event_data.match_id::VARCHAR as match_id,\n  NULLIF(events.payload.event.event_data.map_id::VARCHAR, '') as map_id,\n  NULLIF(events.payload.event.event_data.match_type::VARCHAR, '') as match_type,\n  NULLIF(events.payload.event.event_data.match_result_type::VARCHAR, '') as match_result,\n  NULLIF(events.payload.event.event_data.spell_id::VARCHAR, '') as spell_used,\n  CAST(NULLIF(events.payload.event.event_data.exp_gained::VARCHAR, '') AS INTEGER) as exp_gained,\n  NULLIF(events.payload.event.event_data.matching_failed_msg::VARCHAR, '') AS matching_failed_msg,\n  NULLIF(events.payload.event.event_data.most_used_spell::VARCHAR, '') AS most_used_spell,\n  1 as event_count\nFROM \"<EVENTS_DATABASE>\".\"public\".\"event_data\" events\nWHERE events.payload.event.event_type::VARCHAR IN ('match_start', 'match_end', 'user_knockout', 'matchmaking_start', 'matchmaking_complete', 'matchmaking_failed')\n  AND timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second' >= dateadd(day, -30, getdate())"
+      }
+    }
+  }
+}

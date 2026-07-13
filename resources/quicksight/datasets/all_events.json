@@ -1,0 +1,74 @@
+{
+  "AwsAccountId": "<AWS_ACCOUNT_ID>",
+  "DataSetId": "<WORKLOAD_NAME>-all_events",
+  "ImportMode": "DIRECT_QUERY",
+  "Name": "all_events",
+  "Permissions": [
+    {
+      "Actions": [
+        "quicksight:DescribeDataSet",
+        "quicksight:DescribeDataSetPermissions",
+        "quicksight:PassDataSet",
+        "quicksight:DescribeIngestion",
+        "quicksight:ListIngestions",
+        "quicksight:UpdateDataSet",
+        "quicksight:DeleteDataSet",
+        "quicksight:CreateIngestion",
+        "quicksight:CancelIngestion",
+        "quicksight:UpdateDataSetPermissions"
+      ],
+      "Principal": "<QUICKSIGHT_PRINCIPAL_ARN>"
+    }
+  ],
+  "PhysicalTableMap": {
+    "PhysicalTable0": {
+      "CustomSql": {
+        "Columns": [
+          {
+            "Name": "event_id",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_type",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_name",
+            "Type": "STRING"
+          },
+          {
+            "Name": "app_version",
+            "Type": "STRING"
+          },
+          {
+            "Name": "application_id",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_date",
+            "Type": "DATETIME"
+          },
+          {
+            "Name": "event_hour",
+            "Type": "DATETIME"
+          },
+          {
+            "Name": "platform",
+            "Type": "STRING"
+          },
+          {
+            "Name": "country",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_count",
+            "Type": "INTEGER"
+          }
+        ],
+        "DataSourceArn": "<DATA_SOURCE_ARN>",
+        "Name": "all_events",
+        "SqlQuery": "SELECT\n  events.payload.event.event_id::VARCHAR as event_id,\n  events.payload.event.event_type::VARCHAR as event_type,\n  events.payload.event.event_name::VARCHAR as event_name,\n  events.payload.event.app_version::VARCHAR as app_version,\n  events.payload.application_id::VARCHAR as application_id,\n  date(timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second') as event_date,\n  date_trunc('hour', timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second') as event_hour,\n  NULLIF(events.payload.event.event_data.platform::VARCHAR, '') as platform,\n  CASE NULLIF(events.payload.event.event_data.country_id::VARCHAR, '')\n    WHEN 'UK' THEN 'United Kingdom'\n    ELSE INITCAP(LOWER(NULLIF(events.payload.event.event_data.country_id::VARCHAR, '')))\n  END as country,\n  1 as event_count\nFROM \"<EVENTS_DATABASE>\".\"public\".\"event_data\" events"
+      }
+    }
+  }
+}
