@@ -5,18 +5,18 @@
     "version": "0.0.1",
     "private": true,
     "dependencies": {
-        "@aws-sdk/client-dynamodb": "^3.731.0",
-        "@aws-sdk/credential-providers": "^3.731.0",
-        "@aws-sdk/lib-dynamodb": "^3.731.0",
+        "@aws-sdk/client-dynamodb": "^3.1087.0",
+        "@aws-sdk/credential-providers": "^3.1087.0",
+        "@aws-sdk/lib-dynamodb": "^3.1087.0",
         "ajv": "*",
         "moment": "*",
         "node-cache": "*",
         "underscore": "*"
     },
     "devDependencies": {
-        "@aws-sdk/client-dynamodb": "^3.731.0",
-        "@aws-sdk/credential-providers": "^3.731.0",
-        "@aws-sdk/lib-dynamodb": "^3.731.0",
+        "@aws-sdk/client-dynamodb": "^3.1087.0",
+        "@aws-sdk/credential-providers": "^3.1087.0",
+        "@aws-sdk/lib-dynamodb": "^3.1087.0",
         "npm-run-all": "*"
     },
     "scripts": {
