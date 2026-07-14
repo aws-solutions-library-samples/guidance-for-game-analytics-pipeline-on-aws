@@ -17,7 +17,7 @@
     "@types/node": "^18.19.86",
     "@types/uuid": "^9.0.1",
     "aws-cdk": "2.1023.0",
-    "aws-cdk-lib": "2.208.0",
+    "aws-cdk-lib": "2.246.0",
     "fs": "^0.0.1-security",
     "jest": "^29.3.1",
     "js-yaml": "^4.1.0",
