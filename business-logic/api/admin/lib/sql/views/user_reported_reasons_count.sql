@@ -1,8 +1,13 @@
-CREATE OR REPLACE VIEW user_reported_reasons_count AS
+CREATE OR REPLACE VIEW
+  user_reported_reasons_count AS
 SELECT
-  events.payload.event.event_data.report_reason::VARCHAR AS reason,
-  count(*) AS reason_count
-FROM "{db_name}"."public"."event_data" events
-WHERE events.payload.event.event_type::VARCHAR = 'user_report'
-GROUP BY reason
-WITH NO SCHEMA BINDING;
+  COUNT(events.payload.event.event_data.report_reason::VARCHAR) as count_of_reports,
+  events.payload.event.event_data.report_reason::VARCHAR as report_reason
+FROM
+  "{db_name}"."public"."event_data" events
+GROUP BY
+  events.payload.event.event_data.report_reason::VARCHAR
+ORDER BY
+  events.payload.event.event_data.report_reason::VARCHAR DESC
+WITH
+  NO SCHEMA BINDING;

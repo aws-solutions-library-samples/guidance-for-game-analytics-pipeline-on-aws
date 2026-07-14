@@ -16,14 +16,24 @@ const STREAM_NAME = process.env.STREAM_NAME;
 const MATERIALIZED_VIEW_NAME = 'event_data';
 
 const create_schema_statement = `CREATE EXTERNAL SCHEMA IF NOT EXISTS kds FROM KINESIS IAM_ROLE '${REDSHIFT_ROLE_ARN}';`;
-const { redactSqlStatement } = require('./log-sanitizer');
+
 const create_materialized_view_statement = `CREATE MATERIALIZED VIEW ${MATERIALIZED_VIEW_NAME} AUTO REFRESH YES AS SELECT
       refresh_time,
       approximate_arrival_timestamp,
       partition_key,
       shard_id,
       sequence_number,
-      json_parse(kinesis_data) as payload
+      json_parse(kinesis_data) AS payload,
+      payload.event.event_id::TEXT AS event_id,
+      payload.event.event_type::TEXT AS event_type,
+      payload.event.event_name::TEXT AS event_name,
+      payload.event.event_version::TEXT AS event_version,
+      payload.event.event_timestamp::BIGINT AS event_timestamp,
+      payload.event.app_version::TEXT AS app_version,
+      payload.application_id::TEXT AS application_id,
+      payload.event.application_name::TEXT AS application_name,
+      payload.event.event_data AS event_data,
+      payload.event.metadata AS metadata
   FROM kds."${STREAM_NAME}"
   WHERE CAN_JSON_PARSE(kinesis_data);`;
 
@@ -47,10 +57,10 @@ async function setupRedshift() {
   const client = new RedshiftDataClient(config);
 
   try {
-    console.log(`Executing: ${redactSqlStatement(create_schema_statement)}`);
+    console.log(`Executing: ${create_schema_statement}`);
     const client_id = await executeStatement(client, create_schema_statement);
     await waitForStatement(client, client_id);
-    console.log(`Executed: ${redactSqlStatement(create_schema_statement)}`);
+    console.log(`Executed: ${create_schema_statement}`);
 
     console.log(`Executing: ${create_materialized_view_statement}`);
     const materialized_view_id = await executeStatement(client, create_materialized_view_statement);
@@ -106,12 +116,7 @@ const waitForStatement = async (client, id, ignore_errors = [], retries = 80) =>
         return;
       }
       console.log('Error waitForStatement');
-      const safeResult = {
-        ...result,
-        QueryString: redactSqlStatement(result.QueryString),
-        Error: redactSqlStatement(result.Error),
-      };
-      console.log(JSON.stringify(safeResult));
+      console.log(JSON.stringify(result));
       throw new Error(result.Error);
     } else if (result.Status == 'FINISHED') {
       return;

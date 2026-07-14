@@ -1,12 +1,10 @@
--- NOTE: Materialized views do not support CTEs (WITH ... AS) or JOINs in all cases.
--- This remains a regular view due to the CTE + JOIN pattern.
 CREATE OR REPLACE VIEW
   level_completion_rate AS
-WITH
-  t1 AS (
+with
+  t1 as (
     SELECT
       events.payload.event.event_data.level_id::VARCHAR as level,
-      count(events.payload.event.event_data.level_id) as level_count
+      count(events.payload.event.event_data.level_id::VARCHAR) as level_count
     FROM
       "{db_name}"."public"."event_data" events
     WHERE
@@ -14,10 +12,10 @@ WITH
     GROUP BY
       events.payload.event.event_data.level_id::VARCHAR
   ),
-  t2 AS (
+  t2 as (
     SELECT
       events.payload.event.event_data.level_id::VARCHAR as level,
-      count(events.payload.event.event_data.level_id) as level_count
+      count(events.payload.event.event_data.level_id::VARCHAR) as level_count
     FROM
       "{db_name}"."public"."event_data" events
     WHERE
@@ -25,15 +23,17 @@ WITH
     GROUP BY
       events.payload.event.event_data.level_id::VARCHAR
   )
-SELECT
+select
   t2.level,
   (
     cast(t2.level_count AS DOUBLE PRECISION) / (
       cast(t2.level_count AS DOUBLE PRECISION) + cast(t1.level_count AS DOUBLE PRECISION)
     )
   ) * 100 as level_completion_rate
-FROM
+from
   t1
   JOIN t2 ON t1.level = t2.level
+ORDER by
+  level
 WITH
   NO SCHEMA BINDING;
