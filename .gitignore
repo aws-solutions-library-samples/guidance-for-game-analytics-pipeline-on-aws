@@ -24,6 +24,9 @@ cdk.out
 .history/
 *.vsix
 
+# Kiro
+.kiro/
+
 # Terraform
 .terraform
 .terraform.lock.hcl
