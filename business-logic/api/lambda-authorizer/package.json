@@ -5,7 +5,7 @@
     "private": true,
     "main": "index.js",
     "dependencies": {
-        "@aws-sdk/client-dynamodb": "^3.731.0",
+        "@aws-sdk/client-dynamodb": "^3.1087.0",
         "@aws-sdk/credential-providers": "^3.731.0",
         "@aws-sdk/lib-dynamodb": "^3.731.0"
     },
