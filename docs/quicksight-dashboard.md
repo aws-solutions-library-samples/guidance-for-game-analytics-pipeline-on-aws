@@ -5,7 +5,7 @@ This guide walks through deploying the Amazon QuickSight analytics dashboard for
 !!! Note
 An earlier iteration of this guidance automated this entire setup with a CDK construct and an admin-Lambda teardown routine. That path is not part of this release; every step below is a manual replacement for what the construct used to do at `cdk deploy` / `cdk destroy` time.
 
-The dashboard connects to an **Amazon Redshift Serverless** workgroup and visualizes six datasets built directly from your `event_data` table. The dataset SQL templates that ship with this guide use Redshift-specific syntax (the SUPER `events.payload...` path, `::VARCHAR`/`::BIGINT` casts, and `date_trunc`), so this guide is scoped to Redshift Serverless only.
+The dashboard connects to an **Amazon Redshift Serverless** workgroup and visualizes six datasets built directly from your `event_data_mv` materialized view. The dataset SQL templates that ship with this guide use Redshift-specific syntax (the SUPER `events.payload...` path, `::VARCHAR`/`::BIGINT` casts, and `date_trunc`), so this guide is scoped to Redshift Serverless only.
 
 ---
 
@@ -13,7 +13,7 @@ The dashboard connects to an **Amazon Redshift Serverless** workgroup and visual
 
 - An active **Amazon QuickSight Enterprise** subscription in the target AWS account and Region. QuickSight Standard does not support the API calls used in this guide.
 - A registered QuickSight user or group to grant dashboard access to (console: **QuickSight > Manage QuickSight > Manage users**).
-- The Game Analytics Pipeline data stack already deployed in **Redshift mode** and receiving events: the Redshift Serverless workgroup is `ACTIVE` and `POST /redshift/setup` has been called at least once, so the `event_data` materialized view exists in the `public` schema. The six dataset templates in this guide query that `event_data` materialized view directly (via its SUPER `payload` column); they do **not** depend on the additional reporting views that `POST /redshift/setup` also creates. See the [Start initial Application and API section of the Getting Started guide](getting-started.md#start-initial-application-and-api) (and the [API Reference for POST - Set up Redshift](references/api-reference.md#post-set-up-redshift)) for how to invoke that call.
+- The Game Analytics Pipeline data stack already deployed in **Redshift mode** and receiving events: the Redshift Serverless workgroup is `ACTIVE` and `POST /redshift/setup` has been called at least once, so the `event_data_mv` materialized view exists in the `public` schema. The six dataset templates in this guide query that `event_data_mv` materialized view directly (via its SUPER `payload` column); they do **not** depend on the additional reporting views that `POST /redshift/setup` also creates. See the [Start initial Application and API section of the Getting Started guide](getting-started.md#start-initial-application-and-api) (and the [API Reference for POST - Set up Redshift](references/api-reference.md#post-set-up-redshift)) for how to invoke that call.
 - The AWS CLI v2, configured with credentials that can call `quicksight:*`, `iam:*`, and `secretsmanager:GetSecretValue` in the target account.
 
 !!! Info "Cost"
@@ -220,15 +220,15 @@ Note the `Arn` from the response, you need it as `<DATA_SOURCE_ARN>` in the next
 
 ## 4. Create the six datasets
 
-Dataset definitions are provided in this repository's `resources/quicksight/datasets/<datasetName>.json` (one file per dataset). Each JSON file is already shaped for `create-data-set --cli-input-json` and carries its own inline `CustomSql` that reads directly from the `event_data` materialized view — these are QuickSight dataset queries, not the Redshift reporting views created by `POST /redshift/setup`. Before running the commands, replace all five placeholders in every dataset file:
+Dataset definitions are provided in this repository's `resources/quicksight/datasets/<datasetName>.json` (one file per dataset). Each JSON file is already shaped for `create-data-set --cli-input-json` and carries its own inline `CustomSql` that reads directly from the `event_data_mv` materialized view (via its SUPER `payload` column) — these are QuickSight dataset queries, not the Redshift reporting views created by `POST /redshift/setup`. Before running the commands, replace all five placeholders in every dataset file:
 
 - `<DATA_SOURCE_ARN>` — the data source ARN from step 3.
-- `<EVENTS_DATABASE>` — the name of the Redshift database that holds the `event_data` materialized view (the same database name configured for the Redshift Serverless workgroup, i.e. `EVENTS_DATABASE` in `config.yaml`). The dataset SQL reads `FROM "<EVENTS_DATABASE>"."public"."event_data"`, so this must match your deployed database.
+- `<EVENTS_DATABASE>` — the name of the Redshift database that holds the `event_data_mv` materialized view (the same database name configured for the Redshift Serverless workgroup, i.e. `EVENTS_DATABASE` in `config.yaml`). The dataset SQL reads `FROM "<EVENTS_DATABASE>"."public"."event_data_mv"`, so this must match your deployed database.
 - `<AWS_ACCOUNT_ID>` — your AWS account ID.
 - `<WORKLOAD_NAME>` — the workload name from `config.yaml` (also the prefix of each `DataSetId`).
 - `<QUICKSIGHT_PRINCIPAL_ARN>` — the QuickSight user ARN the dataset permissions are granted to (same value used in step 3).
 
-The six datasets are: `all_events`, `match_events`, `level_events`, `economy_events`, `player_health`, and `match_lifecycle_funnel`. Each is a QuickSight dataset backed by its own SQL against `event_data`; they are unrelated to the Redshift reporting views (`total_events`, `level_completion_rate`, `average_sentiment_per_day`, and so on) that `POST /redshift/setup` creates for ad-hoc querying in the Redshift console.
+The six datasets are: `all_events`, `match_events`, `level_events`, `economy_events`, `player_health`, and `match_lifecycle_funnel`. Each is a QuickSight dataset backed by its own SQL against `event_data_mv`; they are unrelated to the Redshift reporting views (`total_events`, `level_completion_rate`, `average_sentiment_per_day`, and so on) that `POST /redshift/setup` creates for ad-hoc querying in the Redshift console.
 
 ```bash
 for view in all_events match_events level_events economy_events player_health match_lifecycle_funnel; do
@@ -378,4 +378,4 @@ This is expected until the underlying SQL views have data. Confirm `POST /redshi
 
 **`create-data-set` fails with a relation-not-found or database error**
 
-Confirm the `<EVENTS_DATABASE>` placeholder in each `resources/quicksight/datasets/<viewName>.json` file was replaced with the actual Redshift database name and that the `public.event_data` table (and the SQL views) exist in that database.
+Confirm the `<EVENTS_DATABASE>` placeholder in each `resources/quicksight/datasets/<viewName>.json` file was replaced with the actual Redshift database name and that the `public.event_data_mv` materialized view (created by `POST /redshift/setup`) exists in that database.

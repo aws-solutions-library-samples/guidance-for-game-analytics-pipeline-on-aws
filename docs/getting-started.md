@@ -273,6 +273,9 @@ After the application is created, create an API key to send events to the API. M
 
 If you have Redshift Mode enabled, enable the materialized views and remaining infrastructure through the API. Refer to the [API Reference for POST - Setup Redshift](./references/api-reference.md#post-set-up-redshift) on how to setup the final Redshift components.
 
+!!! Note
+	The first call to `POST /redshift/setup` can take longer than the API Gateway 29-second timeout and may return a `500` "Endpoint request timed out" error. The underlying Lambda still runs to completion and creates the `event_data_mv` materialized view and reporting views. The endpoint is idempotent — wait about a minute and call it again; it returns `200` once the objects exist. See the [API Reference for POST - Set up Redshift](./references/api-reference.md#post-set-up-redshift) for details.
+
 ---
 
 ### Apache Iceberg Only - Configure Table Partition Spec

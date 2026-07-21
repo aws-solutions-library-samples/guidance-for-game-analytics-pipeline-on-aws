@@ -72,7 +72,7 @@
         ],
         "DataSourceArn": "<DATA_SOURCE_ARN>",
         "Name": "level_events",
-        "SqlQuery": "SELECT\n  events.payload.event.event_id::VARCHAR as event_id,\n  events.payload.event.event_type::VARCHAR as event_type,\n  date(timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second') as event_date,\n  events.payload.event.event_data.level_id::VARCHAR as level_id,\n  CAST(events.payload.event.event_data.level_version::VARCHAR AS INTEGER) as level_version,\n  1 as event_count\nFROM \"<EVENTS_DATABASE>\".\"public\".\"event_data\" events\nWHERE events.payload.event.event_type::VARCHAR IN ('level_started', 'level_completed', 'level_failed')\n  AND timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second' >= dateadd(day, -30, getdate())"
+        "SqlQuery": "SELECT\n  events.payload.event.event_id::VARCHAR as event_id,\n  events.payload.event.event_type::VARCHAR as event_type,\n  date(timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second') as event_date,\n  events.payload.event.event_data.level_id::VARCHAR as level_id,\n  CAST(events.payload.event.event_data.level_version::VARCHAR AS INTEGER) as level_version,\n  1 as event_count\nFROM \"<EVENTS_DATABASE>\".\"public\".\"event_data_mv\" events\nWHERE events.payload.event.event_type::VARCHAR IN ('level_started', 'level_completed', 'level_failed')\n  AND timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second' >= dateadd(day, -30, getdate())"
       }
     }
   }

@@ -381,5 +381,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
     {
     }
     ```
+    !!! Warning "First call may return a 500 timeout even though setup succeeds"
+        Creating the `event_data_mv` materialized view and the reporting views can take longer than the API Gateway 29-second integration timeout, so the **first** call to this endpoint often returns `500 {"error":"InternalFailure","error_detail":"Endpoint request timed out"}`. The backing Lambda keeps running to completion after the gateway times out, so the setup still finishes successfully. This operation is idempotent: wait ~60 seconds, then call it again — a subsequent call returns `200` once the objects already exist. You can confirm success by checking that `event_data_mv` and the reporting views exist in the `public` schema, or by inspecting the admin Lambda's CloudWatch logs for `Redshift views created`.
 
     - `4XX/5XX` - See the [Troubleshooting](../troubleshooting.md) section for errors.

@@ -7,7 +7,7 @@ workload-specific value is a `<PLACEHOLDER>` token that you replace before use.
 > **Data source scope:** these templates target **Amazon Redshift Serverless** as the
 > QuickSight data source. The dataset SQL uses Redshift-specific syntax — SUPER-path
 > field access (`events.payload...`), Redshift casts (`::VARCHAR`), `date_trunc`, and
-> `"<EVENTS_DATABASE>"."public"."event_data"` naming — and is **not** Athena-compatible.
+> `"<EVENTS_DATABASE>"."public"."event_data_mv"` naming — and is **not** Athena-compatible.
 
 ## Files
 
@@ -40,7 +40,7 @@ Replace every occurrence before calling the AWS CLI.
 | `<QUICKSIGHT_PRINCIPAL_ARN>`           | ARN of the QuickSight user/group granted permissions.                                                                         |
 | `<QUICKSIGHT_USERNAME>`                | QuickSight user name.                                                                                                         |
 | `<VPC_CONNECTION_ID>`                  | VPC connection ID for the data source, if used.                                                                               |
-| `<EVENTS_DATABASE>`                    | The Redshift database configured as `EVENTS_DATABASE` in `config.yaml`; the schema is `public` and the table is `event_data`. |
+| `<EVENTS_DATABASE>`                    | The Redshift database configured as `EVENTS_DATABASE` in `config.yaml`; the schema is `public` and the materialized view is `event_data_mv` (created by `POST /redshift/setup`). |
 
 ## Creation order
 
