@@ -387,7 +387,9 @@ For more information, refer to the [API Reference for POST - Send Events](./refe
 
 	6. Double click one of the views to automatically open a query in the editor on the right side. Edit the query and press Run when ready.
 
-	7. The view event_data is the materialized view which reads directly from the Kinesis Data Stream. The other views are essentially pre-made queries against the event_data materialized view.
+	7. In V3, `event_data_mv` is the materialized view that reads directly from the Kinesis Data Stream. It stores the event as a single `payload` column of Redshift's `SUPER` (semi-structured) type — Redshift does not allow a streaming materialized view to unnest/type-cast the JSON into individual typed columns, so the flattening is done in views on top of it. Two kinds of views sit on `event_data_mv`:
+		- `event_data` — a regular (non-materialized) view provided for backward compatibility with V2. It flattens `payload` back into the familiar V2 column shape (`event_id`, `event_type`, `event_timestamp`, ... , plus `event_data` and `metadata` as JSON strings), so existing V2 queries such as `SELECT ... FROM event_data` and `JSON_EXTRACT_PATH_TEXT(event_data, 'field')` keep working unchanged.
+		- The dashboard views (`total_plays_by_level`, `user_reported_reasons_count`, etc.) are pre-made queries that read `event_data_mv` directly and navigate the `SUPER` payload with dot notation (e.g. `events.payload.event.event_data.level_id::VARCHAR`).
 
 === "Real-Time Analytics"
 

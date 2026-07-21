@@ -1,11 +1,11 @@
 CREATE OR REPLACE VIEW
   total_events AS
 SELECT
-  application_id,
-  COUNT(DISTINCT event_id) AS event_count
+  events.payload.application_id::VARCHAR as application_id,
+  COUNT(DISTINCT events.payload.event.event_id::VARCHAR) AS event_count
 FROM
-  "{db_name}"."public"."event_data"
+  "{db_name}"."public"."event_data_mv" events
 GROUP BY
-  application_id
+  events.payload.application_id::VARCHAR
 WITH
   NO SCHEMA BINDING;

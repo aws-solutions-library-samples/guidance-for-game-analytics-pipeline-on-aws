@@ -372,7 +372,7 @@ The Game Analytics Pipeline API is the entry point for applications to send data
 - **Request**
     ``` hcl
     POST
-    https://{YOUR_API_ENDPOINT_URL}/live/applications/redshift/setup
+    https://{YOUR_API_ENDPOINT_URL}/live/redshift/setup
     ```
 
 - **Response**

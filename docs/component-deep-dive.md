@@ -123,6 +123,11 @@ If `DIRECT_BATCH` is enabled, events come directly from API Gateway.
 !!! Note
     By default, the cluster is configured with 4 RPU Compute Capacity, and is accessible on port 5439. Both can be configured in the redshift-construct source for your chosen Infrastructure as Code language in the respective Redshift Construct files.
 
+!!! Warning "Materialized view uses the SUPER type"
+    As of v3, the `event_data` materialized view stores each record as a Redshift [`SUPER`](https://docs.aws.amazon.com/redshift/latest/dg/r_SUPER_type.html) column via `json_parse(kinesis_data) AS payload`, and exposes the structured `event_data` and `metadata` fields as `SUPER` (rather than JSON `TEXT`). This lets the sample views read fields with dot-path navigation (for example `payload.event.event_data.level_id::VARCHAR`) instead of `JSON_EXTRACT_PATH_TEXT`, reducing the logic needed in each downstream view.
+
+    The bundled sample views were updated accordingly and return the same results as before. **However, this is a breaking change for any custom SQL, view, or dashboard that read `event_data` or `metadata` as JSON text**: `JSON_EXTRACT_PATH_TEXT(event_data, '<key>')` will fail against a `SUPER` column. Migrate such queries to SUPER dot-path navigation (`payload.event.event_data.<key>::<type>`), or wrap the column with `JSON_SERIALIZE(...)` to obtain the JSON string form.
+
 ## Administration
 
 1. Users can administer changes to Application IDs or authorization tokens for the Application IDs through API Gateway. See the [API Reference](./references/api-reference.md) for more details.

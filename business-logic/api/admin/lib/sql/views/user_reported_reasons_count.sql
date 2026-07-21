@@ -1,15 +1,13 @@
 CREATE OR REPLACE VIEW
   user_reported_reasons_count AS
 SELECT
-  COUNT(
-    JSON_EXTRACT_PATH_TEXT (event_data, 'report_reason')
-  ) as count_of_reports,
-  JSON_EXTRACT_PATH_TEXT (event_data, 'report_reason') as report_reason
+  COUNT(events.payload.event.event_data.report_reason::VARCHAR) as count_of_reports,
+  events.payload.event.event_data.report_reason::VARCHAR as report_reason
 FROM
-  "{db_name}"."public"."event_data"
+  "{db_name}"."public"."event_data_mv" events
 GROUP BY
-  JSON_EXTRACT_PATH_TEXT (event_data, 'report_reason')
+  events.payload.event.event_data.report_reason::VARCHAR
 ORDER BY
-  JSON_EXTRACT_PATH_TEXT (event_data, 'report_reason') DESC
+  events.payload.event.event_data.report_reason::VARCHAR DESC
 WITH
   NO SCHEMA BINDING;

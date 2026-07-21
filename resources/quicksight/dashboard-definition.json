@@ -1,0 +1,4532 @@
+{
+  "AwsAccountId": "<AWS_ACCOUNT_ID>",
+  "DashboardId": "<WORKLOAD_NAME>-game-dashboard",
+  "Name": "<WORKLOAD_NAME>-Game-Analytics",
+  "Definition": {
+    "DataSetIdentifierDeclarations": [
+      {
+        "DataSetArn": "<DATASET_ARN_all_events>",
+        "Identifier": "all_events"
+      },
+      {
+        "DataSetArn": "<DATASET_ARN_match_events>",
+        "Identifier": "match_events"
+      },
+      {
+        "DataSetArn": "<DATASET_ARN_level_events>",
+        "Identifier": "level_events"
+      },
+      {
+        "DataSetArn": "<DATASET_ARN_economy_events>",
+        "Identifier": "economy_events"
+      },
+      {
+        "DataSetArn": "<DATASET_ARN_player_health>",
+        "Identifier": "player_health"
+      },
+      {
+        "DataSetArn": "<DATASET_ARN_match_lifecycle_funnel>",
+        "Identifier": "match_lifecycle_funnel"
+      }
+    ],
+    "FilterGroups": [
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-0",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "platform",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-0"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "pulse-sheet",
+                "VisualIds": [
+                  "pulse-platform-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-1",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "country",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-1"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "pulse-sheet",
+                "VisualIds": [
+                  "pulse-country-heatmap"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-2",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "map_id",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-2"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-outcomes-by-map-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-3",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "match_result",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-3"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-outcomes-by-map-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-4",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "match_type",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-4"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-match-types-donut"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-5",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "spell_used",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-5"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-spell-knockouts-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-6",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "matching_failed_msg",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-6"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-matchmaking-failures-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-7",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "most_used_spell",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-7"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-spell-performance-table"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-8",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "map_id",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-8"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-map-outcome-pivot"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-9",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "match_result",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-9"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-map-outcome-pivot"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-10",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "tutorial_screen_id",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-10"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "progression-sheet",
+                "VisualIds": [
+                  "pr-tutorial-funnel"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-11",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "rank_reached",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-11"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "progression-sheet",
+                "VisualIds": [
+                  "pr-rank-distribution-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-12",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "item_rarity",
+                "DataSetIdentifier": "economy_events"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-12"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "monetization-sheet",
+                "VisualIds": [
+                  "mn-lootbox-rarity-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-13",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "item_rarity",
+                "DataSetIdentifier": "economy_events"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-13"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "monetization-sheet",
+                "VisualIds": [
+                  "mn-lootbox-rarity-treemap"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-14",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "currency_amount_band",
+                "DataSetIdentifier": "economy_events"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-14"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "monetization-sheet",
+                "VisualIds": [
+                  "mn-transaction-amount-distribution-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-15",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "currency_type",
+                "DataSetIdentifier": "economy_events"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-15"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "monetization-sheet",
+                "VisualIds": [
+                  "mn-revenue-by-currency-area"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-16",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "report_reason",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-16"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "sentiment-sheet",
+                "VisualIds": [
+                  "st-report-reasons-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "null-exclude-17",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "user_rating",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "CustomFilterConfiguration": {
+                  "MatchOperator": "DOES_NOT_EQUAL",
+                  "NullOption": "NON_NULLS_ONLY",
+                  "SelectAllOptions": "FILTER_ALL_VALUES"
+                }
+              },
+              "FilterId": "null-filter-17"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "sentiment-sheet",
+                "VisualIds": [
+                  "st-rating-distribution-vbar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-0",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "user_registration"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-0"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "pulse-sheet",
+                "VisualIds": [
+                  "pulse-platform-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-1",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "user_registration"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-1"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "pulse-sheet",
+                "VisualIds": [
+                  "pulse-country-heatmap"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-2",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "tutorial_progression"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-2"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "progression-sheet",
+                "VisualIds": [
+                  "pr-tutorial-funnel"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-3",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "user_rank_up"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-3"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "progression-sheet",
+                "VisualIds": [
+                  "pr-rank-distribution-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-4",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "match_end"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-4"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-outcomes-by-map-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-5",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "matchmaking_start",
+                    "matchmaking_complete",
+                    "matchmaking_failed"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-5"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-match-types-donut"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-6",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "user_knockout"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-6"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-spell-knockouts-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-7",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "matchmaking_failed"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-7"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-matchmaking-failures-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-8",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "economy_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "lootbox_opened"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-8"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "monetization-sheet",
+                "VisualIds": [
+                  "mn-lootbox-rarity-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-9",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "economy_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "lootbox_opened"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-9"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "monetization-sheet",
+                "VisualIds": [
+                  "mn-lootbox-rarity-treemap"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-10",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "user_report"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-10"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "sentiment-sheet",
+                "VisualIds": [
+                  "st-report-reasons-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-11",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "user_sentiment"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-11"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "sentiment-sheet",
+                "VisualIds": [
+                  "st-rating-distribution-vbar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-12",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "user_sentiment"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-12"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "sentiment-sheet",
+                "VisualIds": [
+                  "st-avg-rating-gauge"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-13",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "all_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "login",
+                    "logout"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-13"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "pulse-sheet",
+                "VisualIds": [
+                  "pulse-login-logout-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-14",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "match_end"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-14"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-avg-xp-kpi"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-15",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "economy_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "iap_transaction"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-15"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "monetization-sheet",
+                "VisualIds": [
+                  "mn-revenue-by-currency-area"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-16",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "all_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "item_viewed",
+                    "iap_transaction"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-16"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "monetization-sheet",
+                "VisualIds": [
+                  "mn-purchase-funnel"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-17",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "match_end"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-17"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-spell-volume-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-18",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "match_end"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-18"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-spell-winrate-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-19",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "match_end"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-19"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-spell-performance-table"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-20",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "match_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "match_end"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-20"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "combat-sheet",
+                "VisualIds": [
+                  "cb-map-outcome-pivot"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-21",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "user_registration"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-21"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "pulse-sheet",
+                "VisualIds": [
+                  "pulse-country-platform-heatmap"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-22",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "tutorial_progression"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-22"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "progression-sheet",
+                "VisualIds": [
+                  "pr-tutorial-sessions-kpi"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-23",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "level_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "level_completed"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-23"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "progression-sheet",
+                "VisualIds": [
+                  "pr-levels-completed-kpi"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-24",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "player_health"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "user_rank_up"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-24"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "progression-sheet",
+                "VisualIds": [
+                  "pr-rank-ups-kpi"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "event-type-include-25",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "event_type",
+                "DataSetIdentifier": "economy_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "iap_transaction"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "event-type-filter-25"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "monetization-sheet",
+                "VisualIds": [
+                  "mn-transaction-amount-distribution-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      },
+      {
+        "CrossDataset": "SINGLE_DATASET",
+        "FilterGroupId": "currency-type-usd-band",
+        "Filters": [
+          {
+            "CategoryFilter": {
+              "Column": {
+                "ColumnName": "currency_type",
+                "DataSetIdentifier": "economy_events"
+              },
+              "Configuration": {
+                "FilterListConfiguration": {
+                  "CategoryValues": [
+                    "USD"
+                  ],
+                  "MatchOperator": "CONTAINS",
+                  "NullOption": "NON_NULLS_ONLY"
+                }
+              },
+              "FilterId": "currency-type-usd-band-filter"
+            }
+          }
+        ],
+        "ScopeConfiguration": {
+          "SelectedSheets": {
+            "SheetVisualScopingConfigurations": [
+              {
+                "Scope": "SELECTED_VISUALS",
+                "SheetId": "monetization-sheet",
+                "VisualIds": [
+                  "mn-transaction-amount-distribution-bar"
+                ]
+              }
+            ]
+          }
+        },
+        "Status": "ENABLED"
+      }
+    ],
+    "Sheets": [
+      {
+        "Description": "High-level game health: Are key metrics trending up or down?",
+        "Layouts": [
+          {
+            "Configuration": {
+              "GridLayout": {
+                "Elements": [
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 8,
+                    "ElementId": "pulse-total-events-kpi",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 0,
+                    "RowSpan": 6
+                  },
+                  {
+                    "ColumnIndex": 8,
+                    "ColumnSpan": 8,
+                    "ElementId": "pulse-new-players-kpi",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 0,
+                    "RowSpan": 6
+                  },
+                  {
+                    "ColumnIndex": 16,
+                    "ColumnSpan": 8,
+                    "ElementId": "pulse-total-matches-kpi",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 0,
+                    "RowSpan": 6
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 32,
+                    "ElementId": "pulse-daily-events-line",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 6,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 16,
+                    "ElementId": "pulse-platform-bar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 18,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 16,
+                    "ColumnSpan": 16,
+                    "ElementId": "pulse-login-logout-bar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 18,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 32,
+                    "ElementId": "pulse-country-heatmap",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 30,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 32,
+                    "ElementId": "pulse-country-platform-heatmap",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 42,
+                    "RowSpan": 14
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "Name": "Pulse",
+        "SheetId": "pulse-sheet",
+        "Visuals": [
+          {
+            "KPIVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "TrendGroups": [
+                    {
+                      "DateDimensionField": {
+                        "Column": {
+                          "ColumnName": "event_date",
+                          "DataSetIdentifier": "all_events"
+                        },
+                        "DateGranularity": "WEEK",
+                        "FieldId": "pulse-event-trend-dim"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    {
+                      "NumericalMeasureField": {
+                        "AggregationFunction": {
+                          "SimpleNumericalAggregation": "SUM"
+                        },
+                        "Column": {
+                          "ColumnName": "event_count",
+                          "DataSetIdentifier": "all_events"
+                        },
+                        "FieldId": "pulse-event-count-measure"
+                      }
+                    }
+                  ]
+                },
+                "KPIOptions": {
+                  "Comparison": {
+                    "ComparisonMethod": "PERCENT_DIFFERENCE"
+                  },
+                  "PrimaryValueDisplayType": "COMPARISON",
+                  "PrimaryValueFontConfiguration": {
+                    "FontSize": {
+                      "Relative": "LARGE"
+                    }
+                  },
+                  "Sparkline": {
+                    "TooltipVisibility": "VISIBLE",
+                    "Type": "LINE",
+                    "Visibility": "VISIBLE"
+                  }
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Week-over-week growth. Watch for sudden drops — they signal outages or churn."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Total Events"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pulse-total-events-kpi"
+            }
+          },
+          {
+            "KPIVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "TrendGroups": [
+                    {
+                      "DateDimensionField": {
+                        "Column": {
+                          "ColumnName": "event_date",
+                          "DataSetIdentifier": "player_health"
+                        },
+                        "DateGranularity": "WEEK",
+                        "FieldId": "pulse-player-trend-dim"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    {
+                      "NumericalMeasureField": {
+                        "AggregationFunction": {
+                          "SimpleNumericalAggregation": "SUM"
+                        },
+                        "Column": {
+                          "ColumnName": "event_count",
+                          "DataSetIdentifier": "player_health"
+                        },
+                        "FieldId": "pulse-player-count-measure"
+                      }
+                    }
+                  ]
+                },
+                "KPIOptions": {
+                  "Comparison": {
+                    "ComparisonMethod": "PERCENT_DIFFERENCE"
+                  },
+                  "PrimaryValueDisplayType": "COMPARISON",
+                  "PrimaryValueFontConfiguration": {
+                    "FontSize": {
+                      "Relative": "LARGE"
+                    }
+                  },
+                  "Sparkline": {
+                    "TooltipVisibility": "VISIBLE",
+                    "Type": "LINE",
+                    "Visibility": "VISIBLE"
+                  }
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Acquisition health: a flat trend means marketing or virality has stalled."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "New Registrations"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pulse-new-players-kpi"
+            }
+          },
+          {
+            "KPIVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "TrendGroups": [
+                    {
+                      "DateDimensionField": {
+                        "Column": {
+                          "ColumnName": "event_date",
+                          "DataSetIdentifier": "match_events"
+                        },
+                        "DateGranularity": "WEEK",
+                        "FieldId": "pulse-match-trend-dim"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    {
+                      "NumericalMeasureField": {
+                        "AggregationFunction": {
+                          "SimpleNumericalAggregation": "SUM"
+                        },
+                        "Column": {
+                          "ColumnName": "event_count",
+                          "DataSetIdentifier": "match_events"
+                        },
+                        "FieldId": "pulse-match-count-measure"
+                      }
+                    }
+                  ]
+                },
+                "KPIOptions": {
+                  "Comparison": {
+                    "ComparisonMethod": "PERCENT_DIFFERENCE"
+                  },
+                  "PrimaryValueDisplayType": "COMPARISON",
+                  "PrimaryValueFontConfiguration": {
+                    "FontSize": {
+                      "Relative": "LARGE"
+                    }
+                  },
+                  "Sparkline": {
+                    "TooltipVisibility": "VISIBLE",
+                    "Type": "LINE",
+                    "Visibility": "VISIBLE"
+                  }
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Engagement proxy: rising matches per player indicates retention strength."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Total Matches"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pulse-total-matches-kpi"
+            }
+          },
+          {
+            "LineChartVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "LineChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "DateDimensionField": {
+                          "Column": {
+                            "ColumnName": "event_date",
+                            "DataSetIdentifier": "all_events"
+                          },
+                          "DateGranularity": "DAY",
+                          "FieldId": "pulse-daily-date-dim"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "all_events"
+                          },
+                          "FieldId": "pulse-daily-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "ASC",
+                        "FieldId": "pulse-daily-date-dim"
+                      }
+                    }
+                  ]
+                },
+                "XAxisDisplayOptions": {
+                  "AxisLineVisibility": "VISIBLE"
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Daily volume across the 33-day window. Spot weekly seasonality and anomalies."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Daily Active Events"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pulse-daily-events-line"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Position": "OUTSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "platform",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "pulse-platform-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "pulse-platform-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "Orientation": "HORIZONTAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "pulse-platform-count-val"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Where to focus optimization: heaviest platform deserves the most QA budget."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Platform Distribution"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pulse-platform-bar"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Position": "OUTSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "event_type",
+                            "DataSetIdentifier": "all_events"
+                          },
+                          "FieldId": "pulse-login-logout-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "all_events"
+                          },
+                          "FieldId": "pulse-login-logout-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "Orientation": "VERTICAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "pulse-login-logout-cat"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Gap between logins and logouts = sessions abandoned without clean exit."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Logins vs Logouts"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pulse-login-logout-bar"
+            }
+          },
+          {
+            "GeospatialMapVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "GeospatialMapAggregatedFieldWells": {
+                    "Colors": [],
+                    "Geospatial": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "country",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "pulse-country-row"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "pulse-country-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Position": "BOTTOM",
+                  "Visibility": "VISIBLE"
+                },
+                "MapStyleOptions": {
+                  "BaseMapStyle": "LIGHT_GRAY"
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Darker regions = more players. Prioritize localization and server placement there."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Player Distribution by Country"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pulse-country-heatmap"
+            }
+          },
+          {
+            "HeatMapVisual": {
+              "ChartConfiguration": {
+                "ColorScale": {
+                  "ColorFillType": "GRADIENT",
+                  "Colors": [
+                    {
+                      "Color": "#F7FBFF"
+                    },
+                    {
+                      "Color": "#2171B5"
+                    },
+                    {
+                      "Color": "#08306B"
+                    }
+                  ]
+                },
+                "FieldWells": {
+                  "HeatMapAggregatedFieldWells": {
+                    "Columns": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "platform",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "pulse-cp-platform-col"
+                        }
+                      }
+                    ],
+                    "Rows": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "country",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "pulse-cp-country-row"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "pulse-cp-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Position": "RIGHT",
+                  "Visibility": "VISIBLE"
+                },
+                "SortConfiguration": {
+                  "HeatMapRowItemsLimitConfiguration": {
+                    "ItemsLimit": 20,
+                    "OtherCategories": "EXCLUDE"
+                  },
+                  "HeatMapRowSort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "pulse-cp-count-val"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Cross-tab of registrations by country (rows) and platform (cols). Reveals which platforms dominate which markets — e.g. iOS in Japan vs xbox in US."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Country × Platform Registrations"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pulse-country-platform-heatmap"
+            }
+          }
+        ]
+      },
+      {
+        "Description": "Player journey from tutorial through levels to ranked play.",
+        "Layouts": [
+          {
+            "Configuration": {
+              "GridLayout": {
+                "Elements": [
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 11,
+                    "ElementId": "pr-tutorial-sessions-kpi",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 0,
+                    "RowSpan": 6
+                  },
+                  {
+                    "ColumnIndex": 11,
+                    "ColumnSpan": 11,
+                    "ElementId": "pr-levels-completed-kpi",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 0,
+                    "RowSpan": 6
+                  },
+                  {
+                    "ColumnIndex": 22,
+                    "ColumnSpan": 10,
+                    "ElementId": "pr-rank-ups-kpi",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 0,
+                    "RowSpan": 6
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 32,
+                    "ElementId": "pr-tutorial-funnel",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 6,
+                    "RowSpan": 14
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 32,
+                    "ElementId": "pr-level-performance-bar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 20,
+                    "RowSpan": 16
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 32,
+                    "ElementId": "pr-rank-distribution-bar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 36,
+                    "RowSpan": 12
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "Name": "Onboarding & Progression",
+        "SheetId": "progression-sheet",
+        "Visuals": [
+          {
+            "KPIVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "TrendGroups": [
+                    {
+                      "DateDimensionField": {
+                        "Column": {
+                          "ColumnName": "event_date",
+                          "DataSetIdentifier": "player_health"
+                        },
+                        "DateGranularity": "WEEK",
+                        "FieldId": "pr-tutorial-sessions-trend-dim"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    {
+                      "NumericalMeasureField": {
+                        "AggregationFunction": {
+                          "SimpleNumericalAggregation": "SUM"
+                        },
+                        "Column": {
+                          "ColumnName": "event_count",
+                          "DataSetIdentifier": "player_health"
+                        },
+                        "FieldId": "pr-tutorial-sessions-measure"
+                      }
+                    }
+                  ]
+                },
+                "KPIOptions": {
+                  "Comparison": {
+                    "ComparisonMethod": "PERCENT_DIFFERENCE"
+                  },
+                  "PrimaryValueDisplayType": "COMPARISON",
+                  "PrimaryValueFontConfiguration": {
+                    "FontSize": {
+                      "Relative": "LARGE"
+                    }
+                  },
+                  "Sparkline": {
+                    "TooltipVisibility": "VISIBLE",
+                    "Type": "LINE",
+                    "Visibility": "VISIBLE"
+                  }
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Onboarding throughput. Slower growth here forecasts weaker D1 retention."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Tutorial Sessions"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pr-tutorial-sessions-kpi"
+            }
+          },
+          {
+            "KPIVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "TrendGroups": [
+                    {
+                      "DateDimensionField": {
+                        "Column": {
+                          "ColumnName": "event_date",
+                          "DataSetIdentifier": "level_events"
+                        },
+                        "DateGranularity": "WEEK",
+                        "FieldId": "pr-levels-completed-trend-dim"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    {
+                      "NumericalMeasureField": {
+                        "AggregationFunction": {
+                          "SimpleNumericalAggregation": "SUM"
+                        },
+                        "Column": {
+                          "ColumnName": "event_count",
+                          "DataSetIdentifier": "level_events"
+                        },
+                        "FieldId": "pr-levels-completed-measure"
+                      }
+                    }
+                  ]
+                },
+                "KPIOptions": {
+                  "Comparison": {
+                    "ComparisonMethod": "PERCENT_DIFFERENCE"
+                  },
+                  "PrimaryValueDisplayType": "COMPARISON",
+                  "PrimaryValueFontConfiguration": {
+                    "FontSize": {
+                      "Relative": "LARGE"
+                    }
+                  },
+                  "Sparkline": {
+                    "TooltipVisibility": "VISIBLE",
+                    "Type": "LINE",
+                    "Visibility": "VISIBLE"
+                  }
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Mid-funnel velocity. Drops imply difficulty spike or content fatigue."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Levels Completed"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pr-levels-completed-kpi"
+            }
+          },
+          {
+            "KPIVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "TrendGroups": [
+                    {
+                      "DateDimensionField": {
+                        "Column": {
+                          "ColumnName": "event_date",
+                          "DataSetIdentifier": "player_health"
+                        },
+                        "DateGranularity": "WEEK",
+                        "FieldId": "pr-rank-ups-trend-dim"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    {
+                      "CategoricalMeasureField": {
+                        "AggregationFunction": "DISTINCT_COUNT",
+                        "Column": {
+                          "ColumnName": "event_id",
+                          "DataSetIdentifier": "player_health"
+                        },
+                        "FieldId": "pr-rank-ups-measure"
+                      }
+                    }
+                  ]
+                },
+                "KPIOptions": {
+                  "Comparison": {
+                    "ComparisonMethod": "PERCENT_DIFFERENCE"
+                  },
+                  "PrimaryValueDisplayType": "COMPARISON",
+                  "PrimaryValueFontConfiguration": {
+                    "FontSize": {
+                      "Relative": "LARGE"
+                    }
+                  },
+                  "Sparkline": {
+                    "TooltipVisibility": "VISIBLE",
+                    "Type": "LINE",
+                    "Visibility": "VISIBLE"
+                  }
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "End-funnel signal. Trending down? Re-balance ranked ladder or rewards."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Players Ranked Up"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pr-rank-ups-kpi"
+            }
+          },
+          {
+            "FunnelChartVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "FunnelChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "tutorial_screen_id",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "pr-tutorial-screen-cat"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "pr-tutorial-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "ASC",
+                        "FieldId": "pr-tutorial-screen-cat"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Biggest stage drop = the tutorial screen to redesign or shorten next sprint."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Tutorial Drop-off Funnel"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pr-tutorial-funnel"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Position": "OUTSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "level_id",
+                            "DataSetIdentifier": "level_events"
+                          },
+                          "FieldId": "pr-level-id-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "event_type",
+                            "DataSetIdentifier": "level_events"
+                          },
+                          "FieldId": "pr-event-type-color"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "level_events"
+                          },
+                          "FieldId": "pr-level-event-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Position": "RIGHT",
+                  "Visibility": "VISIBLE"
+                },
+                "Orientation": "HORIZONTAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "ASC",
+                        "FieldId": "pr-level-id-cat"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Compare starts, completions, and failures per level. Skew toward fails = difficulty spike."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Level Performance (Start / Complete / Fail)"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pr-level-performance-bar"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Position": "OUTSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "rank_reached",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "pr-rank-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "pr-rank-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "Orientation": "HORIZONTAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "ASC",
+                        "FieldId": "pr-rank-cat"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "A long tail at low ranks signals progression friction or matchmaking unfairness."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Rank Distribution"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "pr-rank-distribution-bar"
+            }
+          }
+        ]
+      },
+      {
+        "Description": "Match lifecycle health and game balance across maps, spells, and modes.",
+        "Layouts": [
+          {
+            "Configuration": {
+              "GridLayout": {
+                "Elements": [
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 16,
+                    "ElementId": "cb-total-matches-kpi",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 0,
+                    "RowSpan": 6
+                  },
+                  {
+                    "ColumnIndex": 16,
+                    "ColumnSpan": 16,
+                    "ElementId": "cb-avg-xp-kpi",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 0,
+                    "RowSpan": 6
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 32,
+                    "ElementId": "cb-match-lifecycle-funnel",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 6,
+                    "RowSpan": 14
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 20,
+                    "ElementId": "cb-outcomes-by-map-bar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 20,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 20,
+                    "ColumnSpan": 12,
+                    "ElementId": "cb-match-types-donut",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 20,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 16,
+                    "ElementId": "cb-spell-knockouts-bar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 32,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 16,
+                    "ColumnSpan": 16,
+                    "ElementId": "cb-matchmaking-failures-bar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 32,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 14,
+                    "ElementId": "cb-spell-volume-bar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 44,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 14,
+                    "ColumnSpan": 18,
+                    "ElementId": "cb-spell-winrate-bar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 44,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 16,
+                    "ElementId": "cb-spell-performance-table",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 56,
+                    "RowSpan": 10
+                  },
+                  {
+                    "ColumnIndex": 16,
+                    "ColumnSpan": 16,
+                    "ElementId": "cb-map-outcome-pivot",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 56,
+                    "RowSpan": 10
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "Name": "Combat & Balance",
+        "SheetId": "combat-sheet",
+        "Visuals": [
+          {
+            "KPIVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "TrendGroups": [
+                    {
+                      "DateDimensionField": {
+                        "Column": {
+                          "ColumnName": "event_date",
+                          "DataSetIdentifier": "match_events"
+                        },
+                        "DateGranularity": "WEEK",
+                        "FieldId": "cb-match-trend-dim"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    {
+                      "NumericalMeasureField": {
+                        "AggregationFunction": {
+                          "SimpleNumericalAggregation": "SUM"
+                        },
+                        "Column": {
+                          "ColumnName": "event_count",
+                          "DataSetIdentifier": "match_events"
+                        },
+                        "FieldId": "cb-match-count-measure"
+                      }
+                    }
+                  ]
+                },
+                "KPIOptions": {
+                  "Comparison": {
+                    "ComparisonMethod": "PERCENT_DIFFERENCE"
+                  },
+                  "PrimaryValueDisplayType": "COMPARISON",
+                  "PrimaryValueFontConfiguration": {
+                    "FontSize": {
+                      "Relative": "LARGE"
+                    }
+                  },
+                  "Sparkline": {
+                    "TooltipVisibility": "VISIBLE",
+                    "Type": "LINE",
+                    "Visibility": "VISIBLE"
+                  }
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Combat throughput. A drop after a patch hints at balance backlash."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Total Matches"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "cb-total-matches-kpi"
+            }
+          },
+          {
+            "KPIVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "Values": [
+                    {
+                      "NumericalMeasureField": {
+                        "AggregationFunction": {
+                          "SimpleNumericalAggregation": "AVERAGE"
+                        },
+                        "Column": {
+                          "ColumnName": "exp_gained",
+                          "DataSetIdentifier": "match_events"
+                        },
+                        "FieldId": "cb-avg-xp-measure"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Reward economy health. Tune match length or XP curve if this drifts."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Avg XP per Match"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "cb-avg-xp-kpi"
+            }
+          },
+          {
+            "FunnelChartVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "FunnelChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "stage_label",
+                            "DataSetIdentifier": "match_lifecycle_funnel"
+                          },
+                          "FieldId": "cb-funnel-stage-cat"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "match_lifecycle_funnel"
+                          },
+                          "FieldId": "cb-funnel-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "ASC",
+                        "FieldId": "cb-funnel-stage-cat"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Match success path: matchmaking_start → matchmaking_complete → match_start → match_end. Stage with biggest drop = where to invest matchmaking or stability fixes. Failed matchmaking is shown separately in the failures bar below."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Match Lifecycle Success Funnel"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "cb-match-lifecycle-funnel"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "BarsArrangement": "STACKED",
+                "DataLabels": {
+                  "Position": "INSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "map_id",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-map-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "match_result",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-outcome-color"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-map-outcome-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Position": "RIGHT",
+                  "Visibility": "VISIBLE"
+                },
+                "Orientation": "HORIZONTAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "cb-map-outcome-val"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Lopsided win/loss on a map signals layout or spawn-point issues to redesign."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Match Outcomes by Map"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "cb-outcomes-by-map-bar"
+            }
+          },
+          {
+            "PieChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "LabelContent": "PERCENT",
+                  "Visibility": "VISIBLE"
+                },
+                "DonutOptions": {
+                  "ArcOptions": {
+                    "ArcThickness": "MEDIUM"
+                  }
+                },
+                "FieldWells": {
+                  "PieChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "match_type",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-match-type-cat"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-match-type-count"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Position": "RIGHT",
+                  "Visibility": "VISIBLE"
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Mode mix tells you which queues to prioritize for matchmaking improvements."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Match Types"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "cb-match-types-donut"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Position": "OUTSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "spell_used",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-spell-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-spell-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "Orientation": "HORIZONTAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "cb-spell-count-val"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Top-1 spell dominance is a balance flag — consider nerfs or counter-play buffs."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Spell Knockouts"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "cb-spell-knockouts-bar"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Position": "OUTSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "matching_failed_msg",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-failure-reason-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-failure-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "Orientation": "HORIZONTAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "cb-failure-count-val"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Most-frequent reason should drive the next matchmaking-service fix."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Matchmaking Failure Reasons"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "cb-matchmaking-failures-bar"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Position": "OUTSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "most_used_spell",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-spell-volume-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-spell-volume-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "Orientation": "HORIZONTAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "cb-spell-volume-val"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Total matches where each spell was the most-used. Higher = more popular spell."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Most-Used Spell by Match Volume"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "cb-spell-volume-bar"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Position": "OUTSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "most_used_spell",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-spell-winrate-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "AVERAGE"
+                          },
+                          "Column": {
+                            "ColumnName": "win_pct_value",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-spell-winrate-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "Orientation": "HORIZONTAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "cb-spell-winrate-val"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Avg win % among matches where each spell was most-used. High volume + low win rate = nerf candidate."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Most-Used Spell by Win Rate (%)"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "cb-spell-winrate-bar"
+            }
+          },
+          {
+            "TableVisual": {
+              "ChartConfiguration": {
+                "FieldOptions": {
+                  "SelectedFieldOptions": [
+                    {
+                      "CustomLabel": "Spell",
+                      "FieldId": "cb-spell-performance-cat",
+                      "Visibility": "VISIBLE",
+                      "Width": "180px"
+                    },
+                    {
+                      "CustomLabel": "Matches",
+                      "FieldId": "cb-spell-performance-matches-val",
+                      "Visibility": "VISIBLE",
+                      "Width": "120px"
+                    },
+                    {
+                      "CustomLabel": "Avg Win %",
+                      "FieldId": "cb-spell-performance-winrate-val",
+                      "Visibility": "VISIBLE",
+                      "Width": "120px"
+                    }
+                  ]
+                },
+                "FieldWells": {
+                  "TableAggregatedFieldWells": {
+                    "GroupBy": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "most_used_spell",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-spell-performance-cat"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-spell-performance-matches-val"
+                        }
+                      },
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "AVERAGE"
+                          },
+                          "Column": {
+                            "ColumnName": "win_pct_value",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-spell-performance-winrate-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "SortConfiguration": {
+                  "PaginationConfiguration": {
+                    "PageNumber": 1,
+                    "PageSize": 100
+                  },
+                  "RowSort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "cb-spell-performance-matches-val"
+                      }
+                    }
+                  ]
+                },
+                "TableOptions": {
+                  "CellStyle": {
+                    "HorizontalTextAlignment": "LEFT"
+                  },
+                  "HeaderStyle": {
+                    "BackgroundColor": "#232F3E",
+                    "FontConfiguration": {
+                      "FontColor": "#FFFFFF",
+                      "FontWeight": {
+                        "Name": "BOLD"
+                      }
+                    },
+                    "HorizontalTextAlignment": "LEFT"
+                  }
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Different from the bars: this combines popularity and win rate in one sortable detail view for balance review."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Spell Performance Detail"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "cb-spell-performance-table"
+            }
+          },
+          {
+            "PivotTableVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "PivotTableAggregatedFieldWells": {
+                    "Columns": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "match_result",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-map-pivot-col"
+                        }
+                      }
+                    ],
+                    "Rows": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "map_id",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-map-pivot-row"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "match_events"
+                          },
+                          "FieldId": "cb-map-pivot-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "TableOptions": {
+                  "ColumnNamesVisibility": "VISIBLE",
+                  "MetricPlacement": "COLUMN",
+                  "RowsLayout": "TABULAR",
+                  "SingleMetricVisibility": "VISIBLE",
+                  "ToggleButtonsVisibility": "HIDDEN"
+                },
+                "TotalOptions": {
+                  "ColumnTotalOptions": {
+                    "Placement": "END",
+                    "TotalsVisibility": "VISIBLE"
+                  },
+                  "RowTotalOptions": {
+                    "Placement": "END",
+                    "TotalsVisibility": "VISIBLE"
+                  }
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Matrix view of wins and losses by map. Faster to compare balance patterns than separate bars when scanning exact counts."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Map × Outcome Pivot"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "cb-map-outcome-pivot"
+            }
+          }
+        ]
+      },
+      {
+        "Description": "Revenue sources, purchase conversion, and lootbox economy health.",
+        "Layouts": [
+          {
+            "Configuration": {
+              "GridLayout": {
+                "Elements": [
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 16,
+                    "ElementId": "mn-total-transactions-kpi",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 0,
+                    "RowSpan": 6
+                  },
+                  {
+                    "ColumnIndex": 16,
+                    "ColumnSpan": 16,
+                    "ElementId": "mn-total-lootboxes-kpi",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 0,
+                    "RowSpan": 6
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 32,
+                    "ElementId": "mn-purchase-funnel",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 6,
+                    "RowSpan": 14
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 12,
+                    "ElementId": "mn-revenue-by-currency-area",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 20,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 12,
+                    "ColumnSpan": 20,
+                    "ElementId": "mn-transaction-amount-distribution-bar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 20,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 16,
+                    "ElementId": "mn-lootbox-rarity-bar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 32,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 16,
+                    "ColumnSpan": 16,
+                    "ElementId": "mn-lootbox-rarity-treemap",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 32,
+                    "RowSpan": 12
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "Name": "Monetization",
+        "SheetId": "monetization-sheet",
+        "Visuals": [
+          {
+            "KPIVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "TrendGroups": [
+                    {
+                      "DateDimensionField": {
+                        "Column": {
+                          "ColumnName": "event_date",
+                          "DataSetIdentifier": "economy_events"
+                        },
+                        "DateGranularity": "WEEK",
+                        "FieldId": "mn-transaction-trend-dim"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    {
+                      "CategoricalMeasureField": {
+                        "AggregationFunction": "DISTINCT_COUNT",
+                        "Column": {
+                          "ColumnName": "transaction_id",
+                          "DataSetIdentifier": "economy_events"
+                        },
+                        "FieldId": "mn-transaction-id-measure"
+                      }
+                    }
+                  ]
+                },
+                "KPIOptions": {
+                  "Comparison": {
+                    "ComparisonMethod": "PERCENT_DIFFERENCE"
+                  },
+                  "PrimaryValueDisplayType": "COMPARISON",
+                  "PrimaryValueFontConfiguration": {
+                    "FontSize": {
+                      "Relative": "LARGE"
+                    }
+                  },
+                  "Sparkline": {
+                    "TooltipVisibility": "VISIBLE",
+                    "Type": "LINE",
+                    "Visibility": "VISIBLE"
+                  }
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Paying-user momentum. Trending down? Re-evaluate offer placement and pricing."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Total Transactions"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "mn-total-transactions-kpi"
+            }
+          },
+          {
+            "KPIVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "TrendGroups": [
+                    {
+                      "DateDimensionField": {
+                        "Column": {
+                          "ColumnName": "event_date",
+                          "DataSetIdentifier": "economy_events"
+                        },
+                        "DateGranularity": "WEEK",
+                        "FieldId": "mn-lootbox-trend-dim"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    {
+                      "NumericalMeasureField": {
+                        "AggregationFunction": {
+                          "SimpleNumericalAggregation": "SUM"
+                        },
+                        "Column": {
+                          "ColumnName": "event_count",
+                          "DataSetIdentifier": "economy_events"
+                        },
+                        "FieldId": "mn-lootbox-measure"
+                      }
+                    }
+                  ]
+                },
+                "KPIOptions": {
+                  "Comparison": {
+                    "ComparisonMethod": "PERCENT_DIFFERENCE"
+                  },
+                  "PrimaryValueDisplayType": "COMPARISON",
+                  "PrimaryValueFontConfiguration": {
+                    "FontSize": {
+                      "Relative": "LARGE"
+                    }
+                  },
+                  "Sparkline": {
+                    "TooltipVisibility": "VISIBLE",
+                    "Type": "LINE",
+                    "Visibility": "VISIBLE"
+                  }
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Engagement signal for the chase loop. Sudden drops imply waning rarity appeal."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Total Lootboxes Opened"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "mn-total-lootboxes-kpi"
+            }
+          },
+          {
+            "PieChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "LabelContent": "PERCENT",
+                  "Visibility": "VISIBLE"
+                },
+                "DonutOptions": {
+                  "ArcOptions": {
+                    "ArcThickness": "MEDIUM"
+                  }
+                },
+                "FieldWells": {
+                  "PieChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "currency_type",
+                            "DataSetIdentifier": "economy_events"
+                          },
+                          "FieldId": "mn-currency-type-cat"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "economy_events"
+                          },
+                          "FieldId": "mn-currency-tx-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Position": "RIGHT",
+                  "Visibility": "VISIBLE"
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Which currencies do players transact in. Mixing currency_amount across USD/EUR/YEN/RMB is meaningless without FX, so this counts transactions instead."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Transactions by Currency"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "mn-revenue-by-currency-area"
+            }
+          },
+          {
+            "FunnelChartVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "FunnelChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "event_type",
+                            "DataSetIdentifier": "all_events"
+                          },
+                          "FieldId": "mn-funnel-event-type-cat"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "all_events"
+                          },
+                          "FieldId": "mn-funnel-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "mn-funnel-count-val"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "View → transaction drop-off shows where to A/B test storefront copy or pricing."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Purchase Conversion Funnel"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "mn-purchase-funnel"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Position": "OUTSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "currency_amount_band",
+                            "DataSetIdentifier": "economy_events"
+                          },
+                          "FieldId": "mn-amount-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "economy_events"
+                          },
+                          "FieldId": "mn-amount-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "Orientation": "VERTICAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "ASC",
+                        "FieldId": "mn-amount-cat"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Scoped to USD only — mixing currency_amount across currencies without FX would be meaningless. Peaks reveal the most effective USD price bands."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "USD Transaction Amount Distribution"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "mn-transaction-amount-distribution-bar"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Position": "OUTSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "item_rarity",
+                            "DataSetIdentifier": "economy_events"
+                          },
+                          "FieldId": "mn-rarity-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "economy_events"
+                          },
+                          "FieldId": "mn-rarity-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "Orientation": "HORIZONTAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "mn-rarity-count-val"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Compare actual drops to design intent — rarity inversions break trust."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Lootbox Drops by Rarity"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "mn-lootbox-rarity-bar"
+            }
+          },
+          {
+            "TreeMapVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "TreeMapAggregatedFieldWells": {
+                    "Colors": [],
+                    "Groups": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "item_rarity",
+                            "DataSetIdentifier": "economy_events"
+                          },
+                          "FieldId": "mn-rarity-tree-cat"
+                        }
+                      }
+                    ],
+                    "Sizes": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "economy_events"
+                          },
+                          "FieldId": "mn-rarity-tree-size"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "GroupLabelOptions": {
+                  "Visibility": "VISIBLE"
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "SizeLabelOptions": {
+                  "Visibility": "VISIBLE"
+                },
+                "SortConfiguration": {
+                  "TreeMapSort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "mn-rarity-tree-size"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Same rarity counts as the bar at left, sized as proportional tiles. COMMON dwarfs LEGENDARY at-a-glance — native QuickSight visual conveying scarcity disproportion."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Rarity Scarcity (treemap)"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "mn-lootbox-rarity-treemap"
+            }
+          }
+        ]
+      },
+      {
+        "Description": "Player satisfaction, toxicity trends, and report analysis.",
+        "Layouts": [
+          {
+            "Configuration": {
+              "GridLayout": {
+                "Elements": [
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 16,
+                    "ElementId": "st-avg-rating-gauge",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 0,
+                    "RowSpan": 6
+                  },
+                  {
+                    "ColumnIndex": 16,
+                    "ColumnSpan": 16,
+                    "ElementId": "st-total-reports-kpi",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 0,
+                    "RowSpan": 6
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 32,
+                    "ElementId": "st-avg-rating-line",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 6,
+                    "RowSpan": 14
+                  },
+                  {
+                    "ColumnIndex": 0,
+                    "ColumnSpan": 16,
+                    "ElementId": "st-report-reasons-bar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 20,
+                    "RowSpan": 12
+                  },
+                  {
+                    "ColumnIndex": 16,
+                    "ColumnSpan": 16,
+                    "ElementId": "st-rating-distribution-vbar",
+                    "ElementType": "VISUAL",
+                    "RowIndex": 20,
+                    "RowSpan": 12
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "Name": "Player Sentiment",
+        "SheetId": "sentiment-sheet",
+        "Visuals": [
+          {
+            "KPIVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "Values": [
+                    {
+                      "NumericalMeasureField": {
+                        "AggregationFunction": {
+                          "SimpleNumericalAggregation": "AVERAGE"
+                        },
+                        "Column": {
+                          "ColumnName": "user_rating",
+                          "DataSetIdentifier": "player_health"
+                        },
+                        "FieldId": "st-avg-rating-measure"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Below 4.0 sustained = NPS-style alarm; review the top report reasons next."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Average User Rating"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "st-avg-rating-gauge"
+            }
+          },
+          {
+            "KPIVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "TrendGroups": [
+                    {
+                      "DateDimensionField": {
+                        "Column": {
+                          "ColumnName": "event_date",
+                          "DataSetIdentifier": "player_health"
+                        },
+                        "DateGranularity": "WEEK",
+                        "FieldId": "st-reports-trend-dim"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    {
+                      "NumericalMeasureField": {
+                        "AggregationFunction": {
+                          "SimpleNumericalAggregation": "SUM"
+                        },
+                        "Column": {
+                          "ColumnName": "event_count",
+                          "DataSetIdentifier": "player_health"
+                        },
+                        "FieldId": "st-total-reports-measure"
+                      }
+                    }
+                  ]
+                },
+                "KPIOptions": {
+                  "Comparison": {
+                    "ComparisonMethod": "PERCENT_DIFFERENCE"
+                  },
+                  "PrimaryValueDisplayType": "COMPARISON",
+                  "PrimaryValueFontConfiguration": {
+                    "FontSize": {
+                      "Relative": "LARGE"
+                    }
+                  },
+                  "Sparkline": {
+                    "TooltipVisibility": "VISIBLE",
+                    "Type": "LINE",
+                    "Visibility": "VISIBLE"
+                  }
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Spikes correlate with toxicity events — escalate moderation if trend rises."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Total Reports"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "st-total-reports-kpi"
+            }
+          },
+          {
+            "LineChartVisual": {
+              "ChartConfiguration": {
+                "FieldWells": {
+                  "LineChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "DateDimensionField": {
+                          "Column": {
+                            "ColumnName": "event_date",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "DateGranularity": "DAY",
+                          "FieldId": "st-rating-date-dim"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "AVERAGE"
+                          },
+                          "Column": {
+                            "ColumnName": "user_rating",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "st-rating-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "ASC",
+                        "FieldId": "st-rating-date-dim"
+                      }
+                    }
+                  ]
+                },
+                "XAxisDisplayOptions": {
+                  "AxisLineVisibility": "VISIBLE"
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Sustained dips after a release = patch regressions or content backlash."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Average User Rating Over Time"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "st-avg-rating-line"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Position": "OUTSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "CategoricalDimensionField": {
+                          "Column": {
+                            "ColumnName": "report_reason",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "st-report-reason-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "st-report-reason-count"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "Orientation": "HORIZONTAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "DESC",
+                        "FieldId": "st-report-reason-count"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "Top reason = the next moderation rule or in-game messaging to prioritize."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Report Reasons"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "st-report-reasons-bar"
+            }
+          },
+          {
+            "BarChartVisual": {
+              "ChartConfiguration": {
+                "DataLabels": {
+                  "Position": "OUTSIDE",
+                  "Visibility": "VISIBLE"
+                },
+                "FieldWells": {
+                  "BarChartAggregatedFieldWells": {
+                    "Category": [
+                      {
+                        "NumericalDimensionField": {
+                          "Column": {
+                            "ColumnName": "user_rating",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "st-rating-cat"
+                        }
+                      }
+                    ],
+                    "Colors": [],
+                    "Values": [
+                      {
+                        "NumericalMeasureField": {
+                          "AggregationFunction": {
+                            "SimpleNumericalAggregation": "SUM"
+                          },
+                          "Column": {
+                            "ColumnName": "event_count",
+                            "DataSetIdentifier": "player_health"
+                          },
+                          "FieldId": "st-rating-count-val"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "Legend": {
+                  "Visibility": "HIDDEN"
+                },
+                "Orientation": "VERTICAL",
+                "SortConfiguration": {
+                  "CategorySort": [
+                    {
+                      "FieldSort": {
+                        "Direction": "ASC",
+                        "FieldId": "st-rating-cat"
+                      }
+                    }
+                  ]
+                }
+              },
+              "Subtitle": {
+                "FormatText": {
+                  "PlainText": "1-5 star spread. Bimodal? You have lovers and haters — investigate both."
+                },
+                "Visibility": "VISIBLE"
+              },
+              "Title": {
+                "FormatText": {
+                  "PlainText": "Rating Distribution"
+                },
+                "Visibility": "VISIBLE"
+              },
+              "VisualId": "st-rating-distribution-vbar"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "Permissions": [
+    {
+      "Principal": "<QUICKSIGHT_PRINCIPAL_ARN>",
+      "Actions": [
+        "quicksight:DescribeDashboard",
+        "quicksight:ListDashboardVersions",
+        "quicksight:QueryDashboard",
+        "quicksight:UpdateDashboard",
+        "quicksight:DeleteDashboard",
+        "quicksight:DescribeDashboardPermissions",
+        "quicksight:UpdateDashboardPermissions",
+        "quicksight:UpdateDashboardPublishedVersion"
+      ]
+    }
+  ]
+}

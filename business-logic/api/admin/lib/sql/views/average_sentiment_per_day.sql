@@ -1,18 +1,14 @@
 CREATE OR REPLACE VIEW
   average_sentiment_per_day AS
 SELECT
-  avg(
-    CAST(
-      JSON_EXTRACT_PATH_TEXT (event_data, 'user_rating') AS real
-    )
-  ) AS average_user_rating,
+  avg(events.payload.event.event_data.user_rating::REAL) AS average_user_rating,
   date (
-    timestamp 'epoch' + event_timestamp * interval '1 second'
+    timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second'
   ) as event_date
 FROM
-  "{db_name}"."public"."event_data"
+  "{db_name}"."public"."event_data_mv" events
 WHERE
-  JSON_EXTRACT_PATH_TEXT (event_data, 'user_rating') is not null
+  events.payload.event.event_data.user_rating IS NOT NULL
 GROUP BY
   event_date
 WITH

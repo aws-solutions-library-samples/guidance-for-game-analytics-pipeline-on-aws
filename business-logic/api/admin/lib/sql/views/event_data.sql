@@ -1,5 +1,5 @@
 CREATE OR REPLACE VIEW
-  latest_events AS
+  event_data AS
 SELECT
   events.refresh_time,
   events.approximate_arrival_timestamp,
@@ -15,13 +15,8 @@ SELECT
   events.payload.application_id::VARCHAR AS application_id,
   events.payload.event.application_name::VARCHAR AS application_name,
   JSON_SERIALIZE(events.payload.event.event_data) AS event_data,
-  JSON_SERIALIZE(events.payload.event.metadata) AS metadata,
-  timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second' AS parsed_date
+  JSON_SERIALIZE(events.payload.event.metadata) AS metadata
 FROM
   "{db_name}"."public"."event_data_mv" events
-ORDER BY
-  parsed_date DESC
-LIMIT
-  10
 WITH
   NO SCHEMA BINDING;

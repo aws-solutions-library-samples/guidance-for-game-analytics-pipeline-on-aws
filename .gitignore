@@ -33,6 +33,80 @@ infrastructure/terraform/src/builds/
 
 node_modules/
 *package-lock.json
+
+# Coding agents (per-user state, machine-specific configs, generated skill caches)
+.agents/
+.aider/
+.aider-desk/
+.amp/
+.antigravity/
+.augment/
+.autohand/
+.bob/
+.claude/
+.cline/
+.codeartsdoer/
+.codex/
+.continue/
+.cursor/
+.deepagents/
+.gemini/
+.kilo/
+.kimi/
+.kiro/
+.omo/
+.opencode/
+.openclaw/
+.warp/
+.windsurf/
+.zed/
+
+# Coding agent root configs (per-user, machine-specific)
+opencode.json
+opencode.jsonc
+tui.json
+tui.jsonc
+.opencoderc
+.opencoderc.json
+skills-lock.json
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.cursorrules
+.windsurfrules
+
+# LSP configs (per-user tooling, not project-shared)
+pyrefly.toml
+.luarc.json
+.luarc.jsonc
+.deno.json
+.denolint.json
+
+# LSP and analyzer caches (auto-generated)
+.ruff_cache/
+.mypy_cache/
+.ty_cache/
+.pyrefly_cache/
+.basedpyright/
+.semgrep/
+.metals/
+.bsp/
+.bloop/
+.dart_tool/
+.ccls-cache/
+.clangd/
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+compile_commands.json
+
+# Fallow (CLI cache + config)
+.fallow/
+.fallowrc.json
+.fallowrc.jsonc
 infrastructure/aws-cdk/config.yaml
 infrastructure/config.yaml
 business-logic/flink-event-processing/dependency-reduced-pom.xml
@@ -41,3 +115,6 @@ business-logic/flink-event-processing/target/pyflink-dependencies.jar
 business-logic/flink-event-processing/target/classes/original-pyflink-dependencies.jar
 business-logic/flink-event-processing/target/maven-archiver/pom.properties
 infrastructure/aws-cdk/cdk.context.json
+
+# Serena MCP local project files
+.serena/

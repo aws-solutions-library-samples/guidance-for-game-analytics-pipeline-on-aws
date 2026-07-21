@@ -1,12 +1,12 @@
 CREATE OR REPLACE VIEW
-  total_plays_by_level AS
+  total_completions_by_level AS
 SELECT
   events.payload.event.event_data.level_id::VARCHAR as level,
-  count(events.payload.event.event_data.level_id::VARCHAR) as number_of_plays
+  count(events.payload.event.event_data.level_id::VARCHAR) as number_of_completions
 FROM
   "{db_name}"."public"."event_data_mv" events
 WHERE
-  events.payload.event.event_type::VARCHAR = 'level_started'
+  events.payload.event.event_type::VARCHAR = 'level_completed'
 GROUP BY
   events.payload.event.event_data.level_id::VARCHAR
 ORDER by
