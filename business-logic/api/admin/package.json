@@ -5,30 +5,28 @@
     "version": "0.0.1",
     "private": true,
     "dependencies": {
-        "@aws-sdk/client-dynamodb": "^3.731.0",
-        "@aws-sdk/credential-providers": "^3.731.0",
-        "@aws-sdk/lib-dynamodb": "^3.731.0",
+        "@aws-sdk/client-dynamodb": "^3.995.0",
+        "@aws-sdk/credential-providers": "^3.995.0",
+        "@aws-sdk/lib-dynamodb": "^3.995.0",
         "aws-serverless-express": "*",
         "body-parser": "*",
         "cors": "*",
         "express": "*",
         "moment": "*",
         "underscore": "*",
-        "uuid": "^9.0.1",
-        "@aws-sdk/client-redshift-data": "^3.758.0"
+        "uuid": "*",
+        "@aws-sdk/client-redshift-data": "^3.995.0"
     },
     "devDependencies": {
-        "@aws-sdk/client-dynamodb": "^3.731.0",
-        "@aws-sdk/credential-providers": "^3.731.0",
-        "@aws-sdk/lib-dynamodb": "^3.731.0",
-        "npm-run-all": "*",
-        "jest": "^29.7.0"
+        "@aws-sdk/client-dynamodb": "^3.995.0",
+        "@aws-sdk/credential-providers": "^3.995.0",
+        "@aws-sdk/lib-dynamodb": "^3.995.0",
+        "npm-run-all": "*"
     },
     "scripts": {
         "build:init": "rm -rf package-lock.json && rm -rf dist && rm -rf node_modules",
         "build:zip": "zip -rq admin.zip .",
         "build:dist": "mkdir dist && mv admin.zip dist/",
-        "build": "npm run build:init && npm install --production && npm run build:zip && npm run build:dist",
-        "test": "jest"
+        "build": "npm run build:init && npm install --production && npm run build:zip && npm run build:dist"
     }
 }

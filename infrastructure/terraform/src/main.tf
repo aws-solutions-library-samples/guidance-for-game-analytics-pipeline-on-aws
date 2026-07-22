@@ -587,6 +587,7 @@ module "athena_construct" {
   events_database = module.data_lake_construct[0].game_events_database_name
   game_events_workgroup = module.data_lake_construct[0].athena_workgroup_id
   raw_events_table = local.config.RAW_EVENTS_TABLE
+  enable_apache_iceberg_support = local.config.ENABLE_APACHE_ICEBERG_SUPPORT
 }
 
 // Creates firehose and logs related to ingestion
