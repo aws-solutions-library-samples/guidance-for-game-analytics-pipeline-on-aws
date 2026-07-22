@@ -1,0 +1,109 @@
+{
+  "AwsAccountId": "<AWS_ACCOUNT_ID>",
+  "ColumnGroups": [
+    {
+      "GeoSpatialColumnGroup": {
+        "Columns": [
+          "country"
+        ],
+        "CountryCode": "US",
+        "Name": "country-geo-group"
+      }
+    }
+  ],
+  "DataSetId": "<WORKLOAD_NAME>-player_health",
+  "ImportMode": "DIRECT_QUERY",
+  "LogicalTableMap": {
+    "LogicalTable0": {
+      "Alias": "player_health",
+      "DataTransforms": [
+        {
+          "TagColumnOperation": {
+            "ColumnName": "country",
+            "Tags": [
+              {
+                "ColumnGeographicRole": "COUNTRY"
+              }
+            ]
+          }
+        }
+      ],
+      "Source": {
+        "PhysicalTableId": "PhysicalTable0"
+      }
+    }
+  },
+  "Name": "player_health",
+  "Permissions": [
+    {
+      "Actions": [
+        "quicksight:DescribeDataSet",
+        "quicksight:DescribeDataSetPermissions",
+        "quicksight:PassDataSet",
+        "quicksight:DescribeIngestion",
+        "quicksight:ListIngestions",
+        "quicksight:UpdateDataSet",
+        "quicksight:DeleteDataSet",
+        "quicksight:CreateIngestion",
+        "quicksight:CancelIngestion",
+        "quicksight:UpdateDataSetPermissions"
+      ],
+      "Principal": "<QUICKSIGHT_PRINCIPAL_ARN>"
+    }
+  ],
+  "PhysicalTableMap": {
+    "PhysicalTable0": {
+      "CustomSql": {
+        "Columns": [
+          {
+            "Name": "event_id",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_type",
+            "Type": "STRING"
+          },
+          {
+            "Name": "app_version",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_date",
+            "Type": "DATETIME"
+          },
+          {
+            "Name": "country",
+            "Type": "STRING"
+          },
+          {
+            "Name": "platform",
+            "Type": "STRING"
+          },
+          {
+            "Name": "report_reason",
+            "Type": "STRING"
+          },
+          {
+            "Name": "user_rating",
+            "Type": "INTEGER"
+          },
+          {
+            "Name": "rank_reached",
+            "Type": "STRING"
+          },
+          {
+            "Name": "tutorial_screen_id",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_count",
+            "Type": "INTEGER"
+          }
+        ],
+        "DataSourceArn": "<DATA_SOURCE_ARN>",
+        "Name": "player_health",
+        "SqlQuery": "SELECT\n  events.payload.event.event_id::VARCHAR as event_id,\n  events.payload.event.event_type::VARCHAR as event_type,\n  events.payload.event.app_version::VARCHAR as app_version,\n  date(timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second') as event_date,\n  CASE NULLIF(events.payload.event.event_data.country_id::VARCHAR, '')\n    WHEN 'UK' THEN 'United Kingdom'\n    ELSE INITCAP(LOWER(NULLIF(events.payload.event.event_data.country_id::VARCHAR, '')))\n  END as country,\n  NULLIF(events.payload.event.event_data.platform::VARCHAR, '') as platform,\n  NULLIF(events.payload.event.event_data.report_reason::VARCHAR, '') as report_reason,\n  CAST(NULLIF(events.payload.event.event_data.user_rating::VARCHAR, '') AS INTEGER) as user_rating,\n  NULLIF(events.payload.event.event_data.user_rank_reached::VARCHAR, '') as rank_reached,\n  NULLIF(events.payload.event.event_data.tutorial_screen_id::VARCHAR, '') AS tutorial_screen_id,\n  1 as event_count\nFROM \"<EVENTS_DATABASE>\".\"public\".\"event_data_mv\" events\nWHERE events.payload.event.event_type::VARCHAR IN ('user_registration', 'user_report', 'user_sentiment', 'user_rank_up', 'tutorial_progression')\n  AND timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second' >= dateadd(day, -30, getdate())"
+      }
+    }
+  }
+}

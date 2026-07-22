@@ -256,9 +256,9 @@ const setupRedshiftHandler = async (req, res) => {
     res.json(result);
   } catch (err) {
     console.log(JSON.stringify(err));
-    return res.status(err.code).json({
-      'error': err.error,
-      'error_detail': err.message
+    return res.status(err.code || 500).json({
+      'error': err.error || 'InternalFailure',
+      'error_detail': err.message || 'Failed to set up Redshift'
     });
   }
 }

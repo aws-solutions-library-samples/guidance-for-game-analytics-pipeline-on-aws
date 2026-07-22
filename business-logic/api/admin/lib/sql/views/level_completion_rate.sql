@@ -3,25 +3,25 @@ CREATE OR REPLACE VIEW
 with
   t1 as (
     SELECT
-      JSON_EXTRACT_PATH_TEXT (event_data, 'level_id') as level,
-      count(JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')) as level_count
+      events.payload.event.event_data.level_id::VARCHAR as level,
+      count(events.payload.event.event_data.level_id::VARCHAR) as level_count
     FROM
-      "{db_name}"."public"."event_data"
+      "{db_name}"."public"."event_data_mv" events
     WHERE
-      event_type = 'level_started'
+      events.payload.event.event_type::VARCHAR = 'level_started'
     GROUP BY
-      JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')
+      events.payload.event.event_data.level_id::VARCHAR
   ),
   t2 as (
     SELECT
-      JSON_EXTRACT_PATH_TEXT (event_data, 'level_id') as level,
-      count(JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')) as level_count
+      events.payload.event.event_data.level_id::VARCHAR as level,
+      count(events.payload.event.event_data.level_id::VARCHAR) as level_count
     FROM
-      "{db_name}"."public"."event_data"
+      "{db_name}"."public"."event_data_mv" events
     WHERE
-      event_type = 'level_completed'
+      events.payload.event.event_type::VARCHAR = 'level_completed'
     GROUP BY
-      JSON_EXTRACT_PATH_TEXT (event_data, 'level_id')
+      events.payload.event.event_data.level_id::VARCHAR
   )
 select
   t2.level,

@@ -1,0 +1,79 @@
+{
+  "AwsAccountId": "<AWS_ACCOUNT_ID>",
+  "DataSetId": "<WORKLOAD_NAME>-level_events",
+  "ImportMode": "DIRECT_QUERY",
+  "LogicalTableMap": {
+    "LogicalTable0": {
+      "Alias": "level_events",
+      "DataTransforms": [
+        {
+          "CreateColumnsOperation": {
+            "Columns": [
+              {
+                "ColumnId": "completion_rate_pct",
+                "ColumnName": "completion_rate_pct",
+                "Expression": "sumIf({event_count}, {event_type} = 'level_completed') / sumIf({event_count}, {event_type} = 'level_started') * 100"
+              }
+            ]
+          }
+        }
+      ],
+      "Source": {
+        "PhysicalTableId": "PhysicalTable0"
+      }
+    }
+  },
+  "Name": "level_events",
+  "Permissions": [
+    {
+      "Actions": [
+        "quicksight:DescribeDataSet",
+        "quicksight:DescribeDataSetPermissions",
+        "quicksight:PassDataSet",
+        "quicksight:DescribeIngestion",
+        "quicksight:ListIngestions",
+        "quicksight:UpdateDataSet",
+        "quicksight:DeleteDataSet",
+        "quicksight:CreateIngestion",
+        "quicksight:CancelIngestion",
+        "quicksight:UpdateDataSetPermissions"
+      ],
+      "Principal": "<QUICKSIGHT_PRINCIPAL_ARN>"
+    }
+  ],
+  "PhysicalTableMap": {
+    "PhysicalTable0": {
+      "CustomSql": {
+        "Columns": [
+          {
+            "Name": "event_id",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_type",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_date",
+            "Type": "DATETIME"
+          },
+          {
+            "Name": "level_id",
+            "Type": "STRING"
+          },
+          {
+            "Name": "level_version",
+            "Type": "INTEGER"
+          },
+          {
+            "Name": "event_count",
+            "Type": "INTEGER"
+          }
+        ],
+        "DataSourceArn": "<DATA_SOURCE_ARN>",
+        "Name": "level_events",
+        "SqlQuery": "SELECT\n  events.payload.event.event_id::VARCHAR as event_id,\n  events.payload.event.event_type::VARCHAR as event_type,\n  date(timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second') as event_date,\n  events.payload.event.event_data.level_id::VARCHAR as level_id,\n  CAST(events.payload.event.event_data.level_version::VARCHAR AS INTEGER) as level_version,\n  1 as event_count\nFROM \"<EVENTS_DATABASE>\".\"public\".\"event_data_mv\" events\nWHERE events.payload.event.event_type::VARCHAR IN ('level_started', 'level_completed', 'level_failed')\n  AND timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second' >= dateadd(day, -30, getdate())"
+      }
+    }
+  }
+}

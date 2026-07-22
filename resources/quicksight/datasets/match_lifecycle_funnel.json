@@ -1,0 +1,42 @@
+{
+  "AwsAccountId": "<AWS_ACCOUNT_ID>",
+  "DataSetId": "<WORKLOAD_NAME>-match_lifecycle_funnel",
+  "ImportMode": "DIRECT_QUERY",
+  "Name": "match_lifecycle_funnel",
+  "Permissions": [
+    {
+      "Actions": [
+        "quicksight:DescribeDataSet",
+        "quicksight:DescribeDataSetPermissions",
+        "quicksight:PassDataSet",
+        "quicksight:DescribeIngestion",
+        "quicksight:ListIngestions",
+        "quicksight:UpdateDataSet",
+        "quicksight:DeleteDataSet",
+        "quicksight:CreateIngestion",
+        "quicksight:CancelIngestion",
+        "quicksight:UpdateDataSetPermissions"
+      ],
+      "Principal": "<QUICKSIGHT_PRINCIPAL_ARN>"
+    }
+  ],
+  "PhysicalTableMap": {
+    "PhysicalTable0": {
+      "CustomSql": {
+        "Columns": [
+          {
+            "Name": "stage_label",
+            "Type": "STRING"
+          },
+          {
+            "Name": "event_count",
+            "Type": "INTEGER"
+          }
+        ],
+        "DataSourceArn": "<DATA_SOURCE_ARN>",
+        "Name": "match_lifecycle_funnel",
+        "SqlQuery": "SELECT '1_matchmaking_start' as stage_label, count(*) as event_count\nFROM \"<EVENTS_DATABASE>\".\"public\".\"event_data_mv\" events\nWHERE events.payload.event.event_type::VARCHAR = 'matchmaking_start'\n  AND timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second' >= dateadd(day, -30, getdate())\nUNION ALL\nSELECT '2_matchmaking_complete' as stage_label, count(*) as event_count\nFROM \"<EVENTS_DATABASE>\".\"public\".\"event_data_mv\" events\nWHERE events.payload.event.event_type::VARCHAR = 'matchmaking_complete'\n  AND timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second' >= dateadd(day, -30, getdate())\nUNION ALL\nSELECT '3_match_start' as stage_label, count(*) as event_count\nFROM \"<EVENTS_DATABASE>\".\"public\".\"event_data_mv\" events\nWHERE events.payload.event.event_type::VARCHAR = 'match_start'\n  AND timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second' >= dateadd(day, -30, getdate())\nUNION ALL\nSELECT '4_match_end' as stage_label, count(*) as event_count\nFROM \"<EVENTS_DATABASE>\".\"public\".\"event_data_mv\" events\nWHERE events.payload.event.event_type::VARCHAR = 'match_end'\n  AND timestamp 'epoch' + events.payload.event.event_timestamp::BIGINT * interval '1 second' >= dateadd(day, -30, getdate())"
+      }
+    }
+  }
+}
