@@ -181,3 +181,38 @@ resource "aws_quicksight_folder" "gap_folder" {
     actions   = local.gap_folder_viewer_actions
   }
 }
+
+# -----------------------------------------------------------------------------
+# Output YAML for downstream samples
+# -----------------------------------------------------------------------------
+
+locals {
+  # Output variables for downstream samples to consume
+  bootstrap_output = {
+    # QuickSight data source
+    GAP_DATA_SOURCE_ARN = aws_quicksight_data_source.gap_data_source.arn
+    GAP_DATA_SOURCE_ID  = aws_quicksight_data_source.gap_data_source.data_source_id
+
+    # QuickSight folder
+    GAP_FOLDER_ID  = aws_quicksight_folder.gap_folder.folder_id
+    GAP_FOLDER_ARN = aws_quicksight_folder.gap_folder.arn
+
+    # QuickSight groups
+    GAP_ADMIN_GROUP_ARN   = aws_quicksight_group.gap_admin.arn
+    GAP_ADMIN_GROUP_NAME  = aws_quicksight_group.gap_admin.group_name
+    GAP_WRITER_GROUP_ARN  = aws_quicksight_group.gap_writer.arn
+    GAP_WRITER_GROUP_NAME = aws_quicksight_group.gap_writer.group_name
+    GAP_READER_GROUP_ARN  = aws_quicksight_group.gap_reader.arn
+    GAP_READER_GROUP_NAME = aws_quicksight_group.gap_reader.group_name
+
+    # AWS account context
+    ACCOUNT_ID = local.account_id
+    REGION     = "us-east-1" # Must match provider region
+  }
+}
+
+# Write output YAML file for downstream samples to read
+resource "local_file" "bootstrap_output" {
+  content  = yamlencode(local.bootstrap_output)
+  filename = "${path.module}/bootstrap-output.yaml"
+}
