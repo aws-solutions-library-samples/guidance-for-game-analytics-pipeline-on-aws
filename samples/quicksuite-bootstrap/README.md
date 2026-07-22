@@ -15,6 +15,26 @@ This is the Terraform port of `quicksuite-construct.ts` plus a folder/group layo
 | `aws_quicksight_group.gap_admin` | Folder Owner. Full control of the folder, its assets, and its permissions. |
 | `aws_quicksight_group.gap_writer` | Folder Contributor. Can create/edit/delete assets in the folder; cannot delete the folder or change permissions. |
 | `aws_quicksight_group.gap_reader` | Folder Viewer. Read-only access to all assets in the folder. |
+| `local_file.bootstrap_output` | YAML file containing resource attributes for downstream samples to consume. |
+
+### Bootstrap Output YAML
+
+After deployment, a `bootstrap-output.yaml` file is created in the module directory containing:
+
+```yaml
+GAP_DATA_SOURCE_ARN: "arn:aws:quicksight:region:account:datasource/game-analytics-pipeline-data-source"
+GAP_DATA_SOURCE_ID: "game-analytics-pipeline-data-source"
+GAP_FOLDER_ID: "workload-samples"
+GAP_FOLDER_ARN: "arn:aws:quicksight:region:account:folder/workload-samples"
+GAP_ADMIN_GROUP_ARN: "arn:aws:quicksight:region:account:group/default/workload-admin"
+GAP_ADMIN_GROUP_NAME: "workload-admin"
+GAP_WRITER_GROUP_ARN: "arn:aws:quicksight:region:account:group/default/workload-writer"
+GAP_WRITER_GROUP_NAME: "workload-writer"
+GAP_READER_GROUP_ARN: "arn:aws:quicksight:region:account:group/default/workload-reader"
+GAP_READER_GROUP_NAME: "workload-reader"
+```
+
+This file is read by downstream samples (e.g., `in-game-analysis`) to obtain the created resources.
 
 Group action lists follow the [QuickSight folder permissions reference](https://docs.aws.amazon.com/quicksight/latest/user/sharing-folders.html). Per the [folder security model](https://docs.aws.amazon.com/quicksight/latest/user/folders-security.html), permissions on the folder cascade to every asset placed inside it, so adding a user to one of the three groups grants the matching role on every dataset, analysis, and dashboard the GAP samples create.
 

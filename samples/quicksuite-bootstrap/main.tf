@@ -204,10 +204,6 @@ locals {
     GAP_WRITER_GROUP_NAME = aws_quicksight_group.gap_writer.group_name
     GAP_READER_GROUP_ARN  = aws_quicksight_group.gap_reader.arn
     GAP_READER_GROUP_NAME = aws_quicksight_group.gap_reader.group_name
-
-    # AWS account context
-    ACCOUNT_ID = local.account_id
-    REGION     = "us-east-1" # Must match provider region
   }
 }
 
