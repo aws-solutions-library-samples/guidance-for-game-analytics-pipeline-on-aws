@@ -28,6 +28,7 @@ data "aws_partition" "current" {}
 locals {
   // Read the same config used to deploy the pipeline
   pipeline_config = yamldecode(file("${path.module}/../../infrastructure/config.yaml"))
+  samples_config  = yamldecode(file("${path.module}/../config.yaml"))
 
   // Read the bootstrap output from quicksuite-bootstrap
   bootstrap_output = yamldecode(file("${path.module}/../quicksuite-bootstrap/bootstrap-output.yaml"))
@@ -41,7 +42,7 @@ locals {
   raw_events_table = local.pipeline_config.RAW_EVENTS_TABLE
 
   // Read values from bootstrap output
-  analytics_bucket_name = yamldecode(file("${path.module}/../config.yaml")).ANALYTICS_BUCKET_NAME
+  analytics_bucket_name = local.samples_config.ANALYTICS_BUCKET_NAME
   gap_data_source_arn   = local.bootstrap_output.GAP_DATA_SOURCE_ARN
   gap_folder_id         = local.bootstrap_output.GAP_FOLDER_ID
 
@@ -49,17 +50,25 @@ locals {
   // Role name format: ${stack_name}-GameEventsEtlRole where stack_name is WORKLOAD_NAME
   glue_etl_role_arn = "arn:${local.partition}:iam::${local.account_id}:role/${local.workload_name}-GameEventsEtlRole"
 
+  // Determine if data lake mode is enabled (DATA_LAKE) vs Redshift
+  is_data_lake_mode = local.pipeline_config.DATA_STACK == "DATA_LAKE"
+
   // Table names
   in_game_events_table_name = "daily_item_actions"
   in_game_trades_table_name = "daily_item_trades"
+
+  // Redshift workgroup name (used when DATA_STACK == "REDSHIFT")
+  redshift_workgroup_name = "${lower(local.pipeline_config.DATA_STACK)}-workgroup"
 }
 
 # -----------------------------------------------------------------------------
-# Glue Catalog Tables (Iceberg)
+# Glue Catalog Tables (Iceberg) - Only when DATA_STACK == "DATA_LAKE"
 # -----------------------------------------------------------------------------
 
 # Glue table for in-game event actions
 resource "aws_glue_catalog_table" "in_game_events" {
+  count = local.is_data_lake_mode ? 1 : 0
+
   name          = local.in_game_events_table_name
   database_name = local.events_database
   catalog_id    = local.account_id
@@ -124,6 +133,8 @@ resource "aws_glue_catalog_table" "in_game_events" {
 
 # Glue table for in-game trades
 resource "aws_glue_catalog_table" "in_game_trades" {
+  count = local.is_data_lake_mode ? 1 : 0
+
   name          = local.in_game_trades_table_name
   database_name = local.events_database
   catalog_id    = local.account_id
@@ -187,10 +198,12 @@ resource "aws_glue_catalog_table" "in_game_trades" {
 }
 
 # -----------------------------------------------------------------------------
-# Glue ETL Job
+# Glue ETL Job - Only when DATA_STACK == "DATA_LAKE"
 # -----------------------------------------------------------------------------
 
 resource "aws_glue_job" "in_game_events_etl" {
+  count = local.is_data_lake_mode ? 1 : 0
+
   name         = "${local.workload_name}-In-Game-ETL"
   description  = "Glue job to process raw events to in-game analytics, for workload ${local.workload_name}."
   role_arn     = local.glue_etl_role_arn
@@ -225,24 +238,28 @@ resource "aws_glue_job" "in_game_events_etl" {
 }
 
 # -----------------------------------------------------------------------------
-# Glue Workflow for Scheduled Execution
+# Glue Workflow for Scheduled Execution - Only when DATA_STACK == "DATA_LAKE"
 # -----------------------------------------------------------------------------
 
 resource "aws_glue_workflow" "in_game_events_daily" {
+  count = local.is_data_lake_mode ? 1 : 0
+
   name        = "${local.workload_name}-In-Game-ETL-Daily"
   description = "Daily workflow for in-game event analytics ETL"
 }
 
 resource "aws_glue_trigger" "daily_schedule" {
+  count = local.is_data_lake_mode ? 1 : 0
+
   name          = "${local.workload_name}-In-Game-ETL-Daily-Trigger"
   type          = "SCHEDULED"
-  workflow_name = aws_glue_workflow.in_game_events_daily.name
+  workflow_name = aws_glue_workflow.in_game_events_daily[0].name
 
   # Run daily at 00:00 UTC
   schedule = "cron(0 0 * * ? *)"
 
   actions {
-    job_name = aws_glue_job.in_game_events_etl.name
+    job_name = aws_glue_job.in_game_events_etl[0].name
   }
 
   # Start the workflow on apply so the schedule becomes active
@@ -250,10 +267,150 @@ resource "aws_glue_trigger" "daily_schedule" {
 }
 
 # -----------------------------------------------------------------------------
+# Redshift Resources - Only when DATA_STACK == "REDSHIFT"
+# -----------------------------------------------------------------------------
+
+# Create the daily_item_actions table in Redshift
+resource "aws_redshiftdata_statement" "in_game_events" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  workgroup_name = local.redshift_workgroup_name
+  database       = local.events_database
+  sql            = <<-SQL
+    CREATE TABLE IF NOT EXISTS ${local.in_game_events_table_name} (
+      item_id VARCHAR(255),
+      item_action VARCHAR(255),
+      event_date DATE,
+      app_version VARCHAR(50),
+      occurrences BIGINT
+    )
+    DISTSTYLE KEY
+    DISTKEY (item_id)
+    SORTKEY (event_date);
+  SQL
+}
+
+# Create the daily_item_trades table in Redshift
+resource "aws_redshiftdata_statement" "in_game_trades" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  workgroup_name = local.redshift_workgroup_name
+  database       = local.events_database
+  sql            = <<-SQL
+    CREATE TABLE IF NOT EXISTS ${local.in_game_trades_table_name} (
+      traded_item VARCHAR(255),
+      received_item VARCHAR(255),
+      event_date DATE,
+      app_version VARCHAR(50),
+      occurrences BIGINT
+    )
+    DISTSTYLE KEY
+    DISTKEY (traded_item)
+    SORTKEY (event_date);
+  SQL
+}
+
+# Scheduled Redshift query for incremental item actions ETL
+# Runs daily at 00:00 UTC to insert new records
+resource "aws_scheduler_schedule" "redshift_item_actions_etl" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name        = "${local.workload_name}-redshift-item-actions-etl"
+  description = "Daily incremental ETL for item actions to Redshift"
+
+  # Run daily at 00:00 UTC
+  schedule_expression = "cron(0 0 * * ? *)"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  target {
+    arn      = "arn:${local.partition}:scheduler:::aws-sdk:redshiftdata:executeStatement"
+    role_arn = "arn:${local.partition}:iam::${local.account_id}:role/${local.workload_name}-GameEventsEtlRole"
+
+    input = jsonencode({
+      WorkgroupName = local.redshift_workgroup_name
+      Database      = local.events_database
+      Sql           = <<-SQL
+        INSERT INTO ${local.in_game_events_table_name}
+        SELECT
+          events.payload.event.event_data.item::VARCHAR AS item_id,
+          events.payload.event.event_data.action::VARCHAR AS item_action,
+          DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') AS event_date,
+          events.payload.event.app_version::VARCHAR AS app_version,
+          COUNT(*) AS occurrences
+        FROM ${local.raw_events_table} events
+        WHERE events.payload.event.event_name::VARCHAR = 'item_action'
+          AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') > COALESCE(
+            (SELECT MAX(event_date) FROM ${local.in_game_events_table_name}),
+            '1900-01-01'::DATE
+          )
+        GROUP BY item_id, item_action, event_date, app_version;
+      SQL
+    })
+  }
+
+  # Wait for the target table to be created
+  depends_on = [
+    aws_redshiftdata_statement.in_game_events
+  ]
+}
+
+# Scheduled Redshift query for incremental item trades ETL
+# Runs daily at 00:05 UTC (5 minutes after item actions) to insert new records
+resource "aws_scheduler_schedule" "redshift_item_trades_etl" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name        = "${local.workload_name}-redshift-item-trades-etl"
+  description = "Daily incremental ETL for item trades to Redshift"
+
+  # Run daily at 00:05 UTC (staggered to avoid conflicts)
+  schedule_expression = "cron(5 0 * * ? *)"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  target {
+    arn      = "arn:${local.partition}:scheduler:::aws-sdk:redshiftdata:executeStatement"
+    role_arn = "arn:${local.partition}:iam::${local.account_id}:role/${local.workload_name}-GameEventsEtlRole"
+
+    input = jsonencode({
+      WorkgroupName = local.redshift_workgroup_name
+      Database      = local.events_database
+      Sql           = <<-SQL
+        INSERT INTO ${local.in_game_trades_table_name}
+        SELECT
+          events.payload.event.event_data.item::VARCHAR AS traded_item,
+          events.payload.event.event_data.recieved_item::VARCHAR AS received_item,
+          DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') AS event_date,
+          events.payload.event.app_version::VARCHAR AS app_version,
+          COUNT(*) AS occurrences
+        FROM ${local.raw_events_table} events
+        WHERE events.payload.event.event_name::VARCHAR = 'item_action'
+          AND events.payload.event.event_data.action::VARCHAR = 'traded'
+          AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') > COALESCE(
+            (SELECT MAX(event_date) FROM ${local.in_game_trades_table_name}),
+            '1900-01-01'::DATE
+          )
+        GROUP BY traded_item, received_item, event_date, app_version;
+      SQL
+    })
+  }
+
+  # Wait for the target table to be created
+  depends_on = [
+    aws_redshiftdata_statement.in_game_trades
+  ]
+}
+
+# -----------------------------------------------------------------------------
 # QuickSight Data Sets
 # -----------------------------------------------------------------------------
 
 # Data set for daily item actions
+# Uses Athena/Glue for DATA_LAKE mode, Redshift for REDSHIFT mode
 resource "aws_quicksight_data_set" "daily_item_actions" {
   aws_account_id = local.account_id
   data_set_id    = "daily-item-actions-${local.workload_name}"
@@ -263,31 +420,66 @@ resource "aws_quicksight_data_set" "daily_item_actions" {
   physical_table_map {
     physical_table_map_id = "daily-item-actions-table"
 
-    relational_table {
-      data_source_arn = local.gap_data_source_arn
-      catalog         = "AwsDataCatalog"
-      schema          = local.events_database
-      name            = local.in_game_events_table_name
+    dynamic "relational_table" {
+      for_each = local.is_data_lake_mode ? [1] : []
 
-      input_columns {
-        name = "item_id"
-        type = "STRING"
+      content {
+        data_source_arn = local.gap_data_source_arn
+        catalog         = "AwsDataCatalog"
+        schema          = local.events_database
+        name            = local.in_game_events_table_name
+
+        input_columns {
+          name = "item_id"
+          type = "STRING"
+        }
+        input_columns {
+          name = "item_action"
+          type = "STRING"
+        }
+        input_columns {
+          name = "event_date"
+          type = "DATETIME"
+        }
+        input_columns {
+          name = "app_version"
+          type = "STRING"
+        }
+        input_columns {
+          name = "occurrences"
+          type = "INTEGER"
+        }
       }
-      input_columns {
-        name = "item_action"
-        type = "STRING"
-      }
-      input_columns {
-        name = "event_date"
-        type = "DATETIME"
-      }
-      input_columns {
-        name = "app_version"
-        type = "STRING"
-      }
-      input_columns {
-        name = "occurrences"
-        type = "INTEGER"
+    }
+
+    dynamic "custom_sql" {
+      for_each = local.is_data_lake_mode ? [] : [1]
+
+      content {
+        data_source_arn = local.gap_data_source_arn
+        name            = "daily_item_actions_sql"
+        sql_query       = "SELECT item_id, item_action, event_date, app_version, occurrences FROM ${local.in_game_events_table_name}"
+
+        columns {
+          name = "item_id"
+          type = "STRING"
+        }
+        columns {
+          name = "item_action"
+          type = "STRING"
+        }
+        columns {
+          name = "event_date"
+          type = "DATETIME"
+        }
+        columns {
+          name = "app_version"
+          type = "STRING"
+        }
+        columns {
+          name = "occurrences"
+          type = "INTEGER"
+        }
       }
     }
   }
@@ -312,9 +504,16 @@ resource "aws_quicksight_data_set" "daily_item_actions" {
       physical_table_id = "daily-item-actions-table"
     }
   }
+
+  # Wait for tables to be created before creating dataset
+  depends_on = [
+    aws_glue_catalog_table.in_game_events,
+    aws_redshiftdata_statement.in_game_events
+  ]
 }
 
 # Data set for daily item trades
+# Uses Athena/Glue for DATA_LAKE mode, Redshift for REDSHIFT mode
 resource "aws_quicksight_data_set" "daily_item_trades" {
   aws_account_id = local.account_id
   data_set_id    = "daily-item-trades-${local.workload_name}"
@@ -324,31 +523,66 @@ resource "aws_quicksight_data_set" "daily_item_trades" {
   physical_table_map {
     physical_table_map_id = "daily-item-trades-table"
 
-    relational_table {
-      data_source_arn = local.gap_data_source_arn
-      catalog         = "AwsDataCatalog"
-      schema          = local.events_database
-      name            = local.in_game_trades_table_name
+    dynamic "relational_table" {
+      for_each = local.is_data_lake_mode ? [1] : []
 
-      input_columns {
-        name = "traded_item"
-        type = "STRING"
+      content {
+        data_source_arn = local.gap_data_source_arn
+        catalog         = "AwsDataCatalog"
+        schema          = local.events_database
+        name            = local.in_game_trades_table_name
+
+        input_columns {
+          name = "traded_item"
+          type = "STRING"
+        }
+        input_columns {
+          name = "received_item"
+          type = "STRING"
+        }
+        input_columns {
+          name = "event_date"
+          type = "DATETIME"
+        }
+        input_columns {
+          name = "app_version"
+          type = "STRING"
+        }
+        input_columns {
+          name = "occurrences"
+          type = "INTEGER"
+        }
       }
-      input_columns {
-        name = "received_item"
-        type = "STRING"
-      }
-      input_columns {
-        name = "event_date"
-        type = "DATETIME"
-      }
-      input_columns {
-        name = "app_version"
-        type = "STRING"
-      }
-      input_columns {
-        name = "occurrences"
-        type = "INTEGER"
+    }
+
+    dynamic "custom_sql" {
+      for_each = local.is_data_lake_mode ? [] : [1]
+
+      content {
+        data_source_arn = local.gap_data_source_arn
+        name            = "daily_item_trades_sql"
+        sql_query       = "SELECT traded_item, received_item, event_date, app_version, occurrences FROM ${local.in_game_trades_table_name}"
+
+        columns {
+          name = "traded_item"
+          type = "STRING"
+        }
+        columns {
+          name = "received_item"
+          type = "STRING"
+        }
+        columns {
+          name = "event_date"
+          type = "DATETIME"
+        }
+        columns {
+          name = "app_version"
+          type = "STRING"
+        }
+        columns {
+          name = "occurrences"
+          type = "INTEGER"
+        }
       }
     }
   }
@@ -373,6 +607,12 @@ resource "aws_quicksight_data_set" "daily_item_trades" {
       physical_table_id = "daily-item-trades-table"
     }
   }
+
+  # Wait for tables to be created before creating dataset
+  depends_on = [
+    aws_glue_catalog_table.in_game_trades,
+    aws_redshiftdata_statement.in_game_trades
+  ]
 }
 
 # -----------------------------------------------------------------------------
