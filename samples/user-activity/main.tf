@@ -422,26 +422,26 @@ resource "aws_glue_catalog_table" "daily_session_stats" {
 }
 
 # -----------------------------------------------------------------------------
-# Glue ETL Job - Only when DATA_STACK == "DATA_LAKE"
+# Glue ETL Jobs - Only when DATA_STACK == "DATA_LAKE"
 # -----------------------------------------------------------------------------
 
-resource "aws_glue_job" "user_activity_etl" {
+# SILVER LAYER Glue Job - Process raw events into silver tables
+resource "aws_glue_job" "user_activity_silver" {
   count = local.is_data_lake_mode ? 1 : 0
 
-  name         = "${local.workload_name}-User-Activity-ETL"
-  description  = "Glue job to process user activity and state transitions for workload ${local.workload_name}."
+  name         = "${local.workload_name}-User-Activity-Silver"
+  description  = "Glue job to process raw events into silver tables for workload ${local.workload_name}."
   role_arn     = local.glue_etl_role_arn
   glue_version = "5.0"
   max_retries  = 0
   timeout      = 30
 
-  # Use Glue Flex execution class for cost savings
   execution_class = "FLEX"
 
   command {
     name            = "glueetl"
     python_version  = "3"
-    script_location = "s3://${local.analytics_bucket_name}/glue-scripts/samples/user_activity.py"
+    script_location = "s3://${local.analytics_bucket_name}/glue-scripts/samples/user_activity_silver.py"
   }
 
   execution_property {
@@ -449,13 +449,46 @@ resource "aws_glue_job" "user_activity_etl" {
   }
 
   default_arguments = {
-    "--INPUT_DB_NAME"                  = local.events_database
+    "--INPUT_DB_NAME"              = local.events_database
+    "--OUTPUT_DB_NAME"             = local.events_database
+    "--INPUT_TABLE_NAME"           = local.raw_events_table
+    "--USER_STATUS_TABLE_NAME"     = local.user_status_table_name
+    "--USER_TRANSITION_TABLE_NAME" = local.user_status_transition_table_name
+    "--USER_COUNTS_TABLE_NAME"     = local.user_counts_table_name
+    "--USER_FIRST_JOIN_TABLE_NAME" = local.user_first_join_table_name
+    "--SESSIONS_TABLE_NAME"        = local.sessions_table_name
+    "--conf"                       = "spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions --conf spark.sql.catalog.glue_catalog=org.apache.iceberg.spark.SparkCatalog --conf spark.sql.catalog.glue_catalog.warehouse=s3://${local.analytics_bucket_name} --conf spark.sql.catalog.glue_catalog.catalog-impl=org.apache.iceberg.aws.glue.GlueCatalog --conf spark.sql.catalog.glue_catalog.io-impl=org.apache.iceberg.aws.s3.S3FileIO"
+    "--datalake-formats"           = "iceberg"
+    "--enable-glue-datacatalog"    = "true"
+  }
+}
+
+# GOLD LAYER Glue Job - Aggregate silver data into gold tables
+resource "aws_glue_job" "user_activity_gold" {
+  count = local.is_data_lake_mode ? 1 : 0
+
+  name         = "${local.workload_name}-User-Activity-Gold"
+  description  = "Glue job to aggregate silver data into gold tables for workload ${local.workload_name}."
+  role_arn     = local.glue_etl_role_arn
+  glue_version = "5.0"
+  max_retries  = 0
+  timeout      = 10
+
+  execution_class = "FLEX"
+
+  command {
+    name            = "glueetl"
+    python_version  = "3"
+    script_location = "s3://${local.analytics_bucket_name}/glue-scripts/samples/user_activity_gold.py"
+  }
+
+  execution_property {
+    max_concurrent_runs = 1
+  }
+
+  default_arguments = {
     "--OUTPUT_DB_NAME"                 = local.events_database
-    "--INPUT_TABLE_NAME"               = local.raw_events_table
-    "--USER_STATE_TABLE_NAME"          = local.user_status_table_name
-    "--USER_TRANSITION_TABLE_NAME"     = local.user_status_transition_table_name
     "--USER_COUNTS_TABLE_NAME"         = local.user_counts_table_name
-    "--USER_FIRST_JOIN_TABLE_NAME"     = local.user_first_join_table_name
     "--SESSIONS_TABLE_NAME"            = local.sessions_table_name
     "--DAILY_SESSION_STATS_TABLE_NAME" = local.daily_session_stats_table_name
     "--conf"                           = "spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions --conf spark.sql.catalog.glue_catalog=org.apache.iceberg.spark.SparkCatalog --conf spark.sql.catalog.glue_catalog.warehouse=s3://${local.analytics_bucket_name} --conf spark.sql.catalog.glue_catalog.catalog-impl=org.apache.iceberg.aws.glue.GlueCatalog --conf spark.sql.catalog.glue_catalog.io-impl=org.apache.iceberg.aws.s3.S3FileIO"
@@ -475,6 +508,7 @@ resource "aws_glue_workflow" "user_activity_daily" {
   description = "Daily workflow for user activity analytics ETL"
 }
 
+# Scheduled trigger to start the workflow
 resource "aws_glue_trigger" "user_activity_daily_schedule" {
   count = local.is_data_lake_mode ? 1 : 0
 
@@ -482,14 +516,35 @@ resource "aws_glue_trigger" "user_activity_daily_schedule" {
   type          = "SCHEDULED"
   workflow_name = aws_glue_workflow.user_activity_daily[0].name
 
-  # Run daily at 00:30 UTC (30 minutes after in-game analysis)
+  # Run daily at 00:30 UTC
   schedule = "cron(30 0 * * ? *)"
 
   actions {
-    job_name = aws_glue_job.user_activity_etl[0].name
+    job_name = aws_glue_job.user_activity_silver[0].name
   }
 
   start_on_creation = true
+}
+
+# Conditional trigger to run gold job after silver completes
+resource "aws_glue_trigger" "user_activity_gold_after_silver" {
+  count = local.is_data_lake_mode ? 1 : 0
+
+  name          = "${local.workload_name}-User-Activity-Gold-After-Silver"
+  type          = "CONDITIONAL"
+  workflow_name = aws_glue_workflow.user_activity_daily[0].name
+
+  actions {
+    job_name = aws_glue_job.user_activity_gold[0].name
+  }
+
+  predicate {
+    conditions {
+      job_name         = aws_glue_job.user_activity_silver[0].name
+      state            = "SUCCEEDED"
+      logical_operator = "EQUALS"
+    }
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -606,50 +661,299 @@ resource "aws_redshiftdata_statement" "daily_session_stats" {
   SQL
 }
 
-# Scheduled Redshift query for user activity ETL
-# Runs daily at 00:30 UTC to process user state transitions
-resource "aws_scheduler_schedule" "redshift_user_activity_etl" {
+# -----------------------------------------------------------------------------
+# Step Functions State Machine for Redshift ETL - Only when DATA_STACK == "REDSHIFT"
+# -----------------------------------------------------------------------------
+
+# IAM role for Step Functions state machine
+resource "aws_iam_role" "redshift_etl_state_machine" {
   count = local.is_data_lake_mode ? 0 : 1
 
-  name        = "${local.workload_name}-redshift-user-activity-etl"
-  description = "Daily user activity ETL for Redshift"
+  name = "${local.workload_name}-redshift-etl-state-machine"
 
-  schedule_expression = "cron(30 0 * * ? *)"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "states.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
 
-  flexible_time_window {
-    mode = "OFF"
-  }
+# IAM policy for X-Ray tracing
+resource "aws_iam_role_policy" "redshift_etl_state_machine_xray" {
+  count = local.is_data_lake_mode ? 0 : 1
 
-  target {
-    arn      = "arn:${local.partition}:scheduler:::aws-sdk:redshiftdata:executeStatement"
-    role_arn = "arn:${local.partition}:iam::${local.account_id}:role/${local.workload_name}-GameEventsEtlRole"
+  name = "${local.workload_name}-redshift-etl-xray"
+  role = aws_iam_role.redshift_etl_state_machine[0].id
 
-    input = jsonencode({
-      WorkgroupName = local.redshift_workgroup_name
-      Database      = local.events_database
-      Sql           = <<-SQL
-        -- Get the next date to process
-        WITH date_to_process AS (
-          SELECT COALESCE(
-            (SELECT MAX(tracked_date) + 1 FROM ${local.user_counts_table_name}),
-            (SELECT MIN(DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second')) 
-             FROM ${local.raw_events_table} events 
-             WHERE events.payload.event.event_name::VARCHAR = 'user_login')
-          ) AS process_date
-        ),
-        latest_event_date AS (
-          SELECT MAX(DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second')) AS max_date
-          FROM ${local.raw_events_table} events
-          WHERE events.payload.event.event_name::VARCHAR = 'user_login'
-        )
-        SELECT CASE 
-          WHEN (SELECT process_date FROM date_to_process) <= (SELECT max_date FROM latest_event_date)
-          THEN 'Processing: ' || (SELECT process_date FROM date_to_process)
-          ELSE 'No new data to process'
-        END AS status;
-      SQL
-    })
-  }
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "xray:PutTraceSegments",
+        "xray:PutTelemetryRecords",
+        "xray:GetSamplingRules",
+        "xray:GetSamplingTargets"
+      ]
+      Resource = ["*"]
+    }]
+  })
+}
+
+# IAM policy for Redshift Data API
+resource "aws_iam_role_policy" "redshift_etl_state_machine_redshift" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name = "${local.workload_name}-redshift-etl-redshift-data"
+  role = aws_iam_role.redshift_etl_state_machine[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "redshift-data:BatchExecuteStatement",
+          "redshift-data:DescribeStatement",
+          "redshift-data:GetStatementResult"
+        ]
+        Resource = [
+          "arn:${local.partition}:redshift-serverless:${local.region}:${local.account_id}:workgroup/*",
+          "arn:${local.partition}:redshift:${local.region}:${local.account_id}:cluster:*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "redshift-serverless:GetWorkgroup"
+        ]
+        Resource = [
+          "arn:${local.partition}:redshift-serverless:${local.region}:${local.account_id}:workgroup/*"
+        ]
+      }
+    ]
+  })
+}
+
+# Step Functions state machine for Redshift ETL
+resource "aws_sfn_state_machine" "redshift_user_activity_etl" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name     = "${local.workload_name}-redshift-user-activity-etl"
+  role_arn = aws_iam_role.redshift_etl_state_machine[0].arn
+
+  definition = jsonencode({
+    Comment = "State machine for user activity ETL on Redshift - runs silver then gold layer"
+    StartAt = "BatchExecuteSilverStatement"
+    States = {
+      BatchExecuteSilverStatement = {
+        Type     = "Task"
+        Resource = "arn:aws:states:::aws-sdk:redshiftdata:batchExecuteStatement.waitForTaskToken"
+        Parameters = {
+          WorkgroupName = local.redshift_workgroup_name
+          Database      = local.events_database
+          Sqls = [
+            <<-SQL
+              MERGE INTO ${local.user_status_table_name} target
+              USING (
+                  SELECT 
+                      events.payload.event.event_data.user_id::VARCHAR AS user_id, 
+                      DATE(MAX(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second')) AS last_active_date
+                  FROM ${local.raw_events_table} events
+                  WHERE events.payload.event.event_name::VARCHAR = 'user_login' 
+                      AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') = (
+                          SELECT COALESCE(
+                              (SELECT MAX(tracked_date) + 1 FROM ${local.user_counts_table_name}),
+                              (SELECT MIN(DATE(TIMESTAMP 'epoch' + payload.event.event_timestamp::BIGINT * INTERVAL '1 second'))
+                               FROM ${local.raw_events_table}
+                               WHERE payload.event.event_name::VARCHAR = 'user_login')
+                          )
+                      )
+                  GROUP BY events.payload.event.event_data.user_id::VARCHAR
+              ) source
+              ON target.user_id = source.user_id
+              WHEN MATCHED THEN UPDATE SET
+                  target.status = 'CURRENT',
+                  target.last_active_date = source.last_active_date
+              WHEN NOT MATCHED BY target THEN 
+                  INSERT (user_id, status, last_active_date) 
+                  VALUES (source.user_id, 'CURRENT', source.last_active_date)
+              WHEN NOT MATCHED BY source AND (target.status = 'CURRENT' AND DATEDIFF(day, target.last_active_date, (
+                  SELECT COALESCE(
+                      (SELECT MAX(tracked_date) + 1 FROM ${local.user_counts_table_name}),
+                      (SELECT MIN(DATE(TIMESTAMP 'epoch' + payload.event.event_timestamp::BIGINT * INTERVAL '1 second'))
+                       FROM ${local.raw_events_table}
+                       WHERE payload.event.event_name::VARCHAR = 'user_login')
+                  )
+              )) >= 7) THEN UPDATE SET
+                  target.status = 'AT-RISK'
+              WHEN NOT MATCHED BY source AND (target.status = 'AT-RISK' AND DATEDIFF(day, target.last_active_date, (
+                  SELECT COALESCE(
+                      (SELECT MAX(tracked_date) + 1 FROM ${local.user_counts_table_name}),
+                      (SELECT MIN(DATE(TIMESTAMP 'epoch' + payload.event.event_timestamp::BIGINT * INTERVAL '1 second'))
+                       FROM ${local.raw_events_table}
+                       WHERE payload.event.event_name::VARCHAR = 'user_login')
+                  )
+              )) >= 28) THEN UPDATE SET
+                  target.status = 'DORMANT';
+            SQL
+            ,
+            <<-SQL
+              INSERT INTO ${local.user_status_transition_table_name}
+              WITH process_date AS (
+                  SELECT COALESCE(
+                      (SELECT MAX(tracked_date) + 1 FROM ${local.user_counts_table_name}),
+                      (SELECT MIN(DATE(TIMESTAMP 'epoch' + payload.event.event_timestamp::BIGINT * INTERVAL '1 second'))
+                       FROM ${local.raw_events_table}
+                       WHERE payload.event.event_name::VARCHAR = 'user_login')
+                  ) AS process_date
+              ),
+              new_status AS (
+                  SELECT user_id, status 
+                  FROM ${local.user_status_table_name}
+              ),
+              old_status AS (
+                  SELECT user_id, status, last_active_date
+                  FROM ${local.user_status_table_name}
+                  WHERE last_active_date < (SELECT process_date FROM process_date)
+              )
+              SELECT 
+                  (SELECT process_date FROM process_date) AS transition_date, 
+                  'NON-PLAYER' AS from_status, 
+                  new_status.status AS to_status, 
+                  COUNT(*) AS count
+              FROM new_status 
+              LEFT JOIN old_status ON new_status.user_id = old_status.user_id
+              WHERE old_status.user_id IS NULL
+              GROUP BY new_status.status
+              UNION ALL
+              SELECT 
+                  (SELECT process_date FROM process_date) AS transition_date,
+                  old_status.status AS from_status,
+                  new_status.status AS to_status,
+                  COUNT(*) AS count
+              FROM new_status 
+              JOIN old_status ON new_status.user_id = old_status.user_id
+              WHERE new_status.status <> old_status.status
+              GROUP BY new_status.status, old_status.status;
+            SQL
+            ,
+            <<-SQL
+              INSERT INTO ${local.user_counts_table_name}
+              SELECT 
+                  COALESCE(
+                      (SELECT MAX(tracked_date) + 1 FROM ${local.user_counts_table_name}),
+                      (SELECT MIN(DATE(TIMESTAMP 'epoch' + payload.event.event_timestamp::BIGINT * INTERVAL '1 second'))
+                       FROM ${local.raw_events_table}
+                       WHERE payload.event.event_name::VARCHAR = 'user_login')
+                  ) AS tracked_date,
+                  status, 
+                  COUNT(*) AS count
+              FROM ${local.user_status_table_name}
+              GROUP BY status;
+            SQL
+            ,
+            <<-SQL
+              INSERT INTO ${local.user_first_join_table_name}
+              SELECT 
+                  events.payload.event.event_data.user_id::VARCHAR AS user_id, 
+                  MIN(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') AS first_join_time
+              FROM ${local.raw_events_table} events
+              WHERE events.payload.event.event_name::VARCHAR = 'user_login'
+                  AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') = (
+                      SELECT COALESCE(
+                          (SELECT MAX(tracked_date) + 1 FROM ${local.user_counts_table_name}),
+                          (SELECT MIN(DATE(TIMESTAMP 'epoch' + payload.event.event_timestamp::BIGINT * INTERVAL '1 second'))
+                           FROM ${local.raw_events_table}
+                           WHERE payload.event.event_name::VARCHAR = 'user_login')
+                      )
+                  )
+                  AND events.payload.event.event_data.user_id::VARCHAR NOT IN (
+                      SELECT user_id FROM ${local.user_first_join_table_name}
+                  )
+              GROUP BY events.payload.event.event_data.user_id::VARCHAR;
+            SQL
+            ,
+            <<-SQL
+              INSERT INTO ${local.sessions_table_name}
+              WITH logins AS (
+                  SELECT 
+                      TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second' AS event_timestamp,
+                      events.payload.event.event_data.session_id::VARCHAR AS session_id
+                  FROM ${local.raw_events_table} events
+                  WHERE events.payload.event.event_name::VARCHAR = 'user_login'
+                      AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') = (
+                          SELECT COALESCE(
+                              (SELECT MAX(tracked_date) + 1 FROM ${local.user_counts_table_name}),
+                              (SELECT MIN(DATE(TIMESTAMP 'epoch' + payload.event.event_timestamp::BIGINT * INTERVAL '1 second'))
+                               FROM ${local.raw_events_table}
+                               WHERE payload.event.event_name::VARCHAR = 'user_login')
+                          )
+                      )
+              ),
+              logouts AS (
+                  SELECT 
+                      TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second' AS event_timestamp,
+                      events.payload.event.event_data.session_id::VARCHAR AS session_id,
+                      events.payload.event.event_data.user_id::VARCHAR AS user_id
+                  FROM ${local.raw_events_table} events
+                  WHERE events.payload.event.event_name::VARCHAR = 'user_logout'
+                      AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') = (
+                          SELECT COALESCE(
+                              (SELECT MAX(tracked_date) + 1 FROM ${local.user_counts_table_name}),
+                              (SELECT MIN(DATE(TIMESTAMP 'epoch' + payload.event.event_timestamp::BIGINT * INTERVAL '1 second'))
+                               FROM ${local.raw_events_table}
+                               WHERE payload.event.event_name::VARCHAR = 'user_login')
+                          )
+                      )
+              )
+              SELECT 
+                  lo.session_id,
+                  lo.user_id,
+                  lo.event_timestamp AS session_timestamp,
+                  EXTRACT(EPOCH FROM (lo.event_timestamp - li.event_timestamp))::BIGINT AS session_duration_secs
+              FROM logouts lo
+              JOIN logins li ON lo.session_id = li.session_id
+              WHERE lo.session_id NOT IN (SELECT session_id FROM ${local.sessions_table_name});
+            SQL
+          ]
+        }
+        Next = "BatchExecuteGoldStatement"
+      }
+      BatchExecuteGoldStatement = {
+        Type     = "Task"
+        Resource = "arn:aws:states:::aws-sdk:redshiftdata:batchExecuteStatement.waitForTaskToken"
+        Parameters = {
+          WorkgroupName = local.redshift_workgroup_name
+          Database      = local.events_database
+          Sqls = [
+            <<-SQL
+              INSERT INTO ${local.daily_session_stats_table_name}
+              SELECT
+                  CAST(session_timestamp AS DATE) AS session_date,
+                  SUM(session_duration_secs) AS total_playtime,
+                  AVG(session_duration_secs) AS avg_playtime,
+                  COUNT(*) AS session_count
+              FROM ${local.sessions_table_name}
+              WHERE CAST(session_timestamp AS DATE) = (
+                  SELECT MAX(tracked_date) FROM ${local.user_counts_table_name}
+              )
+              AND CAST(session_timestamp AS DATE) NOT IN (
+                  SELECT session_date FROM ${local.daily_session_stats_table_name}
+              )
+              GROUP BY CAST(session_timestamp AS DATE);
+            SQL
+          ]
+        }
+        End = true
+      }
+    }
+  })
 
   depends_on = [
     aws_redshiftdata_statement.user_status,
@@ -659,6 +963,25 @@ resource "aws_scheduler_schedule" "redshift_user_activity_etl" {
     aws_redshiftdata_statement.sessions,
     aws_redshiftdata_statement.daily_session_stats
   ]
+}
+
+# EventBridge Scheduler to trigger the state machine daily
+resource "aws_scheduler_schedule" "redshift_user_activity_etl" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name        = "${local.workload_name}-redshift-user-activity-etl"
+  description = "Daily user activity ETL state machine for Redshift"
+
+  schedule_expression = "cron(30 0 * * ? *)"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  target {
+    arn      = aws_sfn_state_machine.redshift_user_activity_etl[0].arn
+    role_arn = aws_iam_role.redshift_etl_state_machine[0].arn
+  }
 }
 
 # -----------------------------------------------------------------------------

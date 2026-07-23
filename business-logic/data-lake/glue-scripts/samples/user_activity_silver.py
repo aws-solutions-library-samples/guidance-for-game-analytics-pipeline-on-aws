@@ -14,6 +14,17 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ######################################################################################################################
 
+"""
+SILVER LAYER Glue Job - Process raw events into silver tables
+
+This job processes:
+1. User status updates (CURRENT/AT-RISK/DORMANT)
+2. User status transitions
+3. User counts by status
+4. User first join timestamps
+5. Sessions (login/logout pairs)
+"""
+
 import sys
 from datetime import datetime, timedelta
 from awsglue.utils import getResolvedOptions
@@ -22,7 +33,7 @@ from awsglue.context import GlueContext
 from awsglue.job import Job
 
 sc = SparkContext.getOrCreate()
-sc.setLogLevel("TRACE")
+sc.setLogLevel("INFO")
 glueContext = GlueContext(sc)
 spark = glueContext.spark_session
 job = Job(glueContext)
@@ -36,12 +47,11 @@ args = getResolvedOptions(
         "INPUT_DB_NAME",
         "OUTPUT_DB_NAME",
         "INPUT_TABLE_NAME",
-        "USER_STATE_TABLE_NAME",
+        "USER_STATUS_TABLE_NAME",
         "USER_TRANSITION_TABLE_NAME",
         "USER_COUNTS_TABLE_NAME",
         "USER_FIRST_JOIN_TABLE_NAME",
         "SESSIONS_TABLE_NAME",
-        "DAILY_SESSION_STATS_TABLE_NAME",
     ],
 )
 
@@ -51,12 +61,11 @@ job.init(args["JOB_NAME"], args)
 INPUT_DB_NAME = args["INPUT_DB_NAME"]
 OUTPUT_DB_NAME = args["OUTPUT_DB_NAME"]
 INPUT_TABLE_NAME = args["INPUT_TABLE_NAME"]
-USER_STATUS_TABLE_NAME = args["USER_STATE_TABLE_NAME"]
+USER_STATUS_TABLE_NAME = args["USER_STATUS_TABLE_NAME"]
 USER_TRANSITION_TABLE_NAME = args["USER_TRANSITION_TABLE_NAME"]
 USER_COUNTS_TABLE_NAME = args["USER_COUNTS_TABLE_NAME"]
 USER_FIRST_JOIN_TABLE_NAME = args["USER_FIRST_JOIN_TABLE_NAME"]
 SESSIONS_TABLE_NAME = args["SESSIONS_TABLE_NAME"]
-DAILY_SESSION_STATS_TABLE_NAME = args["DAILY_SESSION_STATS_TABLE_NAME"]
 
 # Fully qualified table names
 input_table = f"glue_catalog.{INPUT_DB_NAME}.{INPUT_TABLE_NAME}"
@@ -65,7 +74,6 @@ user_transition_table = f"glue_catalog.{OUTPUT_DB_NAME}.{USER_TRANSITION_TABLE_N
 user_counts_table = f"glue_catalog.{OUTPUT_DB_NAME}.{USER_COUNTS_TABLE_NAME}"
 user_first_join_table = f"glue_catalog.{OUTPUT_DB_NAME}.{USER_FIRST_JOIN_TABLE_NAME}"
 sessions_table = f"glue_catalog.{OUTPUT_DB_NAME}.{SESSIONS_TABLE_NAME}"
-daily_session_stats_table = f"glue_catalog.{OUTPUT_DB_NAME}.{DAILY_SESSION_STATS_TABLE_NAME}"
 
 
 def get_latest_processed_date(table_name: str) -> str | None:
@@ -254,7 +262,6 @@ print(f"Recorded user counts for {process_date}")
 # Step 4: Update user first join table (incremental)
 # -----------------------------------------------------------------------------
 
-# Get users who logged in on this date and check if they already exist in first_join table
 spark.sql(f"""
 MERGE INTO {user_first_join_table} target
 USING (
@@ -278,8 +285,6 @@ print(f"Updated user first join table for {process_date}")
 # Step 5: Update sessions table (incremental)
 # -----------------------------------------------------------------------------
 
-# Find completed sessions (login + logout pairs) for this date range
-# Insert only sessions that don't already exist
 spark.sql(f"""
 MERGE INTO {sessions_table} target
 USING (
@@ -316,38 +321,5 @@ WHEN NOT MATCHED THEN
     VALUES (source.session_id, source.user_id, source.session_timestamp, source.session_duration_secs)
 """)
 print(f"Updated sessions table for {process_date}")
-
-# =============================================================================
-# GOLD LAYER - Aggregate silver data into gold tables
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# Step 6: Update daily session stats (gold layer)
-# -----------------------------------------------------------------------------
-
-# Calculate daily aggregates from sessions table for the processed date
-# Use MERGE to handle reprocessing/upserts
-spark.sql(f"""
-MERGE INTO {daily_session_stats_table} target
-USING (
-    SELECT 
-        SUM(session_duration_secs) AS total_playtime,
-        AVG(session_duration_secs) AS avg_playtime,
-        COUNT(*) AS session_count,
-        CAST(session_timestamp AS date) AS session_date
-    FROM {sessions_table}
-    WHERE CAST(session_timestamp AS date) = CAST('{start_range}' AS date)
-    GROUP BY CAST(session_timestamp AS date)
-) source
-ON target.session_date = source.session_date
-WHEN MATCHED THEN UPDATE SET
-    target.total_playtime = source.total_playtime,
-    target.avg_playtime = source.avg_playtime,
-    target.session_count = source.session_count
-WHEN NOT MATCHED THEN 
-    INSERT (session_date, total_playtime, avg_playtime, session_count) 
-    VALUES (source.session_date, source.total_playtime, source.avg_playtime, source.session_count)
-""")
-print(f"Updated daily session stats for {process_date}")
 
 job.commit()
