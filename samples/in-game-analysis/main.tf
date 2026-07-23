@@ -198,8 +198,9 @@ resource "aws_glue_job" "in_game_events_etl" {
   max_retries  = 0
   timeout      = 30
 
-  # Use max_capacity for non-Auto Scaling mode
-  max_capacity = 2
+  # Use Glue Flex execution class for cost savings
+  # Flex jobs can start with a delay but cost significantly less
+  execution_class = "FLEX"
 
   command {
     name            = "glueetl"
@@ -221,6 +222,31 @@ resource "aws_glue_job" "in_game_events_etl" {
     "--datalake-formats"         = "iceberg"
     "--enable-glue-datacatalog"  = "true"
   }
+}
+
+# -----------------------------------------------------------------------------
+# Glue Workflow for Scheduled Execution
+# -----------------------------------------------------------------------------
+
+resource "aws_glue_workflow" "in_game_events_daily" {
+  name        = "${local.workload_name}-In-Game-ETL-Daily"
+  description = "Daily workflow for in-game event analytics ETL"
+}
+
+resource "aws_glue_trigger" "daily_schedule" {
+  name          = "${local.workload_name}-In-Game-ETL-Daily-Trigger"
+  type          = "SCHEDULED"
+  workflow_name = aws_glue_workflow.in_game_events_daily.name
+
+  # Run daily at 00:00 UTC
+  schedule = "cron(0 0 * * ? *)"
+
+  actions {
+    job_name = aws_glue_job.in_game_events_etl.name
+  }
+
+  # Start the workflow on apply so the schedule becomes active
+  start_on_creation = true
 }
 
 # -----------------------------------------------------------------------------

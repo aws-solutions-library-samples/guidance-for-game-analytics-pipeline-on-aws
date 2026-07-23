@@ -15,16 +15,10 @@
 ######################################################################################################################
 
 import sys
-import json
-from awsglue.transforms import *
-from pyspark.sql.functions import *
 from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
 from awsglue.context import GlueContext
-from awsglue.dynamicframe import DynamicFrame
 from awsglue.job import Job
-from pyspark.sql import SparkSession
-from pyspark.sql.types import StringType
 
 sc = SparkContext.getOrCreate()
 sc.setLogLevel("TRACE")
@@ -32,7 +26,7 @@ glueContext = GlueContext(sc)
 spark = glueContext.spark_session
 job = Job(glueContext)
 
-# Get Enviornmental variables
+# Get Environmental variables
 
 args = getResolvedOptions(
     sys.argv,
@@ -56,6 +50,38 @@ OUTPUT_TRADE_TABLE_NAME = args["OUTPUT_TRADE_TABLE_NAME"]
 
 print(f"The configured table for this job is {INPUT_DB_NAME}.{INPUT_TABLE_NAME}")
 
+
+def get_latest_event_date(db_name: str, table_name: str) -> str | None:
+    """
+    Get the latest event_date from an output table.
+    Returns None if the table is empty or doesn't exist.
+    """
+    try:
+        result = spark.sql(f"""
+            SELECT MAX(event_date) as max_date
+            FROM glue_catalog.{db_name}.{table_name}
+        """)
+        max_date = result.collect()[0][0]
+        if max_date is not None:
+            return str(max_date)
+        return None
+    except Exception as e:
+        print(f"Could not retrieve max date from {db_name}.{table_name}: {e}")
+        return None
+
+
+# Get the latest event dates from both output tables
+latest_action_date = get_latest_event_date(OUTPUT_DB_NAME, OUTPUT_ACTION_TABLE_NAME)
+latest_trade_date = get_latest_event_date(OUTPUT_DB_NAME, OUTPUT_TRADE_TABLE_NAME)
+
+# Build the date filter clause for each table
+action_date_filter = f"AND CAST(event_timestamp AS DATE) > DATE('{latest_action_date}')" if latest_action_date else ""
+trade_date_filter = f"AND CAST(event_timestamp AS DATE) > DATE('{latest_trade_date}')" if latest_trade_date else ""
+
+print(f"Latest action date: {latest_action_date}, filter: {action_date_filter or 'None (full load)'}")
+print(f"Latest trade date: {latest_trade_date}, filter: {trade_date_filter or 'None (full load)'}")
+
+# Insert new action events (incremental)
 spark.sql(f"""
     INSERT INTO glue_catalog.{OUTPUT_DB_NAME}.{OUTPUT_ACTION_TABLE_NAME}
     SELECT
@@ -66,10 +92,12 @@ spark.sql(f"""
         COUNT(*) AS occurrences
     FROM glue_catalog.{INPUT_DB_NAME}.{INPUT_TABLE_NAME}
     WHERE event_name='item_action'
+    {action_date_filter}
     GROUP BY item_id, item_action, event_date, app_version
 """)
-print(f"Created in-game event analysis table {OUTPUT_DB_NAME}.{OUTPUT_ACTION_TABLE_NAME}")
+print(f"Updated in-game event analysis table {OUTPUT_DB_NAME}.{OUTPUT_ACTION_TABLE_NAME}")
 
+# Insert new trade events (incremental)
 spark.sql(f"""
     INSERT INTO glue_catalog.{OUTPUT_DB_NAME}.{OUTPUT_TRADE_TABLE_NAME}
     SELECT
@@ -81,8 +109,9 @@ spark.sql(f"""
     FROM glue_catalog.{INPUT_DB_NAME}.{INPUT_TABLE_NAME}
     WHERE event_name='item_action'
     AND get_json_object(event_data, "$.action") = 'traded'
+    {trade_date_filter}
     GROUP BY traded_item, received_item, event_date, app_version
 """)
-print(f"Created in-game trade analysis table {OUTPUT_DB_NAME}.{OUTPUT_TRADE_TABLE_NAME}")
+print(f"Updated in-game trade analysis table {OUTPUT_DB_NAME}.{OUTPUT_TRADE_TABLE_NAME}")
 
 job.commit()
