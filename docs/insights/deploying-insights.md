@@ -14,7 +14,7 @@
 
 Insights have a separate `config.yaml` file located within the `/samples` folder of the repository. To start, copy the existing `config.yaml.TEMPLATE` to a new file called `config.yaml`. Configure the config.yaml according to the following:
 
-- `QUICKSIGHT_SERVICE_ROLE_ARN` - This is the ARN of the QuickSight service role. When Quick is configured, by default the Quick-managed role will be named `aws-quicksight-service-role-v0`, but certain environments may use a different role. To validate the servie role used, as an Administrator navigate to the Quick UI > Manage account at the top right menu > Permissions > AWS resources.
+- `QUICKSIGHT_SERVICE_ROLE_ARN` - This is the ARN of the QuickSuite service role. When Quick is configured, by default the Quick-managed role will be named `aws-quicksight-service-role-v0`, but certain environments may use a different role. To validate the servie role used, as an Administrator navigate to the Quick UI > Manage account at the top right menu > Permissions > AWS resources.
 
 If the `DATA_MODE` of the game analytics pipeline is set to `DATA_LAKE`, retrieve the following parameters from the GAP deployment output:
 
@@ -30,7 +30,7 @@ If the `DATA_MODE` of the game analytics pipeline is set to `REDSHIFT`, configur
 
 ### Deploying the Bootstrap module
 
-Navigate to the bootstrap module at `/samples/quicksuite-bootstrap`
+Navigate to the bootstrap module at `/samples/quicksuite-bootstrap` using the CLI.
 
 Initiate the Terraform module by running `terraform init`.
 
@@ -44,4 +44,20 @@ After the deployment succeeds, a local output file named `bootstrap-output.yaml`
 
 ## Deploying an Insight
 
+After you have deployed the bootstrap module, make sure the `samples/quicksuite-bootstrap/bootstrap-output.yaml` is saved and present for follow-up deployments of individual insight modules.
+
+Navigate to the sample module sub-folder using the CLI and follow the pre-deployment, deployment, and post-deployment steps.
+
+Initiate the insight module and deploy dependencies by running `terraform init`
+
+Plan the resources to be deployed by running `terraform plan`
+
+Deploy the resources by running `terraform deploy`
+
+The insights will read from `samples/quicksuite-bootstrap/bootstrap-output.yaml`, `samples/config.yaml`, and `infrastructure/config.yaml` to determine the correct resources and location. 
+
 ## Granting permissions to access GAP Resources in Quick
+
+The bootstrap module will deploy a folder which will contain all Quick related resources created for the insights. [Quick folders](https://docs.aws.amazon.com/quick/latest/userguide/folders-functionality.html) simplify governance by allowing administrators to share access to collections of resources.
+
+The Quick folder will have three groups created with varying permissions levels. 
