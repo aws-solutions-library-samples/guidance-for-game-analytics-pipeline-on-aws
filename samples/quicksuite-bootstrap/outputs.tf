@@ -18,13 +18,13 @@
 # -----------------------------------------------------------------------------
 
 output "gap_data_source_arn" {
-  description = "ARN of the QuickSight Athena data source"
-  value       = aws_quicksight_data_source.gap_data_source.arn
+  description = "ARN of the QuickSight data source (Athena or Redshift)"
+  value       = local.create_athena_data_source ? aws_quicksight_data_source.gap_data_source_athena[0].arn : aws_quicksight_data_source.gap_data_source_redshift[0].arn
 }
 
 output "gap_data_source_id" {
-  description = "ID of the QuickSight Athena data source"
-  value       = aws_quicksight_data_source.gap_data_source.data_source_id
+  description = "ID of the QuickSight data source (Athena or Redshift)"
+  value       = local.create_athena_data_source ? aws_quicksight_data_source.gap_data_source_athena[0].data_source_id : aws_quicksight_data_source.gap_data_source_redshift[0].data_source_id
 }
 
 output "gap_folder_id" {
