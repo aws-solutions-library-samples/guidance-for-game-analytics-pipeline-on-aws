@@ -30,6 +30,18 @@ If the `DATA_MODE` of the game analytics pipeline is set to `REDSHIFT`, configur
 
 ### Deploying the Bootstrap module
 
+Navigate to the bootstrap module at `/samples/quicksuite-bootstrap`
+
+Initiate the Terraform module by running `terraform init`.
+
+Before deploying the module, validate the deployment plan by running `terraform plan`. The plan may fail if there are misconfigurations or if there are any unsupported configurations.
+
+To deploy the module, run `teraform apply`. The module will read from the pipeline `infrastructure/config.yaml` as well as the local `samples/config.yaml` to create required resources.
+
+This module will add additional IAM policies to the QuickSuite service role that will grant access to Game Analytics Pipeline data resources. Depending on the data mode, it will either create resources for an Athena or Redshift data source connection. It will also create a QuickSuite folder that will contain pre-built insight visualizations and three user groups that have varying access to the folder.
+
+After the deployment succeeds, a local output file named `bootstrap-output.yaml` will be created containing references to created resources. This output file will be used by created insights.
+
 ## Deploying an Insight
 
 ## Granting permissions to access GAP Resources in Quick
