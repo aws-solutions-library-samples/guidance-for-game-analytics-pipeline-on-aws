@@ -14,5 +14,12 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 QUICKSIGHT_SERVICE_ROLE_ARN: "arn:aws:iam::ACCOUNT_ID:role/service-role/aws-quicksight-service-role-v0"
+# Data Lake configuration (required when DATA_STACK is DATA_LAKE)
 ANALYTICS_BUCKET_NAME: ""
 ATHENA_WORKGROUP_NAME: ""
+
+# Redshift configuration (required when DATA_STACK is REDSHIFT)
+REDSHIFT_SECRET_ARN: "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:secret-name"
+REDSHIFT_HOST: "workgroup-endpoint.xxxxxx.region.redshift-serverless.amazonaws.com"
+REDSHIFT_VPC_ID: "vpc-xxx"
+REDSHIFT_SUBNET_IDS: ["subnet-xxx", "subnet-yyy"]
