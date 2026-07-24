@@ -7,42 +7,6 @@ Insights are generated from collected events using Amazon Glue ETL jobs and Amaz
 Each insight is a separate deployable Terraform module that will set up the necessary data processing jobs, tables, and QuickSight resources. The account will need to be bootstrapped first to configure QuickSight to have appropriate permissions to access game analytics pipeline data. The modules are located in the samples folder within the repository. Each module has its own readme with pre-deployment, deployment, and post-deployment steps to follow.
 
 ---
-
-## Bootstrapping the Account
-
-### Prerequisites
-
-- An AWS account with the Game Analytics Pipeline deployed in the account and region. For instructions on how to do so, please refer to the [Getting Started guide](../getting-started.md).
-- The `config.yaml` used to deploy the game analytics pipeline must be configured and available at `/infrastructure/config.yaml`. 
-- AWS credentials must be configured with appropriate permissions on the deploying machine to deploy within the AWS account. Please refer to the [AWS CLI Configuration Section of the Getting Started guide](../getting-started.md#aws-cli-configuration) for credential configuration instructions.
-- Hashicorp Terraform must be installed on the deploying machine. Please refer to the [Environment setup section of the Getting Started guide](../getting-started.md#set-up-environment) for configuration instructions.
-- Amazon Quick must be set up within the AWS account. For instructions on how to do so, please refer to [AWS Documentation](https://docs.aws.amazon.com/quick/latest/userguide/setting-up.html).
-
-### Configuring the insights
-
-Insights have a separate `config.yaml` file located within the `/samples` folder of the repository. To start, copy the existing `config.yaml.TEMPLATE` to a new file called `config.yaml`. Configure the config.yaml according to the following:
-
-- `QUICKSIGHT_SERVICE_ROLE_ARN` - This is the ARN of the QuickSight service role. When Quick is configured, by default the Quick-managed role will be named `aws-quicksight-service-role-v0`, but certain environments may use a different role. To validate the servie role used, as an Administrator navigate to the Quick UI > Manage account at the top right menu > Permissions > AWS resources.
-
-If the `DATA_MODE` of the game analytics pipeline is set to `DATA_LAKE`, configure the following:
-
-- ANALYTICS_BUCKET_NAME
-- ATHENA_WORKGROUP_NAME
-
-If the `DATA_MODE` of the game analytics pipeline is set to `REDSHIFT`, configure the following:
-
-- REDSHIFT_SECRET_ARN
-- REDSHIFT_HOST
-- REDSHIFT_VPC_ID
-- REDSHIFT_SUBNET_IDS
-
-### Deploying the Bootstrap module
-
-## Deploying an Insight
-
-## Granting permissions to access GAP Resources in Quick
-
----
 ## FAQ
 
 ### What costs are associated with the insights?

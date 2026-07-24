@@ -106,10 +106,11 @@ nav:
       - Changelog: upgrading/v2-to-v3-changes.md
       - Upgrade Guide: upgrading/v2-migration.md
   - Component Deep Dive: component-deep-dive.md
-  - Customizations:
-    - Customizations: customizations.md
-    - Insights:
-      - Insights: insights/insights.md
+  - Customizations: customizations.md
+  - Pre-Built Insights:
+    - Pre-Built Insights: insights/insights.md
+    - Deploying Pre-Built Insights: insights/deploying-insights.md
+    - Available Insights: insights/available-insights.md
   - QuickSight Dashboard: quicksight-dashboard.md
   - Design Considerations: design-considerations.md
   - Troubleshooting: troubleshooting.md
