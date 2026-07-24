@@ -1,63 +1,247 @@
 # Deploying Pre-Built Insights
 
-## Bootstrapping the Account
+This guide walks through deploying the pre-built insight modules to analyze your game analytics data. Each module includes data processing pipelines and QuickSight visualizations.
 
-### Prerequisites
+---
 
-- An AWS account with the Game Analytics Pipeline deployed in the account and region. For instructions on how to do so, please refer to the [Getting Started guide](../getting-started.md).
-- The `config.yaml` used to deploy the game analytics pipeline must be configured and available at `/infrastructure/config.yaml`. 
-- AWS credentials must be configured with appropriate permissions on the deploying machine to deploy within the AWS account. Please refer to the [AWS CLI Configuration Section of the Getting Started guide](../getting-started.md#aws-cli-configuration) for credential configuration instructions.
-- Hashicorp Terraform must be installed on the deploying machine. Please refer to the [Environment setup section of the Getting Started guide](../getting-started.md#set-up-environment) for configuration instructions.
-- Amazon Quick must be set up within the AWS account. For instructions on how to do so, please refer to [AWS Documentation](https://docs.aws.amazon.com/quick/latest/userguide/setting-up.html).
+## Prerequisites
 
-### Configuring the insights
+The following are required before deploying the insight modules:
 
-Insights have a separate `config.yaml` file located within the `/samples` folder of the repository. To start, copy the existing `config.yaml.TEMPLATE` to a new file called `config.yaml`. Configure the config.yaml according to the following:
+- **Game Analytics Pipeline deployed**. The pipeline infrastructure must be deployed in your AWS account. See the [Getting Started guide](../getting-started.md) for deployment instructions.
 
-- `QUICKSIGHT_SERVICE_ROLE_ARN` - This is the ARN of the QuickSuite service role. When Quick is configured, by default the Quick-managed role will be named `aws-quicksight-service-role-v0`, but certain environments may use a different role. To validate the servie role used, as an Administrator navigate to the Quick UI > Manage account at the top right menu > Permissions > AWS resources.
+- **Pipeline configuration file**. The `infrastructure/config.yaml` file used to deploy the pipeline must be available.
 
-If the `DATA_MODE` of the game analytics pipeline is set to `DATA_LAKE`, retrieve the following parameters from the GAP deployment output:
+- **AWS credentials configured**. Your AWS CLI or environment must have credentials with permissions to manage QuickSight, IAM, and the data resources (Athena or Redshift). See [AWS CLI Configuration](../getting-started.md#aws-cli-configuration) for credential setup instructions.
 
-- `ANALYTICS_BUCKET_NAME` - The name of the S3 Bucket used for game analytics storage. Refer to the [Analytics Bucket Name](../references/output-reference.md#analytics-bucket-name) in the Output Reference.
-- `ATHENA_WORKGROUP_NAME` - The name of the Athena Workgroup created to query Game Analytics data.
+- **Terraform installed**. HashiCorp Terraform >= 1.x must be installed on your machine. See [Environment setup](../getting-started.md#set-up-environment) for installation instructions.
 
-If the `DATA_MODE` of the game analytics pipeline is set to `REDSHIFT`, configure the following:
+- **QuickSight account**. An Amazon QuickSight Enterprise subscription must be configured in your AWS account. See the [AWS QuickSight documentation](https://docs.aws.amazon.com/quicksight/latest/user/signing-up.html) for setup instructions.
 
-- `REDSHIFT_SECRET_ARN` - The ARN of the secrets manager secret used to sign into the Redshift Serverless workgroup. 
-- `REDSHIFT_HOST` - The host endpoint inside the VPC for the Redshift Serverless workgroup.
-- `REDSHIFT_VPC_ID` - The VPC created for the Game Analytics Pipeline.
-- `REDSHIFT_SUBNET_IDS` - The private subnets created inside the Game Analytics Pipeline VPC.
+---
 
-### Deploying the Bootstrap module
+## Configure the Samples
 
-Navigate to the bootstrap module at `/samples/quicksuite-bootstrap` using the CLI.
+Insights use a separate `config.yaml` file located in the `/samples` folder of the repository.
 
-Initiate the Terraform module by running `terraform init`.
+Copy the configuration template to create your local configuration file:
 
-Before deploying the module, validate the deployment plan by running `terraform plan`. The plan may fail if there are misconfigurations or if there are any unsupported configurations.
+   ```bash
+   cp samples/config.yaml.TEMPLATE samples/config.yaml
+   ```
 
-To deploy the module, run `teraform apply`. The module will read from the pipeline `infrastructure/config.yaml` as well as the local `samples/config.yaml` to create required resources.
+Open `samples/config.yaml` for editing. Configure the parameters based on your data mode:
 
-This module will add additional IAM policies to the QuickSuite service role that will grant access to Game Analytics Pipeline data resources. Depending on the data mode, it will either create resources for an Athena or Redshift data source connection. It will also create a QuickSuite folder that will contain pre-built insight visualizations and three user groups that have varying access to the folder.
+=== "DATA_LAKE Mode"
 
-After the deployment succeeds, a local output file named `bootstrap-output.yaml` will be created containing references to created resources. This output file will be used by created insights.
+    If the `DATA_STACK` configuration in your pipeline `infrastructure/config.yaml` is set to `DATA_LAKE`, configure these parameters:
 
-## Deploying an Insight
+    | Parameter | Description |
+    | --- | --- |
+    | `ANALYTICS_BUCKET_NAME` | The name of the S3 bucket used for game analytics storage. Retrieve the value from the [pipeline deployment outputs](../references/output-reference.md#analytics-bucket-name). |
+    | `ATHENA_WORKGROUP_NAME` | The name of the Athena workgroup created for querying Game Analytics data. |
 
-After you have deployed the bootstrap module, make sure the `samples/quicksuite-bootstrap/bootstrap-output.yaml` is saved and present for follow-up deployments of individual insight modules.
+=== "REDSHIFT Mode"
 
-Navigate to the sample module sub-folder using the CLI and follow the pre-deployment, deployment, and post-deployment steps.
+    If the `DATA_STACK` configuration in your pipeline `infrastructure/config.yaml` is set to `REDSHIFT`, configure these parameters:
 
-Initiate the insight module and deploy dependencies by running `terraform init`
+    | Parameter | Description |
+    | --- | --- |
+    | `REDSHIFT_SECRET_ARN` | The ARN of the Secrets Manager secret used to authenticate to the Redshift Serverless workgroup. |
+    | `REDSHIFT_HOST` | The host endpoint inside the VPC for the Redshift Serverless workgroup. |
+    | `REDSHIFT_VPC_ID` | The VPC ID created for the Game Analytics Pipeline. |
+    | `REDSHIFT_SUBNET_IDS` | A comma-separated list of private subnet IDs created inside the Game Analytics Pipeline VPC. |
 
-Plan the resources to be deployed by running `terraform plan`
+Configure the QuickSight service role:
 
-Deploy the resources by running `terraform deploy`
+   | Parameter | Description |
+   | --- | --- |
+   | `QUICKSIGHT_SERVICE_ROLE_ARN` | The ARN of the QuickSight service role. By default, QuickSight creates a role named `aws-quicksight-service-role-v0`. To validate, navigate to QuickSight > Manage account > Permissions > AWS resources. |
 
-The insights will read from `samples/quicksuite-bootstrap/bootstrap-output.yaml`, `samples/config.yaml`, and `infrastructure/config.yaml` to determine the correct resources and location. 
+---
 
-## Granting permissions to access GAP Resources in Quick
+## Bootstrap QuickSight
 
-The bootstrap module will deploy a folder which will contain all Quick related resources created for the insights. [Quick folders](https://docs.aws.amazon.com/quick/latest/userguide/folders-functionality.html) simplify governance by allowing administrators to share access to collections of resources.
+The bootstrap module creates shared resources that all insight modules use. This must be deployed first.
 
-The Quick folder will have three groups created with varying permissions levels. 
+### What it Creates
+
+The bootstrap module creates:
+
+- An IAM policy attached to the QuickSight service role that grants access to Game Analytics Pipeline data resources
+- A QuickSight data source (Athena or Redshift) that connects to your pipeline data
+- A QuickSight folder to hold all insight assets with cascading permissions
+- Three QuickSight groups (admin, writer, reader) with different permission levels on the folder
+
+### Deploy the Bootstrap Module
+
+Navigate to the bootstrap module:
+
+   ```bash
+   cd samples/quicksuite-bootstrap
+   ```
+
+Initialize the Terraform module:
+
+   ```bash
+   terraform init
+   ```
+
+Review the deployment plan:
+
+   ```bash
+   terraform plan
+   ```
+
+Deploy the module:
+
+   ```bash
+   terraform apply
+   ```
+
+After deployment succeeds, a `bootstrap-output.yaml` file is created in the module directory containing references to the created resources. This file is required for deploying individual insight modules, make sure the output is saved for the subsequent insight deployment.
+
+---
+
+## Deploy an Insight Module
+
+After the bootstrap module is deployed, you can deploy individual insight modules. Each module creates tables, data processing jobs (Glue or Step Functions), and QuickSight visualizations.
+
+### Predeployment Steps
+
+Ensure the `bootstrap-output.yaml` file exists at `samples/quicksuite-bootstrap/bootstrap-output.yaml`.
+
+Ensure the all of the steps to configure the game analytics pipeline in the [Getting Started guide](../getting-started.md) have been followed.
+
+### Deploy the Module
+
+Navigate to the insight module directory:
+
+   ```bash
+   cd samples/user-activity
+   ```
+
+Initialize the Terraform module:
+
+   ```bash
+   terraform init
+   ```
+
+Review the deployment plan:
+
+   ```bash
+   terraform plan
+   ```
+
+Deploy the module:
+
+   ```bash
+   terraform apply
+   ```
+
+The module reads from `bootstrap-output.yaml`, `samples/config.yaml`, and `infrastructure/config.yaml` to determine resource names and locations.
+
+Follow any additional steps mentioned in the module's README.md
+
+### Postdeployment Steps
+
+After deployment, process your event data:
+
+=== "DATA_LAKE Mode"
+
+    Run the Glue ETL jobs to populate the tables:
+
+    ```bash
+    # Start the silver job
+    aws glue start-job-run --job-name "<WORKLOAD_NAME>-User-Activity-Silver"
+
+    # After silver completes, start the gold job
+    aws glue start-job-run --job-name "<WORKLOAD_NAME>-User-Activity-Gold"
+    ```
+
+    Or trigger the entire workflow:
+
+    ```bash
+    aws glue start-workflow-run --name "<WORKLOAD_NAME>-User-Activity-ETL-Daily"
+    ```
+
+=== "REDSHIFT Mode"
+
+    Trigger the Step Functions state machine:
+
+    ```bash
+    aws stepfunctions start-execution \
+        --state-machine-arn "arn:aws:states:region:account:stateMachine:<WORKLOAD_NAME>-redshift-user-activity-etl"
+    ```
+
+    The state machine executes SQL batches to populate the silver and gold tables from the `event_data_mv` materialized view.
+
+After the ETL completes, refresh the QuickSight SPICE datasets:
+
+```bash
+aws quicksight create-ingestion \
+  --aws-account-id "$(aws sts get-caller-identity --query Account --output text)" \
+  --data-set-id "user-status-<WORKLOAD_NAME>" \
+  --ingestion-id "manual-refresh-$(date +%s)"
+```
+
+---
+
+
+## Add Users to Groups
+
+The bootstrap module creates three groups with different permission levels:
+
+| Group | Permission Level | Capabilities |
+| --- | --- | --- |
+| `<workload>-admin` | Folder Owner | Full control of the folder, its assets, and permissions |
+| `<workload>-writer` | Folder Contributor | Create, edit, and delete assets; cannot change folder permissions |
+| `<workload>-reader` | Folder Viewer | Read-only access to all assets in the folder |
+
+To add a user to a group:
+
+```bash
+aws quicksight create-group-membership \
+  --aws-account-id "$(aws sts get-caller-identity --query Account --output text)" \
+  --namespace default \
+  --group-name <workload>-reader \
+  --member-name <quicksight-username>
+```
+
+## View the Analysis
+
+1. Open the QuickSight console at https://quicksight.aws.amazon.com/
+
+2. Navigate to **Analyses** in the left sidebar
+
+3. Open the analysis for your deployed module:
+
+4. The analysis contains pre-built visualizations showing key metrics for your game
+
+For details on each module's visualizations, see [Available Insights](./available-insights.md).
+
+### Publish as a Dashboard (Optional)
+
+To share the analysis as a read-only dashboard:
+
+1. Open the analysis in QuickSight
+
+2. Click **Share** → **Publish dashboard**
+
+3. Enter a dashboard name and configure sharing options
+
+---
+
+## Cleanup
+
+To remove deployed insight modules:
+
+```bash
+cd samples/<module-name>
+terraform destroy
+```
+
+QuickSight analyses must be deleted before datasets, and datasets before templates. Terraform handles this automatically when destroying resources.
+
+!!! Warning
+   Destroying the bootstrap module removes the shared data source and folder. Remove all insight modules before destroying the bootstrap module.
