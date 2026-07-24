@@ -186,7 +186,7 @@ USING (
         SELECT 
             purchases.item_id, 
             CAST(SUM(purchases.quantity) AS INT) AS quantity, 
-            CAST(SUM(purchases.quantity * prices.price) AS DECIMAL(38, 2)) AS gross, 
+            CAST(SUM(purchases.quantity * prices.price) AS BIGINT) AS gross, 
             COUNT(*) AS transactions
         FROM purchases
         JOIN {item_prices_table} prices ON purchases.item_id = prices.item_name
@@ -243,7 +243,7 @@ WITH purchases AS (
 session_purchases AS (
     SELECT    
         pu.session_id,
-        CAST(SUM(pu.quantity * pr.price) AS DECIMAL(38, 2)) AS gross, 
+        CAST(SUM(pu.quantity * pr.price) AS BIGINT) AS gross, 
         MIN(pu.event_timestamp) AS first_purchase_time
     FROM purchases AS pu
     JOIN {item_prices_table} AS pr ON pu.item_id = pr.item_name

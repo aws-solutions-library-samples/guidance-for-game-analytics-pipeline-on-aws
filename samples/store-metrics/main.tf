@@ -102,7 +102,7 @@ resource "aws_glue_catalog_table" "item_prices" {
             id       = 2
             name     = "price"
             required = false
-            type     = "decimal(10,2)"
+            type     = "bigint"
           }
         }
 
@@ -163,7 +163,7 @@ resource "aws_glue_catalog_table" "daily_item_store_metrics" {
             id       = 5
             name     = "gross"
             required = false
-            type     = "decimal(38,2)"
+            type     = "bigint"
           }
           fields {
             id       = 6
@@ -222,7 +222,7 @@ resource "aws_glue_catalog_table" "daily_user_purchase_metrics" {
             id       = 2
             name     = "gross"
             required = false
-            type     = "decimal(38,2)"
+            type     = "bigint"
           }
           fields {
             id       = 3
@@ -339,7 +339,7 @@ resource "aws_glue_catalog_table" "user_ltv" {
             id       = 2
             name     = "lifetime_value"
             required = false
-            type     = "decimal(38,2)"
+            type     = "bigint"
           }
           fields {
             id       = 3
@@ -515,7 +515,7 @@ resource "aws_redshiftdata_statement" "item_prices" {
   sql            = <<-SQL
     CREATE TABLE IF NOT EXISTS ${local.item_prices_table_name} (
       item_name VARCHAR(255),
-      price DECIMAL(10,2)
+      price BIGINT
     )
     DISTSTYLE KEY
     DISTKEY (item_name)
@@ -535,7 +535,7 @@ resource "aws_redshiftdata_statement" "daily_item_store_metrics" {
       item_id VARCHAR(255),
       clicks BIGINT,
       quantity INTEGER,
-      gross DECIMAL(38,2),
+      gross BIGINT,
       transactions BIGINT
     )
     DISTSTYLE KEY
@@ -553,7 +553,7 @@ resource "aws_redshiftdata_statement" "daily_user_purchase_metrics" {
   sql            = <<-SQL
     CREATE TABLE IF NOT EXISTS ${local.daily_user_purchase_metrics_table_name} (
       user_id VARCHAR(255),
-      gross DECIMAL(38,2),
+      gross BIGINT,
       first_purchase_time TIMESTAMP,
       session_date DATE
     )
@@ -589,7 +589,7 @@ resource "aws_redshiftdata_statement" "user_ltv" {
   sql            = <<-SQL
     CREATE TABLE IF NOT EXISTS ${local.user_ltv_table_name} (
       user_id VARCHAR(255),
-      lifetime_value DECIMAL(38,2),
+      lifetime_value BIGINT,
       days_to_first_monetization INTEGER,
       monetization_date DATE
     )
@@ -721,7 +721,7 @@ resource "aws_sfn_state_machine" "redshift_store_metrics_etl" {
                       SELECT 
                           purchases.item_id, 
                           CAST(SUM(purchases.quantity) AS INT) AS quantity, 
-                          CAST(SUM(purchases.quantity * prices.price) AS DECIMAL(38, 2)) AS gross, 
+                          SUM(purchases.quantity * prices.price) AS gross, 
                           COUNT(*) AS transactions
                       FROM purchases
                       JOIN ${local.item_prices_table_name} prices ON purchases.item_id = prices.item_name
@@ -778,7 +778,7 @@ resource "aws_sfn_state_machine" "redshift_store_metrics_etl" {
               session_purchases AS (
                   SELECT    
                       pu.session_id,
-                      CAST(SUM(pu.quantity * pr.price) AS DECIMAL(38, 2)) AS gross, 
+                      SUM(pu.quantity * pr.price) AS gross, 
                       MIN(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') AS first_purchase_time
                   FROM purchases AS pu
                   JOIN ${local.item_prices_table_name} AS pr ON pu.item_id = pr.item_name
@@ -942,7 +942,7 @@ resource "aws_quicksight_data_set" "daily_item_store_metrics" {
         }
         input_columns {
           name = "gross"
-          type = "DECIMAL"
+          type = "INTEGER"
         }
         input_columns {
           name = "transactions"
@@ -977,7 +977,7 @@ resource "aws_quicksight_data_set" "daily_item_store_metrics" {
         }
         columns {
           name = "gross"
-          type = "DECIMAL"
+          type = "INTEGER"
         }
         columns {
           name = "transactions"
@@ -1056,7 +1056,7 @@ resource "aws_quicksight_data_set" "user_ltv" {
         }
         input_columns {
           name = "lifetime_value"
-          type = "DECIMAL"
+          type = "INTEGER"
         }
         input_columns {
           name = "days_to_first_monetization"
@@ -1083,7 +1083,7 @@ resource "aws_quicksight_data_set" "user_ltv" {
         }
         columns {
           name = "lifetime_value"
-          type = "DECIMAL"
+          type = "INTEGER"
         }
         columns {
           name = "days_to_first_monetization"
@@ -1146,7 +1146,7 @@ resource "aws_quicksight_template" "store_metrics" {
         }
         column_schema_list {
           name      = "gross"
-          data_type = "DECIMAL"
+          data_type = "INTEGER"
         }
         column_schema_list {
           name      = "transactions"
@@ -1166,11 +1166,11 @@ resource "aws_quicksight_template" "store_metrics" {
         }
         column_schema_list {
           name      = "units_per_transaction"
-          data_type = "DECIMAL"
+          data_type = "INTEGER"
         }
         column_schema_list {
           name      = "gross_per_transaction"
-          data_type = "DECIMAL"
+          data_type = "INTEGER"
         }
       }
     }
@@ -1182,7 +1182,7 @@ resource "aws_quicksight_template" "store_metrics" {
       data_set_schema {
         column_schema_list {
           name      = "lifetime_value"
-          data_type = "DECIMAL"
+          data_type = "INTEGER"
         }
         column_schema_list {
           name      = "days_to_first_monetization"
