@@ -14,6 +14,13 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 QUICKSIGHT_SERVICE_ROLE_ARN: "arn:aws:iam::ACCOUNT_ID:role/service-role/aws-quicksight-service-role-v0"
+QUICKSIGHT_IDENTITY_REGION: "us-east-1"
+
+# QuickSight Secrets Manager role ARN (required when DATA_STACK is REDSHIFT)
+# This role is created when you grant QuickSight access to Secrets Manager.
+# Role name: aws-quicksight-secretsmanager-role-v0
+QUICKSIGHT_SECRETS_MANAGER_ROLE_ARN: "arn:aws:iam::ACCOUNT_ID:role/service-role/aws-quicksight-secretsmanager-role-v0"
+
 # Data Lake configuration (required when DATA_STACK is DATA_LAKE)
 ANALYTICS_BUCKET_NAME: ""
 ATHENA_WORKGROUP_NAME: ""

@@ -113,6 +113,55 @@ Ensure the `bootstrap-output.yaml` file exists at `samples/quicksuite-bootstrap/
 
 Ensure the all of the steps to configure the game analytics pipeline in the [Getting Started guide](../getting-started.md) have been followed.
 
+#### Set up Amazon QuickSuite
+
+Amazon QuickSuite requires additional service permissions for the QuickSuite service backend to connect to and use Game Analytics Pipeline data resources. Enabling these permissions cannot be automated through infrastructure-as-code, so a QuickSuite administrator must configure these permissions through the Quick interface.
+
+To start, navigate to the QuickSuite interface as an Administrator. Open the popup menu at the top-right of the interface. Make sure the region is configured as the region where the Game Analytics Pipeline is deployed. Click on **Manage account** to open the administrator panel.
+
+![Quick Home Page](../media/insights/setup/quick-start.png){width="600"}
+
+In the Manage Account portal, navigate to **AWS resources** in the side menu under **Permissions**. 
+
+![Quick Admin Page](../media/insights/setup/manage-aws-resource.png){width="600"}
+
+The resources to be enabled will depend on the `DATA_MODE` configuration of the Game Analytics Pipeline.
+
+=== "DATA_LAKE Mode"
+
+    If the game analytics pipeline is deployed with `"DATA_MODE"="DATA_LAKE"`, you must enable access to Amazon Athena and the S3 Analytics Bucket which contains the datasets.
+
+    Click on the checkbox next to Amazon Athena to enable Athena access.
+
+    ![Redshift Required permissions for Athena and S3](../media/insights/setup/quick-perms.png){width="400"}
+   
+    Click on the checkbox next to Amazon S3 to enable Amazon S3 access. Click on **Select S3 buckets** to select the specific bucket for the datasets.
+
+    In the popup, select the created analytics bucket. Retrieve the bucket to enable from the [pipeline deployment outputs](../references/output-reference.md#analytics-bucket-name). Click on the checkbox for **Write permission for Athena Workgroup** to allow Amazon Athena to write query results to a scratch location.
+
+    ![Selecting S3 bucket and enabling Athena write access](../media/insights/setup/data-lake-s3.png){width="600"}
+
+    Click **Finish** after the bucket is configured.
+
+
+=== "REDSHIFT Mode"
+
+    If the game analytics pipeline is deployed with `"DATA_MODE"="REDSHIFT"`, you must enable access to Amazon Redshift and the AWS Secrets Manager secret used to authenticate into the created Redshift Serverless Workspace.
+
+    Click on the checkbox next to Amazon Redshift to enable Redshift access.
+
+    ![Redshift Required permissions for Redshift and Secrets Manager](../media/insights/setup/redshift-perms.png){width="400"}
+
+    Click on the checkbox next to AWS SecretsManager to enable access to AWS Secrets Manager. Click on **Select secrets** to select the specific secret for the Redshift Serverless Workgroup.
+
+    In the popup, select the created secret for workspace access.
+
+    ![Redshift Required permissions for Redshift Secrets Manager](../media/insights/setup/redshift-secret.png){width="600"}
+
+    Click **Finish** after the secret is configured.
+
+After all of the resources are configured. Click **Save** at the bottom to save the updated settings. QuickSuite will update the service role with permissions to access the required resources.
+
 ### Deploy the Module
 
 Navigate to the insight module directory:
