@@ -18,23 +18,23 @@
 # -----------------------------------------------------------------------------
 
 output "in_game_events_table_name" {
-  description = "Name of the Glue table for in-game events"
-  value       = aws_glue_catalog_table.in_game_events.name
+  description = "Name of the Glue table for in-game events (null when DATA_STACK is REDSHIFT)"
+  value       = length(aws_glue_catalog_table.in_game_events) > 0 ? aws_glue_catalog_table.in_game_events[0].name : null
 }
 
 output "in_game_trades_table_name" {
-  description = "Name of the Glue table for in-game trades"
-  value       = aws_glue_catalog_table.in_game_trades.name
+  description = "Name of the Glue table for in-game trades (null when DATA_STACK is REDSHIFT)"
+  value       = length(aws_glue_catalog_table.in_game_trades) > 0 ? aws_glue_catalog_table.in_game_trades[0].name : null
 }
 
 output "glue_job_name" {
-  description = "Name of the Glue ETL job"
-  value       = aws_glue_job.in_game_events_etl.name
+  description = "Name of the Glue ETL job (null when DATA_STACK is REDSHIFT)"
+  value       = length(aws_glue_job.in_game_events_etl) > 0 ? aws_glue_job.in_game_events_etl[0].name : null
 }
 
 output "glue_job_arn" {
-  description = "ARN of the Glue ETL job"
-  value       = aws_glue_job.in_game_events_etl.arn
+  description = "ARN of the Glue ETL job (null when DATA_STACK is REDSHIFT)"
+  value       = length(aws_glue_job.in_game_events_etl) > 0 ? aws_glue_job.in_game_events_etl[0].arn : null
 }
 
 output "daily_item_actions_dataset_id" {

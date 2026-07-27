@@ -86,16 +86,6 @@ output "step_function_state_machine_name" {
 }
 
 # QuickSight Datasets
-output "user_status_dataset_id" {
-  description = "ID of the QuickSight user status dataset"
-  value       = aws_quicksight_data_set.user_status.data_set_id
-}
-
-output "user_status_dataset_arn" {
-  description = "ARN of the QuickSight user status dataset"
-  value       = aws_quicksight_data_set.user_status.arn
-}
-
 output "daily_session_stats_dataset_id" {
   description = "ID of the QuickSight daily session stats dataset"
   value       = aws_quicksight_data_set.daily_session_stats.data_set_id
@@ -104,6 +94,26 @@ output "daily_session_stats_dataset_id" {
 output "daily_session_stats_dataset_arn" {
   description = "ARN of the QuickSight daily session stats dataset"
   value       = aws_quicksight_data_set.daily_session_stats.arn
+}
+
+output "user_counts_dataset_id" {
+  description = "ID of the QuickSight user counts dataset"
+  value       = aws_quicksight_data_set.user_counts.data_set_id
+}
+
+output "user_counts_dataset_arn" {
+  description = "ARN of the QuickSight user counts dataset"
+  value       = aws_quicksight_data_set.user_counts.arn
+}
+
+output "user_status_transition_dataset_id" {
+  description = "ID of the QuickSight user status transition dataset"
+  value       = aws_quicksight_data_set.user_status_transition.data_set_id
+}
+
+output "user_status_transition_dataset_arn" {
+  description = "ARN of the QuickSight user status transition dataset"
+  value       = aws_quicksight_data_set.user_status_transition.arn
 }
 
 # QuickSight Template

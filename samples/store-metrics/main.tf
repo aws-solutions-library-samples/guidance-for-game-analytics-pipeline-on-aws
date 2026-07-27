@@ -36,6 +36,7 @@ locals {
   account_id = data.aws_caller_identity.current.account_id
   region     = data.aws_region.current.region
   partition  = data.aws_partition.current.partition
+  gap_region = local.samples_config.GAME_ANALYTICS_PIPELINE_REGION
 
   workload_name    = local.pipeline_config.WORKLOAD_NAME
   events_database  = local.pipeline_config.EVENTS_DATABASE
@@ -54,7 +55,9 @@ locals {
   is_data_lake_mode = local.pipeline_config.DATA_STACK == "DATA_LAKE"
 
   // Redshift workgroup name (used when DATA_STACK == "REDSHIFT")
-  redshift_workgroup_name = "${lower(local.pipeline_config.DATA_STACK)}-workgroup"
+  // Must match the naming convention in infrastructure/terraform/src/constructs/redshift-construct/main.tf:
+  //   workgroup_name = "${lower(var.stack_name)}-workgroup" where stack_name is WORKLOAD_NAME
+  redshift_workgroup_name = "${lower(local.workload_name)}-workgroup"
 
   // Table names
   item_prices_table_name                 = "item_prices"
@@ -74,7 +77,8 @@ locals {
 
 # Item prices reference table - static reference data for item pricing
 resource "aws_glue_catalog_table" "item_prices" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.item_prices_table_name
   database_name = local.events_database
@@ -96,13 +100,13 @@ resource "aws_glue_catalog_table" "item_prices" {
             id       = 1
             name     = "item_name"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 2
             name     = "price"
             required = false
-            type     = "bigint"
+            type     = jsonencode("bigint")
           }
         }
 
@@ -117,7 +121,8 @@ resource "aws_glue_catalog_table" "item_prices" {
 
 # Daily item store metrics table - silver layer aggregation
 resource "aws_glue_catalog_table" "daily_item_store_metrics" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.daily_item_store_metrics_table_name
   database_name = local.events_database
@@ -139,37 +144,37 @@ resource "aws_glue_catalog_table" "daily_item_store_metrics" {
             id       = 1
             name     = "store_date"
             required = false
-            type     = "date"
+            type     = jsonencode("date")
           }
           fields {
             id       = 2
             name     = "item_id"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 3
             name     = "clicks"
             required = false
-            type     = "bigint"
+            type     = jsonencode("bigint")
           }
           fields {
             id       = 4
             name     = "quantity"
             required = false
-            type     = "int"
+            type     = jsonencode("int")
           }
           fields {
             id       = 5
             name     = "gross"
             required = false
-            type     = "bigint"
+            type     = jsonencode("bigint")
           }
           fields {
             id       = 6
             name     = "transactions"
             required = false
-            type     = "bigint"
+            type     = jsonencode("bigint")
           }
         }
 
@@ -194,7 +199,8 @@ resource "aws_glue_catalog_table" "daily_item_store_metrics" {
 
 # Daily user purchase metrics table - silver layer
 resource "aws_glue_catalog_table" "daily_user_purchase_metrics" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.daily_user_purchase_metrics_table_name
   database_name = local.events_database
@@ -216,25 +222,25 @@ resource "aws_glue_catalog_table" "daily_user_purchase_metrics" {
             id       = 1
             name     = "user_id"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 2
             name     = "gross"
             required = false
-            type     = "bigint"
+            type     = jsonencode("bigint")
           }
           fields {
             id       = 3
             name     = "first_purchase_time"
             required = false
-            type     = "timestamp"
+            type     = jsonencode("timestamp")
           }
           fields {
             id       = 4
             name     = "session_date"
             required = false
-            type     = "date"
+            type     = jsonencode("date")
           }
         }
 
@@ -258,7 +264,8 @@ resource "aws_glue_catalog_table" "daily_user_purchase_metrics" {
 
 # User first join table - tracks when users first joined
 resource "aws_glue_catalog_table" "user_first_join" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.user_first_join_table_name
   database_name = local.events_database
@@ -280,13 +287,13 @@ resource "aws_glue_catalog_table" "user_first_join" {
             id       = 1
             name     = "user_id"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 2
             name     = "first_join_time"
             required = false
-            type     = "timestamp"
+            type     = jsonencode("timestamp")
           }
         }
 
@@ -311,7 +318,8 @@ resource "aws_glue_catalog_table" "user_first_join" {
 
 # User LTV table - gold layer
 resource "aws_glue_catalog_table" "user_ltv" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.user_ltv_table_name
   database_name = local.events_database
@@ -333,25 +341,25 @@ resource "aws_glue_catalog_table" "user_ltv" {
             id       = 1
             name     = "user_id"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 2
             name     = "lifetime_value"
             required = false
-            type     = "bigint"
+            type     = jsonencode("bigint")
           }
           fields {
             id       = 3
             name     = "days_to_first_monetization"
             required = false
-            type     = "int"
+            type     = jsonencode("int")
           }
           fields {
             id       = 4
             name     = "monetization_date"
             required = false
-            type     = "date"
+            type     = jsonencode("date")
           }
         }
 
@@ -380,7 +388,8 @@ resource "aws_glue_catalog_table" "user_ltv" {
 
 # SILVER LAYER Glue Job - Process store events into silver tables
 resource "aws_glue_job" "store_metrics_silver" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name         = "${local.workload_name}-Store-Metrics-Silver"
   description  = "Glue job to process store events into silver tables for workload ${local.workload_name}."
@@ -419,7 +428,8 @@ resource "aws_glue_job" "store_metrics_silver" {
 
 # GOLD LAYER Glue Job - Aggregate silver data into gold tables
 resource "aws_glue_job" "store_metrics_gold" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name         = "${local.workload_name}-Store-Metrics-Gold"
   description  = "Glue job to aggregate silver data into gold tables for workload ${local.workload_name}."
@@ -456,7 +466,8 @@ resource "aws_glue_job" "store_metrics_gold" {
 # -----------------------------------------------------------------------------
 
 resource "aws_glue_workflow" "store_metrics_daily" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name        = "${local.workload_name}-Store-Metrics-ETL-Daily"
   description = "Daily workflow for store metrics analytics ETL"
@@ -464,7 +475,8 @@ resource "aws_glue_workflow" "store_metrics_daily" {
 
 # Scheduled trigger to start the workflow
 resource "aws_glue_trigger" "store_metrics_daily_schedule" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = "${local.workload_name}-Store-Metrics-ETL-Daily-Trigger"
   type          = "SCHEDULED"
@@ -482,7 +494,8 @@ resource "aws_glue_trigger" "store_metrics_daily_schedule" {
 
 # Conditional trigger to run gold job after silver completes
 resource "aws_glue_trigger" "store_metrics_gold_after_silver" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = "${local.workload_name}-Store-Metrics-Gold-After-Silver"
   type          = "CONDITIONAL"
@@ -508,7 +521,8 @@ resource "aws_glue_trigger" "store_metrics_gold_after_silver" {
 
 # Create item_prices reference table in Redshift
 resource "aws_redshiftdata_statement" "item_prices" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -525,7 +539,8 @@ resource "aws_redshiftdata_statement" "item_prices" {
 
 # Create daily_item_store_metrics table in Redshift
 resource "aws_redshiftdata_statement" "daily_item_store_metrics" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -546,7 +561,8 @@ resource "aws_redshiftdata_statement" "daily_item_store_metrics" {
 
 # Create daily_user_purchase_metrics table in Redshift
 resource "aws_redshiftdata_statement" "daily_user_purchase_metrics" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -565,7 +581,8 @@ resource "aws_redshiftdata_statement" "daily_user_purchase_metrics" {
 
 # Create user_first_join table in Redshift
 resource "aws_redshiftdata_statement" "user_first_join" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -582,7 +599,8 @@ resource "aws_redshiftdata_statement" "user_first_join" {
 
 # Create user_ltv table in Redshift
 resource "aws_redshiftdata_statement" "user_ltv" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -682,7 +700,8 @@ resource "aws_iam_role_policy" "redshift_etl_state_machine_redshift" {
 
 # Step Functions state machine for Redshift ETL
 resource "aws_sfn_state_machine" "redshift_store_metrics_etl" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   name     = "${local.workload_name}-redshift-store-metrics-etl"
   role_arn = aws_iam_role.redshift_etl_state_machine[0].arn
@@ -883,7 +902,8 @@ resource "aws_sfn_state_machine" "redshift_store_metrics_etl" {
 
 # EventBridge Scheduler to trigger the state machine daily
 resource "aws_scheduler_schedule" "redshift_store_metrics_etl" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   name        = "${local.workload_name}-redshift-store-metrics-etl"
   description = "Daily store metrics ETL state machine for Redshift"
@@ -907,6 +927,7 @@ resource "aws_scheduler_schedule" "redshift_store_metrics_etl" {
 
 # Data set for daily item store metrics
 resource "aws_quicksight_data_set" "daily_item_store_metrics" {
+  region         = local.gap_region
   aws_account_id = local.account_id
   data_set_id    = "daily-item-store-metrics-${local.workload_name}"
   name           = "daily_item_store_metrics"
@@ -1033,6 +1054,7 @@ resource "aws_quicksight_data_set" "daily_item_store_metrics" {
 
 # Data set for user LTV
 resource "aws_quicksight_data_set" "user_ltv" {
+  region         = local.gap_region
   aws_account_id = local.account_id
   data_set_id    = "user-ltv-${local.workload_name}"
   name           = "user_ltv"
@@ -1129,6 +1151,7 @@ resource "aws_quicksight_data_set" "user_ltv" {
 # -----------------------------------------------------------------------------
 
 resource "aws_quicksight_template" "store_metrics" {
+  region              = local.gap_region
   aws_account_id      = local.account_id
   template_id         = "store-metrics-${local.workload_name}"
   name                = "Store Metrics"
@@ -1507,6 +1530,7 @@ resource "aws_quicksight_template" "store_metrics" {
 # -----------------------------------------------------------------------------
 
 resource "aws_quicksight_analysis" "store_metrics" {
+  region         = local.gap_region
   aws_account_id = local.account_id
   analysis_id    = "store-metrics-${local.workload_name}"
   name           = "Store Metrics Analysis"
@@ -1539,6 +1563,7 @@ resource "aws_quicksight_analysis" "store_metrics" {
 # -----------------------------------------------------------------------------
 
 resource "aws_quicksight_folder_membership" "daily_item_store_metrics" {
+  region         = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_data_set.daily_item_store_metrics.data_set_id
   member_type    = "DATASET"
@@ -1546,6 +1571,7 @@ resource "aws_quicksight_folder_membership" "daily_item_store_metrics" {
 }
 
 resource "aws_quicksight_folder_membership" "user_ltv" {
+  region         = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_data_set.user_ltv.data_set_id
   member_type    = "DATASET"
@@ -1553,6 +1579,7 @@ resource "aws_quicksight_folder_membership" "user_ltv" {
 }
 
 resource "aws_quicksight_folder_membership" "analysis" {
+  region         = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_analysis.store_metrics.analysis_id
   member_type    = "ANALYSIS"

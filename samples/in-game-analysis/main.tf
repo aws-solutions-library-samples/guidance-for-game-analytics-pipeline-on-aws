@@ -36,6 +36,7 @@ locals {
   account_id = data.aws_caller_identity.current.account_id
   region     = data.aws_region.current.region
   partition  = data.aws_partition.current.partition
+  gap_region = local.samples_config.GAME_ANALYTICS_PIPELINE_REGION
 
   workload_name    = local.pipeline_config.WORKLOAD_NAME
   events_database  = local.pipeline_config.EVENTS_DATABASE
@@ -58,7 +59,9 @@ locals {
   in_game_trades_table_name = "daily_item_trades"
 
   // Redshift workgroup name (used when DATA_STACK == "REDSHIFT")
-  redshift_workgroup_name = "${lower(local.pipeline_config.DATA_STACK)}-workgroup"
+  // Must match the naming convention in infrastructure/terraform/src/constructs/redshift-construct/main.tf:
+  //   workgroup_name = "${lower(var.stack_name)}-workgroup" where stack_name is WORKLOAD_NAME
+  redshift_workgroup_name = "${lower(local.workload_name)}-workgroup"
 }
 
 # -----------------------------------------------------------------------------
@@ -67,6 +70,7 @@ locals {
 
 # Glue table for in-game event actions
 resource "aws_glue_catalog_table" "in_game_events" {
+  region = local.gap_region
   count = local.is_data_lake_mode ? 1 : 0
 
   name          = local.in_game_events_table_name
@@ -89,31 +93,31 @@ resource "aws_glue_catalog_table" "in_game_events" {
             id       = 1
             name     = "item_id"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 2
             name     = "item_action"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 3
             name     = "event_date"
             required = false
-            type     = "date"
+            type     = jsonencode("date")
           }
           fields {
             id       = 4
             name     = "app_version"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 5
             name     = "occurrences"
             required = false
-            type     = "long"
+            type     = jsonencode("long")
           }
         }
 
@@ -133,6 +137,7 @@ resource "aws_glue_catalog_table" "in_game_events" {
 
 # Glue table for in-game trades
 resource "aws_glue_catalog_table" "in_game_trades" {
+  region = local.gap_region
   count = local.is_data_lake_mode ? 1 : 0
 
   name          = local.in_game_trades_table_name
@@ -155,31 +160,31 @@ resource "aws_glue_catalog_table" "in_game_trades" {
             id       = 1
             name     = "traded_item"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 2
             name     = "received_item"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 3
             name     = "event_date"
             required = false
-            type     = "date"
+            type     = jsonencode("date")
           }
           fields {
             id       = 4
             name     = "app_version"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 5
             name     = "occurrences"
             required = false
-            type     = "long"
+            type     = jsonencode("long")
           }
         }
 
@@ -202,6 +207,7 @@ resource "aws_glue_catalog_table" "in_game_trades" {
 # -----------------------------------------------------------------------------
 
 resource "aws_glue_job" "in_game_events_etl" {
+  region = local.gap_region
   count = local.is_data_lake_mode ? 1 : 0
 
   name         = "${local.workload_name}-In-Game-ETL"
@@ -242,6 +248,7 @@ resource "aws_glue_job" "in_game_events_etl" {
 # -----------------------------------------------------------------------------
 
 resource "aws_glue_workflow" "in_game_events_daily" {
+  region = local.gap_region
   count = local.is_data_lake_mode ? 1 : 0
 
   name        = "${local.workload_name}-In-Game-ETL-Daily"
@@ -272,6 +279,7 @@ resource "aws_glue_trigger" "daily_schedule" {
 
 # Create the daily_item_actions table in Redshift
 resource "aws_redshiftdata_statement" "in_game_events" {
+  region = local.gap_region
   count = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
@@ -292,6 +300,7 @@ resource "aws_redshiftdata_statement" "in_game_events" {
 
 # Create the daily_item_trades table in Redshift
 resource "aws_redshiftdata_statement" "in_game_trades" {
+  region = local.gap_region
   count = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
@@ -313,6 +322,7 @@ resource "aws_redshiftdata_statement" "in_game_trades" {
 # Scheduled Redshift query for incremental item actions ETL
 # Runs daily at 00:00 UTC to insert new records
 resource "aws_scheduler_schedule" "redshift_item_actions_etl" {
+  region = local.gap_region
   count = local.is_data_lake_mode ? 0 : 1
 
   name        = "${local.workload_name}-redshift-item-actions-etl"
@@ -360,6 +370,7 @@ resource "aws_scheduler_schedule" "redshift_item_actions_etl" {
 # Scheduled Redshift query for incremental item trades ETL
 # Runs daily at 00:05 UTC (5 minutes after item actions) to insert new records
 resource "aws_scheduler_schedule" "redshift_item_trades_etl" {
+  region = local.gap_region
   count = local.is_data_lake_mode ? 0 : 1
 
   name        = "${local.workload_name}-redshift-item-trades-etl"
@@ -412,6 +423,7 @@ resource "aws_scheduler_schedule" "redshift_item_trades_etl" {
 # Data set for daily item actions
 # Uses Athena/Glue for DATA_LAKE mode, Redshift for REDSHIFT mode
 resource "aws_quicksight_data_set" "daily_item_actions" {
+  region = local.gap_region
   aws_account_id = local.account_id
   data_set_id    = "daily-item-actions-${local.workload_name}"
   name           = "daily_item_actions"
@@ -515,6 +527,7 @@ resource "aws_quicksight_data_set" "daily_item_actions" {
 # Data set for daily item trades
 # Uses Athena/Glue for DATA_LAKE mode, Redshift for REDSHIFT mode
 resource "aws_quicksight_data_set" "daily_item_trades" {
+  region = local.gap_region
   aws_account_id = local.account_id
   data_set_id    = "daily-item-trades-${local.workload_name}"
   name           = "daily_item_trades"
@@ -620,6 +633,7 @@ resource "aws_quicksight_data_set" "daily_item_trades" {
 # -----------------------------------------------------------------------------
 
 resource "aws_quicksight_template" "in_game" {
+  region = local.gap_region
   aws_account_id      = local.account_id
   template_id         = "in_game_event_analysis"
   name                = "In-Game Event Analysis"
@@ -868,6 +882,7 @@ resource "aws_quicksight_template" "in_game" {
 # -----------------------------------------------------------------------------
 
 resource "aws_quicksight_analysis" "in_game_events" {
+  region = local.gap_region
   aws_account_id = local.account_id
   analysis_id    = "gap-in-game-event-analysis"
   name           = "In-Game Events Analysis"
@@ -894,6 +909,7 @@ resource "aws_quicksight_analysis" "in_game_events" {
 
 # Add datasets to the GAP folder - permissions cascade from folder
 resource "aws_quicksight_folder_membership" "daily_item_actions" {
+  region = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_data_set.daily_item_actions.data_set_id
   member_type    = "DATASET"
@@ -901,6 +917,7 @@ resource "aws_quicksight_folder_membership" "daily_item_actions" {
 }
 
 resource "aws_quicksight_folder_membership" "daily_item_trades" {
+  region = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_data_set.daily_item_trades.data_set_id
   member_type    = "DATASET"
@@ -909,6 +926,7 @@ resource "aws_quicksight_folder_membership" "daily_item_trades" {
 
 # Add analysis to the GAP folder - permissions cascade from folder
 resource "aws_quicksight_folder_membership" "in_game_events_analysis" {
+  region = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_analysis.in_game_events.analysis_id
   member_type    = "ANALYSIS"

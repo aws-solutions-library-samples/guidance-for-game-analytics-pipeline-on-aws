@@ -36,6 +36,7 @@ locals {
   account_id = data.aws_caller_identity.current.account_id
   region     = data.aws_region.current.region
   partition  = data.aws_partition.current.partition
+  gap_region = local.samples_config.GAME_ANALYTICS_PIPELINE_REGION
 
   workload_name    = local.pipeline_config.WORKLOAD_NAME
   events_database  = local.pipeline_config.EVENTS_DATABASE
@@ -54,7 +55,9 @@ locals {
   is_data_lake_mode = local.pipeline_config.DATA_STACK == "DATA_LAKE"
 
   // Redshift workgroup name (used when DATA_STACK == "REDSHIFT")
-  redshift_workgroup_name = "${lower(local.pipeline_config.DATA_STACK)}-workgroup"
+  // Must match the naming convention in infrastructure/terraform/src/constructs/redshift-construct/main.tf:
+  //   workgroup_name = "${lower(var.stack_name)}-workgroup" where stack_name is WORKLOAD_NAME
+  redshift_workgroup_name = "${lower(local.workload_name)}-workgroup"
 
   // Table names
   user_status_table_name            = "user_status"
@@ -71,7 +74,8 @@ locals {
 
 # User status table - tracks current state of each user
 resource "aws_glue_catalog_table" "user_status" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.user_status_table_name
   database_name = local.events_database
@@ -93,19 +97,19 @@ resource "aws_glue_catalog_table" "user_status" {
             id       = 1
             name     = "user_id"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 2
             name     = "status"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 3
             name     = "last_active_date"
             required = false
-            type     = "date"
+            type     = jsonencode("date")
           }
         }
 
@@ -137,7 +141,8 @@ resource "aws_glue_catalog_table" "user_status" {
 
 # User status transition table - tracks state transitions over time
 resource "aws_glue_catalog_table" "user_status_transition" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.user_status_transition_table_name
   database_name = local.events_database
@@ -159,25 +164,25 @@ resource "aws_glue_catalog_table" "user_status_transition" {
             id       = 1
             name     = "transition_date"
             required = false
-            type     = "date"
+            type     = jsonencode("date")
           }
           fields {
             id       = 2
             name     = "from_status"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 3
             name     = "to_status"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 4
             name     = "count"
             required = false
-            type     = "int"
+            type     = jsonencode("int")
           }
         }
 
@@ -201,7 +206,8 @@ resource "aws_glue_catalog_table" "user_status_transition" {
 
 # User counts table - daily aggregate counts by status
 resource "aws_glue_catalog_table" "user_counts" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.user_counts_table_name
   database_name = local.events_database
@@ -223,19 +229,19 @@ resource "aws_glue_catalog_table" "user_counts" {
             id       = 1
             name     = "tracked_date"
             required = false
-            type     = "date"
+            type     = jsonencode("date")
           }
           fields {
             id       = 2
             name     = "status"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 3
             name     = "count"
             required = false
-            type     = "bigint"
+            type     = jsonencode("bigint")
           }
         }
 
@@ -255,7 +261,8 @@ resource "aws_glue_catalog_table" "user_counts" {
 
 # User first join table - tracks when users first joined
 resource "aws_glue_catalog_table" "user_first_join" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.user_first_join_table_name
   database_name = local.events_database
@@ -277,13 +284,13 @@ resource "aws_glue_catalog_table" "user_first_join" {
             id       = 1
             name     = "user_id"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 2
             name     = "first_join_time"
             required = false
-            type     = "timestamp"
+            type     = jsonencode("timestamp")
           }
         }
 
@@ -303,7 +310,8 @@ resource "aws_glue_catalog_table" "user_first_join" {
 
 # Sessions table - tracks user session durations
 resource "aws_glue_catalog_table" "sessions" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.sessions_table_name
   database_name = local.events_database
@@ -325,25 +333,25 @@ resource "aws_glue_catalog_table" "sessions" {
             id       = 1
             name     = "session_id"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 2
             name     = "user_id"
             required = false
-            type     = "string"
+            type     = jsonencode("string")
           }
           fields {
             id       = 3
             name     = "session_timestamp"
             required = false
-            type     = "timestamp"
+            type     = jsonencode("timestamp")
           }
           fields {
             id       = 4
             name     = "session_duration_secs"
             required = false
-            type     = "long"
+            type     = jsonencode("long")
           }
         }
 
@@ -363,7 +371,8 @@ resource "aws_glue_catalog_table" "sessions" {
 
 # Daily session stats table - gold layer aggregation
 resource "aws_glue_catalog_table" "daily_session_stats" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.daily_session_stats_table_name
   database_name = local.events_database
@@ -385,25 +394,25 @@ resource "aws_glue_catalog_table" "daily_session_stats" {
             id       = 1
             name     = "session_date"
             required = false
-            type     = "date"
+            type     = jsonencode("date")
           }
           fields {
             id       = 2
             name     = "total_playtime"
             required = false
-            type     = "long"
+            type     = jsonencode("long")
           }
           fields {
             id       = 3
             name     = "avg_playtime"
             required = false
-            type     = "double"
+            type     = jsonencode("double")
           }
           fields {
             id       = 4
             name     = "session_count"
             required = false
-            type     = "bigint"
+            type     = jsonencode("bigint")
           }
         }
 
@@ -427,7 +436,8 @@ resource "aws_glue_catalog_table" "daily_session_stats" {
 
 # SILVER LAYER Glue Job - Process raw events into silver tables
 resource "aws_glue_job" "user_activity_silver" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name         = "${local.workload_name}-User-Activity-Silver"
   description  = "Glue job to process raw events into silver tables for workload ${local.workload_name}."
@@ -465,7 +475,8 @@ resource "aws_glue_job" "user_activity_silver" {
 
 # GOLD LAYER Glue Job - Aggregate silver data into gold tables
 resource "aws_glue_job" "user_activity_gold" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name         = "${local.workload_name}-User-Activity-Gold"
   description  = "Glue job to aggregate silver data into gold tables for workload ${local.workload_name}."
@@ -502,7 +513,8 @@ resource "aws_glue_job" "user_activity_gold" {
 # -----------------------------------------------------------------------------
 
 resource "aws_glue_workflow" "user_activity_daily" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name        = "${local.workload_name}-User-Activity-ETL-Daily"
   description = "Daily workflow for user activity analytics ETL"
@@ -510,7 +522,8 @@ resource "aws_glue_workflow" "user_activity_daily" {
 
 # Scheduled trigger to start the workflow
 resource "aws_glue_trigger" "user_activity_daily_schedule" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = "${local.workload_name}-User-Activity-ETL-Daily-Trigger"
   type          = "SCHEDULED"
@@ -528,7 +541,8 @@ resource "aws_glue_trigger" "user_activity_daily_schedule" {
 
 # Conditional trigger to run gold job after silver completes
 resource "aws_glue_trigger" "user_activity_gold_after_silver" {
-  count = local.is_data_lake_mode ? 1 : 0
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = "${local.workload_name}-User-Activity-Gold-After-Silver"
   type          = "CONDITIONAL"
@@ -553,7 +567,8 @@ resource "aws_glue_trigger" "user_activity_gold_after_silver" {
 
 # Create user_status table in Redshift
 resource "aws_redshiftdata_statement" "user_status" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -571,7 +586,8 @@ resource "aws_redshiftdata_statement" "user_status" {
 
 # Create user_status_transition table in Redshift
 resource "aws_redshiftdata_statement" "user_status_transition" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -590,7 +606,8 @@ resource "aws_redshiftdata_statement" "user_status_transition" {
 
 # Create user_counts table in Redshift
 resource "aws_redshiftdata_statement" "user_counts" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -608,7 +625,8 @@ resource "aws_redshiftdata_statement" "user_counts" {
 
 # Create user_first_join table in Redshift
 resource "aws_redshiftdata_statement" "user_first_join" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -625,7 +643,8 @@ resource "aws_redshiftdata_statement" "user_first_join" {
 
 # Create sessions table in Redshift
 resource "aws_redshiftdata_statement" "sessions" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -644,7 +663,8 @@ resource "aws_redshiftdata_statement" "sessions" {
 
 # Create daily_session_stats table in Redshift
 resource "aws_redshiftdata_statement" "daily_session_stats" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -742,7 +762,8 @@ resource "aws_iam_role_policy" "redshift_etl_state_machine_redshift" {
 
 # Step Functions state machine for Redshift ETL
 resource "aws_sfn_state_machine" "redshift_user_activity_etl" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   name     = "${local.workload_name}-redshift-user-activity-etl"
   role_arn = aws_iam_role.redshift_etl_state_machine[0].arn
@@ -967,7 +988,8 @@ resource "aws_sfn_state_machine" "redshift_user_activity_etl" {
 
 # EventBridge Scheduler to trigger the state machine daily
 resource "aws_scheduler_schedule" "redshift_user_activity_etl" {
-  count = local.is_data_lake_mode ? 0 : 1
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
 
   name        = "${local.workload_name}-redshift-user-activity-etl"
   description = "Daily user activity ETL state machine for Redshift"
@@ -991,6 +1013,7 @@ resource "aws_scheduler_schedule" "redshift_user_activity_etl" {
 # Data set for daily session stats
 # Uses Athena/Glue for DATA_LAKE mode, Redshift for REDSHIFT mode
 resource "aws_quicksight_data_set" "daily_session_stats" {
+  region         = local.gap_region
   aws_account_id = local.account_id
   data_set_id    = "daily-session-stats-${local.workload_name}"
   name           = "daily_session_stats"
@@ -1076,6 +1099,7 @@ resource "aws_quicksight_data_set" "daily_session_stats" {
 # Uses Athena/Glue for DATA_LAKE mode, Redshift for REDSHIFT mode
 # Note: Renames 'status' column to 'state' to match template expectations
 resource "aws_quicksight_data_set" "user_counts" {
+  region         = local.gap_region
   aws_account_id = local.account_id
   data_set_id    = "user-counts-${local.workload_name}"
   name           = "user_counts"
@@ -1161,6 +1185,7 @@ resource "aws_quicksight_data_set" "user_counts" {
 # Uses Athena/Glue for DATA_LAKE mode, Redshift for REDSHIFT mode
 # Note: Renames 'from_status'/'to_status' columns to 'from_state'/'to_state' to match template
 resource "aws_quicksight_data_set" "user_status_transition" {
+  region         = local.gap_region
   aws_account_id = local.account_id
   data_set_id    = "user-status-transition-${local.workload_name}"
   name           = "user_status_transition"
@@ -1256,6 +1281,7 @@ resource "aws_quicksight_data_set" "user_status_transition" {
 # -----------------------------------------------------------------------------
 
 resource "aws_quicksight_template" "playerbase_overview" {
+  region              = local.gap_region
   aws_account_id      = local.account_id
   template_id         = "playerbase-overview"
   name                = "Playerbase Overview"
@@ -1574,6 +1600,7 @@ resource "aws_quicksight_template" "playerbase_overview" {
 # -----------------------------------------------------------------------------
 
 resource "aws_quicksight_analysis" "playerbase_overview" {
+  region         = local.gap_region
   aws_account_id = local.account_id
   analysis_id    = "gap-playerbase-overview"
   name           = "Playerbase Overview"
@@ -1604,6 +1631,7 @@ resource "aws_quicksight_analysis" "playerbase_overview" {
 
 # Add datasets to the GAP folder - permissions cascade from folder
 resource "aws_quicksight_folder_membership" "daily_session_stats" {
+  region         = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_data_set.daily_session_stats.data_set_id
   member_type    = "DATASET"
@@ -1611,6 +1639,7 @@ resource "aws_quicksight_folder_membership" "daily_session_stats" {
 }
 
 resource "aws_quicksight_folder_membership" "user_counts" {
+  region         = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_data_set.user_counts.data_set_id
   member_type    = "DATASET"
@@ -1618,6 +1647,7 @@ resource "aws_quicksight_folder_membership" "user_counts" {
 }
 
 resource "aws_quicksight_folder_membership" "user_status_transition" {
+  region         = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_data_set.user_status_transition.data_set_id
   member_type    = "DATASET"
@@ -1626,6 +1656,7 @@ resource "aws_quicksight_folder_membership" "user_status_transition" {
 
 # Add analysis to the GAP folder - permissions cascade from folder
 resource "aws_quicksight_folder_membership" "playerbase_overview_analysis" {
+  region         = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_analysis.playerbase_overview.analysis_id
   member_type    = "ANALYSIS"
