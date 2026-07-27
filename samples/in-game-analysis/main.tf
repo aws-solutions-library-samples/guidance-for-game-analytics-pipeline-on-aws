@@ -62,6 +62,11 @@ locals {
   // Must match the naming convention in infrastructure/terraform/src/constructs/redshift-construct/main.tf:
   //   workgroup_name = "${lower(var.stack_name)}-workgroup" where stack_name is WORKLOAD_NAME
   redshift_workgroup_name = "${lower(local.workload_name)}-workgroup"
+
+  // Whether QuickSight datasets should import into SPICE or query the
+  // underlying source directly. Defaults to true (SPICE) if not set.
+  use_spice               = try(local.samples_config.USE_SPICE, true)
+  quicksight_import_mode  = local.use_spice ? "SPICE" : "DIRECT_QUERY"
 }
 
 # -----------------------------------------------------------------------------
@@ -427,7 +432,7 @@ resource "aws_quicksight_data_set" "daily_item_actions" {
   aws_account_id = local.account_id
   data_set_id    = "daily-item-actions-${local.workload_name}"
   name           = "daily_item_actions"
-  import_mode    = "SPICE"
+  import_mode    = local.quicksight_import_mode
 
   physical_table_map {
     physical_table_map_id = "daily-item-actions-table"
@@ -531,7 +536,7 @@ resource "aws_quicksight_data_set" "daily_item_trades" {
   aws_account_id = local.account_id
   data_set_id    = "daily-item-trades-${local.workload_name}"
   name           = "daily_item_trades"
-  import_mode    = "SPICE"
+  import_mode    = local.quicksight_import_mode
 
   physical_table_map {
     physical_table_map_id = "daily-item-trades-table"

@@ -59,6 +59,11 @@ locals {
   //   workgroup_name = "${lower(var.stack_name)}-workgroup" where stack_name is WORKLOAD_NAME
   redshift_workgroup_name = "${lower(local.workload_name)}-workgroup"
 
+  // Whether QuickSight datasets should import into SPICE or query the
+  // underlying source directly. Defaults to true (SPICE) if not set.
+  use_spice              = try(local.samples_config.USE_SPICE, true)
+  quicksight_import_mode = local.use_spice ? "SPICE" : "DIRECT_QUERY"
+
   // Table names
   item_prices_table_name                 = "item_prices"
   daily_item_store_metrics_table_name    = "daily_item_store_metrics"
@@ -931,7 +936,7 @@ resource "aws_quicksight_data_set" "daily_item_store_metrics" {
   aws_account_id = local.account_id
   data_set_id    = "daily-item-store-metrics-${local.workload_name}"
   name           = "daily_item_store_metrics"
-  import_mode    = "SPICE"
+  import_mode    = local.quicksight_import_mode
 
   physical_table_map {
     physical_table_map_id = "daily-item-store-metrics-table"
@@ -1058,7 +1063,7 @@ resource "aws_quicksight_data_set" "user_ltv" {
   aws_account_id = local.account_id
   data_set_id    = "user-ltv-${local.workload_name}"
   name           = "user_ltv"
-  import_mode    = "SPICE"
+  import_mode    = local.quicksight_import_mode
 
   physical_table_map {
     physical_table_map_id = "user-ltv-table"

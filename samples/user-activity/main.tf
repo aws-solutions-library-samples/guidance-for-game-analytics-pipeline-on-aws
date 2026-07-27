@@ -59,6 +59,11 @@ locals {
   //   workgroup_name = "${lower(var.stack_name)}-workgroup" where stack_name is WORKLOAD_NAME
   redshift_workgroup_name = "${lower(local.workload_name)}-workgroup"
 
+  // Whether QuickSight datasets should import into SPICE or query the
+  // underlying source directly. Defaults to true (SPICE) if not set.
+  use_spice              = try(local.samples_config.USE_SPICE, true)
+  quicksight_import_mode = local.use_spice ? "SPICE" : "DIRECT_QUERY"
+
   // Table names
   user_status_table_name            = "user_status"
   user_status_transition_table_name = "user_status_transition"
@@ -1017,7 +1022,7 @@ resource "aws_quicksight_data_set" "daily_session_stats" {
   aws_account_id = local.account_id
   data_set_id    = "daily-session-stats-${local.workload_name}"
   name           = "daily_session_stats"
-  import_mode    = "SPICE"
+  import_mode    = local.quicksight_import_mode
 
   physical_table_map {
     physical_table_map_id = "daily-session-stats-table"
@@ -1103,7 +1108,7 @@ resource "aws_quicksight_data_set" "user_counts" {
   aws_account_id = local.account_id
   data_set_id    = "user-counts-${local.workload_name}"
   name           = "user_counts"
-  import_mode    = "SPICE"
+  import_mode    = local.quicksight_import_mode
 
   physical_table_map {
     physical_table_map_id = "user-counts-table"
@@ -1189,7 +1194,7 @@ resource "aws_quicksight_data_set" "user_status_transition" {
   aws_account_id = local.account_id
   data_set_id    = "user-status-transition-${local.workload_name}"
   name           = "user_status_transition"
-  import_mode    = "SPICE"
+  import_mode    = local.quicksight_import_mode
 
   physical_table_map {
     physical_table_map_id = "user-status-transition-table"
