@@ -695,7 +695,8 @@ resource "aws_iam_role_policy" "redshift_etl_state_machine_redshift" {
       {
         Effect = "Allow"
         Action = [
-          "redshift-serverless:GetWorkgroup"
+          "redshift-serverless:GetWorkgroup",
+          "redshift-serverless:GetCredentials"
         ]
         Resource = [
           "arn:${local.partition}:redshift-serverless:${local.region}:${local.account_id}:workgroup/*"
