@@ -65,8 +65,8 @@ locals {
 
   // Whether QuickSight datasets should import into SPICE or query the
   // underlying source directly. Defaults to true (SPICE) if not set.
-  use_spice               = try(local.samples_config.USE_SPICE, true)
-  quicksight_import_mode  = local.use_spice ? "SPICE" : "DIRECT_QUERY"
+  use_spice              = try(local.samples_config.USE_SPICE, true)
+  quicksight_import_mode = local.use_spice ? "SPICE" : "DIRECT_QUERY"
 }
 
 # -----------------------------------------------------------------------------
@@ -76,7 +76,7 @@ locals {
 # Glue table for in-game event actions
 resource "aws_glue_catalog_table" "in_game_events" {
   region = local.gap_region
-  count = local.is_data_lake_mode ? 1 : 0
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.in_game_events_table_name
   database_name = local.events_database
@@ -143,7 +143,7 @@ resource "aws_glue_catalog_table" "in_game_events" {
 # Glue table for in-game trades
 resource "aws_glue_catalog_table" "in_game_trades" {
   region = local.gap_region
-  count = local.is_data_lake_mode ? 1 : 0
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name          = local.in_game_trades_table_name
   database_name = local.events_database
@@ -213,7 +213,7 @@ resource "aws_glue_catalog_table" "in_game_trades" {
 
 resource "aws_glue_job" "in_game_events_etl" {
   region = local.gap_region
-  count = local.is_data_lake_mode ? 1 : 0
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name         = "${local.workload_name}-In-Game-ETL"
   description  = "Glue job to process raw events to in-game analytics, for workload ${local.workload_name}."
@@ -254,7 +254,7 @@ resource "aws_glue_job" "in_game_events_etl" {
 
 resource "aws_glue_workflow" "in_game_events_daily" {
   region = local.gap_region
-  count = local.is_data_lake_mode ? 1 : 0
+  count  = local.is_data_lake_mode ? 1 : 0
 
   name        = "${local.workload_name}-In-Game-ETL-Daily"
   description = "Daily workflow for in-game event analytics ETL"
@@ -285,7 +285,7 @@ resource "aws_glue_trigger" "daily_schedule" {
 # Create the daily_item_actions table in Redshift
 resource "aws_redshiftdata_statement" "in_game_events" {
   region = local.gap_region
-  count = local.is_data_lake_mode ? 0 : 1
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -306,7 +306,7 @@ resource "aws_redshiftdata_statement" "in_game_events" {
 # Create the daily_item_trades table in Redshift
 resource "aws_redshiftdata_statement" "in_game_trades" {
   region = local.gap_region
-  count = local.is_data_lake_mode ? 0 : 1
+  count  = local.is_data_lake_mode ? 0 : 1
 
   workgroup_name = local.redshift_workgroup_name
   database       = local.events_database
@@ -324,16 +324,181 @@ resource "aws_redshiftdata_statement" "in_game_trades" {
   SQL
 }
 
-# Scheduled Redshift query for incremental item actions ETL
-# Runs daily at 00:00 UTC to insert new records
-resource "aws_scheduler_schedule" "redshift_item_actions_etl" {
-  region = local.gap_region
+# -----------------------------------------------------------------------------
+# Step Functions State Machine for Redshift ETL - Only when DATA_STACK == "REDSHIFT"
+# -----------------------------------------------------------------------------
+
+# IAM role for Step Functions state machine
+# Trusts both Step Functions (to run the state machine) and EventBridge
+# Scheduler (to call states:StartExecution on the schedule below, which
+# reuses this same role as its execution role).
+resource "aws_iam_role" "redshift_etl_state_machine" {
   count = local.is_data_lake_mode ? 0 : 1
 
-  name        = "${local.workload_name}-redshift-item-actions-etl"
-  description = "Daily incremental ETL for item actions to Redshift"
+  name = "${local.workload_name}-in-game-analysis-redshift-etl-state-machine"
 
-  # Run daily at 00:00 UTC
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = ["states.amazonaws.com", "scheduler.amazonaws.com"]
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+# IAM policy for X-Ray tracing
+resource "aws_iam_role_policy" "redshift_etl_state_machine_xray" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name = "${local.workload_name}-in-game-analysis-redshift-etl-xray"
+  role = aws_iam_role.redshift_etl_state_machine[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "xray:PutTraceSegments",
+        "xray:PutTelemetryRecords",
+        "xray:GetSamplingRules",
+        "xray:GetSamplingTargets"
+      ]
+      Resource = ["*"]
+    }]
+  })
+}
+
+# IAM policy for Redshift Data API
+resource "aws_iam_role_policy" "redshift_etl_state_machine_redshift" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name = "${local.workload_name}-in-game-analysis-redshift-etl-redshift-data"
+  role = aws_iam_role.redshift_etl_state_machine[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "redshift-data:BatchExecuteStatement",
+          "redshift-data:DescribeStatement",
+          "redshift-data:GetStatementResult"
+        ]
+        Resource = [
+          "arn:${local.partition}:redshift-serverless:${local.region}:${local.account_id}:workgroup/*",
+          "arn:${local.partition}:redshift:${local.region}:${local.account_id}:cluster:*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "redshift-serverless:GetWorkgroup"
+        ]
+        Resource = [
+          "arn:${local.partition}:redshift-serverless:${local.region}:${local.account_id}:workgroup/*"
+        ]
+      }
+    ]
+  })
+}
+
+# IAM policy allowing EventBridge Scheduler to start the state machine
+# execution using this same role.
+resource "aws_iam_role_policy" "redshift_etl_state_machine_start_execution" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name = "${local.workload_name}-in-game-analysis-redshift-etl-start-execution"
+  role = aws_iam_role.redshift_etl_state_machine[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["states:StartExecution"]
+      Resource = ["arn:${local.partition}:states:${local.gap_region}:${local.account_id}:stateMachine:${local.workload_name}-redshift-in-game-analysis-etl"]
+    }]
+  })
+}
+
+# Step Functions state machine for Redshift ETL - batch runs both the item
+# actions and item trades incremental ETL queries.
+resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
+
+  name     = "${local.workload_name}-redshift-in-game-analysis-etl"
+  role_arn = aws_iam_role.redshift_etl_state_machine[0].arn
+
+  definition = jsonencode({
+    Comment = "State machine for in-game analysis ETL on Redshift - runs item actions and item trades incremental ETL"
+    StartAt = "BatchExecuteStatement"
+    States = {
+      BatchExecuteStatement = {
+        Type     = "Task"
+        Resource = "arn:aws:states:::aws-sdk:redshiftdata:batchExecuteStatement.waitForTaskToken"
+        Parameters = {
+          WorkgroupName = local.redshift_workgroup_name
+          Database      = local.events_database
+          Sqls = [
+            <<-SQL
+              INSERT INTO ${local.in_game_events_table_name}
+              SELECT
+                events.payload.event.event_data.item::VARCHAR AS item_id,
+                events.payload.event.event_data.action::VARCHAR AS item_action,
+                DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') AS event_date,
+                events.payload.event.app_version::VARCHAR AS app_version,
+                COUNT(*) AS occurrences
+              FROM ${local.raw_events_table} events
+              WHERE events.payload.event.event_name::VARCHAR = 'item_action'
+                AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') > COALESCE(
+                  (SELECT MAX(event_date) FROM ${local.in_game_events_table_name}),
+                  '1900-01-01'::DATE
+                )
+              GROUP BY item_id, item_action, event_date, app_version;
+            SQL
+            ,
+            <<-SQL
+              INSERT INTO ${local.in_game_trades_table_name}
+              SELECT
+                events.payload.event.event_data.item::VARCHAR AS traded_item,
+                events.payload.event.event_data.recieved_item::VARCHAR AS received_item,
+                DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') AS event_date,
+                events.payload.event.app_version::VARCHAR AS app_version,
+                COUNT(*) AS occurrences
+              FROM ${local.raw_events_table} events
+              WHERE events.payload.event.event_name::VARCHAR = 'item_action'
+                AND events.payload.event.event_data.action::VARCHAR = 'traded'
+                AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') > COALESCE(
+                  (SELECT MAX(event_date) FROM ${local.in_game_trades_table_name}),
+                  '1900-01-01'::DATE
+                )
+              GROUP BY traded_item, received_item, event_date, app_version;
+            SQL
+          ]
+        }
+        End = true
+      }
+    }
+  })
+
+  depends_on = [
+    aws_redshiftdata_statement.in_game_events,
+    aws_redshiftdata_statement.in_game_trades
+  ]
+}
+
+# EventBridge Scheduler to trigger the state machine daily
+resource "aws_scheduler_schedule" "redshift_in_game_analysis_etl" {
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
+
+  name        = "${local.workload_name}-redshift-in-game-analysis-etl"
+  description = "Daily in-game analysis ETL state machine for Redshift"
+
   schedule_expression = "cron(0 0 * * ? *)"
 
   flexible_time_window {
@@ -341,84 +506,9 @@ resource "aws_scheduler_schedule" "redshift_item_actions_etl" {
   }
 
   target {
-    arn      = "arn:${local.partition}:scheduler:::aws-sdk:redshiftdata:executeStatement"
-    role_arn = "arn:${local.partition}:iam::${local.account_id}:role/${local.workload_name}-GameEventsEtlRole"
-
-    input = jsonencode({
-      WorkgroupName = local.redshift_workgroup_name
-      Database      = local.events_database
-      Sql           = <<-SQL
-        INSERT INTO ${local.in_game_events_table_name}
-        SELECT
-          events.payload.event.event_data.item::VARCHAR AS item_id,
-          events.payload.event.event_data.action::VARCHAR AS item_action,
-          DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') AS event_date,
-          events.payload.event.app_version::VARCHAR AS app_version,
-          COUNT(*) AS occurrences
-        FROM ${local.raw_events_table} events
-        WHERE events.payload.event.event_name::VARCHAR = 'item_action'
-          AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') > COALESCE(
-            (SELECT MAX(event_date) FROM ${local.in_game_events_table_name}),
-            '1900-01-01'::DATE
-          )
-        GROUP BY item_id, item_action, event_date, app_version;
-      SQL
-    })
+    arn      = aws_sfn_state_machine.redshift_in_game_analysis_etl[0].arn
+    role_arn = aws_iam_role.redshift_etl_state_machine[0].arn
   }
-
-  # Wait for the target table to be created
-  depends_on = [
-    aws_redshiftdata_statement.in_game_events
-  ]
-}
-
-# Scheduled Redshift query for incremental item trades ETL
-# Runs daily at 00:05 UTC (5 minutes after item actions) to insert new records
-resource "aws_scheduler_schedule" "redshift_item_trades_etl" {
-  region = local.gap_region
-  count = local.is_data_lake_mode ? 0 : 1
-
-  name        = "${local.workload_name}-redshift-item-trades-etl"
-  description = "Daily incremental ETL for item trades to Redshift"
-
-  # Run daily at 00:05 UTC (staggered to avoid conflicts)
-  schedule_expression = "cron(5 0 * * ? *)"
-
-  flexible_time_window {
-    mode = "OFF"
-  }
-
-  target {
-    arn      = "arn:${local.partition}:scheduler:::aws-sdk:redshiftdata:executeStatement"
-    role_arn = "arn:${local.partition}:iam::${local.account_id}:role/${local.workload_name}-GameEventsEtlRole"
-
-    input = jsonencode({
-      WorkgroupName = local.redshift_workgroup_name
-      Database      = local.events_database
-      Sql           = <<-SQL
-        INSERT INTO ${local.in_game_trades_table_name}
-        SELECT
-          events.payload.event.event_data.item::VARCHAR AS traded_item,
-          events.payload.event.event_data.recieved_item::VARCHAR AS received_item,
-          DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') AS event_date,
-          events.payload.event.app_version::VARCHAR AS app_version,
-          COUNT(*) AS occurrences
-        FROM ${local.raw_events_table} events
-        WHERE events.payload.event.event_name::VARCHAR = 'item_action'
-          AND events.payload.event.event_data.action::VARCHAR = 'traded'
-          AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') > COALESCE(
-            (SELECT MAX(event_date) FROM ${local.in_game_trades_table_name}),
-            '1900-01-01'::DATE
-          )
-        GROUP BY traded_item, received_item, event_date, app_version;
-      SQL
-    })
-  }
-
-  # Wait for the target table to be created
-  depends_on = [
-    aws_redshiftdata_statement.in_game_trades
-  ]
 }
 
 # -----------------------------------------------------------------------------
@@ -428,7 +518,7 @@ resource "aws_scheduler_schedule" "redshift_item_trades_etl" {
 # Data set for daily item actions
 # Uses Athena/Glue for DATA_LAKE mode, Redshift for REDSHIFT mode
 resource "aws_quicksight_data_set" "daily_item_actions" {
-  region = local.gap_region
+  region         = local.gap_region
   aws_account_id = local.account_id
   data_set_id    = "daily-item-actions-${local.workload_name}"
   name           = "daily_item_actions"
@@ -532,7 +622,7 @@ resource "aws_quicksight_data_set" "daily_item_actions" {
 # Data set for daily item trades
 # Uses Athena/Glue for DATA_LAKE mode, Redshift for REDSHIFT mode
 resource "aws_quicksight_data_set" "daily_item_trades" {
-  region = local.gap_region
+  region         = local.gap_region
   aws_account_id = local.account_id
   data_set_id    = "daily-item-trades-${local.workload_name}"
   name           = "daily_item_trades"
@@ -638,7 +728,7 @@ resource "aws_quicksight_data_set" "daily_item_trades" {
 # -----------------------------------------------------------------------------
 
 resource "aws_quicksight_template" "in_game" {
-  region = local.gap_region
+  region              = local.gap_region
   aws_account_id      = local.account_id
   template_id         = "in_game_event_analysis"
   name                = "In-Game Event Analysis"
@@ -887,7 +977,7 @@ resource "aws_quicksight_template" "in_game" {
 # -----------------------------------------------------------------------------
 
 resource "aws_quicksight_analysis" "in_game_events" {
-  region = local.gap_region
+  region         = local.gap_region
   aws_account_id = local.account_id
   analysis_id    = "gap-in-game-event-analysis"
   name           = "In-Game Events Analysis"
@@ -914,7 +1004,7 @@ resource "aws_quicksight_analysis" "in_game_events" {
 
 # Add datasets to the GAP folder - permissions cascade from folder
 resource "aws_quicksight_folder_membership" "daily_item_actions" {
-  region = local.gap_region
+  region         = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_data_set.daily_item_actions.data_set_id
   member_type    = "DATASET"
@@ -922,7 +1012,7 @@ resource "aws_quicksight_folder_membership" "daily_item_actions" {
 }
 
 resource "aws_quicksight_folder_membership" "daily_item_trades" {
-  region = local.gap_region
+  region         = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_data_set.daily_item_trades.data_set_id
   member_type    = "DATASET"
@@ -931,7 +1021,7 @@ resource "aws_quicksight_folder_membership" "daily_item_trades" {
 
 # Add analysis to the GAP folder - permissions cascade from folder
 resource "aws_quicksight_folder_membership" "in_game_events_analysis" {
-  region = local.gap_region
+  region         = local.gap_region
   folder_id      = local.gap_folder_id
   member_id      = aws_quicksight_analysis.in_game_events.analysis_id
   member_type    = "ANALYSIS"

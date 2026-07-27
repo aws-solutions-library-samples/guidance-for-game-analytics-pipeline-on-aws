@@ -696,12 +696,15 @@ resource "aws_iam_role" "redshift_etl_state_machine" {
 
   name = "${local.workload_name}-redshift-etl-state-machine"
 
+  # Trusts both Step Functions (to run the state machine) and EventBridge
+  # Scheduler (to call states:StartExecution on the schedule below, which
+  # reuses this same role as its execution role).
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect = "Allow"
       Principal = {
-        Service = "states.amazonaws.com"
+        Service = ["states.amazonaws.com", "scheduler.amazonaws.com"]
       }
       Action = "sts:AssumeRole"
     }]
@@ -762,6 +765,24 @@ resource "aws_iam_role_policy" "redshift_etl_state_machine_redshift" {
         ]
       }
     ]
+  })
+}
+
+# IAM policy allowing EventBridge Scheduler to start the state machine
+# execution using this same role.
+resource "aws_iam_role_policy" "redshift_etl_state_machine_start_execution" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name = "${local.workload_name}-redshift-etl-start-execution"
+  role = aws_iam_role.redshift_etl_state_machine[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["states:StartExecution"]
+      Resource = ["arn:${local.partition}:states:${local.gap_region}:${local.account_id}:stateMachine:${local.workload_name}-redshift-user-activity-etl"]
+    }]
   })
 }
 
