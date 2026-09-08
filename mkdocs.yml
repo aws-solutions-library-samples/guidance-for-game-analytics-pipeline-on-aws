@@ -97,11 +97,20 @@ nav:
     - Output Reference: references/output-reference.md
     - Operational Dashboard Reference: references/ops-dashboard-reference.md
     - File/Folder Reference: references/file-reference.md
+    - Event Library: 
+      - Event Library: references/event-library/event-library.md
+      - User Activity: references/event-library/user-activity.md
+      - In-Game Events: references/event-library/in-game.md
+      - Monetization: references/event-library/monetization.md
   - Upgrading:
       - Changelog: upgrading/v2-to-v3-changes.md
       - Upgrade Guide: upgrading/v2-migration.md
   - Component Deep Dive: component-deep-dive.md
   - Customizations: customizations.md
+  - Pre-Built Insights:
+    - Pre-Built Insights: insights/insights.md
+    - Deploying Pre-Built Insights: insights/deploying-insights.md
+    - Available Insights: insights/available-insights.md
   - QuickSight Dashboard: quicksight-dashboard.md
   - Design Considerations: design-considerations.md
   - Troubleshooting: troubleshooting.md
