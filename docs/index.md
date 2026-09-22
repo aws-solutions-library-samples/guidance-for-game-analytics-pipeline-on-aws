@@ -26,6 +26,9 @@ features:
   - title: Troubleshooting
     link: troubleshooting.html
     description: List of issue scenarios and steps to troubleshooting them
+  - title: Game Telemetry Design Recommendations
+    link: telemetry-design-recommendations.html
+    description: Recommendations for best practice telemetry event implementation for a variety of game features and reporting needs.
 companies:
   title: 
   list:
