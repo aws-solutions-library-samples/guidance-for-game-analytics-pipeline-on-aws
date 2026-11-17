@@ -14,7 +14,7 @@
         "express": "*",
         "moment": "*",
         "underscore": "*",
-        "uuid": "*",
+        "uuid": "^9.0.1",
         "@aws-sdk/client-redshift-data": "^3.995.0"
     },
     "devDependencies": {

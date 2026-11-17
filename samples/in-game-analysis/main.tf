@@ -25,6 +25,17 @@ data "aws_partition" "current" {}
 # Local Variables
 # -----------------------------------------------------------------------------
 
+variable "etl_lookback_days" {
+  description = "Days the Redshift ETL recomputes on every run: the last N days of both daily tables are deleted and rebuilt from the raw events. Events older than this are not corrected without a full rebuild."
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.etl_lookback_days >= 1 && floor(var.etl_lookback_days) == var.etl_lookback_days
+    error_message = "etl_lookback_days must be a whole number of at least 1."
+  }
+}
+
 locals {
   // Read the same config used to deploy the pipeline
   pipeline_config = yamldecode(file("${path.module}/../../infrastructure/config.yaml"))
@@ -65,6 +76,13 @@ locals {
 
   // Whether QuickSight datasets should import into SPICE or query the
   // underlying source directly. Defaults to true (SPICE) if not set.
+  // First UTC day the ETL recomputes. SYSDATE is UTC and fixed for the whole
+  // transaction; the event_date expression below is UTC too. Nothing in the batch
+  // changes this value, unlike MAX(event_date) of a table the batch deletes from.
+  etl_window_start         = "CAST(DATEADD(day, -${var.etl_lookback_days}, SYSDATE) AS DATE)"
+  etl_statement_prefix     = "${local.workload_name}-in-game-etl:"
+  etl_task_timeout_seconds = 1800
+
   use_spice              = try(local.samples_config.USE_SPICE, true)
   quicksight_import_mode = local.use_spice ? "SPICE" : "DIRECT_QUERY"
 }
@@ -324,6 +342,46 @@ resource "aws_redshiftdata_statement" "in_game_trades" {
   SQL
 }
 
+# The state machine runs as the Redshift user "IAMR:<state machine role>", which
+# owns nothing and has no privileges by default. Grant it what the ETL SQL needs.
+# These statements run as the namespace admin (the secret Redshift manages), because
+# event_data_mv is owned by the pipeline's setup Lambda, not by the deploying identity.
+data "aws_secretsmanager_secret" "redshift_admin" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name = "redshift!${lower(local.workload_name)}-workspace-db-admin"
+}
+
+resource "aws_redshiftdata_statement" "etl_role_grants" {
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
+
+  workgroup_name = local.redshift_workgroup_name
+  database       = local.events_database
+  secret_arn     = data.aws_secretsmanager_secret.redshift_admin[0].arn
+  # Redshift has no CREATE USER IF NOT EXISTS, so a small throwaway procedure
+  # creates the user only when pg_user_info has no row for it. Everything after
+  # it is GRANT, which is safe to repeat.
+  sql = <<-SQL
+    CREATE OR REPLACE PROCEDURE public.gap_in_game_ensure_etl_user(uname VARCHAR) AS $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_user_info WHERE usename = uname) THEN
+        EXECUTE 'CREATE USER "' || uname || '" PASSWORD DISABLE';
+      END IF;
+    END;
+    $$ LANGUAGE plpgsql;
+    CALL public.gap_in_game_ensure_etl_user('IAMR:${aws_iam_role.redshift_etl_state_machine[0].name}');
+    DROP PROCEDURE public.gap_in_game_ensure_etl_user(VARCHAR);
+    GRANT SELECT, INSERT, DELETE ON ${local.in_game_events_table_name}, ${local.in_game_trades_table_name} TO "IAMR:${aws_iam_role.redshift_etl_state_machine[0].name}";
+    GRANT SELECT ON ${local.raw_events_table} TO "IAMR:${aws_iam_role.redshift_etl_state_machine[0].name}";
+  SQL
+
+  depends_on = [
+    aws_redshiftdata_statement.in_game_events,
+    aws_redshiftdata_statement.in_game_trades
+  ]
+}
+
 # -----------------------------------------------------------------------------
 # Step Functions State Machine for Redshift ETL - Only when DATA_STACK == "REDSHIFT"
 # -----------------------------------------------------------------------------
@@ -384,14 +442,19 @@ resource "aws_iam_role_policy" "redshift_etl_state_machine_redshift" {
       {
         Effect = "Allow"
         Action = [
-          "redshift-data:BatchExecuteStatement",
-          "redshift-data:DescribeStatement",
-          "redshift-data:GetStatementResult"
+          "redshift-data:BatchExecuteStatement"
         ]
         Resource = [
           "arn:${local.partition}:redshift-serverless:${local.region}:${local.account_id}:workgroup/*",
           "arn:${local.partition}:redshift:${local.region}:${local.account_id}:cluster:*"
         ]
+      },
+      {
+        # DescribeStatement acts on a statement ID, not on a workgroup ARN, so it
+        # only supports a wildcard resource. A role can only describe its own statements.
+        Effect   = "Allow"
+        Action   = ["redshift-data:DescribeStatement"]
+        Resource = ["*"]
       },
       {
         Effect = "Allow"
@@ -435,8 +498,9 @@ resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
   role_arn = aws_iam_role.redshift_etl_state_machine[0].arn
 
   definition = jsonencode({
-    Comment = "State machine for in-game analysis ETL on Redshift - runs item actions and item trades incremental ETL"
-    StartAt = "BatchExecuteStatement"
+    Comment        = "State machine for in-game analysis ETL on Redshift - runs item actions and item trades incremental ETL"
+    StartAt        = "BatchExecuteStatement"
+    TimeoutSeconds = 3600
     States = {
       BatchExecuteStatement = {
         Type     = "Task"
@@ -444,7 +508,18 @@ resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
         Parameters = {
           WorkgroupName = local.redshift_workgroup_name
           Database      = local.events_database
+          # Redshift emits a status-change event when the statements finish. The task
+          # token travels in the statement name so the event can find its way back.
+          WithEvent         = true
+          "StatementName.$" = "States.Format('${local.etl_statement_prefix}{}', $$.Task.Token)"
+          # One batch is one transaction by default, so a failure in any statement rolls
+          # back the deletes too. Each table: delete the window, then recompute it from the
+          # raw events (all history while the table has no row older than the window).
           Sqls = [
+            <<-SQL
+              DELETE FROM ${local.in_game_events_table_name} WHERE event_date >= ${local.etl_window_start};
+            SQL
+            ,
             <<-SQL
               INSERT INTO ${local.in_game_events_table_name}
               SELECT
@@ -455,11 +530,15 @@ resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
                 COUNT(*) AS occurrences
               FROM ${local.raw_events_table} events
               WHERE events.payload.event.event_name::VARCHAR = 'item_action'
-                AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') > COALESCE(
-                  (SELECT MAX(event_date) FROM ${local.in_game_events_table_name}),
-                  '1900-01-01'::DATE
+                AND (
+                  DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') >= ${local.etl_window_start}
+                  OR NOT EXISTS (SELECT 1 FROM ${local.in_game_events_table_name} WHERE event_date < ${local.etl_window_start})
                 )
               GROUP BY item_id, item_action, event_date, app_version;
+            SQL
+            ,
+            <<-SQL
+              DELETE FROM ${local.in_game_trades_table_name} WHERE event_date >= ${local.etl_window_start};
             SQL
             ,
             <<-SQL
@@ -473,23 +552,181 @@ resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
               FROM ${local.raw_events_table} events
               WHERE events.payload.event.event_name::VARCHAR = 'item_action'
                 AND events.payload.event.event_data.action::VARCHAR = 'traded'
-                AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') > COALESCE(
-                  (SELECT MAX(event_date) FROM ${local.in_game_trades_table_name}),
-                  '1900-01-01'::DATE
+                AND (
+                  DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') >= ${local.etl_window_start}
+                  OR NOT EXISTS (SELECT 1 FROM ${local.in_game_trades_table_name} WHERE event_date < ${local.etl_window_start})
                 )
               GROUP BY traded_item, received_item, event_date, app_version;
             SQL
           ]
         }
+        # Fails with States.Timeout if the callback never arrives.
+        TimeoutSeconds = local.etl_task_timeout_seconds
+        Retry = [{
+          ErrorEquals = [
+            "RedshiftData.ActiveStatementsExceededException",
+            "RedshiftData.ActiveSessionsExceededException",
+            "RedshiftData.InternalServerException",
+            "RedshiftData.ThrottlingException"
+          ]
+          IntervalSeconds = 5
+          MaxAttempts     = 4
+          BackoffRate     = 2
+        }]
+        Catch = [{
+          ErrorEquals = ["RedshiftStatementFailed"]
+          ResultPath  = "$.failure"
+          Next        = "DescribeFailedStatement"
+        }]
         End = true
+      }
+      # The callback Lambda passes the failed statement's ID as the error cause.
+      DescribeFailedStatement = {
+        Type     = "Task"
+        Resource = "arn:aws:states:::aws-sdk:redshiftdata:describeStatement"
+        Parameters = {
+          "Id.$" = "$.failure.Cause"
+        }
+        ResultPath = "$.status"
+        Next       = "CheckAborted"
+      }
+      # A FAILED statement carries an Error message; an ABORTED (cancelled) one
+      # does not, and CausePath on a missing field raises States.Runtime.
+      CheckAborted = {
+        Type = "Choice"
+        Choices = [{
+          Variable     = "$.status.Status"
+          StringEquals = "ABORTED"
+          Next         = "StatementAborted"
+        }]
+        Default = "StatementFailed"
+      }
+      StatementAborted = {
+        Type  = "Fail"
+        Error = "RedshiftStatementAborted"
+        Cause = "The Redshift statement was cancelled before it finished."
+      }
+      StatementFailed = {
+        Type      = "Fail"
+        Error     = "RedshiftStatementFailed"
+        CausePath = "$.status.Error"
       }
     }
   })
 
   depends_on = [
     aws_redshiftdata_statement.in_game_events,
-    aws_redshiftdata_statement.in_game_trades
+    aws_redshiftdata_statement.in_game_trades,
+    aws_redshiftdata_statement.etl_role_grants
   ]
+}
+
+# -----------------------------------------------------------------------------
+# Callback: Redshift status-change event -> Lambda -> SendTaskSuccess/Failure
+# -----------------------------------------------------------------------------
+
+data "archive_file" "etl_callback" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  type        = "zip"
+  source_file = "${path.module}/lambda/etl_callback.py"
+  output_path = "${path.module}/lambda/etl_callback.zip"
+}
+
+resource "aws_iam_role" "etl_callback" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name = "${local.workload_name}-in-game-analysis-etl-callback"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "etl_callback_logs" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  role       = aws_iam_role.etl_callback[0].name
+  policy_arn = "arn:${local.partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy" "etl_callback" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name = "${local.workload_name}-in-game-analysis-etl-callback"
+  role = aws_iam_role.etl_callback[0].id
+
+  # SendTaskSuccess and SendTaskFailure do not support resource-level
+  # permissions (they act on a task token), so "*" is the narrowest resource
+  # IAM accepts. The task token is the capability.
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["states:SendTaskSuccess", "states:SendTaskFailure"]
+      Resource = ["*"]
+    }]
+  })
+}
+
+resource "aws_lambda_function" "etl_callback" {
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
+
+  function_name    = "${local.workload_name}-in-game-analysis-etl-callback"
+  role             = aws_iam_role.etl_callback[0].arn
+  runtime          = "python3.12"
+  handler          = "etl_callback.handler"
+  filename         = data.archive_file.etl_callback[0].output_path
+  source_code_hash = data.archive_file.etl_callback[0].output_base64sha256
+  timeout          = 30
+
+  environment {
+    variables = {
+      STATEMENT_PREFIX = local.etl_statement_prefix
+    }
+  }
+}
+
+resource "aws_cloudwatch_event_rule" "etl_statement_finished" {
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
+
+  name        = "${local.workload_name}-in-game-analysis-etl-finished"
+  description = "Redshift Data API statements started by the in-game analysis state machine"
+
+  event_pattern = jsonencode({
+    source        = ["aws.redshift-data"]
+    "detail-type" = ["Redshift Data Statement Status Change"]
+    detail = {
+      statementName = [{ prefix = local.etl_statement_prefix }]
+      state         = ["FINISHED", "FAILED", "ABORTED"]
+    }
+  })
+}
+
+resource "aws_cloudwatch_event_target" "etl_statement_finished" {
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
+
+  rule = aws_cloudwatch_event_rule.etl_statement_finished[0].name
+  arn  = aws_lambda_function.etl_callback[0].arn
+}
+
+resource "aws_lambda_permission" "etl_statement_finished" {
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
+
+  statement_id  = "AllowEventBridgeInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.etl_callback[0].function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.etl_statement_finished[0].arn
 }
 
 # EventBridge Scheduler to trigger the state machine daily
