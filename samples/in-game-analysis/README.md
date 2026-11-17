@@ -130,6 +130,10 @@ To share the analysis as a read-only dashboard:
 2. Click **Share** → **Publish dashboard**.
 3. Enter a dashboard name and configure sharing options.
 
+### Redshift ETL: lookback window and rebuild
+
+With `DATA_STACK: REDSHIFT`, each run of the state machine deletes the last `etl_lookback_days` UTC days (default 3, a Terraform variable) from both daily tables and recomputes them from the raw events, in one transaction. Late events inside the window are counted, and a re-run gives the same result. A table with no row older than the window is filled from all raw history. Events older than the window are not corrected. To rebuild everything, delete all rows from `daily_item_actions` and `daily_item_trades` and run the state machine once.
+
 ## File layout
 
 ```

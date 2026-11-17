@@ -25,6 +25,17 @@ data "aws_partition" "current" {}
 # Local Variables
 # -----------------------------------------------------------------------------
 
+variable "etl_lookback_days" {
+  description = "Days the Redshift ETL recomputes on every run: the last N days of both daily tables are deleted and rebuilt from the raw events. Events older than this are not corrected without a full rebuild."
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.etl_lookback_days >= 1 && floor(var.etl_lookback_days) == var.etl_lookback_days
+    error_message = "etl_lookback_days must be a whole number of at least 1."
+  }
+}
+
 locals {
   // Read the same config used to deploy the pipeline
   pipeline_config = yamldecode(file("${path.module}/../../infrastructure/config.yaml"))
@@ -62,6 +73,11 @@ locals {
   // Must match the naming convention in infrastructure/terraform/src/constructs/redshift-construct/main.tf:
   //   workgroup_name = "${lower(var.stack_name)}-workgroup" where stack_name is WORKLOAD_NAME
   redshift_workgroup_name = "${lower(local.workload_name)}-workgroup"
+
+  // First UTC day the ETL recomputes. SYSDATE is UTC and fixed for the whole
+  // transaction; the event_date expression below is UTC too. Nothing in the batch
+  // changes this value, unlike MAX(event_date) of a table the batch deletes from.
+  etl_window_start = "CAST(DATEADD(day, -${var.etl_lookback_days}, SYSDATE) AS DATE)"
 
   // Whether QuickSight datasets should import into SPICE or query the
   // underlying source directly. Defaults to true (SPICE) if not set.
@@ -354,7 +370,7 @@ resource "aws_redshiftdata_statement" "etl_role_grants" {
     $$ LANGUAGE plpgsql;
     CALL public.gap_in_game_ensure_etl_user('IAMR:${aws_iam_role.redshift_etl_state_machine[0].name}');
     DROP PROCEDURE public.gap_in_game_ensure_etl_user(VARCHAR);
-    GRANT SELECT, INSERT ON ${local.in_game_events_table_name}, ${local.in_game_trades_table_name} TO "IAMR:${aws_iam_role.redshift_etl_state_machine[0].name}";
+    GRANT SELECT, INSERT, DELETE ON ${local.in_game_events_table_name}, ${local.in_game_trades_table_name} TO "IAMR:${aws_iam_role.redshift_etl_state_machine[0].name}";
     GRANT SELECT ON ${local.raw_events_table} TO "IAMR:${aws_iam_role.redshift_etl_state_machine[0].name}";
   SQL
 
@@ -490,7 +506,14 @@ resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
         Parameters = {
           WorkgroupName = local.redshift_workgroup_name
           Database      = local.events_database
+          # One batch is one transaction by default, so a failure in any statement rolls
+          # back the deletes too. Each table: delete the window, then recompute it from the
+          # raw events (all history while the table has no row older than the window).
           Sqls = [
+            <<-SQL
+              DELETE FROM ${local.in_game_events_table_name} WHERE event_date >= ${local.etl_window_start};
+            SQL
+            ,
             <<-SQL
               INSERT INTO ${local.in_game_events_table_name}
               SELECT
@@ -501,11 +524,15 @@ resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
                 COUNT(*) AS occurrences
               FROM ${local.raw_events_table} events
               WHERE events.payload.event.event_name::VARCHAR = 'item_action'
-                AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') > COALESCE(
-                  (SELECT MAX(event_date) FROM ${local.in_game_events_table_name}),
-                  '1900-01-01'::DATE
+                AND (
+                  DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') >= ${local.etl_window_start}
+                  OR NOT EXISTS (SELECT 1 FROM ${local.in_game_events_table_name} WHERE event_date < ${local.etl_window_start})
                 )
               GROUP BY item_id, item_action, event_date, app_version;
+            SQL
+            ,
+            <<-SQL
+              DELETE FROM ${local.in_game_trades_table_name} WHERE event_date >= ${local.etl_window_start};
             SQL
             ,
             <<-SQL
@@ -519,9 +546,9 @@ resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
               FROM ${local.raw_events_table} events
               WHERE events.payload.event.event_name::VARCHAR = 'item_action'
                 AND events.payload.event.event_data.action::VARCHAR = 'traded'
-                AND DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') > COALESCE(
-                  (SELECT MAX(event_date) FROM ${local.in_game_trades_table_name}),
-                  '1900-01-01'::DATE
+                AND (
+                  DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') >= ${local.etl_window_start}
+                  OR NOT EXISTS (SELECT 1 FROM ${local.in_game_trades_table_name} WHERE event_date < ${local.etl_window_start})
                 )
               GROUP BY traded_item, received_item, event_date, app_version;
             SQL
