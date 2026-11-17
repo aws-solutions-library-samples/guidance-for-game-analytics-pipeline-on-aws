@@ -324,6 +324,46 @@ resource "aws_redshiftdata_statement" "in_game_trades" {
   SQL
 }
 
+# The state machine runs as the Redshift user "IAMR:<state machine role>", which
+# owns nothing and has no privileges by default. Grant it what the ETL SQL needs.
+# These statements run as the namespace admin (the secret Redshift manages), because
+# event_data_mv is owned by the pipeline's setup Lambda, not by the deploying identity.
+data "aws_secretsmanager_secret" "redshift_admin" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name = "redshift!${lower(local.workload_name)}-workspace-db-admin"
+}
+
+resource "aws_redshiftdata_statement" "etl_role_grants" {
+  region = local.gap_region
+  count  = local.is_data_lake_mode ? 0 : 1
+
+  workgroup_name = local.redshift_workgroup_name
+  database       = local.events_database
+  secret_arn     = data.aws_secretsmanager_secret.redshift_admin[0].arn
+  # Redshift has no CREATE USER IF NOT EXISTS, so a small throwaway procedure
+  # creates the user only when pg_user_info has no row for it. Everything after
+  # it is GRANT, which is safe to repeat.
+  sql = <<-SQL
+    CREATE OR REPLACE PROCEDURE public.gap_in_game_ensure_etl_user(uname VARCHAR) AS $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_user_info WHERE usename = uname) THEN
+        EXECUTE 'CREATE USER "' || uname || '" PASSWORD DISABLE';
+      END IF;
+    END;
+    $$ LANGUAGE plpgsql;
+    CALL public.gap_in_game_ensure_etl_user('IAMR:${aws_iam_role.redshift_etl_state_machine[0].name}');
+    DROP PROCEDURE public.gap_in_game_ensure_etl_user(VARCHAR);
+    GRANT SELECT, INSERT ON ${local.in_game_events_table_name}, ${local.in_game_trades_table_name} TO "IAMR:${aws_iam_role.redshift_etl_state_machine[0].name}";
+    GRANT SELECT ON ${local.raw_events_table} TO "IAMR:${aws_iam_role.redshift_etl_state_machine[0].name}";
+  SQL
+
+  depends_on = [
+    aws_redshiftdata_statement.in_game_events,
+    aws_redshiftdata_statement.in_game_trades
+  ]
+}
+
 # -----------------------------------------------------------------------------
 # Step Functions State Machine for Redshift ETL - Only when DATA_STACK == "REDSHIFT"
 # -----------------------------------------------------------------------------
@@ -384,14 +424,19 @@ resource "aws_iam_role_policy" "redshift_etl_state_machine_redshift" {
       {
         Effect = "Allow"
         Action = [
-          "redshift-data:BatchExecuteStatement",
-          "redshift-data:DescribeStatement",
-          "redshift-data:GetStatementResult"
+          "redshift-data:BatchExecuteStatement"
         ]
         Resource = [
           "arn:${local.partition}:redshift-serverless:${local.region}:${local.account_id}:workgroup/*",
           "arn:${local.partition}:redshift:${local.region}:${local.account_id}:cluster:*"
         ]
+      },
+      {
+        # DescribeStatement acts on a statement ID, not on a workgroup or cluster
+        # ARN, so it only supports a wildcard resource.
+        Effect   = "Allow"
+        Action   = ["redshift-data:DescribeStatement"]
+        Resource = ["*"]
       },
       {
         Effect = "Allow"
@@ -435,12 +480,13 @@ resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
   role_arn = aws_iam_role.redshift_etl_state_machine[0].arn
 
   definition = jsonencode({
-    Comment = "State machine for in-game analysis ETL on Redshift - runs item actions and item trades incremental ETL"
-    StartAt = "BatchExecuteStatement"
+    Comment        = "State machine for in-game analysis ETL on Redshift - runs item actions and item trades incremental ETL"
+    StartAt        = "BatchExecuteStatement"
+    TimeoutSeconds = 3600
     States = {
       BatchExecuteStatement = {
         Type     = "Task"
-        Resource = "arn:aws:states:::aws-sdk:redshiftdata:batchExecuteStatement.waitForTaskToken"
+        Resource = "arn:aws:states:::aws-sdk:redshiftdata:batchExecuteStatement"
         Parameters = {
           WorkgroupName = local.redshift_workgroup_name
           Database      = local.events_database
@@ -481,14 +527,100 @@ resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
             SQL
           ]
         }
-        End = true
+        ResultPath = "$.batch"
+        Retry = [{
+          ErrorEquals = [
+            "RedshiftData.ActiveStatementsExceededException",
+            "RedshiftData.ActiveSessionsExceededException",
+            "RedshiftData.InternalServerException",
+            "RedshiftData.ThrottlingException"
+          ]
+          IntervalSeconds = 5
+          MaxAttempts     = 4
+          BackoffRate     = 2
+        }]
+        Next = "WaitForStatement"
+      }
+      WaitForStatement = {
+        Type    = "Wait"
+        Seconds = 10
+        Next    = "DescribeStatement"
+      }
+      DescribeStatement = {
+        Type     = "Task"
+        Resource = "arn:aws:states:::aws-sdk:redshiftdata:describeStatement"
+        Parameters = {
+          "Id.$" = "$.batch.Id"
+        }
+        ResultPath = "$.status"
+        Retry = [{
+          ErrorEquals = [
+            "RedshiftData.InternalServerException",
+            "RedshiftData.ThrottlingException"
+          ]
+          IntervalSeconds = 5
+          MaxAttempts     = 4
+          BackoffRate     = 2
+        }]
+        Next = "CheckStatus"
+      }
+      CheckStatus = {
+        Type = "Choice"
+        Choices = [
+          {
+            Variable     = "$.status.Status"
+            StringEquals = "FINISHED"
+            Next         = "Succeeded"
+          },
+          {
+            # ABORTED (cancelled) statements carry no Error field, so CausePath
+            # on them would raise States.Runtime.
+            Variable     = "$.status.Status"
+            StringEquals = "ABORTED"
+            Next         = "StatementAborted"
+          },
+          {
+            And = [
+              { Variable = "$.status.Status", StringEquals = "FAILED" },
+              { Variable = "$.status.Error", IsPresent = true }
+            ]
+            Next = "StatementFailed"
+          },
+          {
+            # The API documents Error only as "if the statement encountered an
+            # error", so a FAILED statement without one still fails cleanly.
+            Variable     = "$.status.Status"
+            StringEquals = "FAILED"
+            Next         = "StatementFailedWithoutMessage"
+          }
+        ]
+        Default = "WaitForStatement"
+      }
+      Succeeded = {
+        Type = "Succeed"
+      }
+      StatementFailed = {
+        Type      = "Fail"
+        Error     = "RedshiftStatementFailed"
+        CausePath = "$.status.Error"
+      }
+      StatementFailedWithoutMessage = {
+        Type  = "Fail"
+        Error = "RedshiftStatementFailed"
+        Cause = "The Redshift statement failed and the Data API returned no error message."
+      }
+      StatementAborted = {
+        Type  = "Fail"
+        Error = "RedshiftStatementAborted"
+        Cause = "The Redshift statement was cancelled before it finished."
       }
     }
   })
 
   depends_on = [
     aws_redshiftdata_statement.in_game_events,
-    aws_redshiftdata_statement.in_game_trades
+    aws_redshiftdata_statement.in_game_trades,
+    aws_redshiftdata_statement.etl_role_grants
   ]
 }
 
