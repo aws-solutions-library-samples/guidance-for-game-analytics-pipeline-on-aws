@@ -497,149 +497,170 @@ resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
 
   definition = jsonencode({
     Comment        = "State machine for in-game analysis ETL on Redshift - runs item actions and item trades incremental ETL"
-    StartAt        = "BatchExecuteStatement"
+    StartAt        = "RunStatements"
     TimeoutSeconds = 3600
     States = {
-      BatchExecuteStatement = {
-        Type     = "Task"
-        Resource = "arn:aws:states:::aws-sdk:redshiftdata:batchExecuteStatement"
-        Parameters = {
-          WorkgroupName = local.redshift_workgroup_name
-          Database      = local.events_database
-          # One batch is one transaction by default, so a failure in any statement rolls
-          # back the deletes too. Each table: delete the window, then recompute it from the
-          # raw events (all history while the table has no row older than the window).
-          Sqls = [
-            <<-SQL
-              DELETE FROM ${local.in_game_events_table_name} WHERE event_date >= ${local.etl_window_start};
-            SQL
-            ,
-            <<-SQL
-              INSERT INTO ${local.in_game_events_table_name}
-              SELECT
-                events.payload.event.event_data.item::VARCHAR AS item_id,
-                events.payload.event.event_data.action::VARCHAR AS item_action,
-                DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') AS event_date,
-                events.payload.event.app_version::VARCHAR AS app_version,
-                COUNT(*) AS occurrences
-              FROM ${local.raw_events_table} events
-              WHERE events.payload.event.event_name::VARCHAR = 'item_action'
-                AND (
-                  DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') >= ${local.etl_window_start}
-                  OR NOT EXISTS (SELECT 1 FROM ${local.in_game_events_table_name} WHERE event_date < ${local.etl_window_start})
-                )
-              GROUP BY item_id, item_action, event_date, app_version;
-            SQL
-            ,
-            <<-SQL
-              DELETE FROM ${local.in_game_trades_table_name} WHERE event_date >= ${local.etl_window_start};
-            SQL
-            ,
-            <<-SQL
-              INSERT INTO ${local.in_game_trades_table_name}
-              SELECT
-                events.payload.event.event_data.item::VARCHAR AS traded_item,
-                events.payload.event.event_data.recieved_item::VARCHAR AS received_item,
-                DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') AS event_date,
-                events.payload.event.app_version::VARCHAR AS app_version,
-                COUNT(*) AS occurrences
-              FROM ${local.raw_events_table} events
-              WHERE events.payload.event.event_name::VARCHAR = 'item_action'
-                AND events.payload.event.event_data.action::VARCHAR = 'traded'
-                AND (
-                  DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') >= ${local.etl_window_start}
-                  OR NOT EXISTS (SELECT 1 FROM ${local.in_game_trades_table_name} WHERE event_date < ${local.etl_window_start})
-                )
-              GROUP BY traded_item, received_item, event_date, app_version;
-            SQL
-          ]
-        }
-        ResultPath = "$.batch"
-        Retry = [{
-          ErrorEquals = [
-            "RedshiftData.ActiveStatementsExceededException",
-            "RedshiftData.ActiveSessionsExceededException",
-            "RedshiftData.InternalServerException",
-            "RedshiftData.ThrottlingException"
-          ]
-          IntervalSeconds = 5
-          MaxAttempts     = 4
-          BackoffRate     = 2
-        }]
-        Next = "WaitForStatement"
-      }
-      WaitForStatement = {
-        Type    = "Wait"
-        Seconds = 10
-        Next    = "DescribeStatement"
-      }
-      DescribeStatement = {
-        Type     = "Task"
-        Resource = "arn:aws:states:::aws-sdk:redshiftdata:describeStatement"
-        Parameters = {
-          "Id.$" = "$.batch.Id"
-        }
-        ResultPath = "$.status"
-        Retry = [{
-          ErrorEquals = [
-            "RedshiftData.InternalServerException",
-            "RedshiftData.ThrottlingException"
-          ]
-          IntervalSeconds = 5
-          MaxAttempts     = 4
-          BackoffRate     = 2
-        }]
-        Next = "CheckStatus"
-      }
-      CheckStatus = {
-        Type = "Choice"
-        Choices = [
-          {
-            Variable     = "$.status.Status"
-            StringEquals = "FINISHED"
-            Next         = "Succeeded"
-          },
-          {
-            # ABORTED (cancelled) statements carry no Error field, so CausePath
-            # on them would raise States.Runtime.
-            Variable     = "$.status.Status"
-            StringEquals = "ABORTED"
-            Next         = "StatementAborted"
-          },
-          {
-            And = [
-              { Variable = "$.status.Status", StringEquals = "FAILED" },
-              { Variable = "$.status.Error", IsPresent = true }
-            ]
-            Next = "StatementFailed"
-          },
-          {
-            # The API documents Error only as "if the statement encountered an
-            # error", so a FAILED statement without one still fails cleanly.
-            Variable     = "$.status.Status"
-            StringEquals = "FAILED"
-            Next         = "StatementFailedWithoutMessage"
+      # The submit, wait, describe and check loop runs as one nested workflow, so a
+      # Retry on this state repeats the whole batch when a statement ends FAILED
+      # (for example a connection error when the workgroup resumes from idle). A
+      # Fail state inside the branch fails this state with the same Error and Cause.
+      # The batch is one transaction, so a failed attempt leaves the tables as they
+      # were. ABORTED (a cancelled statement) is a different Error and is not retried.
+      RunStatements = {
+        Type = "Parallel"
+        Branches = [{
+          StartAt = "BatchExecuteStatement"
+          States = {
+            BatchExecuteStatement = {
+              Type     = "Task"
+              Resource = "arn:aws:states:::aws-sdk:redshiftdata:batchExecuteStatement"
+              Parameters = {
+                WorkgroupName = local.redshift_workgroup_name
+                Database      = local.events_database
+                # One batch is one transaction by default, so a failure in any statement rolls
+                # back the deletes too. Each table: delete the window, then recompute it from the
+                # raw events (all history while the table has no row older than the window).
+                Sqls = [
+                  <<-SQL
+                      DELETE FROM ${local.in_game_events_table_name} WHERE event_date >= ${local.etl_window_start};
+                    SQL
+                  ,
+                  <<-SQL
+                      INSERT INTO ${local.in_game_events_table_name}
+                      SELECT
+                        events.payload.event.event_data.item::VARCHAR AS item_id,
+                        events.payload.event.event_data.action::VARCHAR AS item_action,
+                        DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') AS event_date,
+                        events.payload.event.app_version::VARCHAR AS app_version,
+                        COUNT(*) AS occurrences
+                      FROM ${local.raw_events_table} events
+                      WHERE events.payload.event.event_name::VARCHAR = 'item_action'
+                        AND (
+                          DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') >= ${local.etl_window_start}
+                          OR NOT EXISTS (SELECT 1 FROM ${local.in_game_events_table_name} WHERE event_date < ${local.etl_window_start})
+                        )
+                      GROUP BY item_id, item_action, event_date, app_version;
+                    SQL
+                  ,
+                  <<-SQL
+                      DELETE FROM ${local.in_game_trades_table_name} WHERE event_date >= ${local.etl_window_start};
+                    SQL
+                  ,
+                  <<-SQL
+                      INSERT INTO ${local.in_game_trades_table_name}
+                      SELECT
+                        events.payload.event.event_data.item::VARCHAR AS traded_item,
+                        events.payload.event.event_data.recieved_item::VARCHAR AS received_item,
+                        DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') AS event_date,
+                        events.payload.event.app_version::VARCHAR AS app_version,
+                        COUNT(*) AS occurrences
+                      FROM ${local.raw_events_table} events
+                      WHERE events.payload.event.event_name::VARCHAR = 'item_action'
+                        AND events.payload.event.event_data.action::VARCHAR = 'traded'
+                        AND (
+                          DATE(TIMESTAMP 'epoch' + events.payload.event.event_timestamp::BIGINT * INTERVAL '1 second') >= ${local.etl_window_start}
+                          OR NOT EXISTS (SELECT 1 FROM ${local.in_game_trades_table_name} WHERE event_date < ${local.etl_window_start})
+                        )
+                      GROUP BY traded_item, received_item, event_date, app_version;
+                    SQL
+                ]
+              }
+              ResultPath = "$.batch"
+              Retry = [{
+                ErrorEquals = [
+                  "RedshiftData.ActiveStatementsExceededException",
+                  "RedshiftData.ActiveSessionsExceededException",
+                  "RedshiftData.InternalServerException",
+                  "RedshiftData.ThrottlingException"
+                ]
+                IntervalSeconds = 5
+                MaxAttempts     = 4
+                BackoffRate     = 2
+              }]
+              Next = "WaitForStatement"
+            }
+            WaitForStatement = {
+              Type    = "Wait"
+              Seconds = 10
+              Next    = "DescribeStatement"
+            }
+            DescribeStatement = {
+              Type     = "Task"
+              Resource = "arn:aws:states:::aws-sdk:redshiftdata:describeStatement"
+              Parameters = {
+                "Id.$" = "$.batch.Id"
+              }
+              ResultPath = "$.status"
+              Retry = [{
+                ErrorEquals = [
+                  "RedshiftData.InternalServerException",
+                  "RedshiftData.ThrottlingException"
+                ]
+                IntervalSeconds = 5
+                MaxAttempts     = 4
+                BackoffRate     = 2
+              }]
+              Next = "CheckStatus"
+            }
+            CheckStatus = {
+              Type = "Choice"
+              Choices = [
+                {
+                  Variable     = "$.status.Status"
+                  StringEquals = "FINISHED"
+                  Next         = "Succeeded"
+                },
+                {
+                  # ABORTED (cancelled) statements carry no Error field, so CausePath
+                  # on them would raise States.Runtime.
+                  Variable     = "$.status.Status"
+                  StringEquals = "ABORTED"
+                  Next         = "StatementAborted"
+                },
+                {
+                  And = [
+                    { Variable = "$.status.Status", StringEquals = "FAILED" },
+                    { Variable = "$.status.Error", IsPresent = true }
+                  ]
+                  Next = "StatementFailed"
+                },
+                {
+                  # The API documents Error only as "if the statement encountered an
+                  # error", so a FAILED statement without one still fails cleanly.
+                  Variable     = "$.status.Status"
+                  StringEquals = "FAILED"
+                  Next         = "StatementFailedWithoutMessage"
+                }
+              ]
+              Default = "WaitForStatement"
+            }
+            Succeeded = {
+              Type = "Succeed"
+            }
+            StatementFailed = {
+              Type      = "Fail"
+              Error     = "RedshiftStatementFailed"
+              CausePath = "$.status.Error"
+            }
+            StatementFailedWithoutMessage = {
+              Type  = "Fail"
+              Error = "RedshiftStatementFailed"
+              Cause = "The Redshift statement failed and the Data API returned no error message."
+            }
+            StatementAborted = {
+              Type  = "Fail"
+              Error = "RedshiftStatementAborted"
+              Cause = "The Redshift statement was cancelled before it finished."
+            }
           }
-        ]
-        Default = "WaitForStatement"
-      }
-      Succeeded = {
-        Type = "Succeed"
-      }
-      StatementFailed = {
-        Type      = "Fail"
-        Error     = "RedshiftStatementFailed"
-        CausePath = "$.status.Error"
-      }
-      StatementFailedWithoutMessage = {
-        Type  = "Fail"
-        Error = "RedshiftStatementFailed"
-        Cause = "The Redshift statement failed and the Data API returned no error message."
-      }
-      StatementAborted = {
-        Type  = "Fail"
-        Error = "RedshiftStatementAborted"
-        Cause = "The Redshift statement was cancelled before it finished."
+        }]
+        Retry = [{
+          ErrorEquals     = ["RedshiftStatementFailed"]
+          IntervalSeconds = 60
+          MaxAttempts     = 3
+          BackoffRate     = 2
+        }]
+        End = true
       }
     }
   })
