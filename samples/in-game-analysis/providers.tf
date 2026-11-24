@@ -21,9 +21,14 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 5.0"
     }
-    archive = {
-      source  = "hashicorp/archive"
-      version = ">= 2.0"
+    awscc = {
+      source  = "hashicorp/awscc"
+      version = ">= 1.111.0"
     }
   }
+}
+
+# awscc resources take their Region from the provider, not per resource.
+provider "awscc" {
+  region = local.gap_region
 }

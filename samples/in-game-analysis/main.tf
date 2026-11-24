@@ -580,7 +580,7 @@ resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
         }]
         End = true
       }
-      # The callback Lambda passes the failed statement's ID as the error cause.
+      # The failure subscriber passes the failed statement's ID as the error cause.
       DescribeFailedStatement = {
         Type     = "Task"
         Resource = "arn:aws:states:::aws-sdk:redshiftdata:describeStatement"
@@ -622,44 +622,33 @@ resource "aws_sfn_state_machine" "redshift_in_game_analysis_etl" {
 }
 
 # -----------------------------------------------------------------------------
-# Callback: Redshift status-change event -> Lambda -> SendTaskSuccess/Failure
+# Callback: Redshift status-change event -> EventBridge Custom Event Bus
+# subscriber with a universal target -> SendTaskSuccess/SendTaskFailure.
+# No function sits in the path: EventBridge calls the Step Functions API itself.
+# The hashicorp/aws provider has no resource for these types, so they use awscc.
 # -----------------------------------------------------------------------------
 
-data "archive_file" "etl_callback" {
+resource "aws_iam_role" "etl_eventbridge_callback" {
   count = local.is_data_lake_mode ? 0 : 1
 
-  type        = "zip"
-  source_file = "${path.module}/lambda/etl_callback.py"
-  output_path = "${path.module}/lambda/etl_callback.zip"
-}
-
-resource "aws_iam_role" "etl_callback" {
-  count = local.is_data_lake_mode ? 0 : 1
-
-  name = "${local.workload_name}-in-game-analysis-etl-callback"
+  name = "${local.workload_name}-in-game-analysis-etl-events"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect    = "Allow"
-      Principal = { Service = "lambda.amazonaws.com" }
+      Principal = { Service = "events.amazonaws.com" }
       Action    = "sts:AssumeRole"
+      Condition = { StringEquals = { "aws:SourceAccount" = local.account_id } }
     }]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "etl_callback_logs" {
+resource "aws_iam_role_policy" "etl_eventbridge_callback" {
   count = local.is_data_lake_mode ? 0 : 1
 
-  role       = aws_iam_role.etl_callback[0].name
-  policy_arn = "arn:${local.partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-resource "aws_iam_role_policy" "etl_callback" {
-  count = local.is_data_lake_mode ? 0 : 1
-
-  name = "${local.workload_name}-in-game-analysis-etl-callback"
-  role = aws_iam_role.etl_callback[0].id
+  name = "${local.workload_name}-in-game-analysis-etl-events"
+  role = aws_iam_role.etl_eventbridge_callback[0].id
 
   # SendTaskSuccess and SendTaskFailure do not support resource-level
   # permissions (they act on a task token), so "*" is the narrowest resource
@@ -674,59 +663,126 @@ resource "aws_iam_role_policy" "etl_callback" {
   })
 }
 
-resource "aws_lambda_function" "etl_callback" {
-  region = local.gap_region
-  count  = local.is_data_lake_mode ? 0 : 1
+resource "awscc_eventsv2_event_bus" "etl_callback" {
+  count = local.is_data_lake_mode ? 0 : 1
 
-  function_name    = "${local.workload_name}-in-game-analysis-etl-callback"
-  role             = aws_iam_role.etl_callback[0].arn
-  runtime          = "python3.12"
-  handler          = "etl_callback.handler"
-  filename         = data.archive_file.etl_callback[0].output_path
-  source_code_hash = data.archive_file.etl_callback[0].output_base64sha256
-  timeout          = 30
+  name        = "${local.workload_name}-in-game-analysis-etl"
+  description = "Redshift Data API status events for the in-game analysis ETL"
+}
 
-  environment {
-    variables = {
-      STATEMENT_PREFIX = local.etl_statement_prefix
+# Copies the matching Redshift Data API events from the default bus onto the custom bus.
+resource "awscc_eventsv2_event_source" "etl_redshift_data" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name          = "redshift-data-statement-status"
+  event_bus_arn = awscc_eventsv2_event_bus.etl_callback[0].event_bus_arn
+
+  configuration = {
+    aws_service_events_configuration = {
+      aws_service = "aws.redshift-data"
+      pattern = jsonencode({
+        "detail-type" = ["Redshift Data Statement Status Change"]
+        detail = {
+          statementName = [{ prefix = local.etl_statement_prefix }]
+          state         = ["FINISHED", "FAILED", "ABORTED"]
+        }
+      })
     }
   }
 }
 
-resource "aws_cloudwatch_event_rule" "etl_statement_finished" {
-  region = local.gap_region
-  count  = local.is_data_lake_mode ? 0 : 1
+locals {
+  # The task token is the statement name minus the prefix. $events is the batch;
+  # with a batch size of 1 it holds exactly this event. Request members use the
+  # API's own PascalCase names (TaskToken, Output, Error, Cause).
+  etl_callback_task_token = "$substringAfter($events.Data.detail.statementName, \"${local.etl_statement_prefix}\")"
 
-  name        = "${local.workload_name}-in-game-analysis-etl-finished"
-  description = "Redshift Data API statements started by the in-game analysis state machine"
+  # Only events the Redshift Data API produced: aws:Source is set by EventBridge
+  # and no publisher can write a value that starts with "aws.".
+  etl_callback_source_filter = {
+    scope   = "SYSTEM_METADATA"
+    pattern = jsonencode({ "aws:Source" = ["aws.redshift-data"] })
+  }
+}
 
-  event_pattern = jsonencode({
-    source        = ["aws.redshift-data"]
-    "detail-type" = ["Redshift Data Statement Status Change"]
-    detail = {
-      statementName = [{ prefix = local.etl_statement_prefix }]
-      state         = ["FINISHED", "FAILED", "ABORTED"]
+resource "awscc_eventsv2_subscriber" "etl_task_success" {
+  count = local.is_data_lake_mode ? 0 : 1
+
+  name          = "send-task-success"
+  event_bus_arn = awscc_eventsv2_event_bus.etl_callback[0].event_bus_arn
+
+  filter_configuration = {
+    filters = [
+      local.etl_callback_source_filter,
+      {
+        scope = "DATA"
+        pattern = jsonencode({
+          detail = {
+            statementName = [{ prefix = local.etl_statement_prefix }]
+            state         = ["FINISHED"]
+          }
+        })
+      }
+    ]
+  }
+
+  invoke_configuration = {
+    target_arn = "arn:${local.partition}:events:::aws-sdk:sfn:sendTaskSuccess"
+    role_arn   = aws_iam_role.etl_eventbridge_callback[0].arn
+    universal_target_parameters = {
+      input = "{% { \"TaskToken\": ${local.etl_callback_task_token}, \"Output\": $string({ \"StatementId\": $events.Data.detail.statementId, \"Status\": $events.Data.detail.state }) } %}"
     }
-  })
+  }
+
+  # One API call per event: each event carries its own task token.
+  batch_configuration = {
+    max_batch_size              = 1
+    max_batch_window_in_seconds = 0
+  }
+
+  depends_on = [aws_iam_role_policy.etl_eventbridge_callback]
 }
 
-resource "aws_cloudwatch_event_target" "etl_statement_finished" {
-  region = local.gap_region
-  count  = local.is_data_lake_mode ? 0 : 1
+# The event carries no error text, and only the principal that ran a statement may
+# describe it, so the cause is the statement ID; the state machine fetches the error.
+# Created after the success subscriber: two subscribers created on one bus at the
+# same time fail with ResourceConflict (409).
+resource "awscc_eventsv2_subscriber" "etl_task_failure" {
+  count = local.is_data_lake_mode ? 0 : 1
 
-  rule = aws_cloudwatch_event_rule.etl_statement_finished[0].name
-  arn  = aws_lambda_function.etl_callback[0].arn
-}
+  name          = "send-task-failure"
+  event_bus_arn = awscc_eventsv2_event_bus.etl_callback[0].event_bus_arn
 
-resource "aws_lambda_permission" "etl_statement_finished" {
-  region = local.gap_region
-  count  = local.is_data_lake_mode ? 0 : 1
+  filter_configuration = {
+    filters = [
+      local.etl_callback_source_filter,
+      {
+        scope = "DATA"
+        pattern = jsonencode({
+          detail = {
+            statementName = [{ prefix = local.etl_statement_prefix }]
+            state         = ["FAILED", "ABORTED"]
+          }
+        })
+      }
+    ]
+  }
 
-  statement_id  = "AllowEventBridgeInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.etl_callback[0].function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.etl_statement_finished[0].arn
+  invoke_configuration = {
+    target_arn = "arn:${local.partition}:events:::aws-sdk:sfn:sendTaskFailure"
+    role_arn   = aws_iam_role.etl_eventbridge_callback[0].arn
+    universal_target_parameters = {
+      input = "{% { \"TaskToken\": ${local.etl_callback_task_token}, \"Error\": \"RedshiftStatementFailed\", \"Cause\": $events.Data.detail.statementId } %}"
+    }
+  }
+
+  # One API call per event: each event carries its own task token.
+  batch_configuration = {
+    max_batch_size              = 1
+    max_batch_window_in_seconds = 0
+  }
+
+  depends_on = [awscc_eventsv2_subscriber.etl_task_success]
 }
 
 # EventBridge Scheduler to trigger the state machine daily
